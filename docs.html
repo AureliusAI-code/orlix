@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Docs — Orlix</title>
+<meta name="description" content="Orlix documentation. Command reference, architecture, authority tiers, and memory system.">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0d0a08;
+  --bg-panel:#15100c;
+  --bg-input:#1b1411;
+  --line:#2c2218;
+  --line-bright:#42301f;
+  --text:#d8cfc4;
+  --bright:#fbf3ea;
+  --dim:#8a7a6c;
+  --dim-2:#5c4f44;
+  --amber:#ff9a52;
+  --amber-soft:rgba(255,154,82,.12);
+  --violet:#b9a4ff;
+  --violet-soft:rgba(185,164,255,.12);
+  --red:#ff6b6b;
+  --green:#7ee0a8;
+  --mono:'JetBrains Mono',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{background:var(--bg);color:var(--text)}
+body{font-family:var(--mono);font-size:14px;line-height:1.65;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+::selection{background:var(--amber);color:#1a0f06}
+a{color:var(--violet);text-decoration:none;border-bottom:1px dotted rgba(185,164,255,.4)}
+a:hover{color:var(--bright);border-bottom-color:var(--bright)}
+.wrap{max-width:880px;margin:0 auto;padding:0 20px}
+button{font-family:var(--mono);cursor:pointer}
+
+.crt{position:fixed;inset:0;pointer-events:none;z-index:50;mix-blend-mode:overlay;opacity:.4}
+.crt::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(to bottom,rgba(255,255,255,.022) 0px,rgba(255,255,255,.022) 1px,transparent 1px,transparent 3px)}
+.vignette{position:fixed;inset:0;pointer-events:none;z-index:49;background:radial-gradient(ellipse 85% 70% at 50% 25%,transparent 45%,rgba(0,0,0,.6) 100%)}
+
+.titlebar{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(13,10,8,.88);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.titlebar-in{display:flex;align-items:center;justify-content:space-between;height:46px;font-size:.76rem;color:var(--dim)}
+.tb-left{display:flex;align-items:center;gap:10px;min-width:0}
+.tb-dots{display:flex;gap:5px;flex-shrink:0}
+.tb-dots span{display:inline-block;width:10px;height:10px;border-radius:50%}
+.tb-dots .r{background:var(--red)}
+.tb-dots .y{background:var(--amber)}
+.tb-dots .g{background:var(--green)}
+.tb-title{color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tb-right{display:flex;gap:16px;align-items:center;flex-shrink:0}
+.tb-right a{border-bottom:none;color:var(--dim);font-size:.76rem}
+.tb-right a:hover{color:var(--amber)}
+.social-icon{display:flex;align-items:center;color:var(--dim);transition:.15s;line-height:1}
+.social-icon svg{width:15px;height:15px;display:block}
+.social-icon:hover{color:var(--amber)}
+
+main{padding-top:46px}
+
+/* two-col layout */
+.docs-layout{display:grid;grid-template-columns:200px 1fr;gap:0;min-height:calc(100vh - 46px)}
+.docs-sidebar{border-right:1px solid var(--line);padding:32px 0;position:sticky;top:46px;height:calc(100vh - 46px);overflow-y:auto}
+.docs-sidebar::-webkit-scrollbar{width:4px}
+.docs-sidebar::-webkit-scrollbar-thumb{background:var(--line-bright);border-radius:2px}
+.sidebar-section{margin-bottom:28px;padding:0 20px}
+.sidebar-section .s-label{color:var(--dim);font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;display:block}
+.sidebar-nav{display:flex;flex-direction:column;gap:4px}
+.sidebar-nav a{color:var(--dim);font-size:.8rem;border-bottom:none;padding:5px 8px;border-radius:4px;transition:.15s}
+.sidebar-nav a:hover{color:var(--amber);background:var(--amber-soft)}
+.sidebar-nav a.active{color:var(--amber)}
+
+.docs-content{padding:32px 32px 80px}
+
+.crumb{color:var(--dim);font-size:.76rem;padding:0 0 20px;display:flex;flex-wrap:wrap;align-items:center;gap:0}
+.crumb .sep{color:var(--dim-2);margin:0 6px}
+.crumb .root{color:var(--violet)}
+.crumb .here{color:var(--amber)}
+
+.page-header{padding-bottom:32px;border-bottom:1px solid var(--line);margin-bottom:0}
+.page-header .file{color:var(--dim);font-size:.78rem;margin-bottom:8px}
+.page-header h1{font-size:1.2rem;font-weight:700;color:var(--bright);margin-bottom:8px}
+.page-header p{color:var(--dim);font-size:.84rem}
+
+.doc-section{padding:36px 0;border-bottom:1px solid var(--line)}
+.doc-section:last-of-type{border-bottom:none;padding-bottom:0}
+.doc-section h2{font-size:.95rem;font-weight:600;color:var(--bright);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.doc-section h2 .num{color:var(--amber);font-size:.85em}
+.doc-section h3{font-size:.86rem;font-weight:600;color:var(--amber);margin:24px 0 10px}
+.doc-section p{color:var(--text);font-size:.88rem;line-height:1.85;margin-bottom:12px}
+.doc-section p:last-child{margin-bottom:0}
+.doc-section ul{margin:10px 0 14px 0;display:flex;flex-direction:column;gap:7px}
+.doc-section ul li{color:var(--text);font-size:.88rem;line-height:1.7;padding-left:1.2em;position:relative}
+.doc-section ul li::before{content:"→";position:absolute;left:0;color:var(--amber)}
+
+.code-block{border:1px solid var(--line);border-radius:6px;background:var(--bg-panel);overflow:hidden;margin:12px 0}
+.code-block .cb-bar{padding:7px 14px;border-bottom:1px solid var(--line);font-size:.7rem;color:var(--dim);display:flex;justify-content:space-between}
+.code-block .cb-body{padding:14px 16px;font-size:.82rem;overflow-x:auto;line-height:1.8;color:var(--text)}
+.code-block .cb-body .cmd{color:var(--bright)}
+.code-block .cb-body .flag{color:var(--violet)}
+.code-block .cb-body .val{color:var(--amber)}
+.code-block .cb-body .cmt{color:var(--dim)}
+.code-block .cb-body .ok{color:var(--green)}
+
+.tbl{display:flex;flex-direction:column;margin:8px 0}
+.tbl-row{display:grid;grid-template-columns:140px 1fr;gap:16px;padding:12px 0;border-bottom:1px solid var(--line)}
+.tbl-row:last-child{border-bottom:none}
+.tbl-row .key{color:var(--amber);font-weight:600;font-size:.84rem;word-break:break-all}
+.tbl-row .desc{color:var(--text);font-size:.84rem;line-height:1.7}
+.tbl-row.tier-default .key{color:var(--violet)}
+
+.badge{display:inline-block;font-size:.72rem;padding:2px 7px;border-radius:3px;margin-left:6px;vertical-align:middle}
+.badge.beta{background:var(--amber-soft);color:var(--amber);border:1px solid rgba(255,154,82,.3)}
+.badge.done{background:rgba(126,224,168,.1);color:var(--green);border:1px solid rgba(126,224,168,.3)}
+
+.hl{color:var(--violet)}
+.ok{color:var(--green)}
+.amber-hl{color:var(--amber)}
+.dim{color:var(--dim)}
+.muted{color:var(--dim);font-size:.8rem}
+
+footer{padding:36px 0 60px;font-size:.78rem;color:var(--dim);border-top:1px solid var(--line)}
+.foot-grid{display:flex;justify-content:space-between;flex-wrap:wrap;gap:16px}
+.foot-links{display:flex;gap:16px;flex-wrap:wrap}
+.foot-links a{border-bottom:none;color:var(--dim);font-size:.76rem}
+.foot-links a:hover{color:var(--amber)}
+.foot-echo{margin-bottom:18px;font-size:.82rem;line-height:1.8}
+
+@media(max-width:720px){
+  .docs-layout{grid-template-columns:1fr}
+  .docs-sidebar{display:none}
+  .docs-content{padding:24px 0 60px}
+}
+@media(max-width:480px){body{font-size:13px}}
+@media(max-width:560px){.tbl-row{grid-template-columns:1fr;gap:4px}}
+</style>
+</head>
+<body>
+
+<div class="crt"></div>
+<div class="vignette"></div>
+
+<div class="titlebar">
+  <div class="wrap titlebar-in">
+    <div class="tb-left">
+      <span class="tb-dots"><span class="r"></span><span class="y"></span><span class="g"></span></span>
+      <span class="tb-title">orlix — /usr/local/bin/orlix</span>
+    </div>
+    <div class="tb-right">
+      <a href="https://github.com/tylerbroqs" class="social-icon" target="_blank" rel="noopener" aria-label="GitHub">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0112 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/></svg>
+      </a>
+      <a href="https://x.com/tylerbroqs" class="social-icon" target="_blank" rel="noopener" aria-label="X">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.747l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+      </a>
+      <a href="index.html">home</a>
+      <a href="docs.html" style="color:var(--amber)">docs</a>
+    </div>
+  </div>
+</div>
+
+<main>
+<div class="wrap">
+  <div class="docs-layout">
+
+    <!-- sidebar -->
+    <nav class="docs-sidebar">
+      <div class="sidebar-section">
+        <span class="s-label">getting started</span>
+        <div class="sidebar-nav">
+          <a href="#overview">Overview</a>
+          <a href="#install">Installation</a>
+          <a href="#quickstart">Quick start</a>
+        </div>
+      </div>
+      <div class="sidebar-section">
+        <span class="s-label">core concepts</span>
+        <div class="sidebar-nav">
+          <a href="#governance-loop">Governance loop</a>
+          <a href="#authority-tiers">Authority tiers</a>
+          <a href="#memory">Memory system</a>
+          <a href="#receipts">Action receipts</a>
+          <a href="#policies">Policies</a>
+        </div>
+      </div>
+      <div class="sidebar-section">
+        <span class="s-label">reference</span>
+        <div class="sidebar-nav">
+          <a href="#cli">CLI reference</a>
+          <a href="#config">Configuration</a>
+          <a href="#integrations">Integrations</a>
+        </div>
+      </div>
+    </nav>
+
+    <!-- content -->
+    <div class="docs-content">
+
+      <div class="crumb">
+        <span class="root">~</span><span class="sep">/</span><span class="here">orlix</span><span class="sep">/</span>docs<span class="sep">/</span>index.md
+      </div>
+
+      <div class="page-header">
+        <div class="file">$ man orlix</div>
+        <h1>Orlix Documentation <span class="badge beta">v0.5-beta</span></h1>
+        <p>Governance layer for personal AI — persistent memory, policy-bound actions, full audit trail.</p>
+      </div>
+
+      <!-- OVERVIEW -->
+      <div class="doc-section" id="overview">
+        <h2><span class="num">01</span> Overview</h2>
+        <p>Orlix is not an AI assistant. It is the <span class="hl">control layer that sits above</span> any assistant — observing your context, enforcing your policies, executing tasks, verifying outcomes, and updating its own behavior from results.</p>
+        <p>The key distinction: <span class="amber-hl">assistants generate text. Orlix governs outcomes.</span> You configure what matters, what is permitted, and how autonomous the system should be. Orlix operates within those bounds continuously.</p>
+        <div class="code-block">
+          <div class="cb-bar"><span>architecture overview</span></div>
+          <div class="cb-body">
+            <div><span class="cmt">┌─────────────────────────────────────────┐</span></div>
+            <div><span class="cmt">│</span>  your goals · policies · memory         <span class="cmt">│</span></div>
+            <div><span class="cmt">│              ↓ orlix ↓                  │</span></div>
+            <div><span class="cmt">│</span>  observe → decide → act → verify → learn<span class="cmt">│</span></div>
+            <div><span class="cmt">│              ↓                          │</span></div>
+            <div><span class="cmt">│</span>  claude / gpt / gemini / any model      <span class="cmt">│</span></div>
+            <div><span class="cmt">└─────────────────────────────────────────┘</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- INSTALL -->
+      <div class="doc-section" id="install">
+        <h2><span class="num">02</span> Installation</h2>
+        <p>Orlix is distributed as a single binary for macOS, Linux, and Windows. Early access builds are provided to members of the access program.</p>
+
+        <h3>macOS / Linux</h3>
+        <div class="code-block">
+          <div class="cb-bar"><span>shell</span></div>
+          <div class="cb-body">
+            <div><span class="cmd">curl -fsSL https://get.orlix.dev | sh</span></div>
+            <div><span class="ok">✓ orlix v0.5.0-beta installed at /usr/local/bin/orlix</span></div>
+          </div>
+        </div>
+
+        <h3>Windows</h3>
+        <div class="code-block">
+          <div class="cb-bar"><span>powershell</span></div>
+          <div class="cb-body">
+            <div><span class="cmd">iwr https://get.orlix.dev/win | iex</span></div>
+          </div>
+        </div>
+
+        <h3>Verify installation</h3>
+        <div class="code-block">
+          <div class="cb-bar"><span>shell</span></div>
+          <div class="cb-body">
+            <div><span class="cmd">orlix <span class="flag">--version</span></span></div>
+            <div><span class="ok">orlix v0.5.0-beta · personal AI operating system</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- QUICKSTART -->
+      <div class="doc-section" id="quickstart">
+        <h2><span class="num">03</span> Quick start</h2>
+
+        <h3>Initialize a new instance</h3>
+        <div class="code-block">
+          <div class="cb-bar"><span>shell</span></div>
+          <div class="cb-body">
+            <div><span class="cmd">orlix init</span></div>
+            <div><span class="ok">[ok] world model initialized</span></div>
+            <div><span class="ok">[ok] default policies loaded (v1)</span></div>
+            <div><span class="ok">[ok] authority tier: supervised (default)</span></div>
+            <div><span class="ok">[ok] audit log: ~/.orlix/receipts/</span></div>
+          </div>
+        </div>
+
+        <h3>Set your first goal</h3>
+        <div class="code-block">
+          <div class="cb-bar"><span>shell</span></div>
+          <div class="cb-body">
+            <div><span class="cmd">orlix goal add <span class="flag">--name</span> <span class="val">"Ship MVP"</span> <span class="flag">--deadline</span> <span class="val">2026-07-15</span></span></div>
+            <div><span class="ok">✓ goal 'Ship MVP' added · id: g-0001</span></div>
+          </div>
+        </div>
+
+        <h3>Check status</h3>
+        <div class="code-block">
+          <div class="cb-bar"><span>shell</span></div>
+          <div class="cb-body">
+            <div><span class="cmd">orlix status</span></div>
+            <div><span class="ok">[ok] world model ........... online</span></div>
+            <div><span class="ok">[ok] policy engine ......... 14 active rules</span></div>
+            <div><span class="ok">[ok] memory ................ persistent · local-first</span></div>
+            <div><span class="ok">[ok] audit log ............. recording</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- GOVERNANCE LOOP -->
+      <div class="doc-section" id="governance-loop">
+        <h2><span class="num">04</span> Governance loop</h2>
+        <p>Orlix runs a five-phase loop continuously. Each phase is configurable — you can set the authority tier per phase, per domain, or globally.</p>
+
+        <div class="tbl">
+          <div class="tbl-row"><div class="key">01 observe</div><div class="desc">Watches your calendar, goals, inbox signals, and external sources. Feeds the world model in real time. Never stores raw message content — only extracted, policy-compliant facts.</div></div>
+          <div class="tbl-row"><div class="key">02 decide</div><div class="desc">Weighs observed signals against your goals and policies. Determines what — if anything — should happen next. Checks authority tier before proposing any action.</div></div>
+          <div class="tbl-row"><div class="key">03 act</div><div class="desc">Executes the decided action — or requests approval if the authority tier requires it. Every action is written to the receipt log before execution, not after.</div></div>
+          <div class="tbl-row"><div class="key">04 verify</div><div class="desc">Checks whether the action achieved its stated goal. Not just "was it sent" but "did it work." Discrepancies are flagged and held for review.</div></div>
+          <div class="tbl-row"><div class="key">05 learn</div><div class="desc">Updates policy from real outcomes. Every policy change is versioned and requires explicit confirmation unless you've pre-authorized the update class. <span class="badge beta">building</span></div></div>
+        </div>
+      </div>
+
+      <!-- AUTHORITY TIERS -->
+      <div class="doc-section" id="authority-tiers">
+        <h2><span class="num">05</span> Authority tiers</h2>
+        <p>The authority tier controls how much autonomy Orlix has. Set it globally or per domain (e.g. email, calendar, files).</p>
+
+        <div class="tbl">
+          <div class="tbl-row"><div class="key">observe</div><div class="desc">Log activity only. Orlix watches and records — nothing else. Zero risk of unintended action.</div></div>
+          <div class="tbl-row"><div class="key">suggest</div><div class="desc">Recommendations only. Orlix surfaces suggestions; every decision is yours.</div></div>
+          <div class="tbl-row"><div class="key">confirm</div><div class="desc">Orlix asks before acting on anything, no exceptions.</div></div>
+          <div class="tbl-row tier-default"><div class="key">supervised ← default</div><div class="desc">Orlix acts, notifies you immediately, and can roll back within 30 days. Recommended starting point.</div></div>
+          <div class="tbl-row"><div class="key">autonomous</div><div class="desc">Orlix acts independently within policy bounds. Receipts are logged but no approval required. Use only after establishing trust through supervised operation.</div></div>
+        </div>
+
+        <h3>Set the tier</h3>
+        <div class="code-block">
+          <div class="cb-bar"><span>shell</span></div>
+          <div class="cb-body">
+            <div><span class="cmd">orlix policy <span class="flag">--set-tier</span> <span class="val">supervised</span>          <span class="cmt"># global</span></span></div>
+            <div><span class="cmd">orlix policy <span class="flag">--set-tier</span> <span class="val">confirm</span> <span class="flag">--domain</span> <span class="val">email</span>  <span class="cmt"># domain override</span></span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MEMORY -->
+      <div class="doc-section" id="memory">
+        <h2><span class="num">06</span> Memory system</h2>
+        <p>Orlix maintains a living world model — a structured graph of facts, goals, preferences, and relationships. Everything is stored locally, versioned, and exportable.</p>
+
+        <h3>Memory types</h3>
+        <div class="tbl">
+          <div class="tbl-row"><div class="key">facts</div><div class="desc">Discrete beliefs about the world. Each fact carries a source, confidence score, and timestamp. Example: <span class="hl">"Alex owns the design review · source: email · 2026-06-02 · confidence: 0.95"</span></div></div>
+          <div class="tbl-row"><div class="key">goals</div><div class="desc">Objectives you care about, with optional deadlines and progress tracking. Goals drive the observe and decide phases.</div></div>
+          <div class="tbl-row"><div class="key">policies</div><div class="desc">Rules that govern Orlix behavior. Versioned — every change is tracked. Roll back to any previous version with <span class="hl">orlix policy --rollback v12</span>.</div></div>
+          <div class="tbl-row"><div class="key">preferences</div><div class="desc">Soft preferences that bias decisions without hard-blocking them. Example: "prefer async communication over meetings."</div></div>
+        </div>
+
+        <h3>Export and import</h3>
+        <div class="code-block">
+          <div class="cb-bar"><span>shell</span></div>
+          <div class="cb-body">
+            <div><span class="cmd">orlix memory <span class="flag">--export</span> <span class="flag">--out</span> <span class="val">orlix-backup.json</span></span></div>
+            <div><span class="ok">✓ exported 1,204 facts · 7 goals · 14 policies</span></div>
+            <div></div>
+            <div><span class="cmd">orlix memory <span class="flag">--import</span> <span class="val">orlix-backup.json</span></span></div>
+            <div><span class="ok">✓ world model restored · 1,204 facts · 7 goals</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RECEIPTS -->
+      <div class="doc-section" id="receipts">
+        <h2><span class="num">07</span> Action receipts</h2>
+        <p>Every action Orlix takes or proposes generates a receipt — a structured record linking the action to the intent, policy, and verification result.</p>
+
+        <div class="code-block">
+          <div class="cb-bar"><span>$ cat ~/.orlix/receipts/2026-06-13-0847.json</span></div>
+          <div class="cb-body">
+            <div>{</div>
+            <div>&nbsp;&nbsp;<span class="flag">"intent"</span>:    <span class="val">"Notify user of goal drift"</span>,</div>
+            <div>&nbsp;&nbsp;<span class="flag">"context"</span>:   <span class="val">"Goal 'Ship MVP' · 3 blockers · last touched 17d ago"</span>,</div>
+            <div>&nbsp;&nbsp;<span class="flag">"policy"</span>:    <span class="val">"Alert if goal drift &gt; 3 days · v14"</span>,</div>
+            <div>&nbsp;&nbsp;<span class="flag">"action"</span>:    <span class="val">"Priority alert sent"</span>,</div>
+            <div>&nbsp;&nbsp;<span class="flag">"approval"</span>:  <span class="val">"User confirmed re-prioritization"</span>,</div>
+            <div>&nbsp;&nbsp;<span class="flag">"verified"</span>:  <span class="ok">true</span>,</div>
+            <div>&nbsp;&nbsp;<span class="flag">"rollback"</span>:  <span class="val">"available · expires 2026-07-13"</span></div>
+            <div>}</div>
+          </div>
+        </div>
+
+        <h3>Viewing receipts</h3>
+        <div class="code-block">
+          <div class="cb-bar"><span>shell</span></div>
+          <div class="cb-body">
+            <div><span class="cmd">orlix receipts <span class="flag">--list</span>              <span class="cmt"># list recent receipts</span></span></div>
+            <div><span class="cmd">orlix receipts <span class="flag">--show</span> <span class="val">2026-06-13-0847</span>  <span class="cmt"># view one receipt</span></span></div>
+            <div><span class="cmd">orlix receipts <span class="flag">--rollback</span> <span class="val">2026-06-13-0847</span><span class="cmt"># undo this action</span></span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- POLICIES -->
+      <div class="doc-section" id="policies">
+        <h2><span class="num">08</span> Policies</h2>
+        <p>Policies are the rules Orlix follows. They are versioned, auditable, and can be evolved manually or (in v0.5) automatically from outcomes.</p>
+
+        <div class="code-block">
+          <div class="cb-bar"><span>shell</span></div>
+          <div class="cb-body">
+            <div><span class="cmd">orlix policy <span class="flag">--list</span>               <span class="cmt"># show all active policies</span></span></div>
+            <div><span class="cmd">orlix policy <span class="flag">--add</span> <span class="val">"notify_if_blocker_gt_48h"</span></span></div>
+            <div><span class="cmd">orlix policy <span class="flag">--disable</span> <span class="val">p-0003</span>      <span class="cmt"># disable by id</span></span></div>
+            <div><span class="cmd">orlix policy <span class="flag">--rollback</span> <span class="val">v12</span>         <span class="cmt"># restore previous version</span></span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CLI REFERENCE -->
+      <div class="doc-section" id="cli">
+        <h2><span class="num">09</span> CLI reference</h2>
+
+        <div class="tbl">
+          <div class="tbl-row"><div class="key">orlix init</div><div class="desc">Initialize a new Orlix instance in the current environment.</div></div>
+          <div class="tbl-row"><div class="key">orlix status</div><div class="desc">Show the current state of the world model, policies, and audit log.</div></div>
+          <div class="tbl-row"><div class="key">orlix goal</div><div class="desc"><span class="hl">add</span>, <span class="hl">list</span>, <span class="hl">update</span>, <span class="hl">remove</span> — manage your goal registry.</div></div>
+          <div class="tbl-row"><div class="key">orlix memory</div><div class="desc"><span class="hl">--export</span>, <span class="hl">--import</span>, <span class="hl">--search</span>, <span class="hl">--forget</span> — manage the world model.</div></div>
+          <div class="tbl-row"><div class="key">orlix policy</div><div class="desc"><span class="hl">--list</span>, <span class="hl">--add</span>, <span class="hl">--disable</span>, <span class="hl">--rollback</span>, <span class="hl">--set-tier</span></div></div>
+          <div class="tbl-row"><div class="key">orlix receipts</div><div class="desc"><span class="hl">--list</span>, <span class="hl">--show</span>, <span class="hl">--rollback</span> — view and manage action audit log.</div></div>
+          <div class="tbl-row"><div class="key">orlix run</div><div class="desc">Execute a single governed task. Orlix will observe, decide, act, and verify — logging a receipt.</div></div>
+          <div class="tbl-row"><div class="key">orlix --version</div><div class="desc">Print version string and exit.</div></div>
+          <div class="tbl-row"><div class="key">orlix --help</div><div class="desc">Print help for any subcommand.</div></div>
+        </div>
+      </div>
+
+      <!-- CONFIG -->
+      <div class="doc-section" id="config">
+        <h2><span class="num">10</span> Configuration</h2>
+        <p>Orlix reads <span class="hl">~/.orlix/config.toml</span> on startup. The most important settings:</p>
+
+        <div class="code-block">
+          <div class="cb-bar"><span>~/.orlix/config.toml</span></div>
+          <div class="cb-body">
+            <div><span class="cmt"># authority tier: observe | suggest | confirm | supervised | autonomous</span></div>
+            <div><span class="flag">tier</span> = <span class="val">"supervised"</span></div>
+            <div></div>
+            <div><span class="cmt"># default AI model for decision and act phases</span></div>
+            <div><span class="flag">model</span> = <span class="val">"claude-opus-4-8"</span></div>
+            <div></div>
+            <div><span class="cmt"># local data directory</span></div>
+            <div><span class="flag">data_dir</span> = <span class="val">"~/.orlix"</span></div>
+            <div></div>
+            <div><span class="cmt"># opt-in telemetry (default: false)</span></div>
+            <div><span class="flag">telemetry</span> = <span class="val">false</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- INTEGRATIONS -->
+      <div class="doc-section" id="integrations">
+        <h2><span class="num">11</span> Integrations</h2>
+        <p>Orlix connects to external services through policy-controlled adapters. Each adapter has its own authority tier setting.</p>
+
+        <div class="tbl">
+          <div class="tbl-row"><div class="key">AI models</div><div class="desc">Anthropic Claude, OpenAI GPT, Google Gemini, and any OpenAI-compatible endpoint. Swap models without losing your memory or policies.</div></div>
+          <div class="tbl-row"><div class="key">Calendar</div><div class="desc">Google Calendar, Apple Calendar, Outlook. Orlix reads events to update goals and context. <span class="badge done">v0.1</span></div></div>
+          <div class="tbl-row"><div class="key">Email</div><div class="desc">IMAP/SMTP compatible. Orlix extracts facts from messages you authorize — never stores raw email content. <span class="badge done">v0.1</span></div></div>
+          <div class="tbl-row"><div class="key">Tasks</div><div class="desc">Linear, Notion, GitHub Issues. Bidirectional sync with your goal registry. <span class="badge done">v0.3</span></div></div>
+          <div class="tbl-row"><div class="key">Files</div><div class="desc">Local filesystem access within configured paths. Read and write under supervised or confirm tier. <span class="badge done">v0.3</span></div></div>
+        </div>
+
+        <p class="muted" style="margin-top:16px">// all adapter credentials are stored encrypted in ~/.orlix/credentials — never transmitted to Orlix servers.</p>
+      </div>
+
+    </div><!-- /docs-content -->
+  </div><!-- /docs-layout -->
+</div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="foot-echo">
+      <span class="amber-hl">orlix</span><span class="dim">@</span>system<span class="dim">:~$</span> echo "local-first, sovereign, auditable."
+      <br><span class="ok">local-first, sovereign, auditable.</span>
+    </div>
+    <div class="foot-grid">
+      <div>© 2026 Orlix — local-first, sovereign, auditable.</div>
+      <div class="foot-links">
+        <a href="index.html">home</a>
+        <a href="docs.html">docs</a>
+        <a href="changelog.html">changelog</a>
+        <a href="terms.html">terms</a>
+        <a href="privacy.html">privacy</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

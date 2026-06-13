@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Terms of Service — Orlix</title>
+<meta name="description" content="Orlix terms of service. Local-first, sovereign, auditable.">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0d0a08;
+  --bg-panel:#15100c;
+  --bg-input:#1b1411;
+  --line:#2c2218;
+  --line-bright:#42301f;
+  --text:#d8cfc4;
+  --bright:#fbf3ea;
+  --dim:#8a7a6c;
+  --dim-2:#5c4f44;
+  --amber:#ff9a52;
+  --amber-soft:rgba(255,154,82,.12);
+  --violet:#b9a4ff;
+  --violet-soft:rgba(185,164,255,.12);
+  --red:#ff6b6b;
+  --green:#7ee0a8;
+  --mono:'JetBrains Mono',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{background:var(--bg);color:var(--text)}
+body{font-family:var(--mono);font-size:14px;line-height:1.65;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+::selection{background:var(--amber);color:#1a0f06}
+a{color:var(--violet);text-decoration:none;border-bottom:1px dotted rgba(185,164,255,.4)}
+a:hover{color:var(--bright);border-bottom-color:var(--bright)}
+.wrap{max-width:880px;margin:0 auto;padding:0 20px}
+button{font-family:var(--mono);cursor:pointer}
+
+.crt{position:fixed;inset:0;pointer-events:none;z-index:50;mix-blend-mode:overlay;opacity:.4}
+.crt::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(to bottom,rgba(255,255,255,.022) 0px,rgba(255,255,255,.022) 1px,transparent 1px,transparent 3px)}
+.vignette{position:fixed;inset:0;pointer-events:none;z-index:49;background:radial-gradient(ellipse 85% 70% at 50% 25%,transparent 45%,rgba(0,0,0,.6) 100%)}
+
+.titlebar{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(13,10,8,.88);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.titlebar-in{display:flex;align-items:center;justify-content:space-between;height:46px;font-size:.76rem;color:var(--dim)}
+.tb-left{display:flex;align-items:center;gap:10px;min-width:0}
+.tb-dots{display:flex;gap:5px;flex-shrink:0}
+.tb-dots span{display:inline-block;width:10px;height:10px;border-radius:50%}
+.tb-dots .r{background:var(--red)}
+.tb-dots .y{background:var(--amber)}
+.tb-dots .g{background:var(--green)}
+.tb-title{color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tb-right{display:flex;gap:16px;align-items:center;flex-shrink:0}
+.tb-right a{border-bottom:none;color:var(--dim);font-size:.76rem}
+.tb-right a:hover{color:var(--amber)}
+.social-icon{display:flex;align-items:center;color:var(--dim);transition:.15s;line-height:1}
+.social-icon svg{width:15px;height:15px;display:block}
+.social-icon:hover{color:var(--amber)}
+
+main{padding-top:46px}
+.crumb{color:var(--dim);font-size:.76rem;padding:20px 0 8px;display:flex;flex-wrap:wrap;align-items:center;gap:0}
+.crumb .sep{color:var(--dim-2);margin:0 6px}
+.crumb .root{color:var(--violet)}
+.crumb .here{color:var(--amber)}
+
+.page-header{padding:48px 0 32px;border-bottom:1px solid var(--line)}
+.page-header .file{color:var(--dim);font-size:.78rem;margin-bottom:8px}
+.page-header h1{font-size:1.2rem;font-weight:700;color:var(--bright);margin-bottom:10px}
+.page-header .meta{color:var(--dim);font-size:.78rem}
+.page-header .meta span{color:var(--amber)}
+
+.doc-section{padding:36px 0;border-bottom:1px solid var(--line)}
+.doc-section:last-of-type{border-bottom:none}
+.doc-section h2{font-size:.95rem;font-weight:600;color:var(--bright);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.doc-section h2 .num{color:var(--amber);font-size:.85em}
+.doc-section p{color:var(--text);font-size:.88rem;line-height:1.85;margin-bottom:12px}
+.doc-section p:last-child{margin-bottom:0}
+.doc-section ul{margin:10px 0 12px 0;display:flex;flex-direction:column;gap:7px}
+.doc-section ul li{color:var(--text);font-size:.88rem;line-height:1.7;padding-left:1.2em;position:relative}
+.doc-section ul li::before{content:"→";position:absolute;left:0;color:var(--amber)}
+.hl{color:var(--violet)}
+.ok{color:var(--green)}
+.amber-hl{color:var(--amber)}
+.dim{color:var(--dim)}
+.muted{color:var(--dim);font-size:.8rem}
+.warn-block{border:1px solid rgba(255,154,82,.3);background:var(--amber-soft);border-radius:6px;padding:14px 18px;margin:14px 0;font-size:.84rem;line-height:1.8;color:var(--text)}
+.warn-block .label{color:var(--amber);font-weight:600;display:block;margin-bottom:4px}
+
+footer{padding:36px 0 60px;font-size:.78rem;color:var(--dim)}
+.foot-grid{display:flex;justify-content:space-between;flex-wrap:wrap;gap:16px}
+.foot-links{display:flex;gap:16px;flex-wrap:wrap}
+.foot-links a{border-bottom:none;color:var(--dim);font-size:.76rem}
+.foot-links a:hover{color:var(--amber)}
+.foot-echo{margin-bottom:18px;font-size:.82rem;line-height:1.8}
+
+@media(max-width:480px){body{font-size:13px}.page-header{padding:36px 0 24px}}
+</style>
+</head>
+<body>
+
+<div class="crt"></div>
+<div class="vignette"></div>
+
+<div class="titlebar">
+  <div class="wrap titlebar-in">
+    <div class="tb-left">
+      <span class="tb-dots"><span class="r"></span><span class="y"></span><span class="g"></span></span>
+      <span class="tb-title">orlix — /usr/local/bin/orlix</span>
+    </div>
+    <div class="tb-right">
+      <a href="https://github.com/tylerbroqs" class="social-icon" target="_blank" rel="noopener" aria-label="GitHub">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0112 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/></svg>
+      </a>
+      <a href="https://x.com/tylerbroqs" class="social-icon" target="_blank" rel="noopener" aria-label="X">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.747l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+      </a>
+      <a href="index.html">home</a>
+      <a href="docs.html">docs</a>
+    </div>
+  </div>
+</div>
+
+<main>
+<div class="wrap">
+
+  <div class="crumb">
+    <span class="root">~</span><span class="sep">/</span><span class="here">orlix</span><span class="sep">/</span>terms.md
+  </div>
+
+  <div class="page-header">
+    <div class="file">$ cat terms.md</div>
+    <h1>Terms of Service</h1>
+    <p class="meta">effective <span>2026-06-01</span> · version <span>1.0</span></p>
+  </div>
+
+  <div class="doc-section">
+    <h2><span class="num">§1</span> Acceptance</h2>
+    <p>By accessing orlix.dev or using the Orlix software ("Service"), you agree to these Terms. If you do not agree, do not use the Service.</p>
+    <div class="warn-block">
+      <span class="label">⚠ Beta software</span>
+      Orlix is currently in early access / beta. Features may change, break, or be removed without prior notice. Use in production environments is at your own risk.
+    </div>
+  </div>
+
+  <div class="doc-section">
+    <h2><span class="num">§2</span> Description of service</h2>
+    <p>Orlix is a local-first governance layer for personal AI — a software system that runs on your device and optionally interfaces with third-party AI model providers you configure. We provide the software and this website. We do not operate the AI models themselves.</p>
+  </div>
+
+  <div class="doc-section">
+    <h2><span class="num">§3</span> Permitted use</h2>
+    <p>You may use Orlix for lawful personal and commercial purposes, subject to these Terms. You agree not to:</p>
+    <ul>
+      <li>Reverse-engineer, decompile, or attempt to extract source code from distributed binaries</li>
+      <li>Use Orlix to automate actions that violate the terms of third-party services you connect</li>
+      <li>Distribute or resell access to the Service during the beta period without written consent</li>
+      <li>Use the Service to process data you are not authorized to handle</li>
+    </ul>
+  </div>
+
+  <div class="doc-section">
+    <h2><span class="num">§4</span> Your data</h2>
+    <p>All data processed locally by Orlix — including your memory, policies, goals, and action receipts — belongs to you. We claim no rights over it. See our <a href="privacy.html">Privacy Policy</a> for details on what minimal data we do collect.</p>
+    <p>You are responsible for maintaining backups of your local Orlix data. We are not liable for data loss resulting from software bugs, hardware failure, or user error.</p>
+  </div>
+
+  <div class="doc-section">
+    <h2><span class="num">§5</span> Third-party integrations</h2>
+    <p>Orlix may connect to external AI providers (Anthropic, OpenAI, etc.) and other services you configure. Your use of those services is governed by their own terms and privacy policies. We are not responsible for the output, conduct, or policies of third-party providers.</p>
+    <p>When Orlix sends data to an external model, it does so at your direction, according to the authority tier and policy you have configured. You bear responsibility for what you authorize Orlix to share.</p>
+  </div>
+
+  <div class="doc-section">
+    <h2><span class="num">§6</span> Intellectual property</h2>
+    <p>The Orlix name, logo, website content, and distributed software are owned by or licensed to us. Nothing in these Terms transfers ownership of our intellectual property to you.</p>
+    <p>Any feedback, suggestions, or bug reports you submit may be used by us to improve the Service without obligation or compensation to you.</p>
+  </div>
+
+  <div class="doc-section">
+    <h2><span class="num">§7</span> Disclaimer of warranties</h2>
+    <p>The Service is provided <span class="hl">"as is"</span> and <span class="hl">"as available"</span>, without warranty of any kind. We do not warrant that the Service will be uninterrupted, error-free, or produce accurate results. Use of autonomous AI features carries inherent risk — configure authority tiers accordingly.</p>
+    <p class="muted">// the default authority tier is "supervised" — Orlix acts, notifies you, and can roll back. We strongly recommend starting here.</p>
+  </div>
+
+  <div class="doc-section">
+    <h2><span class="num">§8</span> Limitation of liability</h2>
+    <p>To the maximum extent permitted by law, we are not liable for any indirect, incidental, consequential, or punitive damages arising from your use of the Service, including losses caused by autonomous actions Orlix takes within permissions you granted.</p>
+  </div>
+
+  <div class="doc-section">
+    <h2><span class="num">§9</span> Changes to these terms</h2>
+    <p>We may update these Terms. Material changes will be communicated via email to early access members and reflected in the version number above. Continued use after the effective date constitutes acceptance of the revised Terms.</p>
+    <p class="muted">// questions? <a href="mailto:legal@orlix.dev">legal@orlix.dev</a></p>
+  </div>
+
+</div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="foot-echo">
+      <span class="amber-hl">orlix</span><span class="dim">@</span>system<span class="dim">:~$</span> echo "local-first, sovereign, auditable."
+      <br><span class="ok">local-first, sovereign, auditable.</span>
+    </div>
+    <div class="foot-grid">
+      <div>© 2026 Orlix — local-first, sovereign, auditable.</div>
+      <div class="foot-links">
+        <a href="index.html">home</a>
+        <a href="docs.html">docs</a>
+        <a href="changelog.html">changelog</a>
+        <a href="terms.html">terms</a>
+        <a href="privacy.html">privacy</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
