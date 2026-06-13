@@ -104,7 +104,7 @@ section:last-of-type{border-bottom:none}
 .sec-head{margin-bottom:24px}
 .sec-head .file{color:var(--dim);font-size:.78rem;margin-bottom:8px;word-break:break-all}
 .sec-head h2{font-size:1.05rem;font-weight:600;color:var(--bright);display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.sec-head h2 .num{color:var(--amber);font-size:.85em}
+.sec-head h2 .num{color:var(--amber);font-size:1.6em;font-weight:700;opacity:.45;letter-spacing:-.03em;line-height:1}
 
 /* ====== hero / boot ====== */
 .hero{padding:60px 0 44px}
@@ -119,9 +119,28 @@ section:last-of-type{border-bottom:none}
 .cursor{display:inline-block;width:.5em;height:1.05em;background:var(--amber);vertical-align:text-bottom;animation:blink 1s steps(1) infinite}
 @keyframes blink{50%{opacity:0}}
 
-.hero-title{font-size:clamp(1.5rem,5.2vw,2.5rem);font-weight:700;color:var(--bright);line-height:1.35;margin:26px 0 14px;word-wrap:break-word}
-.hero-title .amber-hl{color:var(--amber)}
+.hero-eyebrow{font-size:.7rem;color:var(--amber);letter-spacing:.18em;text-transform:uppercase;font-weight:600;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.hero-eyebrow::before{content:'';display:inline-block;width:24px;height:1px;background:var(--amber)}
+.hero-title{font-size:clamp(2rem,6.5vw,4rem);font-weight:700;color:var(--bright);line-height:1.15;margin:0 0 18px;word-wrap:break-word}
+.hero-title .amber-hl{color:var(--amber);text-shadow:0 0 60px rgba(255,154,82,.28),0 0 120px rgba(255,154,82,.1)}
 .hero-sub{color:var(--text);max-width:64ch;margin-bottom:22px;font-size:.92rem;line-height:1.85}
+
+/* orbital */
+.orbital-wrap{display:flex;justify-content:center;margin:36px 0 40px}
+#orbitalCv{display:block;max-width:100%}
+
+/* yes/no */
+.yesno-block{margin:28px 0;padding:26px 28px;border:1px solid var(--line-bright);border-radius:8px;background:rgba(21,16,12,.7);backdrop-filter:blur(8px);max-width:560px}
+.yesno-q{font-size:1rem;color:var(--bright);line-height:1.75;margin-bottom:18px;font-weight:500}
+.yesno-q .dim{color:var(--dim);display:block;margin-top:4px;font-size:.9em;font-weight:400}
+.yesno-btns{display:flex;gap:10px;flex-wrap:wrap}
+.yesno-btn{background:none;border:1px solid var(--line-bright);border-radius:6px;color:var(--text);font-size:.82rem;padding:10px 20px;transition:.15s;font-family:var(--mono);cursor:pointer;border-bottom:1px solid var(--line-bright)}
+.yesno-btn:hover{border-color:var(--amber);color:var(--bright)}
+.yesno-btn.active-yes{border-color:var(--green)!important;color:var(--green)!important}
+.yesno-btn.active-no{border-color:var(--violet)!important;color:var(--violet)!important}
+.yesno-btn.faded{opacity:.35;pointer-events:none}
+.yesno-resp{overflow:hidden;max-height:0;transition:max-height .4s ease,margin-top .3s ease;font-size:.88rem;line-height:1.75;color:var(--text)}
+.yesno-resp.open{max-height:120px;margin-top:16px}
 
 /* ====== command buttons ====== */
 .cmd-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}
@@ -331,8 +350,24 @@ main,footer{position:relative;z-index:1}
   <section class="hero" id="top">
     <div class="boot" id="bootLog"></div>
 
-    <h1 class="hero-title">Stop prompt-chasing. <span class="amber-hl">Own the control layer.</span></h1>
+    <!-- orbital graphic -->
+    <div class="orbital-wrap">
+      <canvas id="orbitalCv"></canvas>
+    </div>
+
+    <p class="hero-eyebrow">personal AI operating system</p>
+    <h1 class="hero-title">Stop prompt-chasing.<br><span class="amber-hl">Own the control layer.</span></h1>
     <p class="hero-sub">Orlix is a governance layer for personal AI — a persistent world model that turns any assistant into a system that observes, decides, acts, and reports back. <span class="dim">Every action is policy-bound and fully auditable.</span></p>
+
+    <!-- yes/no interactive -->
+    <div class="yesno-block">
+      <p class="yesno-q">"AI generates text. You do all the work."<span class="dim">Sound familiar?</span></p>
+      <div class="yesno-btns">
+        <button class="yesno-btn" id="btnYes" type="button">Yes, unfortunately →</button>
+        <button class="yesno-btn" id="btnNo" type="button">No, I've solved this</button>
+      </div>
+      <div class="yesno-resp" id="yesnoResp"></div>
+    </div>
 
     <div class="cmd-row">
       <button class="cmd-btn primary" data-action="goto" data-target="access" type="button"><span class="pfx">$</span> orlix init</button>
@@ -886,6 +921,113 @@ document.getElementById('accessForm').addEventListener('submit', (e) => {
   btn.disabled = true;
   btn.style.opacity = '.5';
 });
+
+/* ===================== ORBITAL HERO GRAPHIC ===================== */
+(function(){
+  const cv = document.getElementById('orbitalCv');
+  if(!cv) return;
+  const cx = cv.getContext('2d');
+  const SZ = Math.min(300, innerWidth - 40);
+  cv.width = SZ; cv.height = SZ;
+  const OX = SZ/2, OY = SZ/2;
+
+  const rings = [
+    {rx:SZ*.28,ry:SZ*.09,tilt:.32, spd:.009, ph:0,           col:'255,154,82',  dotR:4, trail:10},
+    {rx:SZ*.37,ry:SZ*.13,tilt:-.22,spd:-.006,ph:Math.PI*.65, col:'185,164,255', dotR:3, trail:8},
+    {rx:SZ*.45,ry:SZ*.17,tilt:.10, spd:.004, ph:Math.PI*1.3, col:'126,224,168', dotR:3, trail:7},
+  ];
+  const trails = rings.map(()=>[]);
+  let t = 0;
+
+  function getPos(ring, angle){
+    const ex = ring.rx*Math.cos(angle), ey = ring.ry*Math.sin(angle);
+    const c = Math.cos(ring.tilt), s = Math.sin(ring.tilt);
+    return {x: OX + ex*c - ey*s, y: OY + ex*s + ey*c};
+  }
+
+  function tick(){
+    cx.clearRect(0,0,SZ,SZ);
+
+    // Outer atmosphere glow
+    const ag = cx.createRadialGradient(OX,OY,SZ*.04,OX,OY,SZ*.5);
+    ag.addColorStop(0,'rgba(255,154,82,.04)');
+    ag.addColorStop(.5,'rgba(185,164,255,.02)');
+    ag.addColorStop(1,'rgba(0,0,0,0)');
+    cx.fillStyle=ag; cx.fillRect(0,0,SZ,SZ);
+
+    // Rings
+    rings.forEach(ring=>{
+      cx.save(); cx.translate(OX,OY); cx.rotate(ring.tilt);
+      cx.beginPath(); cx.ellipse(0,0,ring.rx,ring.ry,0,0,Math.PI*2);
+      cx.strokeStyle='rgba(255,255,255,.07)'; cx.lineWidth=1; cx.stroke();
+      cx.restore();
+    });
+
+    // Central core glow
+    const cg = cx.createRadialGradient(OX,OY,0,OX,OY,SZ*.11);
+    cg.addColorStop(0,'rgba(255,154,82,.65)');
+    cg.addColorStop(.3,'rgba(185,164,255,.25)');
+    cg.addColorStop(1,'rgba(0,0,0,0)');
+    cx.fillStyle=cg; cx.beginPath(); cx.arc(OX,OY,SZ*.11,0,Math.PI*2); cx.fill();
+
+    // Core dot
+    cx.beginPath(); cx.arc(OX,OY,3.5,0,Math.PI*2);
+    cx.fillStyle='#fbf3ea'; cx.fill();
+
+    // Orbital dots + trails
+    rings.forEach((ring,i)=>{
+      const angle = t*ring.spd+ring.ph;
+      const pos = getPos(ring, angle);
+      trails[i].unshift({...pos});
+      if(trails[i].length>ring.trail) trails[i].pop();
+
+      trails[i].forEach((tp,ti)=>{
+        const a = (1-ti/ring.trail)*.45;
+        const r = ring.dotR*(1-ti/ring.trail*.65);
+        if(r<=0) return;
+        cx.beginPath(); cx.arc(tp.x,tp.y,r,0,Math.PI*2);
+        cx.fillStyle=`rgba(${ring.col},${a})`; cx.fill();
+      });
+
+      // Glow halo
+      const rg = cx.createRadialGradient(pos.x,pos.y,0,pos.x,pos.y,ring.dotR*4.5);
+      rg.addColorStop(0,`rgba(${ring.col},.85)`);
+      rg.addColorStop(1,`rgba(${ring.col},0)`);
+      cx.fillStyle=rg; cx.beginPath(); cx.arc(pos.x,pos.y,ring.dotR*4.5,0,Math.PI*2); cx.fill();
+
+      // Dot
+      cx.beginPath(); cx.arc(pos.x,pos.y,ring.dotR,0,Math.PI*2);
+      cx.fillStyle=`rgb(${ring.col})`; cx.fill();
+    });
+
+    t++; requestAnimationFrame(tick);
+  }
+  tick();
+})();
+
+/* ===================== YES / NO INTERACTION ===================== */
+(function(){
+  const btnYes  = document.getElementById('btnYes');
+  const btnNo   = document.getElementById('btnNo');
+  const resp    = document.getElementById('yesnoResp');
+  if(!btnYes||!btnNo||!resp) return;
+  let answered  = false;
+
+  btnYes.addEventListener('click',()=>{
+    if(answered) return; answered = true;
+    resp.innerHTML = `<span class="ok">✓</span>&nbsp;That's exactly the problem Orlix was built to solve. Set the rules once — Orlix governs the outcomes. <a href="#problem" data-action="goto" data-target="problem" style="color:var(--amber);border-bottom:1px dotted rgba(255,154,82,.4)">See the problem →</a>`;
+    resp.classList.add('open');
+    btnYes.classList.add('active-yes'); btnNo.classList.add('faded');
+    setTimeout(()=>gotoSection('problem'), 700);
+  });
+
+  btnNo.addEventListener('click',()=>{
+    if(answered) return; answered = true;
+    resp.innerHTML = `<span class="hl">Impressive.</span>&nbsp;<span class="dim">You're either way ahead of everyone — or you're exactly the operator we're building for.</span>&nbsp;<a href="#access" data-action="goto" data-target="access" style="color:var(--amber);border-bottom:1px dotted rgba(255,154,82,.4)">Get early access →</a>`;
+    resp.classList.add('open');
+    btnNo.classList.add('active-no'); btnYes.classList.add('faded');
+  });
+})();
 
 /* ===================== COSMIC BACKGROUND ===================== */
 (function(){
