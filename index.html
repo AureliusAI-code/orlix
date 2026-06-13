@@ -244,14 +244,13 @@ section:last-of-type{border-bottom:none}
 /* ====== footer ====== */
 footer{padding:36px 0 60px;font-size:.78rem;color:var(--dim)}
 .foot-echo{margin-bottom:28px;font-size:.82rem;line-height:1.8}
-.foot-grid{display:grid;grid-template-columns:1fr repeat(2,auto);gap:32px;align-items:start}
-.foot-copy{color:var(--dim);font-size:.76rem;line-height:1.8}
-.foot-col{}
+.foot-grid{display:flex;flex-wrap:wrap;gap:32px 48px;align-items:start}
+.foot-copy{flex:1;min-width:200px;color:var(--dim);font-size:.76rem;line-height:1.8}
+.foot-cols{display:flex;gap:48px;flex-shrink:0}
 .foot-col .col-label{color:var(--dim-2);font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;display:block}
 .foot-col a{display:block;border-bottom:none;color:var(--dim);font-size:.76rem;padding:3px 0;transition:.15s}
 .foot-col a:hover{color:var(--amber)}
-@media(max-width:680px){.foot-grid{grid-template-columns:1fr 1fr;row-gap:24px}}
-@media(max-width:400px){.foot-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:480px){.foot-copy{min-width:100%;}.foot-cols{gap:32px}}
 
 .muted{color:var(--dim);font-size:.8rem}
 
@@ -615,15 +614,17 @@ every spark fading into void.</div>
       <div class="foot-copy">
         © 2026 Orlix<br>local-first, sovereign, auditable.
       </div>
-      <div class="foot-col">
-        <span class="col-label">resources</span>
-        <a href="docs.html">docs</a>
-        <a href="changelog.html">changelog</a>
-      </div>
-      <div class="foot-col">
-        <span class="col-label">legal</span>
-        <a href="terms.html">terms</a>
-        <a href="privacy.html">privacy</a>
+      <div class="foot-cols">
+        <div class="foot-col">
+          <span class="col-label">resources</span>
+          <a href="docs.html">docs</a>
+          <a href="changelog.html">changelog</a>
+        </div>
+        <div class="foot-col">
+          <span class="col-label">legal</span>
+          <a href="terms.html">terms</a>
+          <a href="privacy.html">privacy</a>
+        </div>
       </div>
     </div>
   </div>
