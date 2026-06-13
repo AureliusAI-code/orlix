@@ -302,6 +302,7 @@ footer{padding:36px 0 60px;font-size:.78rem;color:var(--dim)}
 
 /* ====== cosmic background ====== */
 #cosmicBg{position:fixed;inset:0;z-index:0;pointer-events:none}
+#nerveBg{position:fixed;inset:0;z-index:0;pointer-events:none}
 main,footer{position:relative;z-index:1}
 
 /* ====== particle editor ====== */
@@ -332,6 +333,7 @@ main,footer{position:relative;z-index:1}
 <body>
 
 <canvas id="cosmicBg"></canvas>
+<canvas id="nerveBg"></canvas>
 <div class="crt"></div>
 <div class="vignette"></div>
 
@@ -1048,6 +1050,165 @@ document.getElementById('accessForm').addEventListener('submit', (e) => {
     resp.classList.add('open');
     btnNo.classList.add('active-no'); btnYes.classList.add('faded');
   });
+})();
+
+/* ===================== NERVE NETWORK BACKGROUND ===================== */
+(function(){
+  const cv = document.getElementById('nerveBg');
+  const cx = cv.getContext('2d');
+  const N = 22;
+  let nodes = [], edges = [], W, H;
+
+  function resize(){
+    W = cv.width = innerWidth;
+    H = cv.height = innerHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  function init(){
+    nodes = [];
+    edges = [];
+    for(let i=0;i<N;i++){
+      nodes.push({
+        x:(0.05+Math.random()*.9)*W,
+        y:(0.05+Math.random()*.9)*H,
+        vx:(Math.random()-.5)*.18,
+        vy:(Math.random()-.5)*.12,
+        w:Math.random(),
+        pa:0, pv:0
+      });
+    }
+    const conn=new Set([0]);
+    const rem=Array.from({length:N-1},(_,i)=>i+1);
+    while(conn.size<N){
+      const from=[...conn][Math.floor(Math.random()*conn.size)];
+      const ti=Math.floor(Math.random()*rem.length);
+      edges.push([from,rem[ti]]);
+      conn.add(rem[ti]);
+      rem.splice(ti,1);
+    }
+    for(let i=0;i<28;i++){
+      const a=Math.floor(Math.random()*N),b=Math.floor(Math.random()*N);
+      if(a!==b&&!edges.some(e=>(e[0]===a&&e[1]===b)||(e[0]===b&&e[1]===a)))
+        edges.push([a,b]);
+    }
+  }
+  init();
+
+  function getPath(start){
+    const vis=new Set([start]);
+    const path=[start];
+    let cur=start;
+    for(let s=0;s<8;s++){
+      const nb=edges
+        .filter(e=>e[0]===cur||e[1]===cur)
+        .map(e=>e[0]===cur?e[1]:e[0])
+        .filter(n=>!vis.has(n));
+      if(!nb.length) break;
+      const best=nb.reduce((a,b)=>nodes[a].w>nodes[b].w?a:b);
+      vis.add(best);path.push(best);cur=best;
+    }
+    return path;
+  }
+
+  let pathA=getPath(0), pathV=getPath(Math.floor(N/2));
+  let t=0;
+  let lastRepath=0;
+
+  function tick(){
+    t+=0.016;
+
+    // drift nodes gently
+    nodes.forEach(n=>{
+      n.x+=n.vx; n.y+=n.vy;
+      if(n.x<0||n.x>W) n.vx*=-1;
+      if(n.y<0||n.y>H) n.vy*=-1;
+    });
+
+    // repath every ~3s, pick random starts
+    if(t-lastRepath>3){
+      lastRepath=t;
+      pathA=getPath(Math.floor(Math.random()*N));
+      pathV=getPath(Math.floor(Math.random()*N));
+    }
+
+    // decay pulses
+    nodes.forEach(n=>{n.pa*=0.93;n.pv*=0.93;});
+
+    // pulse along amber path
+    const segA=Math.floor(t*1.4)%Math.max(pathA.length-1,1);
+    if(pathA[segA]!=null)   nodes[pathA[segA]].pa=1;
+    if(pathA[segA+1]!=null) nodes[pathA[segA+1]].pa=Math.min(1,nodes[pathA[segA+1]].pa+0.6);
+
+    // pulse along violet path
+    const segV=Math.floor(t*1.1)%Math.max(pathV.length-1,1);
+    if(pathV[segV]!=null)   nodes[pathV[segV]].pv=1;
+    if(pathV[segV+1]!=null) nodes[pathV[segV+1]].pv=Math.min(1,nodes[pathV[segV+1]].pv+0.6);
+  }
+
+  function draw(){
+    cx.clearRect(0,0,W,H);
+
+    // base edges
+    cx.lineWidth=1;
+    edges.forEach(([ai,bi])=>{
+      const a=nodes[ai],b=nodes[bi];
+      cx.strokeStyle='rgba(255,255,255,0.045)';
+      cx.beginPath();cx.moveTo(a.x,a.y);cx.lineTo(b.x,b.y);cx.stroke();
+    });
+
+    // amber active path
+    for(let i=0;i<pathA.length-1;i++){
+      const a=nodes[pathA[i]],b=nodes[pathA[i+1]];
+      const al=0.38-i*0.045;if(al<=0) break;
+      cx.strokeStyle=`rgba(255,154,82,${al})`;
+      cx.lineWidth=1.5;
+      cx.beginPath();cx.moveTo(a.x,a.y);cx.lineTo(b.x,b.y);cx.stroke();
+    }
+
+    // violet active path
+    for(let i=0;i<pathV.length-1;i++){
+      const a=nodes[pathV[i]],b=nodes[pathV[i+1]];
+      const al=0.38-i*0.045;if(al<=0) break;
+      cx.strokeStyle=`rgba(185,164,255,${al})`;
+      cx.lineWidth=1.5;
+      cx.beginPath();cx.moveTo(a.x,a.y);cx.lineTo(b.x,b.y);cx.stroke();
+    }
+
+    // nodes
+    nodes.forEach(n=>{
+      const pt=n.pa+n.pv;
+      const baseR=2.5+n.w*3;
+      const r=baseR+pt*5;
+
+      if(pt>0.05){
+        const d=pt||1;
+        const lr=((255*n.pa+185*n.pv)/d)|0;
+        const lg=((154*n.pa+164*n.pv)/d)|0;
+        const lb=((82*n.pa+255*n.pv)/d)|0;
+        const grd=cx.createRadialGradient(n.x,n.y,0,n.x,n.y,r*3.5);
+        grd.addColorStop(0,`rgba(${lr},${lg},${lb},${pt*.45})`);
+        grd.addColorStop(1,'rgba(0,0,0,0)');
+        cx.fillStyle=grd;
+        cx.fillRect(n.x-r*3.5,n.y-r*3.5,r*7,r*7);
+      }
+
+      cx.beginPath();cx.arc(n.x,n.y,r,0,Math.PI*2);
+      if(pt>0.05){
+        const d=pt||1;
+        const lr=((255*n.pa+185*n.pv)/d)|0;
+        const lg=((154*n.pa+164*n.pv)/d)|0;
+        const lb=((82*n.pa+255*n.pv)/d)|0;
+        cx.fillStyle=`rgba(${lr},${lg},${lb},${Math.min(pt,.95)})`;
+      } else {
+        cx.fillStyle=`rgba(216,207,196,${0.18+n.w*.18})`;
+      }
+      cx.fill();
+    });
+  }
+
+  (function loop(){tick();draw();requestAnimationFrame(loop);})();
 })();
 
 /* ===================== COSMIC BACKGROUND ===================== */
