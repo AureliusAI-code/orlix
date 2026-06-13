@@ -311,6 +311,14 @@ main,footer{position:relative;z-index:1}
 .pe-legend{display:flex;flex-wrap:wrap;gap:8px 14px;padding:11px 16px;border-top:1px solid var(--line);background:#120e0b;font-size:.71rem}
 .pe-le{display:flex;align-items:center;gap:5px;color:var(--dim)}
 .pe-le .dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+
+/* ====== reading progress + scroll reveal ====== */
+#rp{position:fixed;top:46px;left:0;height:2px;z-index:99;pointer-events:none;
+  background:linear-gradient(90deg,var(--amber),var(--violet));width:0%;transition:width .12s linear}
+.sr{opacity:0;transform:translateY(26px)}
+.sr.in{opacity:1;transform:none;
+  transition:opacity .72s cubic-bezier(.22,1,.36,1),transform .72s cubic-bezier(.22,1,.36,1);
+  transition-delay:var(--sd,0ms)}
 </style>
 </head>
 <body>
@@ -1292,6 +1300,62 @@ document.getElementById('accessForm').addEventListener('submit', (e) => {
   window.addEventListener('resize',()=>{syncSize();scanSources();});
 
   setTimeout(()=>{highlight();setTimeout(()=>{scanSources();animate();},100);},80);
+})();
+
+/* ===================== READING PROGRESS + SCROLL REVEAL ===================== */
+(function(){
+  /* progress bar */
+  const rp = document.createElement('div');
+  rp.id = 'rp';
+  document.body.appendChild(rp);
+  window.addEventListener('scroll', () => {
+    const max = document.documentElement.scrollHeight - window.innerHeight;
+    if(max > 0) rp.style.width = (window.scrollY / max * 100) + '%';
+  }, {passive:true});
+
+  function makeReveal(el, delay){
+    if(!el || el.closest('.hero')) return;
+    el.classList.add('sr');
+    if(delay) el.style.setProperty('--sd', delay + 'ms');
+    const obs = new IntersectionObserver(e => {
+      if(e[0].isIntersecting){ el.classList.add('in'); obs.disconnect(); }
+    }, {threshold: 0.08, rootMargin: '0px 0px -30px 0px'});
+    obs.observe(el);
+  }
+
+  setTimeout(() => {
+    /* single block reveals */
+    document.querySelectorAll('.sec-head, .hero-sub, .jsonview, .cmd-row, .particle-editor, .yesno-block').forEach(el => makeReveal(el));
+
+    /* stagger: tbl rows, filelist rows, diff rows */
+    document.querySelectorAll('.tbl, .filelist, .diff').forEach(parent => {
+      if(parent.closest('.hero')) return;
+      const kids = Array.from(parent.children);
+      kids.forEach((kid, i) => {
+        kid.classList.add('sr');
+        kid.style.setProperty('--sd', i * 75 + 'ms');
+      });
+      const obs = new IntersectionObserver(e => {
+        if(e[0].isIntersecting){ kids.forEach(k => k.classList.add('in')); obs.disconnect(); }
+      }, {threshold: 0.04, rootMargin: '0px 0px -20px 0px'});
+      obs.observe(parent);
+    });
+
+    /* stagger: roadmap log-rows */
+    const logGroups = new Map();
+    document.querySelectorAll('.log-row').forEach(r => {
+      const p = r.parentElement;
+      if(!logGroups.has(p)) logGroups.set(p, []);
+      logGroups.get(p).push(r);
+    });
+    logGroups.forEach((rows, parent) => {
+      rows.forEach((r, i) => { r.classList.add('sr'); r.style.setProperty('--sd', i * 85 + 'ms'); });
+      const obs = new IntersectionObserver(e => {
+        if(e[0].isIntersecting){ rows.forEach(r => r.classList.add('in')); obs.disconnect(); }
+      }, {threshold: 0.04, rootMargin: '0px 0px -20px 0px'});
+      obs.observe(parent);
+    });
+  }, 300);
 })();
 
 /* ===================== back to top ===================== */
