@@ -243,11 +243,15 @@ section:last-of-type{border-bottom:none}
 
 /* ====== footer ====== */
 footer{padding:36px 0 60px;font-size:.78rem;color:var(--dim)}
-.foot-grid{display:flex;justify-content:space-between;flex-wrap:wrap;gap:16px}
-.foot-links{display:flex;gap:16px;flex-wrap:wrap}
-.foot-links a{border-bottom:none;color:var(--dim);font-size:.76rem}
-.foot-links a:hover{color:var(--amber)}
-.foot-echo{margin-bottom:18px;font-size:.82rem;line-height:1.8}
+.foot-echo{margin-bottom:28px;font-size:.82rem;line-height:1.8}
+.foot-grid{display:grid;grid-template-columns:1fr repeat(3,auto);gap:32px;align-items:start}
+.foot-copy{color:var(--dim);font-size:.76rem;line-height:1.8}
+.foot-col{}
+.foot-col .col-label{color:var(--dim-2);font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;display:block}
+.foot-col a{display:block;border-bottom:none;color:var(--dim);font-size:.76rem;padding:3px 0;transition:.15s}
+.foot-col a:hover{color:var(--amber)}
+@media(max-width:680px){.foot-grid{grid-template-columns:1fr 1fr;row-gap:24px}}
+@media(max-width:400px){.foot-grid{grid-template-columns:1fr 1fr}}
 
 .muted{color:var(--dim);font-size:.8rem}
 
@@ -290,7 +294,7 @@ footer{padding:36px 0 60px;font-size:.78rem;color:var(--dim)}
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.747l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
       </a>
       <span class="live"><span class="pip"></span>connected</span>
-      <a href="#product" class="docs-link">docs</a>
+      <a href="docs.html" class="docs-link">docs</a>
       <button id="navAccess" type="button">access</button>
     </div>
   </div>
@@ -549,8 +553,11 @@ footer{padding:36px 0 60px;font-size:.78rem;color:var(--dim)}
       <br><span class="ok">the future of AI is not assistance — it's partnership.</span>
     </div>
     <div class="foot-grid">
-      <div>© 2026 Orlix — local-first, sovereign, auditable.</div>
-      <div class="foot-links">
+      <div class="foot-copy">
+        © 2026 Orlix<br>local-first, sovereign, auditable.
+      </div>
+      <div class="foot-col">
+        <span class="col-label">navigate</span>
         <a href="#top" data-action="goto" data-target="top">top</a>
         <a href="#problem" data-action="goto" data-target="problem">problem</a>
         <a href="#product" data-action="goto" data-target="product">product</a>
@@ -558,6 +565,16 @@ footer{padding:36px 0 60px;font-size:.78rem;color:var(--dim)}
         <a href="#memory" data-action="goto" data-target="memory">memory</a>
         <a href="#roadmap" data-action="goto" data-target="roadmap">roadmap</a>
         <a href="#access" data-action="goto" data-target="access">access</a>
+      </div>
+      <div class="foot-col">
+        <span class="col-label">resources</span>
+        <a href="docs.html">docs</a>
+        <a href="changelog.html">changelog</a>
+      </div>
+      <div class="foot-col">
+        <span class="col-label">legal</span>
+        <a href="terms.html">terms</a>
+        <a href="privacy.html">privacy</a>
       </div>
     </div>
   </div>
