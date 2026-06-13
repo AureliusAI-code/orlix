@@ -126,8 +126,6 @@ section:last-of-type{border-bottom:none}
 .hero-sub{color:var(--text);max-width:64ch;margin-bottom:22px;font-size:.92rem;line-height:1.85}
 
 /* orbital */
-.orbital-wrap{display:flex;justify-content:center;margin:36px 0 40px}
-#orbitalCv{display:block;max-width:100%}
 
 /* yes/no */
 .yesno-block{margin:28px 0;padding:26px 28px;border:1px solid var(--line-bright);border-radius:8px;background:rgba(21,16,12,.7);backdrop-filter:blur(8px);max-width:560px}
@@ -366,9 +364,6 @@ main,footer{position:relative;z-index:1}
     <div class="boot" id="bootLog"></div>
 
     <!-- orbital graphic -->
-    <div class="orbital-wrap">
-      <canvas id="orbitalCv"></canvas>
-    </div>
 
     <p class="hero-eyebrow">personal AI operating system</p>
     <h1 class="hero-title">Stop prompt-chasing.<br><span class="amber-hl">Own the control layer.</span></h1>
@@ -941,89 +936,6 @@ document.getElementById('accessForm').addEventListener('submit', (e) => {
   btn.disabled = true;
   btn.style.opacity = '.5';
 });
-
-/* ===================== ORBITAL HERO GRAPHIC ===================== */
-(function(){
-  const cv = document.getElementById('orbitalCv');
-  if(!cv) return;
-  const cx = cv.getContext('2d');
-  const SZ = Math.min(300, innerWidth - 40);
-  cv.width = SZ; cv.height = SZ;
-  const OX = SZ/2, OY = SZ/2;
-
-  const rings = [
-    {rx:SZ*.28,ry:SZ*.09,tilt:.32, spd:.009, ph:0,           col:'255,154,82',  dotR:4, trail:10},
-    {rx:SZ*.37,ry:SZ*.13,tilt:-.22,spd:-.006,ph:Math.PI*.65, col:'185,164,255', dotR:3, trail:8},
-    {rx:SZ*.45,ry:SZ*.17,tilt:.10, spd:.004, ph:Math.PI*1.3, col:'126,224,168', dotR:3, trail:7},
-  ];
-  const trails = rings.map(()=>[]);
-  let t = 0;
-
-  function getPos(ring, angle){
-    const ex = ring.rx*Math.cos(angle), ey = ring.ry*Math.sin(angle);
-    const c = Math.cos(ring.tilt), s = Math.sin(ring.tilt);
-    return {x: OX + ex*c - ey*s, y: OY + ex*s + ey*c};
-  }
-
-  function tick(){
-    cx.clearRect(0,0,SZ,SZ);
-
-    // Outer atmosphere glow
-    const ag = cx.createRadialGradient(OX,OY,SZ*.04,OX,OY,SZ*.5);
-    ag.addColorStop(0,'rgba(255,154,82,.04)');
-    ag.addColorStop(.5,'rgba(185,164,255,.02)');
-    ag.addColorStop(1,'rgba(0,0,0,0)');
-    cx.fillStyle=ag; cx.fillRect(0,0,SZ,SZ);
-
-    // Rings
-    rings.forEach(ring=>{
-      cx.save(); cx.translate(OX,OY); cx.rotate(ring.tilt);
-      cx.beginPath(); cx.ellipse(0,0,ring.rx,ring.ry,0,0,Math.PI*2);
-      cx.strokeStyle='rgba(255,255,255,.07)'; cx.lineWidth=1; cx.stroke();
-      cx.restore();
-    });
-
-    // Central core glow
-    const cg = cx.createRadialGradient(OX,OY,0,OX,OY,SZ*.11);
-    cg.addColorStop(0,'rgba(255,154,82,.65)');
-    cg.addColorStop(.3,'rgba(185,164,255,.25)');
-    cg.addColorStop(1,'rgba(0,0,0,0)');
-    cx.fillStyle=cg; cx.beginPath(); cx.arc(OX,OY,SZ*.11,0,Math.PI*2); cx.fill();
-
-    // Core dot
-    cx.beginPath(); cx.arc(OX,OY,3.5,0,Math.PI*2);
-    cx.fillStyle='#fbf3ea'; cx.fill();
-
-    // Orbital dots + trails
-    rings.forEach((ring,i)=>{
-      const angle = t*ring.spd+ring.ph;
-      const pos = getPos(ring, angle);
-      trails[i].unshift({...pos});
-      if(trails[i].length>ring.trail) trails[i].pop();
-
-      trails[i].forEach((tp,ti)=>{
-        const a = (1-ti/ring.trail)*.45;
-        const r = ring.dotR*(1-ti/ring.trail*.65);
-        if(r<=0) return;
-        cx.beginPath(); cx.arc(tp.x,tp.y,r,0,Math.PI*2);
-        cx.fillStyle=`rgba(${ring.col},${a})`; cx.fill();
-      });
-
-      // Glow halo
-      const rg = cx.createRadialGradient(pos.x,pos.y,0,pos.x,pos.y,ring.dotR*4.5);
-      rg.addColorStop(0,`rgba(${ring.col},.85)`);
-      rg.addColorStop(1,`rgba(${ring.col},0)`);
-      cx.fillStyle=rg; cx.beginPath(); cx.arc(pos.x,pos.y,ring.dotR*4.5,0,Math.PI*2); cx.fill();
-
-      // Dot
-      cx.beginPath(); cx.arc(pos.x,pos.y,ring.dotR,0,Math.PI*2);
-      cx.fillStyle=`rgb(${ring.col})`; cx.fill();
-    });
-
-    t++; requestAnimationFrame(tick);
-  }
-  tick();
-})();
 
 /* ===================== YES / NO INTERACTION ===================== */
 (function(){
