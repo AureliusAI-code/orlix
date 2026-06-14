@@ -515,6 +515,13 @@ select.inp{cursor:pointer}
           </div>
 
           <div id="bkKeySaved" style="color:var(--green);font-size:.74rem;display:none">✓ API key saved</div>
+
+          <div style="border-top:1px solid rgba(255,255,255,.06);padding-top:18px;margin-top:4px">
+            <div class="setting-label" style="margin-bottom:6px">Connection Diagnostic</div>
+            <button class="btn" id="testPingBtn" style="font-size:.78rem">Test /api/ping</button>
+            <button class="btn" id="testChatBtn" style="font-size:.78rem;margin-left:8px">Test /api/chat</button>
+            <div id="diagResult" style="margin-top:10px;font-size:.74rem;font-family:'JetBrains Mono',monospace;line-height:1.6;white-space:pre-wrap;color:var(--dim)"></div>
+          </div>
         </div>
       </div>
       <div class="panel">
@@ -979,31 +986,38 @@ updateBanner();
 async function apiFetch(key, bodyObj){
   const bodyStr = JSON.stringify(bodyObj);
   const h = {'Content-Type':'application/json','x-api-key':key};
+  const errors = [];
 
-  // 1. Same-origin /api/chat (Vercel / CF Pages / local server)
-  // Only skip if the route doesn't exist (404) — any other status is a real bankr.bot response
+  if(!key){
+    throw new Error('No API key saved. Go to Settings → API Key and save your bankr.bot key.');
+  }
+
+  // 1. Same-origin /api/chat (Vercel serverless function — no CORS)
   try{
     const r = await fetch('/api/chat',{method:'POST',headers:h,body:bodyStr});
     if(r.status !== 404) return r;
-  }catch(_){}
+    errors.push('/api/chat: 404 (function not deployed on Vercel yet)');
+  }catch(e){ errors.push('/api/chat: '+e.message); }
 
-  // 2. User-configured proxy URL from Settings
+  // 2. User-configured proxy URL
   const customProxy = getProxyUrl();
   if(customProxy){
     try{
       const r = await fetch(customProxy,{method:'POST',headers:h,body:bodyStr});
       if(r.status !== 404) return r;
-    }catch(_){}
+      errors.push('custom proxy: 404');
+    }catch(e){ errors.push('custom proxy: '+e.message); }
   }
 
   // 3. corsproxy.io
   try{
     const r = await fetch(`https://corsproxy.io/?url=${encodeURIComponent('https://api.bankr.bot/v1/messages')}`,{method:'POST',headers:h,body:bodyStr});
     if(r.ok) return r;
-  }catch(_){}
+    errors.push('corsproxy.io: HTTP '+r.status);
+  }catch(e){ errors.push('corsproxy.io: '+e.message); }
 
-  // 4. Direct — last resort
-  return fetch('https://api.bankr.bot/v1/messages',{method:'POST',headers:h,body:bodyStr});
+  // All paths failed — throw with diagnostics
+  throw new Error('All proxy routes failed:\n'+errors.join('\n')+'\n\nMake sure Vercel has redeployed after the latest git push.');
 }
 
 function parseReply(data){
@@ -1093,6 +1107,41 @@ document.getElementById('bkSaveProxy').addEventListener('click',()=>{
   saved.style.display='';
   setTimeout(()=>saved.style.display='none',2500);
   updateBanner();
+});
+
+document.getElementById('testPingBtn').addEventListener('click', async()=>{
+  const el = document.getElementById('diagResult');
+  el.style.color='var(--dim)';
+  el.textContent = 'Testing /api/ping...';
+  try{
+    const r = await fetch('/api/ping');
+    const text = await r.text();
+    if(r.ok){ el.style.color='var(--green)'; el.textContent='✓ /api/ping OK ('+r.status+')\n'+text+'\n\nVercel function is deployed and working!'; }
+    else{ el.style.color='var(--amber)'; el.textContent='✗ /api/ping returned '+r.status+'\n'+text; }
+  }catch(e){ el.style.color='#ff6b6b'; el.textContent='✗ /api/ping failed: '+e.message+'\n\nVercel function not deployed. Redeploy on Vercel dashboard.'; }
+});
+
+document.getElementById('testChatBtn').addEventListener('click', async()=>{
+  const el = document.getElementById('diagResult');
+  const key = getApiKey();
+  el.style.color='var(--dim)';
+  el.textContent = 'Testing /api/chat...';
+  try{
+    const r = await fetch('/api/chat',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':key||'test'},
+      body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:10,messages:[{role:'user',content:'hi'}]})
+    });
+    const text = await r.text();
+    const status = r.status;
+    if(status===401||status===200||status===400){
+      el.style.color='var(--green)';
+      el.textContent='✓ /api/chat reachable (HTTP '+status+')\n'+text.slice(0,300);
+    } else {
+      el.style.color='var(--amber)';
+      el.textContent='? /api/chat returned HTTP '+status+'\n'+text.slice(0,300);
+    }
+  }catch(e){ el.style.color='#ff6b6b'; el.textContent='✗ /api/chat failed: '+e.message+'\n\nVercel function not deployed. Go to Vercel → Deployments → Redeploy.'; }
 });
 
 // ───────── INIT ─────────
