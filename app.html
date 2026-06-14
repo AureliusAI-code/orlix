@@ -1200,10 +1200,8 @@ function renderContent(text){
     const id     = 'c'+(++_codeIdx);
     _codeStore[id] = code; // store raw — never HTML-escaped
 
-    const isHtml = lang==='html'||lang==='htm'||lang===''||/^\s*<!/.test(code)||/<html/i.test(code);
     const label  = lang||'code';
-    const previewBtn = isHtml
-      ? `<button class="preview-btn" onclick="openPreview('${id}')">▶ Preview</button>` : '';
+    const previewBtn = `<button class="preview-btn" onclick="openPreview('${id}')">▶ Preview</button>`;
     result += `<div class="code-block">
       <div class="code-header">
         <span class="code-lang">${esc2(label)}</span>
