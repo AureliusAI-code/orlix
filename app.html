@@ -518,18 +518,7 @@ select.inp{cursor:pointer}
             <div id="bkProxySaved" style="color:var(--green);font-size:.74rem;margin-top:6px;display:none">✓ proxy URL saved</div>
           </div>
 
-          <div style="border-top:1px solid rgba(255,255,255,.06);padding-top:18px;margin-top:4px">
-            <div class="setting-label" style="margin-bottom:4px">x402 Pay-per-use <span style="color:var(--violet);font-size:.72rem;font-weight:400">$0.01 USDC / request</span></div>
-            <div class="setting-desc" style="margin-bottom:10px">
-              Alternative to API keys — pay per request using your crypto wallet. Requires <code style="background:rgba(0,0,0,.3);padding:1px 5px;border-radius:3px">BANKR_PRIVATE_KEY</code> set in Vercel Environment Variables. Leave your API key blank to activate this mode.
-            </div>
-            <div style="background:rgba(185,164,255,.06);border:1px solid rgba(185,164,255,.15);border-radius:6px;padding:12px 14px;font-size:.76rem;font-family:'JetBrains Mono',monospace;color:var(--dim);line-height:1.7">
-              1. Go to <span style="color:var(--amber)">vercel.com → your project → Settings → Environment Variables</span><br>
-              2. Add: <span style="color:var(--violet)">BANKR_PRIVATE_KEY</span> = your EVM wallet private key<br>
-              3. Redeploy — leave API key field empty to use $0.01 USDC/request mode<br>
-              4. Endpoint: <span style="color:var(--green)">x402.bankr.bot</span> via bankr SDK (auto-handles payment)
-            </div>
-          </div>
+
 
           <div id="bkKeySaved" style="color:var(--green);font-size:.74rem;display:none">✓ API key saved</div>
 

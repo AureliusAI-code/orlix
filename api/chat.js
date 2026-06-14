@@ -41,11 +41,18 @@ module.exports = async function handler(req, res) {
 
   // ── OpenAI ────────────────────────────────────────────────────────────────
   if (isOpenAI) {
-    const key = process.env.OPENAI_API_KEY || process.env.OPENAI_KEY || '';
-    if (!key) return res.status(401).json({ error: { message: 'OPENAI_API_KEY not set in Vercel Environment Variables.' } });
+    const key = process.env.OPENAI_API_KEY || process.env.OPEN_AI_API_KEY || process.env.OPENAI_KEY || process.env.OPEN_AI_KEY || '';
+    if (!key) return res.status(401).json({ error: { message: 'OpenAI API key not found. Add OPENAI_API_KEY in Vercel → Settings → Environment Variables, then redeploy.' } });
     try {
       const r = await callCompat('https://api.openai.com/v1/chat/completions', key);
-      return res.status(r.status).setHeader('Content-Type','application/json').send(await r.text());
+      const text = await r.text();
+      if (!r.ok) {
+        // Return OpenAI's own error message so user can see what's wrong
+        let msg = text;
+        try { msg = JSON.parse(text).error?.message || text; } catch {}
+        return res.status(r.status).json({ error: { message: 'OpenAI: ' + msg } });
+      }
+      return res.status(r.status).setHeader('Content-Type','application/json').send(text);
     } catch(e) { return res.status(502).json({ error:{ message:'OpenAI error: '+e.message } }); }
   }
 
