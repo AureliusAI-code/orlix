@@ -349,7 +349,7 @@ main,footer{position:relative;z-index:1}
       </a>
       <span class="live"><span class="pip"></span>connected</span>
       <a href="docs.html" class="docs-link">docs</a>
-      <a href="app.html" style="color:var(--amber);border-bottom:none;font-size:.76rem">dashboard →</a>
+      <a href="/app" style="color:var(--amber);border-bottom:none;font-size:.76rem">dashboard →</a>
       <button id="navAccess" type="button">access</button>
     </div>
   </div>
@@ -847,7 +847,7 @@ const commands = {
   },
   app(){
     printLine(`→ launching orlix dashboard…`, 'ok');
-    setTimeout(()=>window.open('app.html','_blank'), 400);
+    setTimeout(()=>window.open('/app','_blank'), 400);
   },
   orlix(args){
     if(args[0]==='app'){ commands.app(); }
