@@ -968,28 +968,29 @@ async function apiFetch(key, bodyObj){
   const bodyStr = JSON.stringify(bodyObj);
   const h = {'Content-Type':'application/json','x-api-key':key};
 
-  // 1. Same-origin /api/chat — works on localhost AND Cloudflare Pages
+  // 1. Same-origin /api/chat (Vercel / CF Pages / local server)
+  // Only skip if the route doesn't exist (404) — any other status is a real bankr.bot response
   try{
     const r = await fetch('/api/chat',{method:'POST',headers:h,body:bodyStr});
-    if(r.status < 500) return r;
+    if(r.status !== 404) return r;
   }catch(_){}
 
-  // 2. User-configured proxy (Cloudflare Worker URL from Settings)
+  // 2. User-configured proxy URL from Settings
   const customProxy = getProxyUrl();
   if(customProxy){
     try{
       const r = await fetch(customProxy,{method:'POST',headers:h,body:bodyStr});
-      if(r.status < 500) return r;
+      if(r.status !== 404) return r;
     }catch(_){}
   }
 
   // 3. corsproxy.io
   try{
     const r = await fetch(`https://corsproxy.io/?url=${encodeURIComponent('https://api.bankr.bot/v1/messages')}`,{method:'POST',headers:h,body:bodyStr});
-    if(r.status < 500) return r;
+    if(r.ok) return r;
   }catch(_){}
 
-  // 4. Direct (last resort — works if bankr.bot ever enables CORS)
+  // 4. Direct — last resort
   return fetch('https://api.bankr.bot/v1/messages',{method:'POST',headers:h,body:bodyStr});
 }
 
