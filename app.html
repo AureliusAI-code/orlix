@@ -172,6 +172,45 @@ select.inp{cursor:pointer}
 /* ── misc ── */
 .empty{text-align:center;padding:44px 16px;color:var(--dim);font-size:.8rem}
 
+/* ── model cards ── */
+.provider-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;margin-bottom:20px}
+.provider-card{background:var(--bg-panel);border:1px solid var(--line);border-radius:8px;overflow:hidden;transition:.15s}
+.provider-card:hover{border-color:var(--line-bright)}
+.prov-hd{display:flex;align-items:center;gap:10px;padding:13px 14px;border-bottom:1px solid var(--line)}
+.prov-icon{width:30px;height:30px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:.9rem;flex-shrink:0}
+.prov-name{color:var(--bright);font-size:.82rem;font-weight:600}
+.prov-models{padding:8px 0}
+.model-item{display:flex;align-items:center;justify-content:space-between;padding:6px 14px;cursor:pointer;transition:.15s;gap:8px}
+.model-item:hover{background:rgba(255,255,255,.03)}
+.model-item.active-model{background:var(--amber-soft)}
+.model-name{color:var(--text);font-size:.77rem;flex:1}
+.model-item.active-model .model-name{color:var(--amber)}
+.model-try{font-size:.67rem;color:var(--dim);border:1px solid var(--line-bright);background:none;padding:2px 8px;border-radius:3px;cursor:pointer;font-family:var(--mono);transition:.15s;flex-shrink:0}
+.model-try:hover{border-color:var(--amber);color:var(--amber)}
+
+/* ── playground ── */
+.chat-wrap{display:flex;flex-direction:column;height:calc(100vh - 160px);min-height:300px}
+.chat-controls{display:flex;gap:9px;margin-bottom:14px;flex-wrap:wrap;align-items:center}
+.chat-model-sel{flex:1;min-width:200px}
+.chat-messages{flex:1;overflow-y:auto;background:var(--bg-panel);border:1px solid var(--line);border-radius:8px;padding:16px;display:flex;flex-direction:column;gap:12px;margin-bottom:12px}
+.msg{display:flex;flex-direction:column;gap:4px;max-width:88%}
+.msg.user{align-self:flex-end;align-items:flex-end}
+.msg.assistant{align-self:flex-start}
+.msg-bubble{padding:9px 13px;border-radius:8px;font-size:.8rem;line-height:1.65;white-space:pre-wrap;word-break:break-word}
+.msg.user .msg-bubble{background:var(--amber-soft);border:1px solid rgba(255,154,82,.2);color:var(--bright)}
+.msg.assistant .msg-bubble{background:var(--bg-input);border:1px solid var(--line);color:var(--text)}
+.msg-meta{color:var(--dim-2);font-size:.67rem}
+.chat-input-row{display:flex;gap:9px}
+.chat-input-row textarea{flex:1;background:var(--bg-input);border:1px solid var(--line-bright);border-radius:6px;color:var(--text);font-size:.79rem;padding:9px 12px;outline:none;resize:none;height:68px;transition:.15s;font-family:var(--mono);line-height:1.55}
+.chat-input-row textarea:focus{border-color:var(--amber)}
+.chat-input-row textarea::placeholder{color:var(--dim-2)}
+.chat-send{display:flex;flex-direction:column;gap:7px}
+.chat-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:var(--dim);gap:8px;font-size:.8rem}
+.typing-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--amber);animation:tdot .9s infinite}
+.typing-dot:nth-child(2){animation-delay:.2s}
+.typing-dot:nth-child(3){animation-delay:.4s}
+@keyframes tdot{0%,80%,100%{opacity:.2;transform:scale(.8)}40%{opacity:1;transform:scale(1)}}
+
 /* ── scrollbar ── */
 ::-webkit-scrollbar{width:5px}
 ::-webkit-scrollbar-track{background:var(--bg)}
@@ -184,6 +223,7 @@ select.inp{cursor:pointer}
   .main{padding:18px 14px}
   .stat-grid{grid-template-columns:1fr 1fr}
   .agent-actions{display:none}
+  .provider-grid{grid-template-columns:1fr}
 }
 </style>
 </head>
@@ -230,6 +270,8 @@ select.inp{cursor:pointer}
     <div class="sb-sect">
       <span class="sb-label">integrations</span>
       <div class="sb-item" data-view="agents"><span class="ic">⬡</span>agents<span class="badge" id="bdg-agents">3</span></div>
+      <div class="sb-item" data-view="models"><span class="ic">◫</span>models<span class="badge">36</span></div>
+      <div class="sb-item" data-view="playground"><span class="ic">▷</span>playground</div>
     </div>
     <div class="sb-sect">
       <span class="sb-label">config</span>
@@ -436,6 +478,20 @@ select.inp{cursor:pointer}
         <div class="sub">Local configuration. Changes apply immediately.</div>
       </div>
       <div class="panel">
+        <div class="panel-hd"><span class="ttl">bankr.bot LLM gateway</span></div>
+        <div class="panel-body">
+          <div class="setting-row" style="flex-direction:column;align-items:flex-start;gap:8px">
+            <div><div class="setting-label">API Key</div><div class="setting-desc">Stored in localStorage only. Never sent anywhere except bankr.bot.</div></div>
+            <div style="display:flex;gap:9px;width:100%">
+              <input class="inp" id="bkApiKey" type="password" placeholder="bk_usr_…" style="flex:1"/>
+              <button class="btn primary" id="bkSaveKey">save</button>
+              <button class="btn" id="bkShowKey">show</button>
+            </div>
+            <div id="bkKeySaved" style="color:var(--green);font-size:.74rem;display:none">✓ key saved to localStorage</div>
+          </div>
+        </div>
+      </div>
+      <div class="panel">
         <div class="panel-hd"><span class="ttl">authority tier</span></div>
         <div class="panel-body">
           <p style="color:var(--dim);font-size:.78rem;margin-bottom:14px">Controls how much autonomy Orlix has to act without your confirmation.</p>
@@ -463,6 +519,46 @@ select.inp{cursor:pointer}
           <button class="btn" id="expPol">export policies.json</button>
           <button class="btn" id="expAudit">export audit.log</button>
           <button class="btn danger" id="clearAll">clear all local data</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ MODELS ═══ -->
+    <div class="view" id="view-models">
+      <div class="page-hd">
+        <div class="file">$ orlix model ls --gateway bankr.bot</div>
+        <h1>Models</h1>
+        <div class="sub">36 models across 9 providers via <span style="color:var(--amber)">bankr.bot</span> LLM gateway.</div>
+      </div>
+      <div class="provider-grid" id="providerGrid"></div>
+    </div>
+
+    <!-- ═══ PLAYGROUND ═══ -->
+    <div class="view" id="view-playground">
+      <div class="page-hd">
+        <div class="file">$ orlix playground --interactive</div>
+        <h1>Playground</h1>
+        <div class="sub">Chat with any model via bankr.bot. API key stored locally.</div>
+      </div>
+      <div class="chat-controls">
+        <select class="inp chat-model-sel" id="pgModelSel"></select>
+        <button class="btn sm" id="pgClearBtn">clear chat</button>
+        <span id="pgKeyWarn" style="color:var(--red);font-size:.74rem;display:none">⚠ set API key in Settings first</span>
+      </div>
+      <div class="chat-wrap">
+        <div class="chat-messages" id="chatMessages">
+          <div class="chat-empty" id="chatEmpty">
+            <div style="font-size:1.4rem;opacity:.3">▷</div>
+            <div>Select a model and start chatting</div>
+            <div style="font-size:.74rem;color:var(--dim-2)">All requests go through bankr.bot gateway</div>
+          </div>
+        </div>
+        <div class="chat-input-row">
+          <textarea id="chatInput" placeholder="Type a message… (Enter to send, Shift+Enter for newline)"></textarea>
+          <div class="chat-send">
+            <button class="btn primary" id="chatSendBtn">send</button>
+            <div style="color:var(--dim-2);font-size:.66rem;text-align:center;line-height:1.4">tokens<br><span id="pgTokens">—</span></div>
+          </div>
         </div>
       </div>
     </div>
@@ -692,6 +788,199 @@ document.getElementById('clearAll').addEventListener('click',()=>{
   }
 });
 
+// ───────── PROVIDER / MODEL DATA ─────────
+const PROVIDERS = [
+  {name:'Anthropic',col:'#b9a4ff',icon:'◈',models:[
+    {name:'Claude Opus 4.8',  id:'claude-opus-4-8'},
+    {name:'Claude Opus 4.7',  id:'claude-opus-4-7'},
+    {name:'Claude Opus 4.6',  id:'claude-opus-4-6'},
+    {name:'Claude Sonnet 4.6',id:'claude-sonnet-4-6'},
+    {name:'Claude Haiku 4.5', id:'claude-haiku-4-5'},
+  ]},
+  {name:'OpenAI',col:'#7ee0a8',icon:'⬡',models:[
+    {name:'GPT-5.5',    id:'gpt-5.5'},
+    {name:'GPT-5.4',    id:'gpt-5.4'},
+    {name:'GPT-5.2',    id:'gpt-5.2'},
+    {name:'Codex',      id:'codex'},
+    {name:'GPT Mini',   id:'gpt-mini'},
+    {name:'GPT Nano',   id:'gpt-nano'},
+  ]},
+  {name:'Google',col:'#50c8ff',icon:'✦',models:[
+    {name:'Gemini 3.5 Pro',  id:'gemini-3.5-pro'},
+    {name:'Gemini 3.5 Flash',id:'gemini-3.5-flash'},
+    {name:'Gemini 3.1 Pro',  id:'gemini-3.1-pro'},
+    {name:'Gemini 3 Pro',    id:'gemini-3-pro'},
+    {name:'Gemini 2.5 Pro',  id:'gemini-2.5-pro'},
+    {name:'Gemini 2.5 Flash',id:'gemini-2.5-flash'},
+    {name:'Gemma 4',         id:'gemma-4'},
+  ]},
+  {name:'xAI',col:'#ff9a52',icon:'✕',models:[
+    {name:'Grok 4.3',      id:'grok-4.3'},
+    {name:'Grok 4.20',     id:'grok-4.20'},
+    {name:'Grok 4.1 Fast', id:'grok-4.1-fast'},
+  ]},
+  {name:'Z.ai',col:'#ff6b6b',icon:'Z',models:[
+    {name:'GLM-5.1',      id:'glm-5.1'},
+    {name:'GLM-5',        id:'glm-5'},
+    {name:'GLM-5 Turbo',  id:'glm-5-turbo'},
+  ]},
+  {name:'DeepSeek',col:'#a8e6cf',icon:'◎',models:[
+    {name:'DeepSeek V4 Pro',  id:'deepseek-v4-pro'},
+    {name:'DeepSeek V4 Flash',id:'deepseek-v4-flash'},
+    {name:'DeepSeek V3.2',    id:'deepseek-v3.2'},
+  ]},
+  {name:'MiniMax',col:'#ffd93d',icon:'⬢',models:[
+    {name:'M2.7',           id:'minimax-m2.7'},
+    {name:'M2.7 HighSpeed', id:'minimax-m2.7-highspeed'},
+    {name:'M2.5',           id:'minimax-m2.5'},
+  ]},
+  {name:'Moonshot AI',col:'#c3b1e1',icon:'☽',models:[
+    {name:'Kimi K2.6',id:'kimi-k2.6'},
+    {name:'Kimi K2.5',id:'kimi-k2.5'},
+  ]},
+  {name:'Alibaba',col:'#ff8c42',icon:'◉',models:[
+    {name:'Qwen3 Coder',   id:'qwen3-coder'},
+    {name:'Qwen3.5 Plus',  id:'qwen3.5-plus'},
+    {name:'Qwen3.5 Flash', id:'qwen3.5-flash'},
+  ]},
+];
+
+// ───────── RENDER MODELS ─────────
+function renderModels(){
+  const grid=document.getElementById('providerGrid');
+  grid.innerHTML=PROVIDERS.map(p=>`
+    <div class="provider-card">
+      <div class="prov-hd">
+        <div class="prov-icon" style="background:${p.col}22;color:${p.col}">${p.icon}</div>
+        <div>
+          <div class="prov-name">${esc(p.name)}</div>
+          <div style="color:var(--dim-2);font-size:.69rem">${p.models.length} model${p.models.length>1?'s':''}</div>
+        </div>
+      </div>
+      <div class="prov-models">${p.models.map(m=>`
+        <div class="model-item" data-model-id="${m.id}">
+          <span class="model-name">${esc(m.name)}</span>
+          <button class="model-try" data-model-id="${m.id}" data-model-name="${esc(m.name)}">try →</button>
+        </div>`).join('')}
+      </div>
+    </div>`).join('');
+
+  grid.querySelectorAll('.model-try').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const id=btn.dataset.modelId;
+      const name=btn.dataset.modelName;
+      document.getElementById('pgModelSel').value=id;
+      showView('playground');
+    });
+  });
+}
+
+// ───────── PLAYGROUND ─────────
+const pgModelSel = document.getElementById('pgModelSel');
+const chatMessages = document.getElementById('chatMessages');
+const chatInput = document.getElementById('chatInput');
+let chatHistory = [];
+let totalTokens = 0;
+
+// Populate model selector
+function populateModelSel(){
+  pgModelSel.innerHTML = PROVIDERS.flatMap(p=>
+    p.models.map(m=>`<option value="${m.id}" data-provider="${p.name}">[${p.name}] ${m.name}</option>`)
+  ).join('');
+}
+
+function getApiKey(){
+  return localStorage.getItem('bkApiKey')||'';
+}
+
+function addMsg(role, content, meta=''){
+  chatHistory.push({role, content});
+  const div=document.createElement('div');
+  div.className=`msg ${role}`;
+  div.innerHTML=`<div class="msg-bubble">${esc(content)}</div>${meta?`<div class="msg-meta">${meta}</div>`:''}`;
+  const empty=document.getElementById('chatEmpty');
+  if(empty) empty.remove();
+  chatMessages.appendChild(div);
+  chatMessages.scrollTop=chatMessages.scrollHeight;
+  return div;
+}
+
+function addTyping(){
+  const div=document.createElement('div');
+  div.className='msg assistant';
+  div.id='typing-indicator';
+  div.innerHTML=`<div class="msg-bubble"><span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span></div>`;
+  chatMessages.appendChild(div);
+  chatMessages.scrollTop=chatMessages.scrollHeight;
+  return div;
+}
+
+async function sendChat(){
+  const key=getApiKey();
+  const warn=document.getElementById('pgKeyWarn');
+  if(!key){ warn.style.display=''; return; }
+  warn.style.display='none';
+  const text=chatInput.value.trim();
+  if(!text) return;
+  const model=pgModelSel.value;
+  chatInput.value='';
+  addMsg('user', text, 'you · '+new Date().toLocaleTimeString());
+  const typing=addTyping();
+  document.getElementById('chatSendBtn').disabled=true;
+  try{
+    const res=await fetch('https://api.bankr.bot/v1/messages',{
+      method:'POST',
+      headers:{'x-api-key':key,'Content-Type':'application/json'},
+      body:JSON.stringify({model, max_tokens:2048, messages:chatHistory})
+    });
+    const data=await res.json();
+    typing.remove();
+    if(data.content&&data.content[0]){
+      const reply=data.content[0].text||JSON.stringify(data.content[0]);
+      const usage=data.usage?` · ${data.usage.input_tokens||0}in / ${data.usage.output_tokens||0}out tokens`:'';
+      totalTokens+=(data.usage?.input_tokens||0)+(data.usage?.output_tokens||0);
+      document.getElementById('pgTokens').textContent=totalTokens;
+      addMsg('assistant', reply, model+usage+' · '+new Date().toLocaleTimeString());
+    } else if(data.error){
+      addMsg('assistant','⚠ Error: '+esc(data.error.message||JSON.stringify(data.error)));
+    } else {
+      addMsg('assistant', JSON.stringify(data,null,2));
+    }
+  }catch(e){
+    typing.remove();
+    addMsg('assistant','⚠ Request failed: '+e.message+'\n\nCheck your API key in Settings and ensure bankr.bot supports browser requests (CORS).');
+  }
+  document.getElementById('chatSendBtn').disabled=false;
+  chatInput.focus();
+}
+
+document.getElementById('chatSendBtn').addEventListener('click', sendChat);
+chatInput.addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendChat();}
+});
+document.getElementById('pgClearBtn').addEventListener('click',()=>{
+  chatHistory=[];totalTokens=0;
+  document.getElementById('pgTokens').textContent='—';
+  chatMessages.innerHTML=`<div class="chat-empty" id="chatEmpty"><div style="font-size:1.4rem;opacity:.3">▷</div><div>Select a model and start chatting</div><div style="font-size:.74rem;color:var(--dim-2)">All requests go through bankr.bot gateway</div></div>`;
+});
+
+// ───────── API KEY SETTINGS ─────────
+const bkInput=document.getElementById('bkApiKey');
+const savedKey=getApiKey();
+if(savedKey) bkInput.value=savedKey;
+
+document.getElementById('bkSaveKey').addEventListener('click',()=>{
+  localStorage.setItem('bkApiKey', bkInput.value.trim());
+  const saved=document.getElementById('bkKeySaved');
+  saved.style.display='';
+  setTimeout(()=>saved.style.display='none',2500);
+  document.getElementById('pgKeyWarn').style.display='none';
+});
+document.getElementById('bkShowKey').addEventListener('click',()=>{
+  bkInput.type=bkInput.type==='password'?'text':'password';
+  document.getElementById('bkShowKey').textContent=bkInput.type==='password'?'show':'hide';
+});
+
 // ───────── INIT ─────────
 renderMemory();
 renderPolicies();
@@ -699,6 +988,8 @@ renderGoals();
 renderAudit();
 renderAgents();
 renderOvLog();
+renderModels();
+populateModelSel();
 </script>
 </body>
 </html>
