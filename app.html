@@ -971,8 +971,12 @@ function banner(type, html){
 }
 
 function updateBanner(){
-  if(!getApiKey()){
-    banner('red','✕ <strong>API key not set</strong> — go to <strong>Settings → bankr.bot</strong> and save your API key first.');
+  const selectedModel = (document.getElementById('pgModelSel')||{}).value || '';
+  const isGrokSel = selectedModel.toLowerCase().startsWith('grok');
+  if(!getApiKey() && !isGrokSel){
+    banner('red','✕ <strong>API key not set</strong> — go to Settings → bankr.bot and save your API key. <em>Or select a Grok model — no key needed.</em>');
+  } else if(!getApiKey() && isGrokSel){
+    banner('green','✓ <strong>Grok ready</strong> — server-side xAI key active. Send a message to start.');
   } else if(IS_LOCAL){
     banner('green','✓ <strong>Local mode</strong> — proxy active via localhost:3001. Ready.');
   } else if(getProxyUrl()){
@@ -987,9 +991,11 @@ async function apiFetch(key, bodyObj){
   const bodyStr = JSON.stringify(bodyObj);
   const h = {'Content-Type':'application/json','x-api-key':key};
   const errors = [];
+  const isGrok = (bodyObj.model||'').toLowerCase().startsWith('grok');
 
-  if(!key){
-    throw new Error('No API key saved. Go to Settings → API Key and save your bankr.bot key.');
+  // Grok models: server uses XAI_API_KEY env var — no user key required
+  if(!key && !isGrok){
+    throw new Error('No API key saved. Go to Settings → API Key and save your bankr.bot key. (Grok models work without a key.)');
   }
 
   // 1. Same-origin /api/chat (Vercel serverless function — no CORS)
@@ -1155,6 +1161,7 @@ renderAgents();
 renderOvLog();
 renderModels();
 populateModelSel();
+pgModelSel.addEventListener('change', updateBanner);
 </script>
 </body>
 </html>
