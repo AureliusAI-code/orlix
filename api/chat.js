@@ -124,24 +124,41 @@ module.exports = async function handler(req, res) {
   }
 
   // ── api.bankr.bot (user API key, all other models) ────────────────────────
-  try {
-    const upstream = await fetch('https://api.bankr.bot/v1/messages', {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey },
-      body:    JSON.stringify(bodyObj),
+  // Try both endpoints: /v1/messages (Anthropic) then /v1/chat/completions (OpenAI)
+  const bankrHeaders = { 'Content-Type': 'application/json', 'x-api-key': apiKey };
+
+  async function tryBankr(path) {
+    const r = await fetch('https://api.bankr.bot' + path, {
+      method: 'POST', headers: bankrHeaders, body: JSON.stringify(bodyObj),
     });
-    const text = await upstream.text();
+    const text = await r.text();
+    return { status: r.status, text };
+  }
+
+  try {
+    let { status, text } = await tryBankr('/v1/messages');
+
+    // If /v1/messages returns 404, bankr.bot may have changed to OpenAI-compatible endpoint
+    if (status === 404) {
+      const r2 = await tryBankr('/v1/chat/completions');
+      if (r2.status !== 404) { status = r2.status; text = r2.text; }
+    }
+
     let isJson = true;
     try { JSON.parse(text); } catch { isJson = false; }
-    if (!isJson) {
-      return res.status(upstream.status).json({
+
+    if (!isJson || status === 404) {
+      return res.status(status).json({
         error: {
-          message: `bankr.bot error (HTTP ${upstream.status}): ${text.replace(/<[^>]+>/g,'').trim().slice(0,200)}`,
-          hint: 'Your bankr.bot API key may be invalid or expired.'
+          message: `bankr.bot error (HTTP ${status}): ${text.replace(/<[^>]+>/g,'').trim().slice(0,300)}`,
+          hint: status === 404
+            ? 'bankr.bot API endpoint not found. Your API key may be for the x402 product, not the LLM gateway. Get a gateway key at bankr.bot.'
+            : 'Your bankr.bot API key may be invalid or expired.'
         }
       });
     }
-    res.status(upstream.status).setHeader('Content-Type','application/json').send(text);
+
+    res.status(status).setHeader('Content-Type','application/json').send(text);
   } catch(e) {
     res.status(502).json({ error:{ message:'Proxy error: '+e.message } });
   }
