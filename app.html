@@ -1199,42 +1199,62 @@ populateModelSel();
 pgModelSel.addEventListener('change', updateBanner);
 
 // ───────── CODE RENDERING + PREVIEW ─────────
-function esc2(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+// Raw code stored by ID so copy/preview get the original, not HTML-escaped
+const _codeStore = {};
+let _codeIdx = 0;
+
+function esc2(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
 function renderContent(text){
-  // Split on fenced code blocks ```lang\n...\n```
-  const parts = text.split(/(```[\w]*\n[\s\S]*?```)/g);
-  return parts.map(part=>{
-    const m = part.match(/^```([\w]*)\n([\s\S]*?)```$/);
-    if(m){
-      const lang = m[1]||'code';
-      const code = m[2];
-      const isHtml = lang==='html'||lang==='htm'||(lang===''&&/^\s*</.test(code));
-      const escaped = esc2(code);
-      const previewBtn = isHtml
-        ? `<button class="preview-btn" onclick="openPreview(this)">▶ Preview</button>`:'';
-      return `<div class="code-block"><div class="code-header"><span class="code-lang">${lang||'code'}</span><div class="code-actions">${previewBtn}<button onclick="copyCode(this)">⎘ Copy</button></div></div><pre><code data-raw="${escaped.replace(/"/g,'&quot;')}">${escaped}</code></pre></div>`;
-    }
-    // regular text — escape and convert newlines
-    return esc2(part).replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>');
-  }).join('');
+  // Match ```lang\n...``` — handles CRLF too
+  const RE = /(```([\w]*)\r?\n([\s\S]*?)```)/g;
+  let result = '';
+  let last = 0;
+  let match;
+  while((match = RE.exec(text)) !== null){
+    // text before this block
+    const before = text.slice(last, match.index);
+    if(before) result += esc2(before).replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>');
+    last = match.index + match[0].length;
+
+    const lang   = match[2] || '';
+    const code   = match[3];
+    const id     = 'c'+(++_codeIdx);
+    _codeStore[id] = code; // store raw — never HTML-escaped
+
+    const isHtml = lang==='html'||lang==='htm'||(lang===''&&/^\s*<!/.test(code));
+    const label  = lang||'code';
+    const previewBtn = isHtml
+      ? `<button class="preview-btn" onclick="openPreview('${id}')">▶ Preview</button>` : '';
+    result += `<div class="code-block">
+      <div class="code-header">
+        <span class="code-lang">${esc2(label)}</span>
+        <div class="code-actions">${previewBtn}<button onclick="copyCode('${id}')">⎘ Copy</button></div>
+      </div>
+      <pre><code>${esc2(code)}</code></pre>
+    </div>`;
+  }
+  // remaining text after last block
+  const tail = text.slice(last);
+  if(tail) result += esc2(tail).replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>');
+  return result || esc2(text).replace(/\n/g,'<br>');
 }
 
-function copyCode(btn){
-  const code = btn.closest('.code-block').querySelector('code');
-  navigator.clipboard.writeText(code.dataset.raw||code.textContent);
-  const orig = btn.textContent; btn.textContent='✓ Copied!';
-  setTimeout(()=>btn.textContent=orig,2000);
+function copyCode(id){
+  const code = _codeStore[id]||'';
+  navigator.clipboard.writeText(code).catch(()=>{});
+  // find button to give feedback
+  const btn = document.querySelector(`[onclick="copyCode('${id}')"]`);
+  if(btn){ const o=btn.textContent; btn.textContent='✓ Copied!'; setTimeout(()=>btn.textContent=o,2000); }
 }
 
-function openPreview(btn){
-  const code = btn.closest('.code-block').querySelector('code');
-  const html = code.dataset.raw||code.textContent;
-  const blob = new Blob([html],{type:'text/html'});
+function openPreview(id){
+  const code = _codeStore[id]||'';
+  const blob = new Blob([code],{type:'text/html'});
   const url  = URL.createObjectURL(blob);
   const modal = document.getElementById('previewModal');
   modal.querySelector('iframe').src = url;
-  modal.querySelector('.preview-bar span').textContent = 'Preview · '+new Date().toLocaleTimeString();
+  modal.querySelector('.preview-bar span').textContent = 'Live Preview · '+new Date().toLocaleTimeString();
   modal._blobUrl = url;
   modal.classList.add('open');
 }
@@ -1242,9 +1262,8 @@ function openPreview(btn){
 function closePreview(){
   const modal = document.getElementById('previewModal');
   modal.classList.remove('open');
-  const iframe = modal.querySelector('iframe');
   if(modal._blobUrl){ URL.revokeObjectURL(modal._blobUrl); modal._blobUrl=null; }
-  iframe.src='about:blank';
+  modal.querySelector('iframe').src='about:blank';
 }
 
 // ───────── SYSTEM PROMPT & GROK ─────────
