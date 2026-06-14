@@ -74,7 +74,7 @@ module.exports = async function handler(req, res) {
       r1 = await fetch('https://x402.bankr.bot', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt, model: x402Model }),
+        body: JSON.stringify({ prompt }),
       });
     } catch(e) { return res.status(502).json({ error:{ message:'x402 fetch error: '+e.message } }); }
 
@@ -109,7 +109,7 @@ module.exports = async function handler(req, res) {
           'Content-Type':   'application/json',
           'x402-payment':   paymentHeader,
         },
-        body: JSON.stringify({ prompt, model: x402Model }),
+        body: JSON.stringify({ prompt }),
       });
     } catch(e) { return res.status(502).json({ error:{ message:'x402 payment retry error: '+e.message } }); }
 
