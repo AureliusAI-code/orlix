@@ -966,29 +966,31 @@ updateBanner();
 
 async function apiFetch(key, bodyObj){
   const bodyStr = JSON.stringify(bodyObj);
+  const h = {'Content-Type':'application/json','x-api-key':key};
 
-  // 1. Local server proxy (zero CORS issues)
-  if(IS_LOCAL){
-    return fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key},body:bodyStr});
-  }
+  // 1. Same-origin /api/chat — works on localhost AND Cloudflare Pages
+  try{
+    const r = await fetch('/api/chat',{method:'POST',headers:h,body:bodyStr});
+    if(r.status < 500) return r;
+  }catch(_){}
 
-  // 2. User-configured proxy (Cloudflare Worker etc.)
+  // 2. User-configured proxy (Cloudflare Worker URL from Settings)
   const customProxy = getProxyUrl();
   if(customProxy){
-    const r = await fetch(customProxy,{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key},body:bodyStr});
-    if(r.ok || r.status < 500) return r;
+    try{
+      const r = await fetch(customProxy,{method:'POST',headers:h,body:bodyStr});
+      if(r.status < 500) return r;
+    }catch(_){}
   }
 
-  // 3. Try each proxy in sequence until one works
-  let lastErr;
-  for(const mk of PROXIES){
-    const {url, headers} = mk(key);
-    try{
-      const r = await fetch(url,{method:'POST',headers,body:bodyStr});
-      if(r.status !== 0) return r;
-    }catch(e){ lastErr=e; }
-  }
-  throw lastErr || new Error('All proxy attempts failed');
+  // 3. corsproxy.io
+  try{
+    const r = await fetch(`https://corsproxy.io/?url=${encodeURIComponent('https://api.bankr.bot/v1/messages')}`,{method:'POST',headers:h,body:bodyStr});
+    if(r.status < 500) return r;
+  }catch(_){}
+
+  // 4. Direct (last resort — works if bankr.bot ever enables CORS)
+  return fetch('https://api.bankr.bot/v1/messages',{method:'POST',headers:h,body:bodyStr});
 }
 
 function parseReply(data){
