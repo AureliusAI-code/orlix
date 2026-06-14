@@ -1,8 +1,10 @@
 {
+  "version": 2,
+  "framework": null,
+  "buildCommand": null,
+  "outputDirectory": ".",
   "functions": {
-    "api/chat.js": {
-      "memory": 128,
-      "maxDuration": 30
-    }
+    "api/chat.js": { "memory": 128, "maxDuration": 30 },
+    "api/ping.js": { "memory": 128, "maxDuration": 10 }
   }
 }

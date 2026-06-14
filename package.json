@@ -3,8 +3,7 @@
   "version": "0.5.0",
   "description": "Orlix — personal AI operating system",
   "scripts": {
-    "start": "node server.js",
-    "dev": "node server.js"
+    "local": "node server.js"
   },
   "engines": {
     "node": ">=18"
