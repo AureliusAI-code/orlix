@@ -993,10 +993,12 @@ async function apiFetch(key, bodyObj){
   }
 
   // 1. Same-origin /api/chat (Vercel serverless function — no CORS)
+  // x-orlix-proxy header confirms our function ran (vs plain Vercel 404)
   try{
     const r = await fetch('/api/chat',{method:'POST',headers:h,body:bodyStr});
+    if(r.headers.get('x-orlix-proxy')==='1') return r; // our function replied — trust it
     if(r.status !== 404) return r;
-    errors.push('/api/chat: 404 (function not deployed on Vercel yet)');
+    errors.push('/api/chat: 404 (function not yet deployed — redeploy on Vercel)');
   }catch(e){ errors.push('/api/chat: '+e.message); }
 
   // 2. User-configured proxy URL
