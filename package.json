@@ -6,7 +6,10 @@
     "start": "node server.js",
     "dev": "node server.js"
   },
+  "dependencies": {
+    "@bankr-bot/sdk": "latest"
+  },
   "engines": {
-    "node": ">=16"
+    "node": ">=18"
   }
 }
