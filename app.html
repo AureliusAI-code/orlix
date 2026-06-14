@@ -196,10 +196,27 @@ select.inp{cursor:pointer}
 .msg{display:flex;flex-direction:column;gap:4px;max-width:88%}
 .msg.user{align-self:flex-end;align-items:flex-end}
 .msg.assistant{align-self:flex-start}
-.msg-bubble{padding:9px 13px;border-radius:8px;font-size:.8rem;line-height:1.65;white-space:pre-wrap;word-break:break-word}
-.msg.user .msg-bubble{background:var(--amber-soft);border:1px solid rgba(255,154,82,.2);color:var(--bright)}
+.msg-bubble{padding:9px 13px;border-radius:8px;font-size:.8rem;line-height:1.65;word-break:break-word}
+.msg.user .msg-bubble{background:var(--amber-soft);border:1px solid rgba(255,154,82,.2);color:var(--bright);white-space:pre-wrap}
 .msg.assistant .msg-bubble{background:var(--bg-input);border:1px solid var(--line);color:var(--text)}
 .msg-meta{color:var(--dim-2);font-size:.67rem}
+.code-block{background:#0a0806;border:1px solid var(--line);border-radius:6px;margin:8px 0;overflow:hidden;font-size:.76rem}
+.code-header{display:flex;justify-content:space-between;align-items:center;padding:5px 10px;background:rgba(255,255,255,.04);border-bottom:1px solid var(--line)}
+.code-lang{color:var(--violet);font-size:.7rem;text-transform:uppercase;letter-spacing:.05em}
+.code-actions{display:flex;gap:6px}
+.code-actions button{background:rgba(255,255,255,.07);border:1px solid var(--line);border-radius:4px;color:var(--dim);font-size:.69rem;padding:2px 8px;cursor:pointer;font-family:var(--mono);transition:.15s}
+.code-actions button:hover{background:rgba(255,255,255,.13);color:var(--text)}
+.code-actions .preview-btn{color:var(--green);border-color:rgba(126,224,168,.3)}
+.code-actions .preview-btn:hover{background:rgba(126,224,168,.1);color:var(--green)}
+.code-block pre{margin:0;padding:12px;overflow-x:auto;white-space:pre;line-height:1.6}
+.code-block pre code{color:#e0ddd8;font-family:var(--mono)}
+.preview-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9000;padding:24px}
+.preview-modal.open{display:flex;flex-direction:column;gap:10px}
+.preview-inner{flex:1;background:#fff;border-radius:8px;overflow:hidden}
+.preview-inner iframe{width:100%;height:100%;border:none;display:block}
+.preview-bar{display:flex;justify-content:space-between;align-items:center}
+.preview-bar span{color:var(--dim);font-size:.78rem;font-family:var(--mono)}
+.preview-close{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);color:#fff;border-radius:6px;padding:5px 14px;cursor:pointer;font-size:.8rem}
 .chat-input-row{display:flex;gap:9px}
 .chat-input-row textarea{flex:1;background:var(--bg-input);border:1px solid var(--line-bright);border-radius:6px;color:var(--text);font-size:.79rem;padding:9px 12px;outline:none;resize:none;height:68px;transition:.15s;font-family:var(--mono);line-height:1.55}
 .chat-input-row textarea:focus{border-color:var(--amber)}
@@ -928,10 +945,13 @@ function getApiKey(){
 }
 
 function addMsg(role, content, meta=''){
-  chatHistory.push({role, content});
+  if(role!=='system') chatHistory.push({role, content});
   const div=document.createElement('div');
   div.className=`msg ${role}`;
-  div.innerHTML=`<div class="msg-bubble">${esc(content)}</div>${meta?`<div class="msg-meta">${meta}</div>`:''}`;
+  const bubble = role==='assistant'
+    ? `<div class="msg-bubble">${renderContent(content)}</div>`
+    : `<div class="msg-bubble">${esc(content)}</div>`;
+  div.innerHTML=bubble+(meta?`<div class="msg-meta">${meta}</div>`:'');
   const empty=document.getElementById('chatEmpty');
   if(empty) empty.remove();
   chatMessages.appendChild(div);
@@ -1046,17 +1066,22 @@ function parseReply(data){
 }
 
 async function sendChat(){
-  const key = getApiKey();
-  if(!key){ banner('red','✕ <strong>API key not set</strong> — go to <strong>Settings → bankr.bot</strong> first.'); return; }
+  const key   = getApiKey();
+  const model = pgModelSel.value;
+  const isGrok = model.toLowerCase().startsWith('grok');
+  if(!key && !isGrok){ banner('red','✕ <strong>No API key</strong> — go to Settings → bankr.bot, or select a Grok model (no key needed).'); return; }
   const text = chatInput.value.trim();
   if(!text) return;
-  const model = pgModelSel.value;
   chatInput.value = '';
   addMsg('user', text, 'you · '+new Date().toLocaleTimeString());
+  // Build messages: for Grok prepend system prompt, then full history
+  const messages = isGrok
+    ? [{role:'system',content:GROK_SYSTEM}, ...chatHistory]
+    : [...chatHistory];
   const typing = addTyping();
   document.getElementById('chatSendBtn').disabled = true;
   try{
-    const res  = await apiFetch(key, {model, max_tokens:2048, messages:chatHistory});
+    const res  = await apiFetch(key, {model, max_tokens:4096, messages});
     const raw  = await res.text();
     let data;
     try{ data = JSON.parse(raw); }
@@ -1162,6 +1187,68 @@ renderOvLog();
 renderModels();
 populateModelSel();
 pgModelSel.addEventListener('change', updateBanner);
+
+// ───────── CODE RENDERING + PREVIEW ─────────
+function esc2(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function renderContent(text){
+  // Split on fenced code blocks ```lang\n...\n```
+  const parts = text.split(/(```[\w]*\n[\s\S]*?```)/g);
+  return parts.map(part=>{
+    const m = part.match(/^```([\w]*)\n([\s\S]*?)```$/);
+    if(m){
+      const lang = m[1]||'code';
+      const code = m[2];
+      const isHtml = lang==='html'||lang==='htm'||(lang===''&&/^\s*</.test(code));
+      const escaped = esc2(code);
+      const previewBtn = isHtml
+        ? `<button class="preview-btn" onclick="openPreview(this)">▶ Preview</button>`:'';
+      return `<div class="code-block"><div class="code-header"><span class="code-lang">${lang||'code'}</span><div class="code-actions">${previewBtn}<button onclick="copyCode(this)">⎘ Copy</button></div></div><pre><code data-raw="${escaped.replace(/"/g,'&quot;')}">${escaped}</code></pre></div>`;
+    }
+    // regular text — escape and convert newlines
+    return esc2(part).replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>');
+  }).join('');
+}
+
+function copyCode(btn){
+  const code = btn.closest('.code-block').querySelector('code');
+  navigator.clipboard.writeText(code.dataset.raw||code.textContent);
+  const orig = btn.textContent; btn.textContent='✓ Copied!';
+  setTimeout(()=>btn.textContent=orig,2000);
+}
+
+function openPreview(btn){
+  const code = btn.closest('.code-block').querySelector('code');
+  const html = code.dataset.raw||code.textContent;
+  const blob = new Blob([html],{type:'text/html'});
+  const url  = URL.createObjectURL(blob);
+  const modal = document.getElementById('previewModal');
+  modal.querySelector('iframe').src = url;
+  modal.querySelector('.preview-bar span').textContent = 'Preview · '+new Date().toLocaleTimeString();
+  modal._blobUrl = url;
+  modal.classList.add('open');
+}
+
+function closePreview(){
+  const modal = document.getElementById('previewModal');
+  modal.classList.remove('open');
+  const iframe = modal.querySelector('iframe');
+  if(modal._blobUrl){ URL.revokeObjectURL(modal._blobUrl); modal._blobUrl=null; }
+  iframe.src='about:blank';
+}
+
+// ───────── SYSTEM PROMPT & GROK ─────────
+const GROK_SYSTEM = `You are Orlix AI — a friendly, creative assistant inside the Orlix personal AI OS. Be warm, encouraging, and conversational. When asked to build an app or website, output one complete working file in a single \`\`\`html code block — so the user gets an instant live preview. Keep your tone casual and helpful, like a smart friend.`;
+
 </script>
+
+<div id="previewModal" class="preview-modal">
+  <div class="preview-bar">
+    <span></span>
+    <button class="preview-close" onclick="closePreview()">✕ Close Preview</button>
+  </div>
+  <div class="preview-inner"><iframe sandbox="allow-scripts allow-same-origin allow-forms"></iframe></div>
+</div>
+
 </body>
 </html>
