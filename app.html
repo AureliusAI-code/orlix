@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Orlix — Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0d0a08;--bg-panel:#15100c;--bg-input:#1b1411;
+  --line:#2c2218;--line-bright:#42301f;
+  --text:#d8cfc4;--bright:#fbf3ea;
+  --dim:#8a7a6c;--dim-2:#5c4f44;
+  --amber:#ff9a52;--amber-soft:rgba(255,154,82,.12);
+  --violet:#b9a4ff;--violet-soft:rgba(185,164,255,.12);
+  --red:#ff6b6b;--green:#7ee0a8;
+  --mono:'JetBrains Mono',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{background:var(--bg);color:var(--text);height:100%}
+body{font-family:var(--mono);font-size:13px;line-height:1.6;overflow:hidden;-webkit-font-smoothing:antialiased}
+a{color:var(--violet);text-decoration:none}
+a:hover{color:var(--bright)}
+button{font-family:var(--mono);cursor:pointer}
+input,select,textarea{font-family:var(--mono)}
+::selection{background:var(--amber);color:#1a0f06}
+
+.crt{position:fixed;inset:0;pointer-events:none;z-index:200;mix-blend-mode:overlay;opacity:.25}
+.crt::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(to bottom,rgba(255,255,255,.02) 0,rgba(255,255,255,.02) 1px,transparent 1px,transparent 3px)}
+
+/* ── titlebar ── */
+.titlebar{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(13,10,8,.94);backdrop-filter:blur(12px);border-bottom:1px solid var(--line);height:46px;display:flex;align-items:center}
+.tb-in{display:flex;align-items:center;justify-content:space-between;width:100%;padding:0 16px}
+.tb-left{display:flex;align-items:center;gap:10px}
+.tb-dots{display:flex;gap:5px}
+.tb-dots span{display:inline-block;width:10px;height:10px;border-radius:50%}
+.tb-title{color:var(--text);font-size:.76rem}
+.tb-right{display:flex;align-items:center;gap:16px}
+.tb-right a{color:var(--dim);font-size:.76rem;border-bottom:none;transition:.15s}
+.tb-right a:hover{color:var(--amber)}
+.status-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green)}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.4}}
+.status-dot{animation:blink 2.5s ease-in-out infinite}
+
+/* ── layout ── */
+.app-layout{display:flex;height:100vh;padding-top:46px}
+
+/* ── sidebar ── */
+.sidebar{width:200px;flex-shrink:0;background:var(--bg-panel);border-right:1px solid var(--line);display:flex;flex-direction:column;overflow-y:auto}
+.sb-sect{padding:16px 0 4px}
+.sb-label{color:var(--dim-2);font-size:.64rem;text-transform:uppercase;letter-spacing:.1em;padding:0 16px 6px;display:block}
+.sb-item{display:flex;align-items:center;gap:9px;padding:7px 16px;color:var(--dim);font-size:.77rem;cursor:pointer;border-left:2px solid transparent;transition:.15s;user-select:none}
+.sb-item:hover{color:var(--text);background:rgba(255,255,255,.03)}
+.sb-item.active{color:var(--amber);border-left-color:var(--amber);background:var(--amber-soft)}
+.sb-item .ic{font-size:.8rem;width:15px;text-align:center;flex-shrink:0}
+.sb-item .badge{margin-left:auto;background:rgba(255,154,82,.15);color:var(--amber);font-size:.63rem;padding:1px 6px;border-radius:10px;line-height:1.4}
+.sb-footer{margin-top:auto;padding:14px 16px;border-top:1px solid var(--line)}
+.sb-ver{color:var(--dim-2);font-size:.69rem;line-height:1.7}
+
+/* ── main area ── */
+.main{flex:1;overflow-y:auto;padding:28px 32px;min-width:0}
+.view{display:none}
+.view.active{display:block}
+
+/* ── page header ── */
+.page-hd{margin-bottom:24px}
+.page-hd .file{color:var(--dim);font-size:.73rem;margin-bottom:5px}
+.page-hd h1{font-size:1.05rem;font-weight:700;color:var(--bright);margin-bottom:5px}
+.page-hd .sub{color:var(--dim);font-size:.78rem}
+
+/* ── stat grid ── */
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:14px;margin-bottom:20px}
+.stat-card{background:var(--bg-panel);border:1px solid var(--line);border-radius:8px;padding:16px}
+.stat-card .s-label{color:var(--dim);font-size:.69rem;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px}
+.stat-card .s-val{font-size:1.55rem;font-weight:700;color:var(--bright);line-height:1}
+.stat-card .s-sub{color:var(--dim);font-size:.7rem;margin-top:6px}
+.stat-card.c-amber .s-val{color:var(--amber)}
+.stat-card.c-violet .s-val{color:var(--violet)}
+.stat-card.c-green .s-val{color:var(--green)}
+
+/* ── panel ── */
+.panel{background:var(--bg-panel);border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-bottom:18px}
+.panel-hd{display:flex;align-items:center;justify-content:space-between;padding:11px 16px;border-bottom:1px solid var(--line)}
+.panel-hd .ttl{color:var(--dim);font-size:.7rem;text-transform:uppercase;letter-spacing:.08em}
+.panel-body{padding:16px}
+
+/* ── table ── */
+.tbl{width:100%;border-collapse:collapse}
+.tbl th{color:var(--dim-2);font-size:.66rem;text-transform:uppercase;letter-spacing:.08em;text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);font-weight:500}
+.tbl td{padding:10px 12px;border-bottom:1px solid rgba(44,34,24,.5);font-size:.79rem;vertical-align:middle}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tr:hover td{background:rgba(255,255,255,.018)}
+
+/* ── tags ── */
+.tag{display:inline-block;padding:2px 7px;border-radius:4px;font-size:.67rem}
+.tag.amber{background:var(--amber-soft);color:var(--amber);border:1px solid rgba(255,154,82,.2)}
+.tag.violet{background:var(--violet-soft);color:var(--violet);border:1px solid rgba(185,164,255,.2)}
+.tag.green{background:rgba(126,224,168,.1);color:var(--green);border:1px solid rgba(126,224,168,.2)}
+.tag.red{background:rgba(255,107,107,.1);color:var(--red);border:1px solid rgba(255,107,107,.2)}
+.tag.dim{background:rgba(140,122,108,.1);color:var(--dim);border:1px solid rgba(140,122,108,.2)}
+.tag.blue{background:rgba(80,200,255,.1);color:#50c8ff;border:1px solid rgba(80,200,255,.2)}
+
+/* ── toggle ── */
+.toggle{position:relative;width:34px;height:19px;cursor:pointer;display:inline-block;flex-shrink:0}
+.toggle input{opacity:0;width:0;height:0;position:absolute}
+.toggle-track{position:absolute;inset:0;background:var(--line-bright);border-radius:20px;transition:.2s}
+.toggle input:checked+.toggle-track{background:var(--amber)}
+.toggle-thumb{position:absolute;top:3px;left:3px;width:13px;height:13px;background:var(--dim);border-radius:50%;transition:.2s;pointer-events:none}
+.toggle input:checked~.toggle-thumb{transform:translateX(15px);background:var(--bg)}
+
+/* ── buttons ── */
+.btn{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:5px;font-size:.76rem;border:1px solid var(--line-bright);background:none;color:var(--dim);transition:.15s;cursor:pointer;font-family:var(--mono)}
+.btn:hover{border-color:var(--amber);color:var(--amber)}
+.btn.primary{border-color:rgba(255,154,82,.5);color:var(--amber);background:var(--amber-soft)}
+.btn.primary:hover{background:rgba(255,154,82,.2)}
+.btn.danger{border-color:rgba(255,107,107,.3);color:var(--red)}
+.btn.danger:hover{background:rgba(255,107,107,.08);border-color:var(--red)}
+.btn.sm{padding:3px 9px;font-size:.7rem}
+
+/* ── inputs ── */
+.inp{background:var(--bg-input);border:1px solid var(--line-bright);border-radius:5px;color:var(--text);font-size:.79rem;padding:7px 11px;outline:none;transition:.15s;font-family:var(--mono)}
+.inp:focus{border-color:var(--amber)}
+.inp::placeholder{color:var(--dim-2)}
+select.inp{cursor:pointer}
+
+.add-row{display:flex;gap:9px;margin-bottom:16px;flex-wrap:wrap}
+.add-row .inp{flex:1;min-width:180px}
+
+/* ── progress ── */
+.prog-bar{height:4px;background:var(--line);border-radius:2px;overflow:hidden}
+.prog-fill{height:100%;border-radius:2px;transition:width .3s}
+
+/* ── audit ── */
+.log-entry{display:flex;gap:11px;padding:9px 0;border-bottom:1px solid rgba(44,34,24,.45)}
+.log-entry:last-child{border-bottom:none}
+.log-time{color:var(--dim-2);font-size:.7rem;white-space:nowrap;padding-top:2px;min-width:76px}
+.log-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:5px}
+.log-msg{color:var(--text);font-size:.78rem;line-height:1.55}
+.log-msg .actor{color:var(--amber)}
+.log-msg .tgt{color:var(--violet)}
+
+/* ── goals ── */
+.goal-row{padding:13px 0;border-bottom:1px solid rgba(44,34,24,.45)}
+.goal-row:last-child{border-bottom:none}
+.goal-top{display:flex;align-items:center;gap:9px;margin-bottom:8px;flex-wrap:wrap}
+.goal-title{color:var(--bright);font-size:.82rem;flex:1;min-width:150px}
+.goal-prog-row{display:flex;align-items:center;gap:10px}
+.goal-pct{color:var(--dim);font-size:.72rem;min-width:28px;text-align:right}
+
+/* ── agents ── */
+.agent-card{background:var(--bg-panel);border:1px solid var(--line);border-radius:8px;padding:15px;display:flex;align-items:center;gap:14px;margin-bottom:12px;transition:.15s}
+.agent-card:hover{border-color:var(--line-bright)}
+.agent-icon{width:38px;height:38px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0}
+.agent-info{flex:1;min-width:0}
+.agent-info .a-name{color:var(--bright);font-size:.83rem;font-weight:600;margin-bottom:3px;display:flex;align-items:center;gap:8px}
+.agent-info .a-meta{color:var(--dim);font-size:.72rem}
+.agent-actions{display:flex;gap:7px;flex-shrink:0}
+
+/* ── settings ── */
+.setting-row{display:flex;align-items:center;justify-content:space-between;padding:13px 0;border-bottom:1px solid rgba(44,34,24,.45);gap:20px}
+.setting-row:last-child{border-bottom:none}
+.setting-label{color:var(--text);font-size:.8rem;margin-bottom:3px}
+.setting-desc{color:var(--dim);font-size:.72rem}
+.tier-grid{display:grid;gap:8px}
+.tier-item{display:flex;align-items:center;gap:12px;padding:10px 14px;border:1px solid var(--line);border-radius:6px;cursor:pointer;transition:.15s}
+.tier-item:hover{border-color:var(--line-bright)}
+.tier-item.selected{border-color:var(--amber);background:var(--amber-soft)}
+.tier-key{color:var(--amber);font-weight:700;font-size:.79rem;min-width:22px}
+.tier-name{color:var(--bright);font-size:.79rem;margin-bottom:2px}
+.tier-desc{color:var(--dim);font-size:.7rem}
+
+/* ── misc ── */
+.empty{text-align:center;padding:44px 16px;color:var(--dim);font-size:.8rem}
+
+/* ── scrollbar ── */
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--line-bright);border-radius:3px}
+
+/* ── mobile ── */
+@media(max-width:640px){
+  .sidebar{position:fixed;left:-200px;top:46px;bottom:0;z-index:90;transition:left .2s}
+  .sidebar.open{left:0}
+  .main{padding:18px 14px}
+  .stat-grid{grid-template-columns:1fr 1fr}
+  .agent-actions{display:none}
+}
+</style>
+</head>
+<body>
+<div class="crt"></div>
+
+<!-- titlebar -->
+<div class="titlebar">
+  <div class="tb-in">
+    <div class="tb-left">
+      <div class="tb-dots">
+        <span style="background:var(--red)"></span>
+        <span style="background:var(--amber)"></span>
+        <span style="background:var(--green)"></span>
+      </div>
+      <span class="tb-title">orlix — dashboard <span style="color:var(--dim)">· local session</span></span>
+    </div>
+    <div class="tb-right">
+      <span class="status-dot"></span>
+      <span style="color:var(--green);font-size:.75rem">online</span>
+      <a href="index.html">← home</a>
+    </div>
+  </div>
+</div>
+
+<div class="app-layout">
+
+  <!-- sidebar -->
+  <nav class="sidebar" id="sidebar">
+    <div class="sb-sect">
+      <span class="sb-label">system</span>
+      <div class="sb-item active" data-view="overview"><span class="ic">◈</span>overview</div>
+    </div>
+    <div class="sb-sect">
+      <span class="sb-label">data</span>
+      <div class="sb-item" data-view="memory"><span class="ic">◉</span>memory<span class="badge" id="bdg-mem">12</span></div>
+      <div class="sb-item" data-view="goals"><span class="ic">◎</span>goals<span class="badge" id="bdg-goals">5</span></div>
+    </div>
+    <div class="sb-sect">
+      <span class="sb-label">governance</span>
+      <div class="sb-item" data-view="policies"><span class="ic">⊡</span>policies<span class="badge" id="bdg-pol">8</span></div>
+      <div class="sb-item" data-view="audit"><span class="ic">≡</span>audit log</div>
+    </div>
+    <div class="sb-sect">
+      <span class="sb-label">integrations</span>
+      <div class="sb-item" data-view="agents"><span class="ic">⬡</span>agents<span class="badge" id="bdg-agents">3</span></div>
+    </div>
+    <div class="sb-sect">
+      <span class="sb-label">config</span>
+      <div class="sb-item" data-view="settings"><span class="ic">⚙</span>settings</div>
+    </div>
+    <div class="sb-footer">
+      <div class="sb-ver">orlix v0.5.0-beta<br>local-first · sovereign · auditable</div>
+    </div>
+  </nav>
+
+  <!-- main -->
+  <main class="main">
+
+    <!-- ═══ OVERVIEW ═══ -->
+    <div class="view active" id="view-overview">
+      <div class="page-hd">
+        <div class="file">$ orlix status --full</div>
+        <h1>Overview</h1>
+        <div class="sub">Authority tier: <span style="color:var(--amber)">supervised</span> · session started 14m ago</div>
+      </div>
+      <div class="stat-grid">
+        <div class="stat-card c-amber">
+          <div class="s-label">memory entries</div>
+          <div class="s-val" id="st-mem">12</div>
+          <div class="s-sub">last updated 2m ago</div>
+        </div>
+        <div class="stat-card c-violet">
+          <div class="s-label">active policies</div>
+          <div class="s-val" id="st-pol">6</div>
+          <div class="s-sub">2 paused</div>
+        </div>
+        <div class="stat-card c-green">
+          <div class="s-label">goals tracked</div>
+          <div class="s-val" id="st-goals">5</div>
+          <div class="s-sub">1 completed</div>
+        </div>
+        <div class="stat-card">
+          <div class="s-label">audit entries (24h)</div>
+          <div class="s-val">47</div>
+          <div class="s-sub">0 escalations</div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-hd">
+          <span class="ttl">system health</span>
+          <span class="tag green">all nominal</span>
+        </div>
+        <div class="panel-body" style="padding:0">
+          <table class="tbl">
+            <thead><tr><th style="padding-left:16px">module</th><th>status</th><th>latency</th><th>heartbeat</th></tr></thead>
+            <tbody>
+              <tr><td style="padding-left:16px">world model</td><td><span class="tag green">online</span></td><td style="color:var(--dim-2)">—</td><td style="color:var(--dim-2)">just now</td></tr>
+              <tr><td style="padding-left:16px">policy engine</td><td><span class="tag green">online</span></td><td style="color:var(--dim-2)">12ms</td><td style="color:var(--dim-2)">just now</td></tr>
+              <tr><td style="padding-left:16px">memory layer</td><td><span class="tag green">online</span></td><td style="color:var(--dim-2)">3ms</td><td style="color:var(--dim-2)">just now</td></tr>
+              <tr><td style="padding-left:16px">audit log</td><td><span class="tag green">online</span></td><td style="color:var(--dim-2)">1ms</td><td style="color:var(--dim-2)">just now</td></tr>
+              <tr><td style="padding-left:16px">agent bridge</td><td><span class="tag green">online</span></td><td style="color:var(--dim-2)">48ms</td><td style="color:var(--dim-2)">4s ago</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-hd">
+          <span class="ttl">recent activity</span>
+          <button class="btn sm" data-nav="audit">view all →</button>
+        </div>
+        <div class="panel-body" id="ov-log"></div>
+      </div>
+    </div>
+
+    <!-- ═══ MEMORY ═══ -->
+    <div class="view" id="view-memory">
+      <div class="page-hd">
+        <div class="file">$ orlix memory list</div>
+        <h1>Memory</h1>
+        <div class="sub">All entries stored locally on your device. Never transmitted.</div>
+      </div>
+      <div class="add-row">
+        <input class="inp" id="memSearch" placeholder="search memory…" />
+        <button class="btn primary" id="memAddBtn">+ add entry</button>
+      </div>
+      <div id="memAddForm" style="display:none;margin-bottom:16px">
+        <div class="panel">
+          <div class="panel-hd"><span class="ttl">new entry</span></div>
+          <div class="panel-body" style="display:flex;flex-direction:column;gap:10px">
+            <input class="inp" id="memNewText" placeholder="memory content…" />
+            <div style="display:flex;gap:9px;flex-wrap:wrap">
+              <input class="inp" id="memNewTag" placeholder="tag (optional)" style="flex:1;min-width:120px"/>
+              <button class="btn primary" id="memSaveBtn">save</button>
+              <button class="btn" id="memCancelBtn">cancel</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-hd">
+          <span class="ttl">entries</span>
+          <span id="memCount" style="color:var(--dim);font-size:.72rem"></span>
+        </div>
+        <div class="panel-body" style="padding:0">
+          <table class="tbl"><thead><tr>
+            <th style="padding-left:16px">content</th><th>tag</th><th>added</th><th></th>
+          </tr></thead><tbody id="memBody"></tbody></table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ GOALS ═══ -->
+    <div class="view" id="view-goals">
+      <div class="page-hd">
+        <div class="file">$ orlix goal list</div>
+        <h1>Goals</h1>
+        <div class="sub">Long-horizon objectives Orlix tracks and aligns all actions toward.</div>
+      </div>
+      <div class="add-row">
+        <input class="inp" id="goalNewText" placeholder="add a new goal…" />
+        <button class="btn primary" id="goalAddBtn">+ add</button>
+      </div>
+      <div class="panel">
+        <div class="panel-hd"><span class="ttl">tracked goals</span></div>
+        <div class="panel-body" id="goalBody"></div>
+      </div>
+    </div>
+
+    <!-- ═══ POLICIES ═══ -->
+    <div class="view" id="view-policies">
+      <div class="page-hd">
+        <div class="file">$ orlix policy list</div>
+        <h1>Policies</h1>
+        <div class="sub">Rules that govern how Orlix acts on your behalf.</div>
+      </div>
+      <div class="add-row">
+        <input class="inp" id="polNewText" placeholder="new policy rule…" />
+        <select class="inp" id="polNewLevel" style="width:150px;flex-shrink:0">
+          <option value="L1">L1 — inform</option>
+          <option value="L2">L2 — suggest</option>
+          <option value="L3" selected>L3 — act + notify</option>
+          <option value="L4">L4 — act silently</option>
+        </select>
+        <button class="btn primary" id="polAddBtn">+ add</button>
+      </div>
+      <div class="panel">
+        <div class="panel-hd"><span class="ttl">all policies</span></div>
+        <div class="panel-body" style="padding:0">
+          <table class="tbl"><thead><tr>
+            <th style="padding-left:16px">rule</th><th>level</th><th>ver</th><th>enabled</th><th></th>
+          </tr></thead><tbody id="polBody"></tbody></table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ AUDIT ═══ -->
+    <div class="view" id="view-audit">
+      <div class="page-hd">
+        <div class="file">$ orlix audit --tail 50</div>
+        <h1>Audit Log</h1>
+        <div class="sub">Every action Orlix takes is logged here. Immutable, local, reviewable.</div>
+      </div>
+      <div class="add-row" style="margin-bottom:14px">
+        <select class="inp" id="auditFilter" style="max-width:200px">
+          <option value="all">all events</option>
+          <option value="action">actions</option>
+          <option value="policy">policy changes</option>
+          <option value="memory">memory</option>
+          <option value="goal">goal updates</option>
+          <option value="alert">alerts</option>
+        </select>
+      </div>
+      <div class="panel">
+        <div class="panel-hd"><span class="ttl">events</span><span id="auditCount" style="color:var(--dim);font-size:.72rem"></span></div>
+        <div class="panel-body" id="auditBody"></div>
+      </div>
+    </div>
+
+    <!-- ═══ AGENTS ═══ -->
+    <div class="view" id="view-agents">
+      <div class="page-hd">
+        <div class="file">$ orlix agent ls</div>
+        <h1>Agents</h1>
+        <div class="sub">External AI agents connected via the Orlix agent bridge.</div>
+      </div>
+      <div id="agentBody"></div>
+      <div class="panel" style="margin-top:4px">
+        <div class="panel-hd"><span class="ttl">connect new agent</span></div>
+        <div class="panel-body">
+          <div class="add-row" style="margin-bottom:0">
+            <input class="inp" placeholder="agent endpoint or identifier…" />
+            <select class="inp" style="width:190px;flex-shrink:0">
+              <option>Claude (Anthropic)</option>
+              <option>GPT-4o (OpenAI)</option>
+              <option>Gemini (Google)</option>
+              <option>Custom endpoint</option>
+            </select>
+            <button class="btn primary">connect</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ SETTINGS ═══ -->
+    <div class="view" id="view-settings">
+      <div class="page-hd">
+        <div class="file">$ orlix config --list</div>
+        <h1>Settings</h1>
+        <div class="sub">Local configuration. Changes apply immediately.</div>
+      </div>
+      <div class="panel">
+        <div class="panel-hd"><span class="ttl">authority tier</span></div>
+        <div class="panel-body">
+          <p style="color:var(--dim);font-size:.78rem;margin-bottom:14px">Controls how much autonomy Orlix has to act without your confirmation.</p>
+          <div class="tier-grid">
+            <div class="tier-item" data-tier="observe"><span class="tier-key">L1</span><div><div class="tier-name">observe</div><div class="tier-desc">Read-only. No actions taken.</div></div></div>
+            <div class="tier-item" data-tier="suggest"><span class="tier-key">L2</span><div><div class="tier-name">suggest</div><div class="tier-desc">Proposes actions. You confirm each one.</div></div></div>
+            <div class="tier-item selected" data-tier="supervised"><span class="tier-key">L3</span><div><div class="tier-name">supervised <span class="tag amber">current</span></div><div class="tier-desc">Acts and notifies you. Can roll back.</div></div></div>
+            <div class="tier-item" data-tier="agentic"><span class="tier-key">L4</span><div><div class="tier-name">agentic</div><div class="tier-desc">Executes tasks autonomously. Notifies on completion.</div></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-hd"><span class="ttl">preferences</span></div>
+        <div class="panel-body">
+          <div class="setting-row"><div><div class="setting-label">Usage telemetry</div><div class="setting-desc">Anonymous aggregate signals to help prioritise development.</div></div><label class="toggle"><input type="checkbox" id="tog-tel"><span class="toggle-track"></span><span class="toggle-thumb"></span></label></div>
+          <div class="setting-row"><div><div class="setting-label">Error reporting</div><div class="setting-desc">Crash diagnostics, stripped of personal content before sending.</div></div><label class="toggle"><input type="checkbox" id="tog-err"><span class="toggle-track"></span><span class="toggle-thumb"></span></label></div>
+          <div class="setting-row"><div><div class="setting-label">Auto-rollback</div><div class="setting-desc">Automatically revert failed actions within the rollback window.</div></div><label class="toggle"><input type="checkbox" id="tog-rb" checked><span class="toggle-track"></span><span class="toggle-thumb"></span></label></div>
+          <div class="setting-row"><div><div class="setting-label">Goal drift alerts</div><div class="setting-desc">Alert when a tracked goal hasn't progressed in 3+ days.</div></div><label class="toggle"><input type="checkbox" id="tog-drift" checked><span class="toggle-track"></span><span class="toggle-thumb"></span></label></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-hd"><span class="ttl">data export</span></div>
+        <div class="panel-body" style="display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn" id="expMem">export memory.json</button>
+          <button class="btn" id="expPol">export policies.json</button>
+          <button class="btn" id="expAudit">export audit.log</button>
+          <button class="btn danger" id="clearAll">clear all local data</button>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+// ───────── DATA ─────────
+let memories = [
+  {id:1,text:'Prefer async communication over meetings for deep work blocks',tag:'work',added:'2m ago'},
+  {id:2,text:'Daily shutdown ritual: close all tabs, write 3 wins in journal',tag:'routine',added:'5d ago'},
+  {id:3,text:'Ship MVP before optimising — avoid premature perfectionism',tag:'principle',added:'1w ago'},
+  {id:4,text:'Investor update cadence: monthly, 200 words max',tag:'comms',added:'1w ago'},
+  {id:5,text:'Never schedule meetings before 10am — protect morning focus',tag:'work',added:'2w ago'},
+  {id:6,text:'Review and rotate API keys every 90 days',tag:'security',added:'2w ago'},
+  {id:7,text:'Weekly goal review: Sunday 18:00 — non-negotiable',tag:'routine',added:'3w ago'},
+  {id:8,text:'Co-founder sync: Tuesday 14:00, 30 minutes hard cap',tag:'work',added:'3w ago'},
+  {id:9,text:'Always write the commit message before the code',tag:'dev',added:'1mo ago'},
+  {id:10,text:'Respond to user emails within 24h, no exceptions',tag:'comms',added:'1mo ago'},
+  {id:11,text:'Backup local data every Friday before shutdown',tag:'security',added:'1mo ago'},
+  {id:12,text:"Three-line rule: if you can't summarise it in 3 lines, rethink it",tag:'principle',added:'1mo ago'},
+];
+
+let policies = [
+  {id:1,rule:'Alert if any AI agent requests write access outside /tmp',level:'L1',ver:3,on:true},
+  {id:2,rule:'Summarise email threads longer than 10 messages before showing',level:'L3',ver:7,on:true},
+  {id:3,rule:'Block any action that would share calendar data externally',level:'L1',ver:2,on:true},
+  {id:4,rule:'If goal drift > 3 days, send priority alert',level:'L3',ver:14,on:true},
+  {id:5,rule:'Auto-archive newsletters older than 7 days unread',level:'L4',ver:5,on:true},
+  {id:6,rule:'Enforce 90-minute deep work blocks — reject interruptions',level:'L3',ver:9,on:true},
+  {id:7,rule:'Daily digest of audit log at 18:00',level:'L2',ver:1,on:false},
+  {id:8,rule:'Propose meeting reschedule if overlap with deep work block',level:'L2',ver:4,on:false},
+];
+
+let goals = [
+  {id:1,title:'Ship Orlix v1.0 public beta',status:'active',pct:62,due:'2026-09-01'},
+  {id:2,title:'Close seed round ($1.2M)',status:'active',pct:35,due:'2026-08-15'},
+  {id:3,title:'Reach 500 early access signups',status:'active',pct:78,due:'2026-07-01'},
+  {id:4,title:'Publish technical architecture doc',status:'paused',pct:20,due:'2026-07-30'},
+  {id:5,title:'Build out agent bridge v2 spec',status:'completed',pct:100,due:'2026-06-01'},
+];
+
+const auditLog = [
+  {time:'14:32',type:'action',actor:'orlix',msg:'Summarised email thread <span class="tgt">"Q2 investor update"</span> (14 msgs → 3 lines)'},
+  {time:'14:18',type:'goal',actor:'orlix',msg:'Goal <span class="tgt">"Reach 500 signups"</span> progress: 74% → 78%'},
+  {time:'13:55',type:'policy',actor:'user',msg:'Policy <span class="tgt">"Daily digest at 18:00"</span> disabled'},
+  {time:'13:42',type:'action',actor:'orlix',msg:'Auto-archived 3 newsletters older than 7 days'},
+  {time:'12:01',type:'alert',actor:'orlix',msg:'Goal drift alert: <span class="tgt">"Publish architecture doc"</span> — no progress in 4 days'},
+  {time:'11:58',type:'memory',actor:'user',msg:'Memory entry added: <span class="tgt">"Three-line rule"</span>'},
+  {time:'11:30',type:'action',actor:'orlix',msg:'Deep work block enforced — rejected 2 calendar invites'},
+  {time:'10:15',type:'policy',actor:'user',msg:'Policy <span class="tgt">"Reject interruptions"</span> bumped to v9'},
+  {time:'09:00',type:'action',actor:'orlix',msg:'Weekly goal review reminder sent (routine trigger)'},
+  {time:'08:45',type:'memory',actor:'orlix',msg:'Context loaded — 12 memory entries, 6 active policies'},
+  {time:'yesterday',type:'goal',actor:'orlix',msg:'Goal <span class="tgt">"Ship v1.0 beta"</span> progress: 58% → 62%'},
+  {time:'yesterday',type:'action',actor:'orlix',msg:'Investor update drafted and queued for review'},
+  {time:'2d ago',type:'alert',actor:'orlix',msg:'API key rotation reminder: 89 days since last rotation'},
+  {time:'2d ago',type:'memory',actor:'user',msg:'Memory updated: <span class="tgt">"Investor update cadence"</span>'},
+  {time:'3d ago',type:'action',actor:'orlix',msg:'Co-founder sync notes summarised and filed'},
+  {time:'3d ago',type:'policy',actor:'user',msg:'Policy <span class="tgt">"Auto-archive newsletters"</span> enabled'},
+  {time:'5d ago',type:'goal',actor:'user',msg:'Goal <span class="tgt">"Publish architecture doc"</span> → paused'},
+  {time:'5d ago',type:'action',actor:'orlix',msg:'Proposed reschedule for overlapping meeting'},
+  {time:'1w ago',type:'memory',actor:'user',msg:'Memory added: <span class="tgt">"Ship MVP before optimising"</span>'},
+  {time:'1w ago',type:'goal',actor:'orlix',msg:'Goal <span class="tgt">"Build agent bridge v2"</span> marked completed ✓'},
+];
+
+const agents = [
+  {name:'Claude Opus 4',provider:'Anthropic',status:'connected',model:'claude-opus-4-8',perms:'read · summarise · draft',icon:'🤖',col:'#b9a4ff'},
+  {name:'GPT-4o',provider:'OpenAI',status:'standby',model:'gpt-4o',perms:'read · summarise',icon:'⚡',col:'#7ee0a8'},
+  {name:'Orlix Task Runner',provider:'local',status:'connected',model:'local v0.5',perms:'full (supervised)',icon:'⬡',col:'#ff9a52'},
+];
+
+const typeCol = {action:'#ff9a52',policy:'#b9a4ff',memory:'#7ee0a8',goal:'#50c8ff',alert:'#ff6b6b'};
+
+// ───────── NAV ─────────
+function showView(name){
+  document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id==='view-'+name));
+  document.querySelectorAll('.sb-item').forEach(i=>i.classList.toggle('active',i.dataset.view===name));
+  document.getElementById('sidebar').classList.remove('open');
+}
+document.querySelectorAll('.sb-item').forEach(i=>i.addEventListener('click',()=>showView(i.dataset.view)));
+document.querySelectorAll('[data-nav]').forEach(b=>b.addEventListener('click',()=>showView(b.dataset.nav)));
+
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+// ───────── MEMORY ─────────
+function renderMemory(filter=''){
+  const body=document.getElementById('memBody');
+  const f=filter.toLowerCase();
+  const list=memories.filter(m=>!f||m.text.toLowerCase().includes(f)||m.tag.toLowerCase().includes(f));
+  document.getElementById('memCount').textContent=list.length+' entries';
+  body.innerHTML=list.map(m=>`<tr>
+    <td style="padding-left:16px;max-width:380px;word-break:break-word">${esc(m.text)}</td>
+    <td><span class="tag dim">${esc(m.tag)}</span></td>
+    <td style="color:var(--dim-2);white-space:nowrap">${m.added}</td>
+    <td><button class="btn sm danger mem-del" data-id="${m.id}">✕</button></td>
+  </tr>`).join('');
+  document.getElementById('bdg-mem').textContent=memories.length;
+  document.getElementById('st-mem').textContent=memories.length;
+  body.querySelectorAll('.mem-del').forEach(b=>b.addEventListener('click',()=>{
+    memories=memories.filter(m=>m.id!==+b.dataset.id);renderMemory(document.getElementById('memSearch').value);
+  }));
+}
+document.getElementById('memSearch').addEventListener('input',e=>renderMemory(e.target.value));
+document.getElementById('memAddBtn').addEventListener('click',()=>{document.getElementById('memAddForm').style.display='block';document.getElementById('memNewText').focus();});
+document.getElementById('memCancelBtn').addEventListener('click',()=>document.getElementById('memAddForm').style.display='none');
+document.getElementById('memSaveBtn').addEventListener('click',()=>{
+  const t=document.getElementById('memNewText').value.trim();if(!t)return;
+  memories.unshift({id:Date.now(),text:t,tag:document.getElementById('memNewTag').value.trim()||'note',added:'just now'});
+  document.getElementById('memNewText').value='';document.getElementById('memNewTag').value='';
+  document.getElementById('memAddForm').style.display='none';renderMemory();
+});
+document.getElementById('memNewText').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('memSaveBtn').click();});
+
+// ───────── POLICIES ─────────
+function renderPolicies(){
+  const body=document.getElementById('polBody');
+  body.innerHTML=policies.map(p=>`<tr>
+    <td style="padding-left:16px;max-width:360px;word-break:break-word">${esc(p.rule)}</td>
+    <td><span class="tag ${p.level==='L1'?'green':p.level==='L4'?'amber':'violet'}">${p.level}</span></td>
+    <td style="color:var(--dim-2)">v${p.ver}</td>
+    <td><label class="toggle"><input type="checkbox" class="pol-tog" data-id="${p.id}" ${p.on?'checked':''}><span class="toggle-track"></span><span class="toggle-thumb"></span></label></td>
+    <td><button class="btn sm danger pol-del" data-id="${p.id}">✕</button></td>
+  </tr>`).join('');
+  const active=policies.filter(p=>p.on).length;
+  document.getElementById('bdg-pol').textContent=policies.length;
+  document.getElementById('st-pol').textContent=active;
+  body.querySelectorAll('.pol-tog').forEach(cb=>cb.addEventListener('change',()=>{
+    const p=policies.find(p=>p.id===+cb.dataset.id);if(p){p.on=cb.checked;p.ver++;renderPolicies();}
+  }));
+  body.querySelectorAll('.pol-del').forEach(b=>b.addEventListener('click',()=>{
+    policies=policies.filter(p=>p.id!==+b.dataset.id);renderPolicies();
+  }));
+}
+document.getElementById('polAddBtn').addEventListener('click',()=>{
+  const t=document.getElementById('polNewText').value.trim();if(!t)return;
+  policies.unshift({id:Date.now(),rule:t,level:document.getElementById('polNewLevel').value,ver:1,on:true});
+  document.getElementById('polNewText').value='';renderPolicies();
+});
+document.getElementById('polNewText').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('polAddBtn').click();});
+
+// ───────── GOALS ─────────
+function renderGoals(){
+  const body=document.getElementById('goalBody');
+  body.innerHTML=goals.map(g=>`<div class="goal-row">
+    <div class="goal-top">
+      <span class="goal-title">${esc(g.title)}</span>
+      <span class="tag ${g.status==='completed'?'green':g.status==='paused'?'dim':'amber'}">${g.status}</span>
+      <button class="btn sm danger goal-del" data-id="${g.id}">✕</button>
+    </div>
+    <div class="goal-prog-row">
+      <div class="prog-bar" style="flex:1"><div class="prog-fill" style="width:${g.pct}%;background:${g.status==='completed'?'var(--green)':g.status==='paused'?'var(--dim)':'var(--amber)'}"></div></div>
+      <span class="goal-pct">${g.pct}%</span>
+      <span style="color:var(--dim-2);font-size:.7rem;white-space:nowrap">${g.due}</span>
+    </div>
+  </div>`).join('');
+  document.getElementById('bdg-goals').textContent=goals.length;
+  document.getElementById('st-goals').textContent=goals.length;
+  body.querySelectorAll('.goal-del').forEach(b=>b.addEventListener('click',()=>{
+    goals=goals.filter(g=>g.id!==+b.dataset.id);renderGoals();
+  }));
+}
+document.getElementById('goalAddBtn').addEventListener('click',()=>{
+  const t=document.getElementById('goalNewText').value.trim();if(!t)return;
+  goals.unshift({id:Date.now(),title:t,status:'active',pct:0,due:'—'});
+  document.getElementById('goalNewText').value='';renderGoals();
+});
+document.getElementById('goalNewText').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('goalAddBtn').click();});
+
+// ───────── AUDIT ─────────
+function renderAudit(filter='all'){
+  const body=document.getElementById('auditBody');
+  const list=filter==='all'?auditLog:auditLog.filter(e=>e.type===filter);
+  document.getElementById('auditCount').textContent=list.length+' events';
+  body.innerHTML=list.map(e=>`<div class="log-entry">
+    <div class="log-time">${e.time}</div>
+    <div class="log-dot" style="background:${typeCol[e.type]||'#fff'}"></div>
+    <div class="log-msg"><span class="actor">${e.actor}</span> → ${e.msg}</div>
+  </div>`).join('');
+}
+document.getElementById('auditFilter').addEventListener('change',e=>renderAudit(e.target.value));
+
+// ───────── AGENTS ─────────
+function renderAgents(){
+  document.getElementById('agentBody').innerHTML=agents.map(a=>`<div class="agent-card">
+    <div class="agent-icon" style="background:${a.col}22;color:${a.col}">${a.icon}</div>
+    <div class="agent-info">
+      <div class="a-name">${esc(a.name)}<span class="tag ${a.status==='connected'?'green':'dim'}">${a.status}</span></div>
+      <div class="a-meta">${esc(a.provider)} · <span style="color:var(--dim-2)">${esc(a.model)}</span></div>
+      <div class="a-meta" style="margin-top:2px">perms: <span style="color:var(--violet)">${esc(a.perms)}</span></div>
+    </div>
+    <div class="agent-actions">
+      <button class="btn sm">configure</button>
+      <button class="btn sm danger">disconnect</button>
+    </div>
+  </div>`).join('');
+  document.getElementById('bdg-agents').textContent=agents.length;
+}
+
+// ───────── OVERVIEW LOG ─────────
+function renderOvLog(){
+  document.getElementById('ov-log').innerHTML=auditLog.slice(0,6).map(e=>`<div class="log-entry">
+    <div class="log-time">${e.time}</div>
+    <div class="log-dot" style="background:${typeCol[e.type]||'#fff'}"></div>
+    <div class="log-msg"><span class="actor">${e.actor}</span> → ${e.msg}</div>
+  </div>`).join('');
+}
+
+// ───────── SETTINGS ─────────
+document.querySelectorAll('.tier-item').forEach(item=>item.addEventListener('click',()=>{
+  document.querySelectorAll('.tier-item').forEach(i=>i.classList.remove('selected'));
+  item.classList.add('selected');
+}));
+
+// Export buttons (download JSON in browser)
+function dl(name,data){
+  const a=document.createElement('a');
+  a.href='data:application/json,'+encodeURIComponent(JSON.stringify(data,null,2));
+  a.download=name;a.click();
+}
+document.getElementById('expMem').addEventListener('click',()=>dl('memory.json',memories));
+document.getElementById('expPol').addEventListener('click',()=>dl('policies.json',policies));
+document.getElementById('expAudit').addEventListener('click',()=>dl('audit.log',auditLog));
+document.getElementById('clearAll').addEventListener('click',()=>{
+  if(confirm('Clear all local data? This cannot be undone.')){
+    memories=[];policies=[];goals=[];renderMemory();renderPolicies();renderGoals();renderOvLog();
+  }
+});
+
+// ───────── INIT ─────────
+renderMemory();
+renderPolicies();
+renderGoals();
+renderAudit();
+renderAgents();
+renderOvLog();
+</script>
+</body>
+</html>

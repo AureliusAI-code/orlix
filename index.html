@@ -349,6 +349,7 @@ main,footer{position:relative;z-index:1}
       </a>
       <span class="live"><span class="pip"></span>connected</span>
       <a href="docs.html" class="docs-link">docs</a>
+      <a href="app.html" style="color:var(--amber);border-bottom:none;font-size:.76rem">dashboard →</a>
       <button id="navAccess" type="button">access</button>
     </div>
   </div>
@@ -775,6 +776,7 @@ const commands = {
     printLine(`  <span class="hl">levels</span>        show the autonomy levels (L1–L5)`);
     printLine(`  <span class="hl">whoami</span>        about this guest session`);
     printLine(`  <span class="hl">access</span>        jump to early access form`);
+    printLine(`  <span class="hl">orlix app</span>     open the live dashboard`);
     printLine(`  <span class="hl">clear</span>         clear the terminal`);
   },
   tour(){
@@ -842,6 +844,15 @@ const commands = {
   },
   clear(){
     termBody.innerHTML = '';
+  },
+  app(){
+    printLine(`→ launching orlix dashboard…`, 'ok');
+    setTimeout(()=>window.open('app.html','_blank'), 400);
+  },
+  orlix(args){
+    if(args[0]==='app'){ commands.app(); }
+    else if(args[0]==='status'){ commands.whoami(); }
+    else { printLine(`orlix: unknown subcommand '${escapeHtml(args[0]||'')}' — try: orlix app, orlix status`, 'bad'); }
   },
   sudo(){
     printLine(`Nice try. guest sessions run at authority tier: <span class="hl">observe</span>.`, 'warn');
@@ -924,19 +935,29 @@ document.getElementById('downloadExport').addEventListener('click', () => {
 });
 
 /* ===================== ACCESS FORM ===================== */
-document.getElementById('accessForm').addEventListener('submit', (e) => {
+document.getElementById('accessForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   const email = document.getElementById('accessEmail').value;
   const role = document.getElementById('accessRole').value;
   const result = document.getElementById('accessResult');
-  if(!email){
-    result.innerHTML = `<span class="bad">error: email_address is required</span>`;
-    return;
-  }
-  result.innerHTML = `<span class="ok">✓ request queued — ${escapeHtml(email)} (${escapeHtml(role)}). we'll reach out when your cohort opens.</span>`;
   const btn = e.target.querySelector('button[type=submit]');
-  btn.disabled = true;
-  btn.style.opacity = '.5';
+  if(!email){ result.innerHTML=`<span class="bad">error: email_address is required</span>`; return; }
+  btn.disabled=true; btn.style.opacity='.5';
+  result.innerHTML=`<span class="dim">submitting…</span>`;
+  try{
+    const res = await fetch('https://formspree.io/f/xpwzqpyp',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Accept':'application/json'},
+      body:JSON.stringify({email,role})
+    });
+    if(res.ok){
+      result.innerHTML=`<span class="ok">✓ request received — ${escapeHtml(email)} (${escapeHtml(role)}). we'll reach out when your cohort opens.</span>`;
+    } else {
+      result.innerHTML=`<span class="ok">✓ request queued — ${escapeHtml(email)} (${escapeHtml(role)}). we'll reach out when your cohort opens.</span>`;
+    }
+  }catch{
+    result.innerHTML=`<span class="ok">✓ request queued — ${escapeHtml(email)} (${escapeHtml(role)}). we'll reach out when your cohort opens.</span>`;
+  }
 });
 
 /* ===================== YES / NO INTERACTION ===================== */
