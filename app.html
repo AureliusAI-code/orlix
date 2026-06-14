@@ -479,16 +479,30 @@ select.inp{cursor:pointer}
       </div>
       <div class="panel">
         <div class="panel-hd"><span class="ttl">bankr.bot LLM gateway</span></div>
-        <div class="panel-body">
-          <div class="setting-row" style="flex-direction:column;align-items:flex-start;gap:8px">
-            <div><div class="setting-label">API Key</div><div class="setting-desc">Stored in localStorage only. Never sent anywhere except bankr.bot.</div></div>
-            <div style="display:flex;gap:9px;width:100%">
+        <div class="panel-body" style="display:flex;flex-direction:column;gap:16px">
+          <div>
+            <div class="setting-label" style="margin-bottom:4px">API Key</div>
+            <div class="setting-desc" style="margin-bottom:8px">Stored in localStorage only. Never hardcoded.</div>
+            <div style="display:flex;gap:9px">
               <input class="inp" id="bkApiKey" type="password" placeholder="bk_usr_…" style="flex:1"/>
               <button class="btn primary" id="bkSaveKey">save</button>
               <button class="btn" id="bkShowKey">show</button>
             </div>
-            <div id="bkKeySaved" style="color:var(--green);font-size:.74rem;display:none">✓ key saved to localStorage</div>
           </div>
+          <div>
+            <div class="setting-label" style="margin-bottom:4px">Proxy URL <span style="color:var(--dim);font-weight:400;font-size:.72rem">(required for hosted sites)</span></div>
+            <div class="setting-desc" style="margin-bottom:8px">
+              Deploy <code style="background:rgba(0,0,0,.3);padding:1px 5px;border-radius:3px">cloudflare-worker.js</code> at
+              <a href="https://workers.cloudflare.com" target="_blank" style="color:var(--amber);border-bottom:none">workers.cloudflare.com</a>
+              (free) then paste the URL here.
+            </div>
+            <div style="display:flex;gap:9px">
+              <input class="inp" id="bkProxyUrl" placeholder="https://orlix-proxy.YOUR.workers.dev" style="flex:1"/>
+              <button class="btn primary" id="bkSaveProxy">save</button>
+            </div>
+            <div id="bkProxySaved" style="color:var(--green);font-size:.74rem;margin-top:6px;display:none">✓ proxy URL saved</div>
+          </div>
+          <div id="bkKeySaved" style="color:var(--green);font-size:.74rem;display:none">✓ API key saved</div>
         </div>
       </div>
       <div class="panel">
@@ -792,11 +806,11 @@ document.getElementById('clearAll').addEventListener('click',()=>{
 // ───────── PROVIDER / MODEL DATA ─────────
 const PROVIDERS = [
   {name:'Anthropic',col:'#b9a4ff',icon:'◈',models:[
-    {name:'Claude Opus 4.8',  id:'claude-opus-4-8'},
-    {name:'Claude Opus 4.7',  id:'claude-opus-4-7'},
-    {name:'Claude Opus 4.6',  id:'claude-opus-4-6'},
-    {name:'Claude Sonnet 4.6',id:'claude-sonnet-4-6'},
-    {name:'Claude Haiku 4.5', id:'claude-haiku-4-5'},
+    {name:'Claude Opus 4.8',  id:'claude-opus-4.8'},
+    {name:'Claude Opus 4.7',  id:'claude-opus-4.7'},
+    {name:'Claude Opus 4.6',  id:'claude-opus-4.6'},
+    {name:'Claude Sonnet 4.6',id:'claude-sonnet-4.6'},
+    {name:'Claude Haiku 4.5', id:'claude-haiku-4.5'},
   ]},
   {name:'OpenAI',col:'#7ee0a8',icon:'⬡',models:[
     {name:'GPT-5.5',    id:'gpt-5.5'},
@@ -916,25 +930,31 @@ function addTyping(){
   return div;
 }
 
-const IS_LOCAL = ['localhost','127.0.0.1'].includes(location.hostname);
+const IS_LOCAL   = ['localhost','127.0.0.1'].includes(location.hostname);
 const LOCAL_URL  = '/api/chat';
 const DIRECT_URL = 'https://api.bankr.bot/v1/messages';
 
-// Show connection mode banner
-(function(){
-  const b = document.getElementById('pgModeBanner');
-  if(IS_LOCAL){
-    b.style.background='rgba(126,224,168,.08)';
-    b.style.borderColor='rgba(126,224,168,.25)';
-    b.style.color='var(--green)';
-    b.innerHTML='✓ <strong>Local server mode</strong> — requests proxied via localhost:3001. Full functionality.';
+function getProxyUrl(){ return localStorage.getItem('bkProxyUrl')||''; }
+
+function updateBanner(){
+  const b   = document.getElementById('pgModeBanner');
+  const key = getApiKey();
+  const prx = getProxyUrl();
+  if(!key){
+    b.style.cssText='margin-bottom:12px;padding:8px 13px;border-radius:6px;font-size:.74rem;border:1px solid rgba(255,107,107,.3);background:rgba(255,107,107,.08);color:var(--red)';
+    b.innerHTML='✕ API key belum diset — pergi ke <strong>Settings → bankr.bot</strong> dan save API key dulu.';
+  } else if(IS_LOCAL){
+    b.style.cssText='margin-bottom:12px;padding:8px 13px;border-radius:6px;font-size:.74rem;border:1px solid rgba(126,224,168,.25);background:rgba(126,224,168,.08);color:var(--green)';
+    b.innerHTML='✓ <strong>Local server mode</strong> — proxy aktif via localhost. Siap digunakan.';
+  } else if(prx){
+    b.style.cssText='margin-bottom:12px;padding:8px 13px;border-radius:6px;font-size:.74rem;border:1px solid rgba(126,224,168,.25);background:rgba(126,224,168,.08);color:var(--green)';
+    b.innerHTML='✓ <strong>Proxy aktif</strong> — request akan dikirim via Cloudflare Worker. Siap digunakan.';
   } else {
-    b.style.background='rgba(255,154,82,.08)';
-    b.style.borderColor='rgba(255,154,82,.25)';
-    b.style.color='var(--amber)';
-    b.innerHTML='⚠ <strong>Static mode</strong> — untuk playground berfungsi penuh, jalankan: <code style="background:rgba(0,0,0,.3);padding:1px 6px;border-radius:3px">node server.js</code> lalu buka <code style="background:rgba(0,0,0,.3);padding:1px 6px;border-radius:3px">http://localhost:3001/app.html</code>';
+    b.style.cssText='margin-bottom:12px;padding:8px 13px;border-radius:6px;font-size:.74rem;border:1px solid rgba(255,154,82,.3);background:rgba(255,154,82,.08);color:var(--amber)';
+    b.innerHTML='⚠ <strong>Proxy belum diset.</strong> Buka <strong>Settings → bankr.bot</strong>, deploy <code style="background:rgba(0,0,0,.3);padding:1px 5px;border-radius:3px">cloudflare-worker.js</code> lalu paste URL-nya di kolom Proxy URL.';
   }
-})();
+}
+updateBanner();
 
 async function apiFetch(key, body){
   const payload = {
@@ -942,11 +962,9 @@ async function apiFetch(key, body){
     headers:{'Content-Type':'application/json','x-api-key':key},
     body:JSON.stringify(body)
   };
-  if(IS_LOCAL){
-    // Running via server.js — proxy handles CORS perfectly
-    return fetch(LOCAL_URL, payload);
-  }
-  // Static file fallback — try direct (may work if bankr.bot supports CORS)
+  if(IS_LOCAL)  return fetch(LOCAL_URL, payload);
+  const prx = getProxyUrl();
+  if(prx)       return fetch(prx, payload);
   return fetch(DIRECT_URL, payload);
 }
 
@@ -997,8 +1015,10 @@ document.getElementById('pgClearBtn').addEventListener('click',()=>{
 
 // ───────── API KEY SETTINGS ─────────
 const bkInput=document.getElementById('bkApiKey');
-const savedKey=getApiKey();
-if(savedKey) bkInput.value=savedKey;
+if(getApiKey()) bkInput.value=getApiKey();
+
+const bkProxyInput=document.getElementById('bkProxyUrl');
+if(getProxyUrl()) bkProxyInput.value=getProxyUrl();
 
 document.getElementById('bkSaveKey').addEventListener('click',()=>{
   localStorage.setItem('bkApiKey', bkInput.value.trim());
@@ -1006,10 +1026,18 @@ document.getElementById('bkSaveKey').addEventListener('click',()=>{
   saved.style.display='';
   setTimeout(()=>saved.style.display='none',2500);
   document.getElementById('pgKeyWarn').style.display='none';
+  updateBanner();
 });
 document.getElementById('bkShowKey').addEventListener('click',()=>{
   bkInput.type=bkInput.type==='password'?'text':'password';
   document.getElementById('bkShowKey').textContent=bkInput.type==='password'?'show':'hide';
+});
+document.getElementById('bkSaveProxy').addEventListener('click',()=>{
+  localStorage.setItem('bkProxyUrl', bkProxyInput.value.trim());
+  const saved=document.getElementById('bkProxySaved');
+  saved.style.display='';
+  setTimeout(()=>saved.style.display='none',2500);
+  updateBanner();
 });
 
 // ───────── INIT ─────────
