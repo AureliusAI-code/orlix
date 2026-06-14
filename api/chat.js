@@ -1,8 +1,8 @@
 // Vercel Serverless Function — /api/chat
 // Routes to the right provider based on model name:
+//   claude-*          → api.anthropic.com   (ANTHROPIC_API_KEY env var)
 //   grok-*            → api.x.ai            (XAI_API_KEY env var)
 //   gpt-* / o1/o3/o4  → api.openai.com      (OPENAI_API_KEY env var)
-//   no api-key        → x402.bankr.bot       (BANKR_PRIVATE_KEY env var, $0.01 USDC/req)
 //   others            → api.bankr.bot        (x-api-key header from user settings)
 const crypto = require('crypto');
 
@@ -18,15 +18,49 @@ module.exports = async function handler(req, res) {
   const bodyObj = typeof req.body === 'object' && req.body !== null
     ? req.body : JSON.parse(req.body || '{}');
 
-  const model    = (bodyObj.model || '').toLowerCase();
-  const isGrok   = model.startsWith('grok');
-  const isOpenAI = model.startsWith('gpt-') || /^o[134]/.test(model);
+  const model       = (bodyObj.model || '').toLowerCase();
+  const isClaude    = model.startsWith('claude');
+  const isGrok      = model.startsWith('grok');
+  const isOpenAI    = model.startsWith('gpt-') || /^o[134]/.test(model);
 
   // helper: call OpenAI-compatible endpoint with Bearer key
   async function callCompat(url, key) {
     const body = { model: bodyObj.model, messages: bodyObj.messages || [], max_tokens: bodyObj.max_tokens || 2048 };
     if (bodyObj.temperature != null) body.temperature = bodyObj.temperature;
     return fetch(url, { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+key}, body: JSON.stringify(body) });
+  }
+
+  // ── Anthropic / Claude ────────────────────────────────────────────────────
+  if (isClaude) {
+    const key = process.env.ANTHROPIC_API_KEY || process.env.CLAUDE_API_KEY || process.env.ANT_API_KEY || '';
+    if (!key) return res.status(401).json({ error: { message: 'ANTHROPIC_API_KEY not set in Vercel Environment Variables. Add it and redeploy.' } });
+    try {
+      const body = {
+        model:      bodyObj.model,
+        messages:   bodyObj.messages || [],
+        max_tokens: bodyObj.max_tokens || 2048,
+      };
+      if (bodyObj.system)      body.system      = bodyObj.system;
+      if (bodyObj.temperature) body.temperature = bodyObj.temperature;
+      // Strip system role from messages array (Anthropic uses top-level system param)
+      body.messages = body.messages.filter(m => m.role !== 'system');
+      const r = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type':      'application/json',
+          'x-api-key':         key,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify(body),
+      });
+      const text = await r.text();
+      if (!r.ok) {
+        let msg = text;
+        try { msg = JSON.parse(text).error?.message || text; } catch {}
+        return res.status(r.status).json({ error: { message: 'Anthropic: ' + msg } });
+      }
+      return res.status(r.status).setHeader('Content-Type','application/json').send(text);
+    } catch(e) { return res.status(502).json({ error:{ message:'Anthropic error: '+e.message } }); }
   }
 
   // ── Grok / xAI ────────────────────────────────────────────────────────────
