@@ -540,6 +540,7 @@ select.inp{cursor:pointer}
         <h1>Playground</h1>
         <div class="sub">Chat with any model via bankr.bot. API key stored locally.</div>
       </div>
+      <div id="pgModeBanner" style="margin-bottom:12px;padding:8px 13px;border-radius:6px;font-size:.74rem;border:1px solid var(--line)"></div>
       <div class="chat-controls">
         <select class="inp chat-model-sel" id="pgModelSel"></select>
         <button class="btn sm" id="pgClearBtn">clear chat</button>
@@ -915,24 +916,38 @@ function addTyping(){
   return div;
 }
 
-const BANKR_URL = 'https://api.bankr.bot/v1/messages';
-const CORS_PROXY = 'https://corsproxy.io/?url=';
+const IS_LOCAL = ['localhost','127.0.0.1'].includes(location.hostname);
+const LOCAL_URL  = '/api/chat';
+const DIRECT_URL = 'https://api.bankr.bot/v1/messages';
+
+// Show connection mode banner
+(function(){
+  const b = document.getElementById('pgModeBanner');
+  if(IS_LOCAL){
+    b.style.background='rgba(126,224,168,.08)';
+    b.style.borderColor='rgba(126,224,168,.25)';
+    b.style.color='var(--green)';
+    b.innerHTML='✓ <strong>Local server mode</strong> — requests proxied via localhost:3001. Full functionality.';
+  } else {
+    b.style.background='rgba(255,154,82,.08)';
+    b.style.borderColor='rgba(255,154,82,.25)';
+    b.style.color='var(--amber)';
+    b.innerHTML='⚠ <strong>Static mode</strong> — untuk playground berfungsi penuh, jalankan: <code style="background:rgba(0,0,0,.3);padding:1px 6px;border-radius:3px">node server.js</code> lalu buka <code style="background:rgba(0,0,0,.3);padding:1px 6px;border-radius:3px">http://localhost:3001/app.html</code>';
+  }
+})();
 
 async function apiFetch(key, body){
-  // Try direct first, then fall back to CORS proxy
   const payload = {
     method:'POST',
-    headers:{'x-api-key':key,'Content-Type':'application/json'},
+    headers:{'Content-Type':'application/json','x-api-key':key},
     body:JSON.stringify(body)
   };
-  try{
-    const r = await fetch(BANKR_URL, payload);
-    return r;
-  }catch{
-    // CORS blocked — retry via proxy (proxy forwards headers transparently)
-    const r = await fetch(CORS_PROXY + encodeURIComponent(BANKR_URL), payload);
-    return r;
+  if(IS_LOCAL){
+    // Running via server.js — proxy handles CORS perfectly
+    return fetch(LOCAL_URL, payload);
   }
+  // Static file fallback — try direct (may work if bankr.bot supports CORS)
+  return fetch(DIRECT_URL, payload);
 }
 
 async function sendChat(){
