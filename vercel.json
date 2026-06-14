@@ -6,5 +6,12 @@
   "functions": {
     "api/chat.js": { "memory": 128, "maxDuration": 30 },
     "api/ping.js": { "memory": 128, "maxDuration": 10 }
-  }
+  },
+  "rewrites": [
+    { "source": "/app", "destination": "/app.html" },
+    { "source": "/docs", "destination": "/docs.html" },
+    { "source": "/changelog", "destination": "/changelog.html" },
+    { "source": "/privacy", "destination": "/privacy.html" },
+    { "source": "/terms", "destination": "/terms.html" }
+  ]
 }
