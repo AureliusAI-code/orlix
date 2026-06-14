@@ -915,6 +915,26 @@ function addTyping(){
   return div;
 }
 
+const BANKR_URL = 'https://api.bankr.bot/v1/messages';
+const CORS_PROXY = 'https://corsproxy.io/?url=';
+
+async function apiFetch(key, body){
+  // Try direct first, then fall back to CORS proxy
+  const payload = {
+    method:'POST',
+    headers:{'x-api-key':key,'Content-Type':'application/json'},
+    body:JSON.stringify(body)
+  };
+  try{
+    const r = await fetch(BANKR_URL, payload);
+    return r;
+  }catch{
+    // CORS blocked — retry via proxy (proxy forwards headers transparently)
+    const r = await fetch(CORS_PROXY + encodeURIComponent(BANKR_URL), payload);
+    return r;
+  }
+}
+
 async function sendChat(){
   const key=getApiKey();
   const warn=document.getElementById('pgKeyWarn');
@@ -928,27 +948,23 @@ async function sendChat(){
   const typing=addTyping();
   document.getElementById('chatSendBtn').disabled=true;
   try{
-    const res=await fetch('https://api.bankr.bot/v1/messages',{
-      method:'POST',
-      headers:{'x-api-key':key,'Content-Type':'application/json'},
-      body:JSON.stringify({model, max_tokens:2048, messages:chatHistory})
-    });
+    const res=await apiFetch(key,{model, max_tokens:2048, messages:chatHistory});
     const data=await res.json();
     typing.remove();
     if(data.content&&data.content[0]){
       const reply=data.content[0].text||JSON.stringify(data.content[0]);
-      const usage=data.usage?` · ${data.usage.input_tokens||0}in / ${data.usage.output_tokens||0}out tokens`:'';
+      const usage=data.usage?` · ${data.usage.input_tokens||0}in / ${data.usage.output_tokens||0}out`:'';
       totalTokens+=(data.usage?.input_tokens||0)+(data.usage?.output_tokens||0);
       document.getElementById('pgTokens').textContent=totalTokens;
       addMsg('assistant', reply, model+usage+' · '+new Date().toLocaleTimeString());
     } else if(data.error){
-      addMsg('assistant','⚠ Error: '+esc(data.error.message||JSON.stringify(data.error)));
+      addMsg('assistant','⚠ '+esc(data.error.message||JSON.stringify(data.error)));
     } else {
       addMsg('assistant', JSON.stringify(data,null,2));
     }
   }catch(e){
     typing.remove();
-    addMsg('assistant','⚠ Request failed: '+e.message+'\n\nCheck your API key in Settings and ensure bankr.bot supports browser requests (CORS).');
+    addMsg('assistant','⚠ Request failed: '+esc(e.message)+'\n\nPastikan:\n1. API key sudah disimpan di Settings\n2. Koneksi internet aktif\n3. Model ID valid');
   }
   document.getElementById('chatSendBtn').disabled=false;
   chatInput.focus();
