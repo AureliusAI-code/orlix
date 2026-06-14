@@ -495,32 +495,26 @@ select.inp{cursor:pointer}
         <div class="sub">Local configuration. Changes apply immediately.</div>
       </div>
       <div class="panel">
-        <div class="panel-hd"><span class="ttl">bankr.bot LLM gateway</span></div>
+        <div class="panel-hd"><span class="ttl">AI providers</span></div>
         <div class="panel-body" style="display:flex;flex-direction:column;gap:16px">
-          <div>
-            <div class="setting-label" style="margin-bottom:4px">API Key</div>
-            <div class="setting-desc" style="margin-bottom:8px">Stored in localStorage only. Never hardcoded.</div>
-            <div style="display:flex;gap:9px">
-              <input class="inp" id="bkApiKey" type="password" placeholder="bk_usr_…" style="flex:1"/>
-              <button class="btn primary" id="bkSaveKey">save</button>
-              <button class="btn" id="bkShowKey">show</button>
-            </div>
+          <div style="background:rgba(185,164,255,.07);border:1px solid rgba(185,164,255,.18);border-radius:8px;padding:12px 14px;font-size:.78rem;line-height:1.7;color:var(--fg)">
+            ✓ <strong>Claude</strong> (Anthropic), <strong>Grok</strong> (xAI), and <strong>OpenAI</strong> models work without any API key here — the server handles authentication automatically.<br>
+            <span style="color:var(--dim)">Just select a model in Playground and start chatting.</span>
           </div>
           <div>
-            <div class="setting-label" style="margin-bottom:4px">Proxy URL <span style="color:var(--dim);font-weight:400;font-size:.72rem">(optional override)</span></div>
+            <div class="setting-label" style="margin-bottom:4px">Custom Proxy URL <span style="color:var(--dim);font-weight:400;font-size:.72rem">(optional)</span></div>
             <div class="setting-desc" style="margin-bottom:8px">
-              Only needed if you deploy a custom proxy. On Vercel the built-in <code style="background:rgba(0,0,0,.3);padding:1px 5px;border-radius:3px">/api/chat</code> function handles routing automatically.
+              Only needed if you deploy your own proxy. Leave blank — the built-in <code style="background:rgba(0,0,0,.3);padding:1px 5px;border-radius:3px">/api/chat</code> function handles everything.
             </div>
             <div style="display:flex;gap:9px">
-              <input class="inp" id="bkProxyUrl" placeholder="https://orlix-proxy.YOUR.workers.dev" style="flex:1"/>
+              <input class="inp" id="bkProxyUrl" placeholder="https://your-proxy.workers.dev" style="flex:1"/>
               <button class="btn primary" id="bkSaveProxy">save</button>
             </div>
             <div id="bkProxySaved" style="color:var(--green);font-size:.74rem;margin-top:6px;display:none">✓ proxy URL saved</div>
           </div>
 
-
-
-          <div id="bkKeySaved" style="color:var(--green);font-size:.74rem;display:none">✓ API key saved</div>
+          <input id="bkApiKey" type="hidden"/>
+          <div id="bkKeySaved" style="display:none"></div>
 
           <div style="border-top:1px solid rgba(255,255,255,.06);padding-top:18px;margin-top:4px">
             <div class="setting-label" style="margin-bottom:6px">Connection Diagnostic</div>
@@ -565,9 +559,9 @@ select.inp{cursor:pointer}
     <!-- ═══ MODELS ═══ -->
     <div class="view" id="view-models">
       <div class="page-hd">
-        <div class="file">$ orlix model ls --gateway bankr.bot</div>
+        <div class="file">$ orlix model ls</div>
         <h1>Models</h1>
-        <div class="sub">36 models across 9 providers via <span style="color:var(--amber)">bankr.bot</span> LLM gateway.</div>
+        <div class="sub">Models across Claude, Grok, OpenAI and more — no API key needed.</div>
       </div>
       <div class="provider-grid" id="providerGrid"></div>
     </div>
@@ -577,7 +571,7 @@ select.inp{cursor:pointer}
       <div class="page-hd">
         <div class="file">$ orlix playground --interactive</div>
         <h1>Playground</h1>
-        <div class="sub">Chat with any model via bankr.bot. API key stored locally.</div>
+        <div class="sub">Chat with Claude, Grok, OpenAI and more. No API key required.</div>
       </div>
       <div id="pgModeBanner" style="margin-bottom:12px;padding:8px 13px;border-radius:6px;font-size:.74rem;border:1px solid var(--line)"></div>
       <div class="chat-controls">
@@ -590,7 +584,7 @@ select.inp{cursor:pointer}
           <div class="chat-empty" id="chatEmpty">
             <div style="font-size:1.4rem;opacity:.3">▷</div>
             <div>Select a model and start chatting</div>
-            <div style="font-size:.74rem;color:var(--dim-2)">All requests go through bankr.bot gateway</div>
+            <div style="font-size:.74rem;color:var(--dim-2)">Select a model above and start chatting</div>
           </div>
         </div>
         <div class="chat-input-row">
@@ -987,7 +981,7 @@ function updateBanner(){
   const isOpenAISel = selectedModel.startsWith('gpt-')||selectedModel.startsWith('o1')||selectedModel.startsWith('o3')||selectedModel.startsWith('o4');
   const serverKeyedSel = isClaudeSel || isGrokSel || isOpenAISel;
   if(!getApiKey() && !serverKeyedSel){
-    banner('red','✕ <strong>API key not set</strong> — go to Settings → bankr.bot. Or select a Claude / Grok / OpenAI model (no key needed).');
+    banner('green','✓ <strong>Select a model</strong> to start chatting. Claude, Grok and OpenAI work without any API key.');
   } else if(!getApiKey() && isClaudeSel){
     banner('green','✓ <strong>Claude ready</strong> — server Anthropic key active. Send a message to start.');
   } else if(!getApiKey() && isGrokSel){
@@ -1117,7 +1111,7 @@ chatInput.addEventListener('keydown',e=>{
 document.getElementById('pgClearBtn').addEventListener('click',()=>{
   chatHistory=[];totalTokens=0;
   document.getElementById('pgTokens').textContent='—';
-  chatMessages.innerHTML=`<div class="chat-empty" id="chatEmpty"><div style="font-size:1.4rem;opacity:.3">▷</div><div>Select a model and start chatting</div><div style="font-size:.74rem;color:var(--dim-2)">All requests go through bankr.bot gateway</div></div>`;
+  chatMessages.innerHTML=`<div class="chat-empty" id="chatEmpty"><div style="font-size:1.4rem;opacity:.3">▷</div><div>Select a model and start chatting</div><div style="font-size:.74rem;color:var(--dim-2)">Select a model above and start chatting</div></div>`;
 });
 
 // ───────── API KEY SETTINGS ─────────
@@ -1127,18 +1121,6 @@ if(getApiKey()) bkInput.value=getApiKey();
 const bkProxyInput=document.getElementById('bkProxyUrl');
 if(getProxyUrl()) bkProxyInput.value=getProxyUrl();
 
-document.getElementById('bkSaveKey').addEventListener('click',()=>{
-  localStorage.setItem('bkApiKey', bkInput.value.trim());
-  const saved=document.getElementById('bkKeySaved');
-  saved.style.display='';
-  setTimeout(()=>saved.style.display='none',2500);
-  document.getElementById('pgKeyWarn').style.display='none';
-  updateBanner();
-});
-document.getElementById('bkShowKey').addEventListener('click',()=>{
-  bkInput.type=bkInput.type==='password'?'text':'password';
-  document.getElementById('bkShowKey').textContent=bkInput.type==='password'?'show':'hide';
-});
 document.getElementById('bkSaveProxy').addEventListener('click',()=>{
   localStorage.setItem('bkProxyUrl', bkProxyInput.value.trim());
   const saved=document.getElementById('bkProxySaved');
