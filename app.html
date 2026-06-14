@@ -849,12 +849,13 @@ const PROVIDERS = [
     {name:'Claude Haiku 4.5', id:'claude-haiku-4.5'},
   ]},
   {name:'OpenAI',col:'#7ee0a8',icon:'⬡',models:[
-    {name:'GPT-5.5',    id:'gpt-5.5'},
-    {name:'GPT-5.4',    id:'gpt-5.4'},
-    {name:'GPT-5.2',    id:'gpt-5.2'},
-    {name:'Codex',      id:'codex'},
-    {name:'GPT Mini',   id:'gpt-mini'},
-    {name:'GPT Nano',   id:'gpt-nano'},
+    {name:'GPT-4o',       id:'gpt-4o'},
+    {name:'GPT-4o mini',  id:'gpt-4o-mini'},
+    {name:'GPT-4.1',      id:'gpt-4.1'},
+    {name:'GPT-4.1 mini', id:'gpt-4.1-mini'},
+    {name:'GPT-4.1 nano', id:'gpt-4.1-nano'},
+    {name:'o3',           id:'o3'},
+    {name:'o4-mini',      id:'o4-mini'},
   ]},
   {name:'Google',col:'#50c8ff',icon:'✦',models:[
     {name:'Gemini 3.5 Pro',  id:'gemini-3.5-pro'},
@@ -991,12 +992,16 @@ function banner(type, html){
 }
 
 function updateBanner(){
-  const selectedModel = (document.getElementById('pgModelSel')||{}).value || '';
-  const isGrokSel = selectedModel.toLowerCase().startsWith('grok');
-  if(!getApiKey() && !isGrokSel){
-    banner('red','✕ <strong>API key not set</strong> — go to Settings → bankr.bot and save your API key. <em>Or select a Grok model — no key needed.</em>');
+  const selectedModel = ((document.getElementById('pgModelSel')||{}).value||'').toLowerCase();
+  const isGrokSel   = selectedModel.startsWith('grok');
+  const isOpenAISel = selectedModel.startsWith('gpt-')||selectedModel.startsWith('o1')||selectedModel.startsWith('o3')||selectedModel.startsWith('o4');
+  const serverKeyedSel = isGrokSel || isOpenAISel;
+  if(!getApiKey() && !serverKeyedSel){
+    banner('red','✕ <strong>API key not set</strong> — go to Settings → bankr.bot. Or select a Grok / OpenAI model (no key needed).');
   } else if(!getApiKey() && isGrokSel){
-    banner('green','✓ <strong>Grok ready</strong> — server-side xAI key active. Send a message to start.');
+    banner('green','✓ <strong>Grok ready</strong> — server xAI key active. Send a message to start.');
+  } else if(!getApiKey() && isOpenAISel){
+    banner('green','✓ <strong>OpenAI ready</strong> — server OpenAI key active. Send a message to start.');
   } else if(IS_LOCAL){
     banner('green','✓ <strong>Local mode</strong> — proxy active via localhost:3001. Ready.');
   } else if(getProxyUrl()){
@@ -1011,11 +1016,13 @@ async function apiFetch(key, bodyObj){
   const bodyStr = JSON.stringify(bodyObj);
   const h = {'Content-Type':'application/json','x-api-key':key};
   const errors = [];
-  const isGrok = (bodyObj.model||'').toLowerCase().startsWith('grok');
+  const m = (bodyObj.model||'').toLowerCase();
+  const isGrok   = m.startsWith('grok');
+  const isOpenAI = m.startsWith('gpt-')||m.startsWith('o1')||m.startsWith('o3')||m.startsWith('o4');
+  const serverKeyed = isGrok || isOpenAI; // server has env var, no user key needed
 
-  // Grok models: server uses XAI_API_KEY env var — no user key required
-  if(!key && !isGrok){
-    throw new Error('No API key saved. Go to Settings → API Key and save your bankr.bot key. (Grok models work without a key.)');
+  if(!key && !serverKeyed){
+    throw new Error('No API key saved. Go to Settings → API Key and save your bankr.bot key. (Grok and OpenAI models work without a key.)');
   }
 
   // 1. Same-origin /api/chat (Vercel serverless function — no CORS)
@@ -1068,14 +1075,17 @@ function parseReply(data){
 async function sendChat(){
   const key   = getApiKey();
   const model = pgModelSel.value;
-  const isGrok = model.toLowerCase().startsWith('grok');
-  if(!key && !isGrok){ banner('red','✕ <strong>No API key</strong> — go to Settings → bankr.bot, or select a Grok model (no key needed).'); return; }
+  const ml = model.toLowerCase();
+  const isGrok   = ml.startsWith('grok');
+  const isOpenAI = ml.startsWith('gpt-')||ml.startsWith('o1')||ml.startsWith('o3')||ml.startsWith('o4');
+  const serverKeyed = isGrok || isOpenAI;
+  if(!key && !serverKeyed){ banner('red','✕ <strong>No API key</strong> — go to Settings → bankr.bot, or select a Grok / OpenAI model (no key needed).'); return; }
   const text = chatInput.value.trim();
   if(!text) return;
   chatInput.value = '';
   addMsg('user', text, 'you · '+new Date().toLocaleTimeString());
-  // Build messages: for Grok prepend system prompt, then full history
-  const messages = isGrok
+  // Prepend system prompt for models that benefit from it
+  const messages = (isGrok||isOpenAI)
     ? [{role:'system',content:GROK_SYSTEM}, ...chatHistory]
     : [...chatHistory];
   const typing = addTyping();
