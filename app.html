@@ -942,16 +942,16 @@ function updateBanner(){
   const prx = getProxyUrl();
   if(!key){
     b.style.cssText='margin-bottom:12px;padding:8px 13px;border-radius:6px;font-size:.74rem;border:1px solid rgba(255,107,107,.3);background:rgba(255,107,107,.08);color:var(--red)';
-    b.innerHTML='✕ API key belum diset — pergi ke <strong>Settings → bankr.bot</strong> dan save API key dulu.';
+    b.innerHTML='✕ <strong>API key not set</strong> — go to <strong>Settings → bankr.bot</strong> and save your API key first.';
   } else if(IS_LOCAL){
     b.style.cssText='margin-bottom:12px;padding:8px 13px;border-radius:6px;font-size:.74rem;border:1px solid rgba(126,224,168,.25);background:rgba(126,224,168,.08);color:var(--green)';
-    b.innerHTML='✓ <strong>Local server mode</strong> — proxy aktif via localhost. Siap digunakan.';
+    b.innerHTML='✓ <strong>Local server mode</strong> — proxy active via localhost. Ready.';
   } else if(prx){
     b.style.cssText='margin-bottom:12px;padding:8px 13px;border-radius:6px;font-size:.74rem;border:1px solid rgba(126,224,168,.25);background:rgba(126,224,168,.08);color:var(--green)';
-    b.innerHTML='✓ <strong>Proxy aktif</strong> — request akan dikirim via Cloudflare Worker. Siap digunakan.';
+    b.innerHTML='✓ <strong>Proxy configured</strong> — requests routed via Cloudflare Worker. Ready.';
   } else {
     b.style.cssText='margin-bottom:12px;padding:8px 13px;border-radius:6px;font-size:.74rem;border:1px solid rgba(255,154,82,.3);background:rgba(255,154,82,.08);color:var(--amber)';
-    b.innerHTML='⚠ <strong>Proxy belum diset.</strong> Buka <strong>Settings → bankr.bot</strong>, deploy <code style="background:rgba(0,0,0,.3);padding:1px 5px;border-radius:3px">cloudflare-worker.js</code> lalu paste URL-nya di kolom Proxy URL.';
+    b.innerHTML='⚠ <strong>Proxy not configured.</strong> Go to <strong>Settings → bankr.bot</strong>, deploy <code style="background:rgba(0,0,0,.3);padding:1px 5px;border-radius:3px">cloudflare-worker.js</code> and paste the URL in Proxy URL field.';
   }
 }
 updateBanner();
@@ -997,7 +997,7 @@ async function sendChat(){
     }
   }catch(e){
     typing.remove();
-    addMsg('assistant','⚠ Request failed: '+esc(e.message)+'\n\nPastikan:\n1. API key sudah disimpan di Settings\n2. Koneksi internet aktif\n3. Model ID valid');
+    addMsg('assistant','⚠ Request failed: '+esc(e.message)+'\n\nCheck:\n1. API key is saved in Settings\n2. Proxy URL is configured in Settings\n3. Internet connection is active');
   }
   document.getElementById('chatSendBtn').disabled=false;
   chatInput.focus();
