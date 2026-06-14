@@ -931,75 +931,115 @@ function addTyping(){
 }
 
 const IS_LOCAL   = ['localhost','127.0.0.1'].includes(location.hostname);
-const LOCAL_URL  = '/api/chat';
-const DIRECT_URL = 'https://api.bankr.bot/v1/messages';
+const BANKR      = 'https://api.bankr.bot/v1/messages';
+const PROXIES    = [
+  key => ({ url: BANKR,                                                                    headers: {'Content-Type':'application/json','x-api-key':key} }),
+  key => ({ url: `https://corsproxy.io/?url=${encodeURIComponent(BANKR)}`,                headers: {'Content-Type':'application/json','x-api-key':key} }),
+  key => ({ url: `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(BANKR)}`,  headers: {'Content-Type':'application/json','x-api-key':key} }),
+];
 
 function getProxyUrl(){ return localStorage.getItem('bkProxyUrl')||''; }
 
+function banner(type, html){
+  const b=document.getElementById('pgModeBanner');
+  const styles={
+    red:  'border:1px solid rgba(255,107,107,.3);background:rgba(255,107,107,.08);color:var(--red)',
+    green:'border:1px solid rgba(126,224,168,.25);background:rgba(126,224,168,.08);color:var(--green)',
+    amber:'border:1px solid rgba(255,154,82,.3);background:rgba(255,154,82,.08);color:var(--amber)',
+  };
+  b.style.cssText=`margin-bottom:12px;padding:8px 13px;border-radius:6px;font-size:.74rem;${styles[type]}`;
+  b.innerHTML=html;
+}
+
 function updateBanner(){
-  const b   = document.getElementById('pgModeBanner');
-  const key = getApiKey();
-  const prx = getProxyUrl();
-  if(!key){
-    b.style.cssText='margin-bottom:12px;padding:8px 13px;border-radius:6px;font-size:.74rem;border:1px solid rgba(255,107,107,.3);background:rgba(255,107,107,.08);color:var(--red)';
-    b.innerHTML='✕ <strong>API key not set</strong> — go to <strong>Settings → bankr.bot</strong> and save your API key first.';
+  if(!getApiKey()){
+    banner('red','✕ <strong>API key not set</strong> — go to <strong>Settings → bankr.bot</strong> and save your API key first.');
   } else if(IS_LOCAL){
-    b.style.cssText='margin-bottom:12px;padding:8px 13px;border-radius:6px;font-size:.74rem;border:1px solid rgba(126,224,168,.25);background:rgba(126,224,168,.08);color:var(--green)';
-    b.innerHTML='✓ <strong>Local server mode</strong> — proxy active via localhost. Ready.';
-  } else if(prx){
-    b.style.cssText='margin-bottom:12px;padding:8px 13px;border-radius:6px;font-size:.74rem;border:1px solid rgba(126,224,168,.25);background:rgba(126,224,168,.08);color:var(--green)';
-    b.innerHTML='✓ <strong>Proxy configured</strong> — requests routed via Cloudflare Worker. Ready.';
+    banner('green','✓ <strong>Local mode</strong> — proxy active via localhost:3001. Ready.');
+  } else if(getProxyUrl()){
+    banner('green','✓ <strong>Custom proxy active</strong> — requests routed via your Cloudflare Worker. Ready.');
   } else {
-    b.style.cssText='margin-bottom:12px;padding:8px 13px;border-radius:6px;font-size:.74rem;border:1px solid rgba(255,154,82,.3);background:rgba(255,154,82,.08);color:var(--amber)';
-    b.innerHTML='⚠ <strong>Proxy not configured.</strong> Go to <strong>Settings → bankr.bot</strong>, deploy <code style="background:rgba(0,0,0,.3);padding:1px 5px;border-radius:3px">cloudflare-worker.js</code> and paste the URL in Proxy URL field.';
+    banner('green','✓ <strong>Ready</strong> — API key set. Send a message to start.');
   }
 }
 updateBanner();
 
-async function apiFetch(key, body){
-  const payload = {
-    method:'POST',
-    headers:{'Content-Type':'application/json','x-api-key':key},
-    body:JSON.stringify(body)
-  };
-  if(IS_LOCAL)  return fetch(LOCAL_URL, payload);
-  const prx = getProxyUrl();
-  if(prx)       return fetch(prx, payload);
-  return fetch(DIRECT_URL, payload);
+async function apiFetch(key, bodyObj){
+  const bodyStr = JSON.stringify(bodyObj);
+
+  // 1. Local server proxy (zero CORS issues)
+  if(IS_LOCAL){
+    return fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key},body:bodyStr});
+  }
+
+  // 2. User-configured proxy (Cloudflare Worker etc.)
+  const customProxy = getProxyUrl();
+  if(customProxy){
+    const r = await fetch(customProxy,{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key},body:bodyStr});
+    if(r.ok || r.status < 500) return r;
+  }
+
+  // 3. Try each proxy in sequence until one works
+  let lastErr;
+  for(const mk of PROXIES){
+    const {url, headers} = mk(key);
+    try{
+      const r = await fetch(url,{method:'POST',headers,body:bodyStr});
+      if(r.status !== 0) return r;
+    }catch(e){ lastErr=e; }
+  }
+  throw lastErr || new Error('All proxy attempts failed');
+}
+
+function parseReply(data){
+  // Anthropic format
+  if(data.content && Array.isArray(data.content)){
+    const txt = data.content.map(b=>b.text||b.content||JSON.stringify(b)).join('');
+    return {text: txt, usage: data.usage};
+  }
+  // OpenAI format
+  if(data.choices && data.choices[0]){
+    const msg = data.choices[0].message || data.choices[0].delta || {};
+    return {text: msg.content||'', usage: data.usage};
+  }
+  // Error
+  if(data.error) return {error: data.error.message || JSON.stringify(data.error)};
+  // Fallback
+  return {text: JSON.stringify(data, null, 2)};
 }
 
 async function sendChat(){
-  const key=getApiKey();
-  const warn=document.getElementById('pgKeyWarn');
-  if(!key){ warn.style.display=''; return; }
-  warn.style.display='none';
-  const text=chatInput.value.trim();
+  const key = getApiKey();
+  if(!key){ banner('red','✕ <strong>API key not set</strong> — go to <strong>Settings → bankr.bot</strong> first.'); return; }
+  const text = chatInput.value.trim();
   if(!text) return;
-  const model=pgModelSel.value;
-  chatInput.value='';
+  const model = pgModelSel.value;
+  chatInput.value = '';
   addMsg('user', text, 'you · '+new Date().toLocaleTimeString());
-  const typing=addTyping();
-  document.getElementById('chatSendBtn').disabled=true;
+  const typing = addTyping();
+  document.getElementById('chatSendBtn').disabled = true;
   try{
-    const res=await apiFetch(key,{model, max_tokens:2048, messages:chatHistory});
-    const data=await res.json();
+    const res  = await apiFetch(key, {model, max_tokens:2048, messages:chatHistory});
+    const raw  = await res.text();
+    let data;
+    try{ data = JSON.parse(raw); }
+    catch{ throw new Error('Invalid JSON response: '+raw.slice(0,200)); }
     typing.remove();
-    if(data.content&&data.content[0]){
-      const reply=data.content[0].text||JSON.stringify(data.content[0]);
-      const usage=data.usage?` · ${data.usage.input_tokens||0}in / ${data.usage.output_tokens||0}out`:'';
-      totalTokens+=(data.usage?.input_tokens||0)+(data.usage?.output_tokens||0);
-      document.getElementById('pgTokens').textContent=totalTokens;
-      addMsg('assistant', reply, model+usage+' · '+new Date().toLocaleTimeString());
-    } else if(data.error){
-      addMsg('assistant','⚠ '+esc(data.error.message||JSON.stringify(data.error)));
+    const parsed = parseReply(data);
+    if(parsed.error){
+      addMsg('assistant','⚠ API error: '+esc(parsed.error));
     } else {
-      addMsg('assistant', JSON.stringify(data,null,2));
+      const u = parsed.usage;
+      const usage = u ? ` · ${u.input_tokens||u.prompt_tokens||0}in / ${u.output_tokens||u.completion_tokens||0}out` : '';
+      totalTokens += (u?.input_tokens||u?.prompt_tokens||0)+(u?.output_tokens||u?.completion_tokens||0);
+      document.getElementById('pgTokens').textContent = totalTokens||'—';
+      addMsg('assistant', parsed.text, model+usage+' · '+new Date().toLocaleTimeString());
     }
   }catch(e){
     typing.remove();
-    addMsg('assistant','⚠ Request failed: '+esc(e.message)+'\n\nCheck:\n1. API key is saved in Settings\n2. Proxy URL is configured in Settings\n3. Internet connection is active');
+    addMsg('assistant','⚠ '+esc(e.message));
   }
-  document.getElementById('chatSendBtn').disabled=false;
+  document.getElementById('chatSendBtn').disabled = false;
   chatInput.focus();
 }
 
