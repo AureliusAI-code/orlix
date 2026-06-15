@@ -997,7 +997,7 @@ function updateBanner(){
   if(!getApiKey() && !serverKeyedSel){
     banner('green','✓ <strong>Select a model</strong> to start chatting. Claude, Grok and OpenAI work without any API key.');
   } else if(!getApiKey() && isClaudeSel){
-    banner('green','✓ <strong>Claude ready</strong> — server Anthropic key active. Send a message to start.');
+    banner('green','✓ <strong>Claude ready</strong> — server Anthropic key active. <span style="color:#0052ff;background:rgba(0,82,255,.12);border:1px solid rgba(0,82,255,.3);padding:1px 7px;border-radius:4px;font-size:.7rem">🔵 Base MCP</span> tools active — ask about wallets, gas, transactions on Base.');
   } else if(!getApiKey() && isGrokSel){
     banner('green','✓ <strong>Grok ready</strong> — server xAI key active. Send a message to start.');
   } else if(!getApiKey() && isOpenAISel){
