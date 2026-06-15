@@ -313,14 +313,14 @@ select.inp{cursor:pointer}
     </div>
     <div class="sb-sect">
       <span class="sb-label">integrations</span>
-      <div class="sb-item" data-view="agents"><span class="ic">⚡</span>Agents<span class="badge">Aeon</span></div>
-      <div class="sb-item" data-view="aeon-memory"><span class="ic">🧠</span>Memory</div>
+      <div class="sb-item" data-view="agents"><span class="ic">A</span>Agents<span class="badge">Aeon</span></div>
+      <div class="sb-item" data-view="aeon-memory"><span class="ic">M</span>Memory</div>
       <div class="sb-item" data-view="models"><span class="ic">◫</span>models<span class="badge">36</span></div>
       <div class="sb-item" data-view="playground"><span class="ic">▷</span>playground</div>
     </div>
     <div class="sb-sect">
       <span class="sb-label">config</span>
-      <div class="sb-item" data-view="settings"><span class="ic">⚙</span>settings</div>
+      <div class="sb-item" data-view="settings"><span class="ic">S</span>settings</div>
     </div>
     <div class="sb-footer">
       <div class="sb-ver">orlix v0.6.0-aeon<br>local-first · sovereign · auditable</div>
@@ -502,25 +502,25 @@ select.inp{cursor:pointer}
         <div class="sub">Aeon-powered autonomous skills. Click any skill to run it in Playground.</div>
       </div>
       <div class="panel">
-        <div class="panel-hd"><span class="ttl">🔬 Research & Analysis</span></div>
+        <div class="panel-hd"><span class="ttl">Research & Analysis</span></div>
         <div class="panel-body">
           <div class="skill-grid" id="skillGrid-research"></div>
         </div>
       </div>
       <div class="panel">
-        <div class="panel-hd"><span class="ttl">💻 Dev & Code</span></div>
+        <div class="panel-hd"><span class="ttl">Dev & Code</span></div>
         <div class="panel-body">
           <div class="skill-grid" id="skillGrid-dev"></div>
         </div>
       </div>
       <div class="panel">
-        <div class="panel-hd"><span class="ttl">🔵 Crypto & Base</span></div>
+        <div class="panel-hd"><span class="ttl">Crypto & Base</span></div>
         <div class="panel-body">
           <div class="skill-grid" id="skillGrid-crypto"></div>
         </div>
       </div>
       <div class="panel">
-        <div class="panel-hd"><span class="ttl">⚙️ Productivity</span></div>
+        <div class="panel-hd"><span class="ttl">Productivity</span></div>
         <div class="panel-body">
           <div class="skill-grid" id="skillGrid-prod"></div>
         </div>
@@ -747,8 +747,8 @@ const auditLog = [
 ];
 
 const agents = [
-  {name:'Claude Opus 4',provider:'Anthropic',status:'connected',model:'claude-opus-4-8',perms:'read · summarise · draft',icon:'🤖',col:'#b9a4ff'},
-  {name:'GPT-4o',provider:'OpenAI',status:'standby',model:'gpt-4o',perms:'read · summarise',icon:'⚡',col:'#7ee0a8'},
+  {name:'Claude Opus 4',provider:'Anthropic',status:'connected',model:'claude-opus-4-8',perms:'read · summarise · draft',icon:'',col:'#b9a4ff'},
+  {name:'GPT-4o',provider:'OpenAI',status:'standby',model:'gpt-4o',perms:'read · summarise',icon:'',col:'#7ee0a8'},
   {name:'Orlix Task Runner',provider:'local',status:'connected',model:'local v0.5',perms:'full (supervised)',icon:'⬡',col:'#ff9a52'},
 ];
 
@@ -874,28 +874,28 @@ function renderAgents(){
 // ───────── AEON SKILLS ─────────
 const AEON_SKILLS = {
   research: [
-    { icon:'🔬', name:'Deep Research', desc:'Multi-source research report with citations', tag:'web_search + fetch', prompt:'Do deep research on this topic and provide a comprehensive report with sources:\n\n[YOUR TOPIC HERE]' },
-    { icon:'📰', name:'News Digest', desc:'Latest news on any topic from the web', tag:'web_search', prompt:'Search the web and give me a digest of the latest news about:\n\n[YOUR TOPIC HERE]' },
-    { icon:'📊', name:'Market Analysis', desc:'Current market conditions, trends, outlook', tag:'web_search', prompt:'Do a market analysis for [ASSET/MARKET]. Search for current price, recent news, sentiment, and give an outlook.' },
-    { icon:'🧠', name:'Compare Options', desc:'Research and compare multiple options objectively', tag:'web_search + fetch', prompt:'Research and compare these options objectively with pros/cons and a recommendation:\n\nOption A: [FIRST]\nOption B: [SECOND]' },
+    { icon:'', name:'Deep Research', desc:'Multi-source research report with citations', tag:'web_search + fetch', prompt:'Do deep research on this topic and provide a comprehensive report with sources:\n\n[YOUR TOPIC HERE]' },
+    { icon:'', name:'News Digest', desc:'Latest news on any topic from the web', tag:'web_search', prompt:'Search the web and give me a digest of the latest news about:\n\n[YOUR TOPIC HERE]' },
+    { icon:'', name:'Market Analysis', desc:'Current market conditions, trends, outlook', tag:'web_search', prompt:'Do a market analysis for [ASSET/MARKET]. Search for current price, recent news, sentiment, and give an outlook.' },
+    { icon:'', name:'Compare Options', desc:'Research and compare multiple options objectively', tag:'web_search + fetch', prompt:'Research and compare these options objectively with pros/cons and a recommendation:\n\nOption A: [FIRST]\nOption B: [SECOND]' },
   ],
   dev: [
-    { icon:'📦', name:'Repo Analyzer', desc:'Analyze any GitHub repository in depth', tag:'github_repo_info + fetch', prompt:'Analyze this GitHub repository and give me a full breakdown of what it does, tech stack, quality, and use cases:\n\nhttps://github.com/[OWNER]/[REPO]' },
-    { icon:'🐛', name:'Debug Helper', desc:'Paste an error and get a fix with explanation', tag:'web_search', prompt:'I have this error. Search for known solutions and give me the best fix:\n\n```\n[PASTE ERROR HERE]\n```' },
-    { icon:'🏗️', name:'Build an App', desc:'Generate a complete single-file web app', tag:'code', prompt:'Build a complete, self-contained single-file web app:\n\n[DESCRIBE YOUR APP]' },
-    { icon:'📝', name:'Code Review', desc:'Review code for bugs, security, improvements', tag:'code', prompt:'Review this code for bugs, security issues, and improvements:\n\n```\n[PASTE CODE HERE]\n```' },
+    { icon:'', name:'Repo Analyzer', desc:'Analyze any GitHub repository in depth', tag:'github_repo_info + fetch', prompt:'Analyze this GitHub repository and give me a full breakdown of what it does, tech stack, quality, and use cases:\n\nhttps://github.com/[OWNER]/[REPO]' },
+    { icon:'', name:'Debug Helper', desc:'Paste an error and get a fix with explanation', tag:'web_search', prompt:'I have this error. Search for known solutions and give me the best fix:\n\n```\n[PASTE ERROR HERE]\n```' },
+    { icon:'', name:'Build an App', desc:'Generate a complete single-file web app', tag:'code', prompt:'Build a complete, self-contained single-file web app:\n\n[DESCRIBE YOUR APP]' },
+    { icon:'', name:'Code Review', desc:'Review code for bugs, security, improvements', tag:'code', prompt:'Review this code for bugs, security issues, and improvements:\n\n```\n[PASTE CODE HERE]\n```' },
   ],
   crypto: [
-    { icon:'💰', name:'Wallet Balance', desc:'Check any wallet\'s ETH balance on Base', tag:'base_get_eth_balance', prompt:'Check the ETH balance and give me a summary for this wallet on Base network:\n\n[WALLET ADDRESS]' },
-    { icon:'⛽', name:'Gas Tracker', desc:'Current gas price and network status on Base', tag:'base_get_gas_price + base_get_latest_block', prompt:'What is the current gas price on Base network? Also show me the latest block info.' },
-    { icon:'🔍', name:'Tx Inspector', desc:'Look up any transaction on Base by hash', tag:'base_get_transaction', prompt:'Look up this transaction on Base and explain what happened:\n\n[TX HASH]' },
-    { icon:'🌐', name:'Base Network Info', desc:'Full Base network status and statistics', tag:'base_get_network_info', prompt:'Give me a complete status report of the Base network right now — chain ID, latest block, gas price, and any notable info.' },
+    { icon:'', name:'Wallet Balance', desc:'Check any wallet\'s ETH balance on Base', tag:'base_get_eth_balance', prompt:'Check the ETH balance and give me a summary for this wallet on Base network:\n\n[WALLET ADDRESS]' },
+    { icon:'', name:'Gas Tracker', desc:'Current gas price and network status on Base', tag:'base_get_gas_price + base_get_latest_block', prompt:'What is the current gas price on Base network? Also show me the latest block info.' },
+    { icon:'', name:'Tx Inspector', desc:'Look up any transaction on Base by hash', tag:'base_get_transaction', prompt:'Look up this transaction on Base and explain what happened:\n\n[TX HASH]' },
+    { icon:'', name:'Base Network Info', desc:'Full Base network status and statistics', tag:'base_get_network_info', prompt:'Give me a complete status report of the Base network right now — chain ID, latest block, gas price, and any notable info.' },
   ],
   prod: [
-    { icon:'✍️', name:'Content Writer', desc:'Write polished content on any topic', tag:'web_search', prompt:'Write high-quality content about:\n\n[TOPIC]\n\nTone: [professional/casual/technical]\nLength: [short/medium/long]' },
-    { icon:'📋', name:'Summarizer', desc:'Summarize any URL or pasted text', tag:'fetch_webpage', prompt:'Summarize this in bullet points, highlighting the key takeaways:\n\n[URL or paste text here]' },
-    { icon:'🎯', name:'Goal Planner', desc:'Break down a goal into actionable steps', tag:'reasoning', prompt:'I want to achieve this goal. Create a detailed action plan with milestones:\n\nGoal: [YOUR GOAL]' },
-    { icon:'🌍', name:'Translate & Adapt', desc:'Translate and culturally adapt content', tag:'reasoning', prompt:'Translate this to [TARGET LANGUAGE] and culturally adapt it for that audience:\n\n[TEXT TO TRANSLATE]' },
+    { icon:'', name:'Content Writer', desc:'Write polished content on any topic', tag:'web_search', prompt:'Write high-quality content about:\n\n[TOPIC]\n\nTone: [professional/casual/technical]\nLength: [short/medium/long]' },
+    { icon:'', name:'Summarizer', desc:'Summarize any URL or pasted text', tag:'fetch_webpage', prompt:'Summarize this in bullet points, highlighting the key takeaways:\n\n[URL or paste text here]' },
+    { icon:'', name:'Goal Planner', desc:'Break down a goal into actionable steps', tag:'reasoning', prompt:'I want to achieve this goal. Create a detailed action plan with milestones:\n\nGoal: [YOUR GOAL]' },
+    { icon:'', name:'Translate & Adapt', desc:'Translate and culturally adapt content', tag:'reasoning', prompt:'Translate this to [TARGET LANGUAGE] and culturally adapt it for that audience:\n\n[TEXT TO TRANSLATE]' },
   ],
 };
 
@@ -915,13 +915,18 @@ function renderAgentSkills() {
   Object.entries(AEON_SKILLS).forEach(([cat, skills]) => {
     const grid = document.getElementById('skillGrid-' + cat);
     if (!grid) return;
-    grid.innerHTML = skills.map(s => `
-      <div class="skill-card" onclick="runSkill(${JSON.stringify(s.prompt)})">
-        <div class="sk-icon">${s.icon}</div>
-        <div class="sk-name">${s.name}</div>
-        <div class="sk-desc">${s.desc}</div>
-        <span class="sk-tag">${s.tag}</span>
+    grid.innerHTML = skills.map((s, i) =>
+      `<div class="skill-card" data-cat="${cat}" data-idx="${i}">
+        <div class="sk-name">${esc2(s.name)}</div>
+        <div class="sk-desc">${esc2(s.desc)}</div>
+        <span class="sk-tag">${esc2(s.tag)}</span>
       </div>`).join('');
+    grid.querySelectorAll('.skill-card').forEach(card => {
+      card.addEventListener('click', () => {
+        const skill = AEON_SKILLS[card.dataset.cat][+card.dataset.idx];
+        runSkill(skill.prompt);
+      });
+    });
   });
 }
 
@@ -1003,7 +1008,7 @@ const PROVIDERS = [
     {name:'M2.7 HighSpeed', id:'minimax-m2.7-highspeed'},
     {name:'M2.5',           id:'minimax-m2.5'},
   ]},
-  {name:'Moonshot AI',col:'#c3b1e1',icon:'☽',models:[
+  {name:'Moonshot AI',col:'#c3b1e1',icon:'',models:[
     {name:'Kimi K2.6',id:'kimi-k2.6'},
     {name:'Kimi K2.5',id:'kimi-k2.5'},
   ]},
@@ -1111,7 +1116,7 @@ function updateBanner(){
   if(!getApiKey() && !serverKeyedSel){
     banner('green','✓ <strong>Select a model</strong> to start chatting. Claude, Grok and OpenAI work without any API key.');
   } else if(!getApiKey() && isClaudeSel){
-    banner('green','✓ <strong>Claude ready</strong> — server Anthropic key active. <span style="color:#0052ff;background:rgba(0,82,255,.12);border:1px solid rgba(0,82,255,.3);padding:1px 7px;border-radius:4px;font-size:.7rem">🔵 Base MCP</span> tools active — ask about wallets, gas, transactions on Base.');
+    banner('green','✓ <strong>Claude ready</strong> — server Anthropic key active. <span style="color:#0052ff;background:rgba(0,82,255,.12);border:1px solid rgba(0,82,255,.3);padding:1px 7px;border-radius:4px;font-size:.7rem">Base MCP</span> tools active — ask about wallets, gas, transactions on Base.');
   } else if(!getApiKey() && isGrokSel){
     banner('green','✓ <strong>Grok ready</strong> — server xAI key active. Send a message to start.');
   } else if(!getApiKey() && isOpenAISel){
