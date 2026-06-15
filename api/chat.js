@@ -3,8 +3,6 @@
 //   claude-*          → api.anthropic.com   (ANTHROPIC_API_KEY env var) + Base MCP tools
 //   grok-*            → api.x.ai            (XAI_API_KEY env var)
 //   gpt-* / o1/o3/o4  → api.openai.com      (OPENAI_API_KEY env var)
-//   others            → api.bankr.bot        (x-api-key header from user settings)
-const crypto = require('crypto');
 
 // ── Tool definitions (Base MCP + Aeon agentic tools) ─────────────────────────
 const ALL_TOOLS = [
@@ -357,91 +355,10 @@ module.exports = async function handler(req, res) {
     } catch (e) { return res.status(502).json({ error: { message: 'OpenAI error: ' + e.message } }); }
   }
 
-  const apiKey = req.headers['x-api-key'] || '';
-
-  // ── x402.bankr.bot (pay-per-use) ─────────────────────────────────────────
-  if (!apiKey) {
-    const privKey = process.env.BANKR_PRIVATE_KEY || '';
-    if (!privKey) {
-      return res.status(401).json({
-        error: { message: 'No API key. Add your bankr.bot key in Settings, or set BANKR_PRIVATE_KEY in Vercel for $0.01 USDC/request mode.' }
-      });
+  // No provider matched — inform the user
+  return res.status(400).json({
+    error: {
+      message: 'Unsupported model. Select a Claude (claude-*), Grok (grok-*), or OpenAI (gpt-* / o1/o3/o4) model to use this API.'
     }
-    const messages  = bodyObj.messages || [];
-    const prompt    = messages.map(m => {
-      const c = Array.isArray(m.content) ? m.content.map(b => b.text || '').join('') : (m.content || '');
-      return `${m.role}: ${c}`;
-    }).join('\n\n');
-    const x402Model = bodyObj.model || 'gpt-4o-mini';
-
-    let r1;
-    try {
-      r1 = await fetch('https://x402.bankr.bot', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt }) });
-    } catch (e) { return res.status(502).json({ error: { message: 'x402 fetch error: ' + e.message } }); }
-
-    if (r1.status !== 402) {
-      const text = await r1.text();
-      try {
-        const data  = JSON.parse(text);
-        const reply = data.response || data.content || data.text || data.choices?.[0]?.message?.content || text;
-        return res.json({ content: [{ type: 'text', text: String(reply) }], usage: data.usage || {} });
-      } catch { return res.status(r1.status).json({ error: { message: text.slice(0, 200) } }); }
-    }
-
-    let paymentDetails;
-    try { paymentDetails = await r1.json(); } catch { paymentDetails = {}; }
-
-    const nonce         = paymentDetails.nonce || crypto.randomUUID();
-    const timestamp     = Date.now();
-    const payload       = JSON.stringify({ nonce, timestamp, model: x402Model, amount: '0.01', currency: 'USDC' });
-    const sig           = crypto.createHmac('sha256', privKey).update(payload).digest('hex');
-    const paymentHeader = Buffer.from(JSON.stringify({ payload, sig, version: '1' })).toString('base64');
-
-    let r2;
-    try {
-      r2 = await fetch('https://x402.bankr.bot', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x402-payment': paymentHeader }, body: JSON.stringify({ prompt }) });
-    } catch (e) { return res.status(502).json({ error: { message: 'x402 payment retry error: ' + e.message } }); }
-
-    const text2 = await r2.text();
-    if (!r2.ok) return res.status(r2.status).json({ error: { message: `x402 payment failed (${r2.status}): ${text2.slice(0, 200)}` } });
-
-    try {
-      const data  = JSON.parse(text2);
-      const reply = data.response || data.content || data.text || data.choices?.[0]?.message?.content || text2;
-      return res.json({ content: [{ type: 'text', text: String(reply) }], usage: data.usage || {} });
-    } catch { return res.json({ content: [{ type: 'text', text: text2 }], usage: {} }); }
-  }
-
-  // ── api.bankr.bot (user API key) ─────────────────────────────────────────
-  const bankrHeaders = { 'Content-Type': 'application/json', 'x-api-key': apiKey };
-
-  async function tryBankr(path) {
-    const r    = await fetch('https://api.bankr.bot' + path, { method: 'POST', headers: bankrHeaders, body: JSON.stringify(bodyObj) });
-    const text = await r.text();
-    return { status: r.status, text };
-  }
-
-  try {
-    let { status, text } = await tryBankr('/v1/messages');
-    if (status === 404) {
-      const r2 = await tryBankr('/v1/chat/completions');
-      if (r2.status !== 404) { status = r2.status; text = r2.text; }
-    }
-
-    let isJson = true;
-    try { JSON.parse(text); } catch { isJson = false; }
-
-    if (!isJson || status === 404) {
-      return res.status(status).json({
-        error: {
-          message: `bankr.bot error (HTTP ${status}): ${text.replace(/<[^>]+>/g, '').trim().slice(0, 300)}`,
-          hint:    status === 404 ? 'bankr.bot API endpoint not found.' : 'Your bankr.bot API key may be invalid or expired.'
-        }
-      });
-    }
-
-    res.status(status).setHeader('Content-Type', 'application/json').send(text);
-  } catch (e) {
-    res.status(502).json({ error: { message: 'Proxy error: ' + e.message } });
-  }
+  });
 };

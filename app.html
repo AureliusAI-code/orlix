@@ -264,6 +264,11 @@ select.inp{cursor:pointer}
   .agent-actions{display:none}
   .provider-grid{grid-template-columns:1fr}
 }
+
+/* ── quality rater ── */
+.quality-rater{padding:6px 16px;display:flex;align-items:center;gap:8px;border-top:1px solid var(--line)}
+.quality-btn{background:none;border:1px solid var(--line-bright);color:var(--dim);border-radius:4px;width:28px;height:24px;font-size:.74rem;cursor:pointer;transition:.15s}
+.quality-btn:hover{border-color:var(--amber);color:var(--amber)}
 </style>
 </head>
 <body>
@@ -309,6 +314,7 @@ select.inp{cursor:pointer}
     <div class="sb-sect">
       <span class="sb-label">integrations</span>
       <div class="sb-item" data-view="agents"><span class="ic">⚡</span>Agents<span class="badge">Aeon</span></div>
+      <div class="sb-item" data-view="aeon-memory"><span class="ic">🧠</span>Memory</div>
       <div class="sb-item" data-view="models"><span class="ic">◫</span>models<span class="badge">36</span></div>
       <div class="sb-item" data-view="playground"><span class="ic">▷</span>playground</div>
     </div>
@@ -317,7 +323,7 @@ select.inp{cursor:pointer}
       <div class="sb-item" data-view="settings"><span class="ic">⚙</span>settings</div>
     </div>
     <div class="sb-footer">
-      <div class="sb-ver">orlix v0.5.0-beta<br>local-first · sovereign · auditable</div>
+      <div class="sb-ver">orlix v0.6.0-aeon<br>local-first · sovereign · auditable</div>
     </div>
   </nav>
 
@@ -329,45 +335,49 @@ select.inp{cursor:pointer}
       <div class="page-hd">
         <div class="file">$ orlix status --full</div>
         <h1>Overview</h1>
-        <div class="sub">Authority tier: <span style="color:var(--amber)">supervised</span> · session started 14m ago</div>
+        <div class="sub">Aeon engine · <span style="color:var(--amber)">git is the DB</span> · skills self-score · runs log locally</div>
       </div>
       <div class="stat-grid">
-        <div class="stat-card c-amber">
-          <div class="s-label">memory entries</div>
-          <div class="s-val" id="st-mem">12</div>
-          <div class="s-sub">last updated 2m ago</div>
-        </div>
         <div class="stat-card c-violet">
-          <div class="s-label">active policies</div>
-          <div class="s-val" id="st-pol">6</div>
-          <div class="s-sub">2 paused</div>
+          <div class="s-label">Skills</div>
+          <div class="s-val" id="st-skills">—</div>
+          <div class="s-sub">across 4 packs</div>
+        </div>
+        <div class="stat-card c-amber">
+          <div class="s-label">Runs Today</div>
+          <div class="s-val" id="st-runs-today">—</div>
+          <div class="s-sub">from run log</div>
         </div>
         <div class="stat-card c-green">
-          <div class="s-label">goals tracked</div>
-          <div class="s-val" id="st-goals">5</div>
-          <div class="s-sub">1 completed</div>
+          <div class="s-label">Avg Quality</div>
+          <div class="s-val" id="st-avg-quality">—</div>
+          <div class="s-sub">last 30 runs</div>
         </div>
         <div class="stat-card">
-          <div class="s-label">audit entries (24h)</div>
-          <div class="s-val">47</div>
-          <div class="s-sub">0 escalations</div>
+          <div class="s-label">Tokens Used</div>
+          <div class="s-val" id="st-tokens">—</div>
+          <div class="s-sub">cumulative</div>
         </div>
       </div>
       <div class="panel">
         <div class="panel-hd">
-          <span class="ttl">system health</span>
-          <span class="tag green">all nominal</span>
+          <span class="ttl">active goals & context</span>
+          <button class="btn sm" id="ovGoalsSaveBtn">save</button>
+        </div>
+        <div class="panel-body">
+          <textarea id="ovGoalsTextarea" class="inp" style="width:100%;min-height:100px;resize:vertical"
+            placeholder="Your active goals, context, and priorities. Claude reads this on every run."></textarea>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-hd">
+          <span class="ttl">recent runs</span>
+          <button class="btn sm" data-nav="aeon-memory">view all →</button>
         </div>
         <div class="panel-body" style="padding:0">
-          <table class="tbl">
-            <thead><tr><th style="padding-left:16px">module</th><th>status</th><th>latency</th><th>heartbeat</th></tr></thead>
-            <tbody>
-              <tr><td style="padding-left:16px">world model</td><td><span class="tag green">online</span></td><td style="color:var(--dim-2)">—</td><td style="color:var(--dim-2)">just now</td></tr>
-              <tr><td style="padding-left:16px">policy engine</td><td><span class="tag green">online</span></td><td style="color:var(--dim-2)">12ms</td><td style="color:var(--dim-2)">just now</td></tr>
-              <tr><td style="padding-left:16px">memory layer</td><td><span class="tag green">online</span></td><td style="color:var(--dim-2)">3ms</td><td style="color:var(--dim-2)">just now</td></tr>
-              <tr><td style="padding-left:16px">audit log</td><td><span class="tag green">online</span></td><td style="color:var(--dim-2)">1ms</td><td style="color:var(--dim-2)">just now</td></tr>
-              <tr><td style="padding-left:16px">agent bridge</td><td><span class="tag green">online</span></td><td style="color:var(--dim-2)">48ms</td><td style="color:var(--dim-2)">4s ago</td></tr>
-            </tbody>
+          <table class="tbl" id="ovRunTable">
+            <thead><tr><th style="padding-left:16px">Skill / Preview</th><th>Model</th><th>Quality</th><th>Tokens</th><th>Time</th></tr></thead>
+            <tbody id="ovRunBody"><tr><td colspan="5" style="padding-left:16px;color:var(--dim-2);font-size:.78rem">No runs yet — start chatting in Playground.</td></tr></tbody>
           </table>
         </div>
       </div>
@@ -513,6 +523,53 @@ select.inp{cursor:pointer}
         <div class="panel-hd"><span class="ttl">⚙️ Productivity</span></div>
         <div class="panel-body">
           <div class="skill-grid" id="skillGrid-prod"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ AEON MEMORY ═══ -->
+    <div class="view" id="view-aeon-memory">
+      <div class="page-hd">
+        <div class="file">$ cat memory/MEMORY.md</div>
+        <h1>Memory</h1>
+        <div class="sub">Persistent state — goals, logs, metrics. Stored locally.</div>
+      </div>
+
+      <!-- Goals panel -->
+      <div class="panel">
+        <div class="panel-hd">
+          <span class="ttl">goals & context</span>
+          <button class="btn sm" id="saveGoalsBtn">save</button>
+        </div>
+        <div class="panel-body">
+          <textarea id="goalsTextarea" class="inp" style="width:100%;min-height:140px;resize:vertical"
+            placeholder="Your active goals, context, and priorities. Claude reads this on every run."></textarea>
+        </div>
+      </div>
+
+      <!-- Run log panel -->
+      <div class="panel">
+        <div class="panel-hd">
+          <span class="ttl">run log</span>
+          <button class="btn sm danger" id="clearRunsBtn">clear</button>
+        </div>
+        <div class="panel-body" style="padding:0">
+          <table class="tbl" id="runLogTable">
+            <thead><tr><th style="padding-left:16px">Time</th><th>Model</th><th>Tokens</th><th>Quality</th><th>Preview</th></tr></thead>
+            <tbody id="runLogBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Token usage panel -->
+      <div class="panel">
+        <div class="panel-hd"><span class="ttl">token usage</span></div>
+        <div class="panel-body">
+          <div class="stat-grid">
+            <div class="stat-card"><div class="s-label">Total Tokens</div><div class="s-val" id="memTotalTokens">—</div></div>
+            <div class="stat-card c-amber"><div class="s-label">Total Runs</div><div class="s-val" id="memTotalRuns">—</div></div>
+            <div class="stat-card c-green"><div class="s-label">Avg Quality</div><div class="s-val" id="memAvgQuality">—</div></div>
+          </div>
         </div>
       </div>
     </div>
@@ -702,6 +759,8 @@ function showView(name){
   document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id==='view-'+name));
   document.querySelectorAll('.sb-item').forEach(i=>i.classList.toggle('active',i.dataset.view===name));
   document.getElementById('sidebar').classList.remove('open');
+  if(name==='overview') refreshDashboard();
+  if(name==='aeon-memory') refreshMemoryView();
 }
 document.querySelectorAll('.sb-item').forEach(i=>i.addEventListener('click',()=>showView(i.dataset.view)));
 document.querySelectorAll('[data-nav]').forEach(b=>b.addEventListener('click',()=>showView(b.dataset.nav)));
@@ -1029,12 +1088,6 @@ function addTyping(){
 }
 
 const IS_LOCAL   = ['localhost','127.0.0.1'].includes(location.hostname);
-const BANKR      = 'https://api.bankr.bot/v1/messages';
-const PROXIES    = [
-  key => ({ url: BANKR,                                                                    headers: {'Content-Type':'application/json','x-api-key':key} }),
-  key => ({ url: `https://corsproxy.io/?url=${encodeURIComponent(BANKR)}`,                headers: {'Content-Type':'application/json','x-api-key':key} }),
-  key => ({ url: `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(BANKR)}`,  headers: {'Content-Type':'application/json','x-api-key':key} }),
-];
 
 function getProxyUrl(){ return localStorage.getItem('bkProxyUrl')||''; }
 
@@ -1084,7 +1137,7 @@ async function apiFetch(key, bodyObj){
   const serverKeyed = isClaude || isGrok || isOpenAI; // server has env var, no user key needed
 
   if(!key && !serverKeyed){
-    throw new Error('No API key saved. Go to Settings → API Key and save your bankr.bot key. (Claude, Grok and OpenAI models work without a key.)');
+    throw new Error('No API key set. Select a Claude, Grok, or OpenAI model — they work without a key.');
   }
 
   // 1. Same-origin /api/chat (Vercel serverless function — no CORS)
@@ -1105,13 +1158,6 @@ async function apiFetch(key, bodyObj){
       errors.push('custom proxy: 404');
     }catch(e){ errors.push('custom proxy: '+e.message); }
   }
-
-  // 3. corsproxy.io
-  try{
-    const r = await fetch(`https://corsproxy.io/?url=${encodeURIComponent('https://api.bankr.bot/v1/messages')}`,{method:'POST',headers:h,body:bodyStr});
-    if(r.ok) return r;
-    errors.push('corsproxy.io: HTTP '+r.status);
-  }catch(e){ errors.push('corsproxy.io: '+e.message); }
 
   // All paths failed — throw with diagnostics
   throw new Error('All proxy routes failed:\n'+errors.join('\n')+'\n\nMake sure Vercel has redeployed after the latest git push.');
@@ -1142,16 +1188,23 @@ async function sendChat(){
   const isGrok   = ml.startsWith('grok');
   const isOpenAI = ml.startsWith('gpt-')||ml.startsWith('o1')||ml.startsWith('o3')||ml.startsWith('o4');
   const serverKeyed = isClaude || isGrok || isOpenAI;
-  if(!key && !serverKeyed){ banner('red','✕ <strong>No API key</strong> — go to Settings → bankr.bot, or select a Claude / Grok / OpenAI model (no key needed).'); return; }
+  if(!key && !serverKeyed){ banner('red','✕ <strong>No API key</strong> — select a Claude, Grok, or OpenAI model (no key needed).'); return; }
   const text = chatInput.value.trim();
   if(!text) return;
   chatInput.value = '';
   addMsg('user', text, 'you · '+new Date().toLocaleTimeString());
+
+  // Inject user memory/goals into system prompt
+  const userGoals = localStorage.getItem('orlix_goals') || '';
+  const systemWithMemory = userGoals
+    ? GROK_SYSTEM + '\n\n## User Memory / Goals\n' + userGoals
+    : GROK_SYSTEM;
+
   // For Claude: pass system as top-level param; for Grok/OpenAI: prepend as system role message
   const messages = (isGrok||isOpenAI)
-    ? [{role:'system',content:GROK_SYSTEM}, ...chatHistory]
+    ? [{role:'system',content:systemWithMemory}, ...chatHistory]
     : [...chatHistory];
-  const extraParams = isClaude ? {system: GROK_SYSTEM} : {};
+  const extraParams = isClaude ? {system: systemWithMemory} : {};
   const typing = addTyping();
   document.getElementById('chatSendBtn').disabled = true;
   try{
@@ -1169,7 +1222,10 @@ async function sendChat(){
       const usage = u ? ` · ${u.input_tokens||u.prompt_tokens||0}in / ${u.output_tokens||u.completion_tokens||0}out` : '';
       totalTokens += (u?.input_tokens||u?.prompt_tokens||0)+(u?.output_tokens||u?.completion_tokens||0);
       document.getElementById('pgTokens').textContent = totalTokens||'—';
-      addMsg('assistant', parsed.text, model+usage+' · '+new Date().toLocaleTimeString());
+      const msgEl = addMsg('assistant', parsed.text, model+usage+' · '+new Date().toLocaleTimeString());
+      // Log run and show quality rater
+      const runId = logRun(model, u, parsed.text);
+      showQualityRater(runId, msgEl);
     }
   }catch(e){
     typing.remove();
@@ -1250,6 +1306,7 @@ renderOvLog();
 renderModels();
 populateModelSel();
 pgModelSel.addEventListener('change', updateBanner);
+refreshDashboard();
 
 // ───────── CODE RENDERING + PREVIEW ─────────
 // Raw code stored by ID so copy/preview get the original, not HTML-escaped
@@ -1316,6 +1373,154 @@ function closePreview(){
   if(modal._blobUrl){ URL.revokeObjectURL(modal._blobUrl); modal._blobUrl=null; }
   modal.querySelector('iframe').src='about:blank';
 }
+
+// ───────── RUN LOGGING & QUALITY RATING ─────────
+function logRun(model, usage, preview) {
+  const runs = JSON.parse(localStorage.getItem('orlix_runs') || '[]');
+  const entry = {
+    id: Date.now().toString(36),
+    time: new Date().toISOString(),
+    model,
+    tokens_in:  usage?.input_tokens  || usage?.prompt_tokens     || 0,
+    tokens_out: usage?.output_tokens || usage?.completion_tokens || 0,
+    quality: null,
+    preview: preview.slice(0, 80)
+  };
+  runs.unshift(entry);
+  localStorage.setItem('orlix_runs', JSON.stringify(runs.slice(0, 100)));
+  return entry.id;
+}
+
+function showQualityRater(runId, afterEl) {
+  const div = document.createElement('div');
+  div.className = 'quality-rater';
+  div.innerHTML = `<span style="color:var(--dim);font-size:.72rem">Rate this run:</span> ${[1,2,3,4,5].map(n=>`<button class="quality-btn" onclick="rateRun('${runId}',${n},this.parentElement)">${n}</button>`).join('')}`;
+  afterEl.after(div);
+}
+
+function rateRun(runId, score, el) {
+  const runs = JSON.parse(localStorage.getItem('orlix_runs') || '[]');
+  const run = runs.find(r => r.id === runId);
+  if (run) { run.quality = score; localStorage.setItem('orlix_runs', JSON.stringify(runs)); }
+  if (el) el.remove();
+}
+
+// ───────── DASHBOARD REFRESH ─────────
+function refreshDashboard() {
+  const runs = JSON.parse(localStorage.getItem('orlix_runs') || '[]');
+  const today = new Date().toDateString();
+  const runsToday = runs.filter(r => new Date(r.time).toDateString() === today).length;
+  const last30 = runs.slice(0, 30).filter(r => r.quality !== null);
+  const avgQuality = last30.length
+    ? (last30.reduce((s, r) => s + r.quality, 0) / last30.length).toFixed(1)
+    : '—';
+  const totalTokens = runs.reduce((s, r) => s + (r.tokens_in || 0) + (r.tokens_out || 0), 0);
+  const skillCount = Object.values(AEON_SKILLS).reduce((s, arr) => s + arr.length, 0);
+
+  // Update overview stat cards
+  const el = id => document.getElementById(id);
+  if(el('st-skills'))       el('st-skills').textContent       = skillCount;
+  if(el('st-runs-today'))   el('st-runs-today').textContent   = runsToday || '0';
+  if(el('st-avg-quality'))  el('st-avg-quality').textContent  = avgQuality;
+  if(el('st-tokens'))       el('st-tokens').textContent       = totalTokens > 999 ? (totalTokens/1000).toFixed(1)+'k' : (totalTokens || '0');
+
+  // Populate recent runs table (last 5)
+  const tbody = el('ovRunBody');
+  if(tbody){
+    if(runs.length === 0){
+      tbody.innerHTML = '<tr><td colspan="5" style="padding-left:16px;color:var(--dim-2);font-size:.78rem">No runs yet — start chatting in Playground.</td></tr>';
+    } else {
+      tbody.innerHTML = runs.slice(0,5).map(r => {
+        const t = new Date(r.time).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+        const q = r.quality !== null ? `<span class="tag ${r.quality>=4?'green':r.quality>=3?'amber':'red'}">${r.quality}</span>` : '<span style="color:var(--dim-2)">—</span>';
+        const tok = (r.tokens_in||0)+(r.tokens_out||0);
+        const prev = esc((r.preview||'').slice(0,40));
+        return `<tr>
+          <td style="padding-left:16px;max-width:240px;word-break:break-word;font-size:.75rem">${prev}</td>
+          <td style="color:var(--dim);font-size:.74rem">${esc(r.model.split('-').slice(0,2).join('-'))}</td>
+          <td>${q}</td>
+          <td style="color:var(--dim-2);font-size:.74rem">${tok||'—'}</td>
+          <td style="color:var(--dim-2);font-size:.74rem;white-space:nowrap">${t}</td>
+        </tr>`;
+      }).join('');
+    }
+  }
+
+  // Sync goals textarea in overview
+  const ovGoals = el('ovGoalsTextarea');
+  if(ovGoals && !ovGoals._focused) ovGoals.value = localStorage.getItem('orlix_goals') || '';
+}
+
+// ───────── AEON MEMORY VIEW ─────────
+function refreshMemoryView() {
+  const runs = JSON.parse(localStorage.getItem('orlix_runs') || '[]');
+  const el = id => document.getElementById(id);
+
+  // Run log table
+  const tbody = el('runLogBody');
+  if(tbody){
+    if(runs.length === 0){
+      tbody.innerHTML = '<tr><td colspan="5" style="padding-left:16px;color:var(--dim-2)">No runs logged yet.</td></tr>';
+    } else {
+      tbody.innerHTML = runs.map(r => {
+        const t = new Date(r.time).toLocaleString();
+        const q = r.quality !== null ? `<span class="tag ${r.quality>=4?'green':r.quality>=3?'amber':'red'}">${r.quality}</span>` : '<span style="color:var(--dim-2)">—</span>';
+        const tok = (r.tokens_in||0)+(r.tokens_out||0);
+        return `<tr>
+          <td style="padding-left:16px;white-space:nowrap;font-size:.74rem">${esc(t)}</td>
+          <td style="color:var(--dim);font-size:.74rem">${esc(r.model)}</td>
+          <td style="color:var(--dim-2);font-size:.74rem">${tok||'—'}</td>
+          <td>${q}</td>
+          <td style="max-width:260px;word-break:break-word;font-size:.74rem">${esc((r.preview||'').slice(0,60))}</td>
+        </tr>`;
+      }).join('');
+    }
+  }
+
+  // Token usage stats
+  const totalTok = runs.reduce((s,r)=>s+(r.tokens_in||0)+(r.tokens_out||0), 0);
+  const last30 = runs.slice(0,30).filter(r=>r.quality!==null);
+  const avgQ = last30.length ? (last30.reduce((s,r)=>s+r.quality,0)/last30.length).toFixed(1) : '—';
+  if(el('memTotalTokens')) el('memTotalTokens').textContent = totalTok||'0';
+  if(el('memTotalRuns'))   el('memTotalRuns').textContent   = runs.length||'0';
+  if(el('memAvgQuality'))  el('memAvgQuality').textContent  = avgQ;
+
+  // Sync goals textarea
+  const gt = el('goalsTextarea');
+  if(gt) gt.value = localStorage.getItem('orlix_goals') || '';
+}
+
+// Goals save handlers (both overview and memory view)
+document.addEventListener('DOMContentLoaded', () => {
+  // overview goals save
+  const ovBtn = document.getElementById('ovGoalsSaveBtn');
+  if(ovBtn) ovBtn.addEventListener('click', () => {
+    localStorage.setItem('orlix_goals', document.getElementById('ovGoalsTextarea').value);
+    ovBtn.textContent = 'saved!'; setTimeout(() => ovBtn.textContent = 'save', 1500);
+  });
+  const ovTA = document.getElementById('ovGoalsTextarea');
+  if(ovTA){ ovTA.addEventListener('focus',()=>ovTA._focused=true); ovTA.addEventListener('blur',()=>ovTA._focused=false); }
+
+  // memory view goals save
+  const saveBtn = document.getElementById('saveGoalsBtn');
+  if(saveBtn) saveBtn.addEventListener('click', () => {
+    localStorage.setItem('orlix_goals', document.getElementById('goalsTextarea').value);
+    saveBtn.textContent = 'saved!'; setTimeout(() => saveBtn.textContent = 'save', 1500);
+    // sync overview textarea too
+    const ov = document.getElementById('ovGoalsTextarea');
+    if(ov) ov.value = document.getElementById('goalsTextarea').value;
+  });
+
+  // clear runs
+  const clearBtn = document.getElementById('clearRunsBtn');
+  if(clearBtn) clearBtn.addEventListener('click', () => {
+    if(confirm('Clear all run history? This cannot be undone.')) {
+      localStorage.removeItem('orlix_runs');
+      refreshMemoryView();
+      refreshDashboard();
+    }
+  });
+});
 
 // ───────── SYSTEM PROMPT & GROK ─────────
 const GROK_SYSTEM = `You are Orlix AI — a friendly, creative assistant inside the Orlix personal AI OS.
