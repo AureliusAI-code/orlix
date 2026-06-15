@@ -6,8 +6,8 @@
 //   others            → api.bankr.bot        (x-api-key header from user settings)
 const crypto = require('crypto');
 
-// ── Base MCP: tool definitions ────────────────────────────────────────────────
-const BASE_TOOLS = [
+// ── Tool definitions (Base MCP + Aeon agentic tools) ─────────────────────────
+const ALL_TOOLS = [
   {
     name: 'base_get_eth_balance',
     description: 'Get the ETH balance of a wallet address on Base network (L2)',
@@ -56,6 +56,41 @@ const BASE_TOOLS = [
     name: 'base_get_network_info',
     description: 'Get general information about the Base network (chain ID, latest block, gas price)',
     input_schema: { type: 'object', properties: {} }
+  },
+  {
+    name: 'web_search',
+    description: 'Search the web for current information, news, prices, research papers, or any topic',
+    input_schema: {
+      type: 'object',
+      properties: {
+        query: { type: 'string', description: 'Search query' },
+        count: { type: 'number', description: 'Number of results 1-10, default 5' }
+      },
+      required: ['query']
+    }
+  },
+  {
+    name: 'fetch_webpage',
+    description: 'Fetch and read content from any public URL or webpage',
+    input_schema: {
+      type: 'object',
+      properties: {
+        url: { type: 'string', description: 'Full URL to fetch' }
+      },
+      required: ['url']
+    }
+  },
+  {
+    name: 'github_repo_info',
+    description: 'Get details about a GitHub repository: stars, description, language, topics, issues',
+    input_schema: {
+      type: 'object',
+      properties: {
+        owner: { type: 'string', description: 'GitHub username or organization' },
+        repo: { type: 'string', description: 'Repository name' }
+      },
+      required: ['owner', 'repo']
+    }
   }
 ];
 
@@ -146,6 +181,60 @@ async function executeTool(name, input) {
           bridge:             'https://bridge.base.org',
         };
       }
+      case 'web_search': {
+        const braveKey = process.env.BRAVE_API_KEY;
+        const count = Math.min(input.count || 5, 10);
+        if (braveKey) {
+          const r = await fetch(`https://api.search.brave.com/res/v1/web/search?q=${encodeURIComponent(input.query)}&count=${count}`, {
+            headers: { 'Accept': 'application/json', 'Accept-Encoding': 'gzip', 'X-Subscription-Token': braveKey }
+          });
+          const data = await r.json();
+          const results = (data.web?.results || []).slice(0, count).map(r => ({
+            title: r.title, url: r.url, description: r.description, published: r.age
+          }));
+          return { query: input.query, results, source: 'Brave Search' };
+        }
+        // Fallback: DuckDuckGo instant answers
+        const r = await fetch(`https://api.duckduckgo.com/?q=${encodeURIComponent(input.query)}&format=json&no_html=1&skip_disambig=1`);
+        const data = await r.json();
+        const results = [];
+        if (data.AbstractText) results.push({ title: data.Heading, description: data.AbstractText, url: data.AbstractURL });
+        (data.RelatedTopics || []).slice(0, 4).forEach(t => {
+          if (t.Text) results.push({ title: t.Text.split(' - ')[0], description: t.Text, url: t.FirstURL });
+        });
+        return { query: input.query, results, source: 'DuckDuckGo (add BRAVE_API_KEY env var for full web search)' };
+      }
+      case 'fetch_webpage': {
+        const r = await fetch(input.url, {
+          headers: { 'User-Agent': 'Mozilla/5.0 (compatible; OrlixAgent/1.0)' },
+          redirect: 'follow'
+        });
+        if (!r.ok) return { error: `HTTP ${r.status}`, url: input.url };
+        const html = await r.text();
+        const text = html
+          .replace(/<script[\s\S]*?<\/script>/gi, '')
+          .replace(/<style[\s\S]*?<\/style>/gi, '')
+          .replace(/<[^>]+>/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim()
+          .slice(0, 8000);
+        return { url: input.url, content: text, chars: text.length };
+      }
+      case 'github_repo_info': {
+        const r = await fetch(`https://api.github.com/repos/${input.owner}/${input.repo}`, {
+          headers: { 'Accept': 'application/vnd.github.v3+json', 'User-Agent': 'OrlixAgent/1.0' }
+        });
+        if (!r.ok) return { error: `Repo not found: ${input.owner}/${input.repo}` };
+        const d = await r.json();
+        return {
+          full_name: d.full_name, description: d.description,
+          stars: d.stargazers_count, forks: d.forks_count,
+          language: d.language, topics: d.topics,
+          open_issues: d.open_issues_count, license: d.license?.name,
+          created: d.created_at, updated: d.updated_at,
+          url: d.html_url, homepage: d.homepage
+        };
+      }
       default:
         return { error: `Unknown tool: ${name}` };
     }
@@ -194,7 +283,7 @@ module.exports = async function handler(req, res) {
         model:      bodyObj.model,
         messages:   (bodyObj.messages || []).filter(m => m.role !== 'system'),
         max_tokens: bodyObj.max_tokens || 2048,
-        tools:      BASE_TOOLS,
+        tools:      ALL_TOOLS,
       };
       if (bodyObj.system)      body.system      = bodyObj.system;
       if (bodyObj.temperature) body.temperature = bodyObj.temperature;
@@ -210,37 +299,33 @@ module.exports = async function handler(req, res) {
 
       let data = JSON.parse(text);
 
-      // Tool use loop — execute Base tools and send results back to Claude
-      if (data.stop_reason === 'tool_use') {
+      // Tool use agentic loop — up to 5 rounds
+      let round = 0;
+      while (data.stop_reason === 'tool_use' && round < 5) {
+        round++;
         const toolUseBlocks = data.content.filter(b => b.type === 'tool_use');
-        const toolResults   = await Promise.all(
+        const toolResults = await Promise.all(
           toolUseBlocks.map(async b => ({
-            type:        'tool_result',
+            type: 'tool_result',
             tool_use_id: b.id,
-            content:     JSON.stringify(await executeTool(b.name, b.input)),
+            content: JSON.stringify(await executeTool(b.name, b.input)),
           }))
         );
-
-        const body2 = {
-          ...body,
-          messages: [
-            ...body.messages,
-            { role: 'assistant', content: data.content },
-            { role: 'user',      content: toolResults  },
-          ],
-        };
-
-        r    = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: anthropicHeaders, body: JSON.stringify(body2) });
+        body.messages = [
+          ...body.messages,
+          { role: 'assistant', content: data.content },
+          { role: 'user', content: toolResults },
+        ];
+        r = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: anthropicHeaders, body: JSON.stringify(body) });
         text = await r.text();
-
         if (!r.ok) {
           let msg = text;
           try { msg = JSON.parse(text).error?.message || text; } catch {}
-          return res.status(r.status).json({ error: { message: 'Anthropic (after tool): ' + msg } });
+          return res.status(r.status).json({ error: { message: 'Anthropic (tool loop): ' + msg } });
         }
+        data = JSON.parse(text);
       }
-
-      return res.status(200).setHeader('Content-Type', 'application/json').send(text);
+      return res.status(200).setHeader('Content-Type', 'application/json').send(JSON.stringify(data));
     } catch (e) {
       return res.status(502).json({ error: { message: 'Anthropic error: ' + e.message } });
     }

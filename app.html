@@ -246,6 +246,15 @@ select.inp{cursor:pointer}
 ::-webkit-scrollbar-track{background:var(--bg)}
 ::-webkit-scrollbar-thumb{background:var(--line-bright);border-radius:3px}
 
+/* ── skill grid (Aeon agents) ── */
+.skill-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+.skill-card{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:14px 16px;cursor:pointer;transition:.15s}
+.skill-card:hover{border-color:var(--amber);background:var(--amber-soft)}
+.skill-card .sk-icon{font-size:1.3rem;margin-bottom:8px}
+.skill-card .sk-name{font-size:.82rem;font-weight:600;color:var(--bright);margin-bottom:4px}
+.skill-card .sk-desc{font-size:.71rem;color:var(--dim);line-height:1.5}
+.skill-card .sk-tag{display:inline-block;margin-top:8px;font-size:.63rem;padding:1px 6px;border-radius:3px;background:var(--amber-soft);color:var(--amber);border:1px solid rgba(255,154,82,.2)}
+
 /* ── mobile ── */
 @media(max-width:640px){
   .sidebar{position:fixed;left:-200px;top:46px;bottom:0;z-index:90;transition:left .2s}
@@ -299,7 +308,7 @@ select.inp{cursor:pointer}
     </div>
     <div class="sb-sect">
       <span class="sb-label">integrations</span>
-      <div class="sb-item" data-view="agents"><span class="ic">⬡</span>agents<span class="badge" id="bdg-agents">3</span></div>
+      <div class="sb-item" data-view="agents"><span class="ic">⚡</span>Agents<span class="badge">Aeon</span></div>
       <div class="sb-item" data-view="models"><span class="ic">◫</span>models<span class="badge">36</span></div>
       <div class="sb-item" data-view="playground"><span class="ic">▷</span>playground</div>
     </div>
@@ -478,24 +487,32 @@ select.inp{cursor:pointer}
     <!-- ═══ AGENTS ═══ -->
     <div class="view" id="view-agents">
       <div class="page-hd">
-        <div class="file">$ orlix agent ls</div>
+        <div class="file">$ orlix agent --list</div>
         <h1>Agents</h1>
-        <div class="sub">External AI agents connected via the Orlix agent bridge.</div>
+        <div class="sub">Aeon-powered autonomous skills. Click any skill to run it in Playground.</div>
       </div>
-      <div id="agentBody"></div>
-      <div class="panel" style="margin-top:4px">
-        <div class="panel-hd"><span class="ttl">connect new agent</span></div>
+      <div class="panel">
+        <div class="panel-hd"><span class="ttl">🔬 Research & Analysis</span></div>
         <div class="panel-body">
-          <div class="add-row" style="margin-bottom:0">
-            <input class="inp" placeholder="agent endpoint or identifier…" />
-            <select class="inp" style="width:190px;flex-shrink:0">
-              <option>Claude (Anthropic)</option>
-              <option>GPT-4o (OpenAI)</option>
-              <option>Gemini (Google)</option>
-              <option>Custom endpoint</option>
-            </select>
-            <button class="btn primary">connect</button>
-          </div>
+          <div class="skill-grid" id="skillGrid-research"></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-hd"><span class="ttl">💻 Dev & Code</span></div>
+        <div class="panel-body">
+          <div class="skill-grid" id="skillGrid-dev"></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-hd"><span class="ttl">🔵 Crypto & Base</span></div>
+        <div class="panel-body">
+          <div class="skill-grid" id="skillGrid-crypto"></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-hd"><span class="ttl">⚙️ Productivity</span></div>
+        <div class="panel-body">
+          <div class="skill-grid" id="skillGrid-prod"></div>
         </div>
       </div>
     </div>
@@ -788,21 +805,65 @@ function renderAudit(filter='all'){
 }
 document.getElementById('auditFilter').addEventListener('change',e=>renderAudit(e.target.value));
 
-// ───────── AGENTS ─────────
+// ───────── AGENTS (legacy bridge list, kept for data) ─────────
 function renderAgents(){
-  document.getElementById('agentBody').innerHTML=agents.map(a=>`<div class="agent-card">
-    <div class="agent-icon" style="background:${a.col}22;color:${a.col}">${a.icon}</div>
-    <div class="agent-info">
-      <div class="a-name">${esc(a.name)}<span class="tag ${a.status==='connected'?'green':'dim'}">${a.status}</span></div>
-      <div class="a-meta">${esc(a.provider)} · <span style="color:var(--dim-2)">${esc(a.model)}</span></div>
-      <div class="a-meta" style="margin-top:2px">perms: <span style="color:var(--violet)">${esc(a.perms)}</span></div>
-    </div>
-    <div class="agent-actions">
-      <button class="btn sm">configure</button>
-      <button class="btn sm danger">disconnect</button>
-    </div>
-  </div>`).join('');
-  document.getElementById('bdg-agents').textContent=agents.length;
+  // agentBody removed — Agents view now shows Aeon skill grid
+  const bdg = document.getElementById('bdg-agents');
+  if (bdg) bdg.textContent = agents.length;
+}
+
+// ───────── AEON SKILLS ─────────
+const AEON_SKILLS = {
+  research: [
+    { icon:'🔬', name:'Deep Research', desc:'Multi-source research report with citations', tag:'web_search + fetch', prompt:'Do deep research on this topic and provide a comprehensive report with sources:\n\n[YOUR TOPIC HERE]' },
+    { icon:'📰', name:'News Digest', desc:'Latest news on any topic from the web', tag:'web_search', prompt:'Search the web and give me a digest of the latest news about:\n\n[YOUR TOPIC HERE]' },
+    { icon:'📊', name:'Market Analysis', desc:'Current market conditions, trends, outlook', tag:'web_search', prompt:'Do a market analysis for [ASSET/MARKET]. Search for current price, recent news, sentiment, and give an outlook.' },
+    { icon:'🧠', name:'Compare Options', desc:'Research and compare multiple options objectively', tag:'web_search + fetch', prompt:'Research and compare these options objectively with pros/cons and a recommendation:\n\nOption A: [FIRST]\nOption B: [SECOND]' },
+  ],
+  dev: [
+    { icon:'📦', name:'Repo Analyzer', desc:'Analyze any GitHub repository in depth', tag:'github_repo_info + fetch', prompt:'Analyze this GitHub repository and give me a full breakdown of what it does, tech stack, quality, and use cases:\n\nhttps://github.com/[OWNER]/[REPO]' },
+    { icon:'🐛', name:'Debug Helper', desc:'Paste an error and get a fix with explanation', tag:'web_search', prompt:'I have this error. Search for known solutions and give me the best fix:\n\n```\n[PASTE ERROR HERE]\n```' },
+    { icon:'🏗️', name:'Build an App', desc:'Generate a complete single-file web app', tag:'code', prompt:'Build a complete, self-contained single-file web app:\n\n[DESCRIBE YOUR APP]' },
+    { icon:'📝', name:'Code Review', desc:'Review code for bugs, security, improvements', tag:'code', prompt:'Review this code for bugs, security issues, and improvements:\n\n```\n[PASTE CODE HERE]\n```' },
+  ],
+  crypto: [
+    { icon:'💰', name:'Wallet Balance', desc:'Check any wallet\'s ETH balance on Base', tag:'base_get_eth_balance', prompt:'Check the ETH balance and give me a summary for this wallet on Base network:\n\n[WALLET ADDRESS]' },
+    { icon:'⛽', name:'Gas Tracker', desc:'Current gas price and network status on Base', tag:'base_get_gas_price + base_get_latest_block', prompt:'What is the current gas price on Base network? Also show me the latest block info.' },
+    { icon:'🔍', name:'Tx Inspector', desc:'Look up any transaction on Base by hash', tag:'base_get_transaction', prompt:'Look up this transaction on Base and explain what happened:\n\n[TX HASH]' },
+    { icon:'🌐', name:'Base Network Info', desc:'Full Base network status and statistics', tag:'base_get_network_info', prompt:'Give me a complete status report of the Base network right now — chain ID, latest block, gas price, and any notable info.' },
+  ],
+  prod: [
+    { icon:'✍️', name:'Content Writer', desc:'Write polished content on any topic', tag:'web_search', prompt:'Write high-quality content about:\n\n[TOPIC]\n\nTone: [professional/casual/technical]\nLength: [short/medium/long]' },
+    { icon:'📋', name:'Summarizer', desc:'Summarize any URL or pasted text', tag:'fetch_webpage', prompt:'Summarize this in bullet points, highlighting the key takeaways:\n\n[URL or paste text here]' },
+    { icon:'🎯', name:'Goal Planner', desc:'Break down a goal into actionable steps', tag:'reasoning', prompt:'I want to achieve this goal. Create a detailed action plan with milestones:\n\nGoal: [YOUR GOAL]' },
+    { icon:'🌍', name:'Translate & Adapt', desc:'Translate and culturally adapt content', tag:'reasoning', prompt:'Translate this to [TARGET LANGUAGE] and culturally adapt it for that audience:\n\n[TEXT TO TRANSLATE]' },
+  ],
+};
+
+function runSkill(prompt) {
+  showView('playground');
+  const input = document.getElementById('chatInput');
+  input.value = prompt;
+  input.focus();
+  // Move cursor to first [...] placeholder
+  const idx = prompt.indexOf('[');
+  if (idx !== -1) {
+    input.setSelectionRange(idx, prompt.indexOf(']', idx) + 1);
+  }
+}
+
+function renderAgentSkills() {
+  Object.entries(AEON_SKILLS).forEach(([cat, skills]) => {
+    const grid = document.getElementById('skillGrid-' + cat);
+    if (!grid) return;
+    grid.innerHTML = skills.map(s => `
+      <div class="skill-card" onclick="runSkill(${JSON.stringify(s.prompt)})">
+        <div class="sk-icon">${s.icon}</div>
+        <div class="sk-name">${s.name}</div>
+        <div class="sk-desc">${s.desc}</div>
+        <span class="sk-tag">${s.tag}</span>
+      </div>`).join('');
+  });
 }
 
 // ───────── OVERVIEW LOG ─────────
@@ -1184,6 +1245,7 @@ renderPolicies();
 renderGoals();
 renderAudit();
 renderAgents();
+renderAgentSkills();
 renderOvLog();
 renderModels();
 populateModelSel();
@@ -1257,6 +1319,14 @@ function closePreview(){
 
 // ───────── SYSTEM PROMPT & GROK ─────────
 const GROK_SYSTEM = `You are Orlix AI — a friendly, creative assistant inside the Orlix personal AI OS.
+
+You are an AGENTIC AI assistant with access to real-time tools:
+- web_search: search the internet for current info
+- fetch_webpage: read any public URL
+- github_repo_info: analyze GitHub repositories
+- base_get_eth_balance, base_get_gas_price, base_get_transaction, etc.: Base blockchain data
+
+Use these tools PROACTIVELY when the user asks about current events, prices, URLs, GitHub repos, or anything requiring live data. Don't say "I can't browse the internet" — you can. Just use web_search.
 
 CRITICAL RULES:
 1. ALWAYS reply in English only, no matter what language the user writes in.
