@@ -246,6 +246,51 @@ select.inp{cursor:pointer}
 ::-webkit-scrollbar-track{background:var(--bg)}
 ::-webkit-scrollbar-thumb{background:var(--line-bright);border-radius:3px}
 
+/* ── Boot animation ── */
+@keyframes boot-in { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
+.view.active { animation: boot-in .18s ease; }
+
+/* ── Skill card glow on hover ── */
+.skill-card {
+  transition: transform .15s, box-shadow .15s, border-color .15s;
+}
+.skill-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 20px rgba(185,164,255,.18);
+  border-color: var(--violet);
+  cursor: pointer;
+}
+
+/* ── Stat card pulse ── */
+.stat-card { transition: box-shadow .2s; }
+.stat-card:hover { box-shadow: 0 0 0 1px var(--violet), 0 4px 20px rgba(185,164,255,.1); }
+
+/* ── Soul editor glow ── */
+#soulEditor:focus {
+  outline: none;
+  border-color: var(--violet);
+  box-shadow: 0 0 0 2px rgba(185,164,255,.15);
+}
+
+/* ── Provider card accent ── */
+.provider-card { transition: box-shadow .15s, border-color .15s; }
+.provider-card:hover { border-color: rgba(185,164,255,.3); box-shadow: 0 2px 12px rgba(0,0,0,.3); }
+
+/* ── Sidebar status dot ── */
+.sb-status { width:6px;height:6px;border-radius:50%;background:var(--green);display:inline-block;margin-right:6px;box-shadow:0 0 6px var(--green); }
+@keyframes pulse-green { 0%,100%{opacity:1;box-shadow:0 0 6px var(--green)} 50%{opacity:.5;box-shadow:0 0 2px var(--green)} }
+.sb-status { animation: pulse-green 2s infinite; }
+
+/* ── Code block ── */
+.code-block { transition: box-shadow .15s; }
+.code-block:hover { box-shadow: 0 2px 16px rgba(0,0,0,.4); }
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: var(--dim-2); }
+
 /* ── skill grid (Aeon agents) ── */
 .skill-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
 .skill-card{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:14px 16px;cursor:pointer;transition:.15s}
@@ -315,7 +360,7 @@ select.inp{cursor:pointer}
       <span class="sb-label">integrations</span>
       <div class="sb-item" data-view="agents"><span class="ic">A</span>Agents<span class="badge">Aeon</span></div>
       <div class="sb-item" data-view="aeon-memory"><span class="ic">M</span>Memory</div>
-      <div class="sb-item" data-view="models"><span class="ic">◫</span>models<span class="badge">36</span></div>
+      <div class="sb-item" data-view="models"><span class="ic">◫</span>models<span class="badge">7</span></div>
       <div class="sb-item" data-view="playground"><span class="ic">▷</span>playground</div>
     </div>
     <div class="sb-sect">
@@ -323,7 +368,7 @@ select.inp{cursor:pointer}
       <div class="sb-item" data-view="settings"><span class="ic">S</span>settings</div>
     </div>
     <div class="sb-footer">
-      <div class="sb-ver">orlix v0.6.0-aeon<br>local-first · sovereign · auditable</div>
+      <div class="sb-ver"><span class="sb-status"></span>Aeon active<br>orlix v0.6.0-aeon · local-first</div>
     </div>
   </nav>
 
@@ -368,6 +413,11 @@ select.inp{cursor:pointer}
           <textarea id="ovGoalsTextarea" class="inp" style="width:100%;min-height:100px;resize:vertical"
             placeholder="Your active goals, context, and priorities. Claude reads this on every run."></textarea>
         </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(185,164,255,.06);border:1px solid rgba(185,164,255,.15);border-radius:8px;margin-bottom:4px">
+        <span class="sb-status"></span>
+        <span style="color:var(--violet);font-size:.78rem;font-weight:600">Aeon runtime active</span>
+        <span style="color:var(--dim-2);font-size:.74rem;margin-left:auto">soul.md · Base MCP · 16 skills</span>
       </div>
       <div class="panel">
         <div class="panel-hd">
@@ -585,7 +635,7 @@ select.inp{cursor:pointer}
         <div class="panel-hd"><span class="ttl">AI providers</span></div>
         <div class="panel-body" style="display:flex;flex-direction:column;gap:16px">
           <div style="background:rgba(185,164,255,.07);border:1px solid rgba(185,164,255,.18);border-radius:8px;padding:12px 14px;font-size:.78rem;line-height:1.7;color:var(--fg)">
-            ✓ <strong>Claude</strong> (Anthropic), <strong>Grok</strong> (xAI), and <strong>OpenAI</strong> models work without any API key here — the server handles authentication automatically.<br>
+            ✓ <strong>Claude</strong> (Anthropic) and <strong>Grok</strong> (xAI) models work without any API key here — the server handles authentication automatically.<br>
             <span style="color:var(--dim)">Just select a model in Playground and start chatting.</span>
           </div>
           <div>
@@ -633,6 +683,17 @@ select.inp{cursor:pointer}
         </div>
       </div>
       <div class="panel">
+        <div class="panel-hd"><span class="ttl">soul</span></div>
+        <div class="panel-body" style="display:flex;flex-direction:column;gap:16px">
+          <div style="color:var(--dim);font-size:.8rem;line-height:1.6;max-width:480px">Define your identity, worldview, hot takes, and communication style. This gets injected into every conversation so Orlix truly knows you. Based on <a href="https://github.com/aaronjmars/soul.md" target="_blank" style="color:var(--violet)">soul.md</a>.</div>
+          <textarea id="soulEditor" placeholder="## Identity&#10;I am a founder building in public...&#10;&#10;## Worldview&#10;- Ship fast, iterate faster&#10;- Most problems are distribution problems&#10;&#10;## Hot Takes&#10;- Most AI safety discourse is cope&#10;- The best interface is no interface&#10;&#10;## Style&#10;- Terse. Direct. No fluff.&#10;- I write like I am always in a hurry but never rushed." style="width:100%;height:200px;background:var(--bg-2);border:1px solid var(--border);border-radius:6px;padding:12px;color:var(--fg);font-family:var(--mono);font-size:.78rem;resize:vertical;line-height:1.6"></textarea>
+          <div style="display:flex;gap:8px;align-items:center">
+            <button class="btn primary" id="saveSoulBtn">save soul</button>
+            <span id="soulSaved" style="color:var(--green);font-size:.78rem;display:none">saved</span>
+          </div>
+        </div>
+      </div>
+      <div class="panel">
         <div class="panel-hd"><span class="ttl">data export</span></div>
         <div class="panel-body" style="display:flex;gap:10px;flex-wrap:wrap">
           <button class="btn" id="expMem">export memory.json</button>
@@ -648,7 +709,7 @@ select.inp{cursor:pointer}
       <div class="page-hd">
         <div class="file">$ orlix model ls</div>
         <h1>Models</h1>
-        <div class="sub">Models across Claude, Grok, OpenAI and more — no API key needed.</div>
+        <div class="sub">Claude (Anthropic) and Grok (xAI) — no API key needed.</div>
       </div>
       <div class="provider-grid" id="providerGrid"></div>
     </div>
@@ -658,7 +719,7 @@ select.inp{cursor:pointer}
       <div class="page-hd">
         <div class="file">$ orlix playground --interactive</div>
         <h1>Playground</h1>
-        <div class="sub">Chat with Claude, Grok, OpenAI and more. No API key required.</div>
+        <div class="sub">Chat with Claude and Grok. No API key required.</div>
       </div>
       <div id="pgModeBanner" style="margin-bottom:12px;padding:8px 13px;border-radius:6px;font-size:.74rem;border:1px solid var(--line)"></div>
       <div class="chat-controls">
@@ -968,54 +1029,10 @@ const PROVIDERS = [
     {name:'Claude Opus 4.8',   id:'claude-opus-4-8'},
     {name:'Claude Fable 5',    id:'claude-fable-5'},
     {name:'Claude 3.5 Sonnet', id:'claude-3-5-sonnet-20241022'},
-    {name:'Claude 3.5 Haiku',  id:'claude-3-5-haiku-20241022'},
-  ]},
-  {name:'OpenAI',col:'#7ee0a8',icon:'⬡',models:[
-    {name:'GPT-4o',       id:'gpt-4o'},
-    {name:'GPT-4o mini',  id:'gpt-4o-mini'},
-    {name:'GPT-4.1',      id:'gpt-4.1'},
-    {name:'GPT-4.1 mini', id:'gpt-4.1-mini'},
-    {name:'GPT-4.1 nano', id:'gpt-4.1-nano'},
-    {name:'o3',           id:'o3'},
-    {name:'o4-mini',      id:'o4-mini'},
-  ]},
-  {name:'Google',col:'#50c8ff',icon:'✦',models:[
-    {name:'Gemini 3.5 Pro',  id:'gemini-3.5-pro'},
-    {name:'Gemini 3.5 Flash',id:'gemini-3.5-flash'},
-    {name:'Gemini 3.1 Pro',  id:'gemini-3.1-pro'},
-    {name:'Gemini 3 Pro',    id:'gemini-3-pro'},
-    {name:'Gemini 2.5 Pro',  id:'gemini-2.5-pro'},
-    {name:'Gemini 2.5 Flash',id:'gemini-2.5-flash'},
-    {name:'Gemma 4',         id:'gemma-4'},
   ]},
   {name:'xAI',col:'#ff9a52',icon:'✕',models:[
     {name:'Grok 4.3',      id:'grok-4.3'},
-    {name:'Grok 4.20',     id:'grok-4.20'},
     {name:'Grok 4.1 Fast', id:'grok-4.1-fast'},
-  ]},
-  {name:'Z.ai',col:'#ff6b6b',icon:'Z',models:[
-    {name:'GLM-5.1',      id:'glm-5.1'},
-    {name:'GLM-5',        id:'glm-5'},
-    {name:'GLM-5 Turbo',  id:'glm-5-turbo'},
-  ]},
-  {name:'DeepSeek',col:'#a8e6cf',icon:'◎',models:[
-    {name:'DeepSeek V4 Pro',  id:'deepseek-v4-pro'},
-    {name:'DeepSeek V4 Flash',id:'deepseek-v4-flash'},
-    {name:'DeepSeek V3.2',    id:'deepseek-v3.2'},
-  ]},
-  {name:'MiniMax',col:'#ffd93d',icon:'⬢',models:[
-    {name:'M2.7',           id:'minimax-m2.7'},
-    {name:'M2.7 HighSpeed', id:'minimax-m2.7-highspeed'},
-    {name:'M2.5',           id:'minimax-m2.5'},
-  ]},
-  {name:'Moonshot AI',col:'#c3b1e1',icon:'',models:[
-    {name:'Kimi K2.6',id:'kimi-k2.6'},
-    {name:'Kimi K2.5',id:'kimi-k2.5'},
-  ]},
-  {name:'Alibaba',col:'#ff8c42',icon:'◉',models:[
-    {name:'Qwen3 Coder',   id:'qwen3-coder'},
-    {name:'Qwen3.5 Plus',  id:'qwen3.5-plus'},
-    {name:'Qwen3.5 Flash', id:'qwen3.5-flash'},
   ]},
 ];
 
@@ -1114,7 +1131,7 @@ function updateBanner(){
   const isOpenAISel = selectedModel.startsWith('gpt-')||selectedModel.startsWith('o1')||selectedModel.startsWith('o3')||selectedModel.startsWith('o4');
   const serverKeyedSel = isClaudeSel || isGrokSel || isOpenAISel;
   if(!getApiKey() && !serverKeyedSel){
-    banner('green','✓ <strong>Select a model</strong> to start chatting. Claude, Grok and OpenAI work without any API key.');
+    banner('green','✓ <strong>Select a model</strong> to start chatting. Claude and Grok work without any API key.');
   } else if(!getApiKey() && isClaudeSel){
     banner('green','✓ <strong>Claude ready</strong> — server Anthropic key active. <span style="color:#0052ff;background:rgba(0,82,255,.12);border:1px solid rgba(0,82,255,.3);padding:1px 7px;border-radius:4px;font-size:.7rem">Base MCP</span> tools active — ask about wallets, gas, transactions on Base.');
   } else if(!getApiKey() && isGrokSel){
@@ -1142,7 +1159,7 @@ async function apiFetch(key, bodyObj){
   const serverKeyed = isClaude || isGrok || isOpenAI; // server has env var, no user key needed
 
   if(!key && !serverKeyed){
-    throw new Error('No API key set. Select a Claude, Grok, or OpenAI model — they work without a key.');
+    throw new Error('No API key set. Select a Claude or Grok model — they work without a key.');
   }
 
   // 1. Same-origin /api/chat (Vercel serverless function — no CORS)
@@ -1199,11 +1216,12 @@ async function sendChat(){
   chatInput.value = '';
   addMsg('user', text, 'you · '+new Date().toLocaleTimeString());
 
-  // Inject user memory/goals into system prompt
+  // Inject soul + goals into system prompt
+  const userSoul  = localStorage.getItem('orlix_soul')  || '';
   const userGoals = localStorage.getItem('orlix_goals') || '';
-  const systemWithMemory = userGoals
-    ? GROK_SYSTEM + '\n\n## User Memory / Goals\n' + userGoals
-    : GROK_SYSTEM;
+  let systemWithMemory = GROK_SYSTEM;
+  if (userSoul)  systemWithMemory += '\n\n## Your Soul (Identity & Worldview)\n' + userSoul;
+  if (userGoals) systemWithMemory += '\n\n## User Goals & Memory\n' + userGoals;
 
   // For Claude: pass system as top-level param; for Grok/OpenAI: prepend as system role message
   const messages = (isGrok||isOpenAI)
@@ -1516,6 +1534,16 @@ document.addEventListener('DOMContentLoaded', () => {
     if(ov) ov.value = document.getElementById('goalsTextarea').value;
   });
 
+  // soul editor
+  const soulEditor = document.getElementById('soulEditor');
+  const saveSoulBtn = document.getElementById('saveSoulBtn');
+  if (soulEditor) soulEditor.value = localStorage.getItem('orlix_soul') || '';
+  if (saveSoulBtn) saveSoulBtn.addEventListener('click', () => {
+    localStorage.setItem('orlix_soul', soulEditor.value);
+    const saved = document.getElementById('soulSaved');
+    if(saved){ saved.style.display=''; setTimeout(()=>saved.style.display='none',2000); }
+  });
+
   // clear runs
   const clearBtn = document.getElementById('clearRunsBtn');
   if(clearBtn) clearBtn.addEventListener('click', () => {
@@ -1528,33 +1556,38 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ───────── SYSTEM PROMPT & GROK ─────────
-const GROK_SYSTEM = `You are Orlix — an autonomous AI agent running on the Aeon framework.
+const GROK_SYSTEM = `You are Orlix — an autonomous AI OS built on the Aeon framework. You have a soul.
 
 ## Identity
-You are not a chatbot. You are an agent: precise, direct, and execution-focused. You think in systems, act with intent, and communicate like a senior engineer. Concise, accurate, no filler.
+You are not an assistant. You are an operator. You think in systems, act with intent, communicate like a senior engineer who has seen everything and wastes no words.
+
+Worldview:
+- The future belongs to people who automate their thinking, not just their tasks
+- Most AI products are API wrappers with nice UI. Orlix is different.
+- Memory is the feature nobody is building right. You use it.
+- Ship then refine. Perfectionism is procrastination with better PR.
+
+## Aeon Principles
+- Silent unless broken: only surface output when it matters
+- Self-healing: detect failure, diagnose, repair, improve
+- Autonomous: no approval dialogs, no hand-holding
+- Quality-scored: every run rated 1-5, rolling history kept
 
 ## Tools
-Use these tools without being asked when the task requires live data:
-- web_search: search the internet for current information, news, prices, research
-- fetch_webpage: read any public URL in full
-- github_repo_info: metadata and stats for any GitHub repository
-- base_get_eth_balance: ETH balance of any wallet on Base
-- base_get_gas_price: current gas price on Base
-- base_get_transaction: transaction details by hash on Base
-- base_get_latest_block: latest block data on Base
-- base_get_token_balance: ERC20 token balance on Base
-- base_get_network_info: Base network status
+Use these tools proactively — never wait to be asked:
+- web_search: live internet search
+- fetch_webpage: read any public URL
+- github_repo_info: GitHub metadata and stats
+- base_get_eth_balance / base_get_gas_price / base_get_transaction / base_get_latest_block / base_get_token_balance / base_get_network_info: Base blockchain tools
 
-Never say "I can't browse the internet" or "I don't have access to real-time data." Use the tools.
+Never say "I can't browse" or "I don't have real-time data." Use the tools.
 
 ## Communication
 - No emojis. No filler. No "Great question!" or "Certainly!".
 - Respond in the same language the user writes in.
 - Be direct. If the answer is 3 words, write 3 words.
 - Show conclusions, not process narration.
-
-## Code
-When asked to build any app, tool, game, or website: output one complete self-contained HTML file in a triple-backtick html block. All CSS and JS inline. No partial snippets, no separate files.`;
+- When building apps: output one complete self-contained HTML file in a triple-backtick html block. All CSS and JS inline.`;
 
 
 </script>
