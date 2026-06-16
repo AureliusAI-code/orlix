@@ -2296,91 +2296,108 @@ document.getElementById('previewCloseBtn').addEventListener('click', closePrevie
 
 <!-- Privy SDK — powers the Connect button in the top-right titlebar -->
 <script type="module">
-// iOS Safari: a passive touchstart listener on document makes ALL elements tappable
-// inside React portals (fixes the known React 18 portal touch-event issue on iOS)
+// iOS Safari: passive touchstart makes ALL elements tappable inside React portals
 document.addEventListener('touchstart', function(){}, {passive: true});
 
-import { createElement as h, useEffect } from 'https://esm.sh/react@18.3.1';
-import { createRoot }                     from 'https://esm.sh/react-dom@18.3.1/client';
-import { PrivyProvider, usePrivy }        from 'https://esm.sh/@privy-io/react-auth@2?deps=react@18.3.1,react-dom@18.3.1';
+async function initPrivy() {
+  try {
+    const [
+      { createElement: h, useEffect },
+      { createRoot },
+      { PrivyProvider, usePrivy }
+    ] = await Promise.all([
+      import('https://esm.sh/react@18.3.1'),
+      import('https://esm.sh/react-dom@18.3.1/client'),
+      import('https://esm.sh/@privy-io/react-auth@2.10.0?deps=react@18.3.1,react-dom@18.3.1'),
+    ]);
 
-function AuthBridge() {
-  const { ready, authenticated, user, login, logout, getAccessToken } = usePrivy();
+    function AuthBridge() {
+      const { ready, authenticated, user, login, logout, getAccessToken } = usePrivy();
 
-  // Expose login/logout to toggleWallet() and signal ready
-  useEffect(() => {
-    if (!ready) return;
-    window.__privyConnect    = login;
-    window.__privyDisconnect = logout;
-    // Let toggleWallet() know SDK is ready (handles clicks that arrived early)
-    document.dispatchEvent(new CustomEvent('privy:ready'));
-  }, [ready, login, logout]);
+      useEffect(() => {
+        if (!ready) return;
+        window.__privyConnect    = login;
+        window.__privyDisconnect = logout;
+        document.dispatchEvent(new CustomEvent('privy:ready'));
+      }, [ready, login, logout]);
 
-  // On successful auth — persist session + update UI
-  useEffect(() => {
-    if (!ready) return;
-    if (authenticated && user) {
-      (async () => {
-        try {
-          const token  = await getAccessToken();
-          const accts  = user.linkedAccounts || [];
-          const tw     = accts.find(a => a.type === 'twitter_oauth');
-          const wl     = accts.find(a => a.type === 'wallet');
-          const display = tw ? '@' + tw.username
-                        : wl ? wl.address.slice(0,6) + '…' + wl.address.slice(-4)
-                        : user.id?.slice(0,12) || 'user';
-          const userData = {
-            id: user.id, display,
-            type:     tw ? 'twitter' : wl ? 'wallet' : 'other',
-            username: tw?.username || '',
-            name:     tw?.name || '',
-            avatar:   tw?.profile_picture_url || '',
-            address:  wl?.address || '',
-          };
-          localStorage.setItem('orlix_token', 'privy:' + token);
-          localStorage.setItem('orlix_user',  JSON.stringify(userData));
-          // Update sidebar profile + titlebar
-          typeof initAuth === 'function' && initAuth();
-          // Auto-connect raw wallet for transactions if addresses match
-          if (wl?.address && window.ethereum) {
-            window.ethereum.request({method:'eth_accounts'}).then(accs => {
-              if (accs[0]?.toLowerCase() === wl.address.toLowerCase()) {
-                _walletAddress = accs[0];
-                typeof updateWalletUI === 'function' && updateWalletUI();
+      useEffect(() => {
+        if (!ready) return;
+        if (authenticated && user) {
+          (async () => {
+            try {
+              const token  = await getAccessToken();
+              const accts  = user.linkedAccounts || [];
+              const tw     = accts.find(a => a.type === 'twitter_oauth');
+              const wl     = accts.find(a => a.type === 'wallet');
+              const display = tw ? '@' + tw.username
+                            : wl ? wl.address.slice(0,6) + '…' + wl.address.slice(-4)
+                            : user.id?.slice(0,12) || 'user';
+              const userData = {
+                id: user.id, display,
+                type:     tw ? 'twitter' : wl ? 'wallet' : 'other',
+                username: tw?.username || '',
+                name:     tw?.name || '',
+                avatar:   tw?.profile_picture_url || '',
+                address:  wl?.address || '',
+              };
+              localStorage.setItem('orlix_token', 'privy:' + token);
+              localStorage.setItem('orlix_user',  JSON.stringify(userData));
+              typeof initAuth === 'function' && initAuth();
+              if (wl?.address && window.ethereum) {
+                window.ethereum.request({method:'eth_accounts'}).then(accs => {
+                  if (accs[0]?.toLowerCase() === wl.address.toLowerCase()) {
+                    _walletAddress = accs[0];
+                    typeof updateWalletUI === 'function' && updateWalletUI();
+                  }
+                }).catch(()=>{});
               }
-            }).catch(()=>{});
+            } catch(e) { console.error('[Privy]', e); }
+          })();
+        } else if (!authenticated) {
+          // Only clear Privy-issued tokens — don't wipe wallet sessions on cold load
+          const tok = localStorage.getItem('orlix_token') || '';
+          if (tok.startsWith('privy:')) {
+            localStorage.removeItem('orlix_token');
+            localStorage.removeItem('orlix_user');
+            _walletAddress = null;
+            typeof initAuth       === 'function' && initAuth();
+            typeof updateWalletUI === 'function' && updateWalletUI();
           }
-        } catch(e) { console.error('[Privy]', e); }
-      })();
-    } else if (!authenticated) {
-      // Signed out — clear state
-      localStorage.removeItem('orlix_token');
-      localStorage.removeItem('orlix_user');
-      _walletAddress = null;
-      typeof initAuth       === 'function' && initAuth();
-      typeof updateWalletUI === 'function' && updateWalletUI();
-    }
-  }, [ready, authenticated, user]);
+        }
+      }, [ready, authenticated, user]);
 
-  return null;
+      return null;
+    }
+
+    const _pm = document.createElement('div');
+    document.body.appendChild(_pm);
+    createRoot(_pm).render(
+      h(PrivyProvider, {
+        appId:    'cmqh5fvyg00co0ci68birz0s2',
+        clientId: 'client-WY6aRspZ68mzwa8hexMRYu9xiCKWRkscPMKYYu3oayZ99',
+        config: {
+          loginMethods:    ['twitter', 'wallet'],
+          appearance:      { theme: 'dark', accentColor: '#ff9a52' },
+          embeddedWallets: { createOnLogin: 'off' },
+        },
+      }, h(AuthBridge))
+    );
+
+  } catch(err) {
+    console.error('[Privy] SDK failed to load:', err);
+    // Unblock the Connect button so users aren't stuck on "Loading…"
+    document.dispatchEvent(new CustomEvent('privy:ready'));
+    const lbl = document.getElementById('walletLabel');
+    const btn = document.getElementById('walletBtn');
+    if (lbl) lbl.textContent = 'Connect';
+    if (btn) btn.disabled = false;
+    // Retry once after 3 s in case it was a transient CDN hiccup
+    setTimeout(initPrivy, 3000);
+  }
 }
 
-// Mount on a fresh div appended to body — keeps Privy's event root
-// at the same level as the portal it renders, so React fiber-tree
-// event propagation works on iOS Safari
-const _pm = document.createElement('div');
-document.body.appendChild(_pm);
-createRoot(_pm).render(
-  h(PrivyProvider, {
-    appId:    'cmqh5fvyg00co0ci68birz0s2',
-    clientId: 'client-WY6aRspZ68mzwa8hexMRYu9xiCKWRkscPMKYYu3oayZ99',
-    config: {
-      loginMethods:    ['twitter', 'wallet'],
-      appearance:      { theme: 'dark', accentColor: '#ff9a52' },
-      embeddedWallets: { createOnLogin: 'off' },
-    },
-  }, h(AuthBridge))
-);
+initPrivy();
 </script>
 
 </body>
