@@ -35,12 +35,13 @@ module.exports = async function handler(req, res) {
 
   if (req.method === 'OPTIONS') return res.status(200).end();
 
-  const KV_URL   = process.env.KV_REST_API_URL   || '';
-  const KV_TOKEN = process.env.KV_REST_API_TOKEN  || '';
+  // Support both Upstash direct env vars and Vercel KV (which uses Upstash under the hood)
+  const KV_URL   = process.env.UPSTASH_REDIS_REST_URL   || process.env.KV_REST_API_URL   || '';
+  const KV_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN  || process.env.KV_REST_API_TOKEN  || '';
 
   if (!KV_URL || !KV_TOKEN) {
     return res.status(503).json({
-      error: 'Vercel KV not configured. Go to Vercel Dashboard → Storage → Create KV Database, then redeploy.',
+      error: 'Redis not configured. Go to Vercel Dashboard → Storage → Upstash → Create Redis, then redeploy.',
     });
   }
 
