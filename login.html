@@ -11,46 +11,70 @@
 :root{
   --bg:#0a0a0a;--line:rgba(255,255,255,.09);--line-bright:rgba(255,255,255,.16);
   --text:#c0b8b0;--bright:#f0ebe3;--dim:#665e58;
-  --amber:#ff9a52;--amber-soft:rgba(255,154,82,.1);
-  --violet:#b9a4ff;--red:#e03030;--green:#7ee0a8;
+  --amber:#ff9a52;
+  --violet:#b9a4ff;--red:#e03030;
   --mono:'JetBrains Mono',monospace;--display:'Space Grotesk',sans-serif;
 }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{background:var(--bg);color:var(--text);min-height:100%}
-body{font-family:var(--mono);font-size:13px;line-height:1.6;-webkit-font-smoothing:antialiased;display:flex;align-items:center;justify-content:center;min-height:100vh}
-body::before{content:'';position:fixed;inset:0;z-index:0;background-image:linear-gradient(rgba(255,154,82,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,154,82,.03) 1px,transparent 1px);background-size:36px 36px;animation:gridScroll 28s linear infinite;pointer-events:none}
-@keyframes gridScroll{to{background-position:36px 36px}}
-body::after{content:'';position:fixed;inset:0;z-index:0;background:radial-gradient(ellipse 60% 50% at 50% 40%,rgba(185,164,255,.07) 0%,transparent 70%);pointer-events:none}
+body{font-family:var(--mono);font-size:13px;line-height:1.6;-webkit-font-smoothing:antialiased;
+  display:flex;align-items:center;justify-content:center;min-height:100vh}
 
-.card{position:relative;z-index:1;width:100%;max-width:380px;margin:20px;background:rgba(17,17,17,.94);border:1px solid var(--line-bright);border-radius:14px;padding:40px 36px 36px;backdrop-filter:blur(20px);box-shadow:0 0 60px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.04) inset}
-.brand{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-weight:700;font-size:.85rem;letter-spacing:.16em;color:var(--bright);text-transform:uppercase;margin-bottom:28px}
+body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+  background-image:linear-gradient(rgba(255,154,82,.03) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,154,82,.03) 1px,transparent 1px);
+  background-size:36px 36px;animation:gridScroll 28s linear infinite}
+@keyframes gridScroll{to{background-position:36px 36px}}
+body::after{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:radial-gradient(ellipse 60% 50% at 50% 40%,rgba(185,164,255,.07) 0%,transparent 70%)}
+
+.card{position:relative;z-index:1;width:100%;max-width:380px;margin:20px;
+  background:rgba(17,17,17,.97);border:1px solid var(--line-bright);border-radius:14px;
+  padding:40px 36px 36px;box-shadow:0 0 60px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.04) inset}
+
+.brand{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-weight:700;
+  font-size:.85rem;letter-spacing:.16em;color:var(--bright);text-transform:uppercase;margin-bottom:28px}
 .brand-dot{color:var(--red);font-size:.5rem}
 .login-title{font-family:var(--display);font-size:1.4rem;font-weight:700;color:var(--bright);margin-bottom:6px}
 .login-sub{color:var(--dim);font-size:.78rem;margin-bottom:32px;line-height:1.5}
 
-.btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:13px 18px;border-radius:8px;font-size:.82rem;font-family:var(--mono);font-weight:600;cursor:pointer;transition:.15s;border:1px solid;letter-spacing:.02em;background:none}
+.btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;
+  padding:13px 18px;border-radius:8px;font-size:.82rem;font-family:var(--mono);
+  font-weight:600;cursor:pointer;transition:.15s;border:1px solid;letter-spacing:.02em;background:none}
 .btn:disabled{opacity:.45;cursor:not-allowed}
 .btn-x{background:rgba(255,154,82,.12);border-color:rgba(255,154,82,.35);color:var(--amber);margin-bottom:12px}
-.btn-x:hover:not(:disabled){background:rgba(255,154,82,.2);border-color:rgba(255,154,82,.6);box-shadow:0 0 20px rgba(255,154,82,.15)}
+.btn-x:hover:not(:disabled){background:rgba(255,154,82,.2);border-color:rgba(255,154,82,.6)}
 .btn-w{background:rgba(185,164,255,.1);border-color:rgba(185,164,255,.3);color:var(--violet)}
-.btn-w:hover:not(:disabled){background:rgba(185,164,255,.18);border-color:rgba(185,164,255,.55);box-shadow:0 0 20px rgba(185,164,255,.12)}
+.btn-w:hover:not(:disabled){background:rgba(185,164,255,.18);border-color:rgba(185,164,255,.55)}
 
-.loading{text-align:center;color:var(--dim);font-size:.8rem;padding:20px 0}
 .divider{height:1px;background:var(--line);margin:24px 0}
 .footer{text-align:center;color:var(--dim);font-size:.7rem;line-height:1.7}
 .footer a{color:var(--dim);text-decoration:underline;text-underline-offset:3px}
-.footer a:hover{color:var(--text)}
+
+.msg{margin-top:14px;font-size:.75rem;text-align:center;line-height:1.5;display:none}
+.msg-err{color:var(--red)}
+.msg-ok{color:var(--dim)}
+
 @keyframes spin{to{transform:rotate(360deg)}}
-.spin{display:inline-block;animation:spin .7s linear infinite}
+.spin{display:inline-block;animation:spin .8s linear infinite}
 </style>
 </head>
 <body>
+
 <div class="card">
   <div class="brand"><span class="brand-dot">●</span>ORLIX</div>
   <div class="login-title">Sign in</div>
   <div class="login-sub">Connect to your personal AI operating system.</div>
 
-  <div id="privy-root"><div class="loading"><span class="spin">◌</span> Loading…</div></div>
+  <button class="btn btn-x" id="btnX" onclick="loginWithX(this)">
+    <span>𝕏</span><span id="lblX">Continue with X</span>
+  </button>
+  <button class="btn btn-w" id="btnW" onclick="loginWithWallet(this)">
+    <span>⬡</span><span id="lblW">Connect Wallet</span>
+  </button>
+
+  <div id="msgErr" class="msg msg-err"></div>
+  <div id="msgOk"  class="msg msg-ok"></div>
 
   <div class="divider"></div>
   <div class="footer">
@@ -60,66 +84,173 @@ body::after{content:'';position:fixed;inset:0;z-index:0;background:radial-gradie
 </div>
 
 <script>
-// Already logged in?
+const APP_ID     = 'cmqh5fvyg00co0ci68birz0s2';
+const CLIENT_ID  = 'client-WY6aRspZ68mzwa8hexMRYu9xiCKWRkscPMKYYu3oayZ99';
+const ORIGIN     = 'https://orlixai.xyz';
+const PRIVY_BASE = 'https://auth.privy.io/api/v1';
+
 if (localStorage.getItem('orlix_token')) location.replace('/app');
-</script>
 
-<script type="module">
-import { createElement as h, useState, useEffect } from 'https://esm.sh/react@18.3.1';
-import { createRoot } from 'https://esm.sh/react-dom@18.3.1/client';
-import { PrivyProvider, usePrivy } from 'https://esm.sh/@privy-io/react-auth@2?deps=react@18.3.1,react-dom@18.3.1';
+// ── UI helpers ────────────────────────────────────────────────────────────────
 
-function Buttons() {
-  const { ready, authenticated, user, login, getAccessToken } = usePrivy();
+function setBusy(busy) {
+  document.getElementById('btnX').disabled = busy;
+  document.getElementById('btnW').disabled = busy;
+}
 
-  useEffect(() => {
-    if (!ready || !authenticated || !user) return;
-    (async () => {
-      try {
-        const token  = await getAccessToken();
-        const accts  = user.linkedAccounts || [];
-        const tw     = accts.find(a => a.type === 'twitter_oauth');
-        const wl     = accts.find(a => a.type === 'wallet');
-        const display = tw ? '@' + tw.username
-                      : wl ? wl.address.slice(0,6) + '…' + wl.address.slice(-4)
-                      : user.id?.slice(0, 12) || 'user';
-        localStorage.setItem('orlix_token', 'privy:' + token);
-        localStorage.setItem('orlix_user',  JSON.stringify({
-          id: user.id, display,
-          type: tw ? 'twitter' : wl ? 'wallet' : 'other',
-        }));
-        window.location.href = '/app';
-      } catch(e) { console.error('save session:', e); }
-    })();
-  }, [ready, authenticated, user]);
+function showErr(msg) {
+  const e = document.getElementById('msgErr');
+  const o = document.getElementById('msgOk');
+  e.textContent = msg; e.style.display = 'block';
+  o.style.display = 'none';
+  setBusy(false);
+  document.getElementById('lblX').textContent = 'Continue with X';
+  document.getElementById('lblW').textContent = 'Connect Wallet';
+}
 
-  if (!ready || (authenticated && user)) {
-    return h('div', { className: 'loading' }, h('span', { className: 'spin' }, '◌'), ' Signing in…');
+function showOk(msg) {
+  const e = document.getElementById('msgErr');
+  const o = document.getElementById('msgOk');
+  o.innerHTML = '<span class="spin">◌</span> ' + msg;
+  o.style.display = 'block'; e.style.display = 'none';
+}
+
+function privyHdrs() {
+  return { 'Content-Type':'application/json', 'privy-app-id':APP_ID, 'privy-client-id':CLIENT_ID };
+}
+
+// ── PKCE (WebCrypto) ──────────────────────────────────────────────────────────
+
+async function pkce() {
+  const arr = new Uint8Array(32);
+  crypto.getRandomValues(arr);
+  const verifier = btoa(String.fromCharCode(...arr)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');
+  const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier));
+  const challenge = btoa(String.fromCharCode(...new Uint8Array(hash))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');
+  return { verifier, challenge };
+}
+
+function rndState() {
+  const arr = new Uint8Array(16);
+  crypto.getRandomValues(arr);
+  return btoa(String.fromCharCode(...arr)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');
+}
+
+// ── Twitter / X ───────────────────────────────────────────────────────────────
+
+async function loginWithX(btn) {
+  setBusy(true);
+  document.getElementById('lblX').innerHTML = '<span class="spin">◌</span> Connecting…';
+  showOk('Redirecting to X…');
+  try {
+    const { verifier, challenge } = await pkce();
+    const state = rndState();
+    sessionStorage.setItem('privy_cv', verifier);
+    sessionStorage.setItem('privy_st', state);
+
+    const r = await fetch(PRIVY_BASE + '/oauth/init', {
+      method: 'POST',
+      headers: privyHdrs(),
+      body: JSON.stringify({
+        type: 'oauth',
+        provider: 'twitter',
+        redirect_to: ORIGIN + '/login',
+        state,
+        code_challenge: challenge,
+        code_challenge_method: 'S256',
+      }),
+    });
+    const d = await r.json();
+    const url = d.authorization_url || d.url || d.redirect_url;
+    if (url) {
+      window.location.href = url;
+    } else {
+      showErr('X login failed: ' + (d.error || d.message || d.cause || JSON.stringify(d)));
+    }
+  } catch (e) {
+    showErr('X login error: ' + e.message);
+  }
+}
+
+// ── Wallet (MetaMask / injected provider) ─────────────────────────────────────
+
+async function loginWithWallet() {
+  if (!window.ethereum) {
+    showErr('No wallet detected. Install MetaMask or open in a Web3 browser.');
+    return;
+  }
+  setBusy(true);
+  document.getElementById('lblW').innerHTML = '<span class="spin">◌</span> Connecting…';
+  try {
+    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+    const address  = accounts[0];
+    showOk('Sign the message in your wallet…');
+    const nonce   = Date.now();
+    const message = 'Sign in to Orlix AI\n\nAddress: ' + address + '\nNonce: ' + nonce;
+    const sig     = await window.ethereum.request({ method: 'personal_sign', params: [message, address] });
+    const display = address.slice(0,6) + '…' + address.slice(-4);
+    localStorage.setItem('orlix_token', 'wallet:' + address);
+    localStorage.setItem('orlix_user',  JSON.stringify({ id: address, display, type: 'wallet' }));
+    window.location.href = '/app';
+  } catch (e) {
+    showErr(e.code === 4001 ? 'Wallet request rejected.' : 'Wallet error: ' + e.message);
+  }
+}
+
+// ── OAuth callback (Twitter redirect back to /login?code=…&state=…) ───────────
+
+(async function handleCallback() {
+  const p     = new URLSearchParams(location.search);
+  const code  = p.get('code');
+  const state = p.get('state');
+  const err   = p.get('error');
+
+  if (!code && !err) return; // Not a callback — normal page load
+
+  history.replaceState({}, '', '/login');
+
+  if (err) {
+    showErr('X login cancelled' + (err !== 'access_denied' ? ': ' + err : '.'));
+    return;
   }
 
-  return h('div', null,
-    h('button', { className: 'btn btn-x', onClick: login },
-      h('span', null, '𝕏'), h('span', null, 'Continue with X')
-    ),
-    h('button', { className: 'btn btn-w', onClick: login },
-      h('span', null, '⬡'), h('span', null, 'Connect Wallet')
-    )
-  );
-}
+  const verifier   = sessionStorage.getItem('privy_cv');
+  const savedState = sessionStorage.getItem('privy_st');
+  sessionStorage.removeItem('privy_cv');
+  sessionStorage.removeItem('privy_st');
 
-function App() {
-  return h(PrivyProvider, {
-    appId:    'cmqh5fvyg00co0ci68birz0s2',
-    clientId: 'client-WY6aRspZ68mzwa8hexMRYu9xiCKWRkscPMKYYu3oayZ99',
-    config: {
-      loginMethods: ['twitter', 'wallet'],
-      appearance:   { theme: 'dark', accentColor: '#ff9a52' },
-      embeddedWallets: { createOnLogin: 'off' },
-    },
-  }, h(Buttons));
-}
+  if (!verifier || state !== savedState) {
+    showErr('Session expired. Please try again.');
+    return;
+  }
 
-createRoot(document.getElementById('privy-root')).render(h(App));
+  setBusy(true);
+  showOk('Authenticating with Privy…');
+
+  try {
+    const r = await fetch(PRIVY_BASE + '/oauth/authenticate', {
+      method: 'POST',
+      headers: privyHdrs(),
+      body: JSON.stringify({ state, code, code_verifier: verifier }),
+    });
+    const d = await r.json();
+
+    if (d.token) {
+      const user    = d.user || {};
+      const accts   = user.linked_accounts || [];
+      const tw      = accts.find(a => a.type === 'twitter_oauth');
+      const display = tw ? '@' + tw.username : (user.id || '').slice(0,12) || 'user';
+      localStorage.setItem('orlix_token', 'privy:' + d.token);
+      localStorage.setItem('orlix_user',  JSON.stringify({ id: user.id, display, type: 'twitter' }));
+      window.location.href = '/app';
+    } else {
+      showErr('Auth failed: ' + (d.error || d.message || d.cause || JSON.stringify(d)));
+    }
+  } catch (e) {
+    showErr('Auth error: ' + e.message);
+  }
+})();
 </script>
+
 </body>
 </html>
