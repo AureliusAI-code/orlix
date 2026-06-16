@@ -91,14 +91,20 @@ module.exports = async function handler(req, res) {
         method: 'POST',
         headers: privyHeaders(SECRET),
         body: JSON.stringify({
-          type: 'oauth',
           provider,
           redirect_uri: redirectUri || `${origin}/api/auth?action=oauth-callback`,
           origin,
         }),
       });
       const data = await r.json();
-      return res.status(r.status).json(data);
+      // Surface Privy errors clearly
+      if (!r.ok) {
+        return res.status(r.status).json({
+          error: data.error || data.message || data.cause || 'Privy OAuth init failed',
+          privy_response: data,
+        });
+      }
+      return res.status(200).json(data);
     } catch (e) {
       return res.status(502).json({ error: e.message });
     }

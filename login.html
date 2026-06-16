@@ -223,8 +223,16 @@ async function loginWithTwitter(){
       body: JSON.stringify({ provider: 'twitter' }),
     });
     const data = await res.json();
-    const url = data.auth_url || data.redirect_url || data.url || data.oauth_url || data.authorizeUrl;
-    if (!url) throw new Error(data.error || 'No OAuth URL returned. Check PRIVY_APP_SECRET is set.');
+    // Privy may return the URL under different field names depending on version
+    const url = data.redirectUrl || data.auth_url || data.redirect_url
+             || data.url || data.oauth_url || data.authorizeUrl
+             || (data.data && (data.data.redirectUrl || data.data.url));
+    if (!url) {
+      // Show the raw response to help debug
+      const detail = data.error || data.message || data.cause
+        || 'Keys received: ' + Object.keys(data).join(', ') || 'Empty response';
+      throw new Error(detail);
+    }
     location.href = url;
   } catch(e) {
     showError(e.message);
