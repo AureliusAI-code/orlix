@@ -1341,8 +1341,8 @@ let _codeIdx = 0;
 function esc2(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
 function renderContent(text){
-  // Match ```lang\n...``` — handles CRLF too
-  const RE = /(```([\w]*)\r?\n([\s\S]*?)```)/g;
+  // Match ```lang\n...``` — handles CRLF, trailing spaces after lang label
+  const RE = /(```([\w]*)[^\S\r\n]*\r?\n([\s\S]*?)```)/g;
   let result = '';
   let last = 0;
   let match;
@@ -1357,14 +1357,14 @@ function renderContent(text){
     const id     = 'c'+(++_codeIdx);
     _codeStore[id] = code; // store raw — never HTML-escaped
 
-    const label  = lang||'code';
-    const looksLikeHtml = code.trimStart().startsWith('<') || code.includes('<!DOCTYPE') || code.includes('<html');
-    const isHtml = label.toLowerCase()==='html'||label.toLowerCase()==='htm'||(!lang&&looksLikeHtml);
-    const previewBtn = isHtml ? `<button class="preview-btn" onclick="openPreview('${id}')">▶ Preview</button>` : '';
+    const label = lang||'code';
     result += `<div class="code-block">
       <div class="code-header">
         <span class="code-lang">${esc2(label)}</span>
-        <div class="code-actions">${previewBtn}<button onclick="copyCode('${id}')">⎘ Copy</button></div>
+        <div class="code-actions">
+          <button class="preview-btn" onclick="openPreview('${id}')">&#9658; Preview</button>
+          <button onclick="copyCode('${id}')">&#x2398; Copy</button>
+        </div>
       </div>
       <pre><code>${esc2(code)}</code></pre>
     </div>`;
@@ -1375,15 +1375,14 @@ function renderContent(text){
   return result || esc2(text).replace(/\n/g,'<br>');
 }
 
-function copyCode(id){
+window.copyCode = function(id){
   const code = _codeStore[id]||'';
   navigator.clipboard.writeText(code).catch(()=>{});
-  // find button to give feedback
   const btn = document.querySelector(`[onclick="copyCode('${id}')"]`);
-  if(btn){ const o=btn.textContent; btn.textContent='✓ Copied!'; setTimeout(()=>btn.textContent=o,2000); }
-}
+  if(btn){ const o=btn.textContent; btn.textContent='Copied!'; setTimeout(()=>btn.textContent=o,2000); }
+};
 
-function openPreview(id){
+window.openPreview = function(id){
   const code = _codeStore[id]||'';
   const blob = new Blob([code],{type:'text/html'});
   const url  = URL.createObjectURL(blob);
@@ -1392,14 +1391,14 @@ function openPreview(id){
   modal.querySelector('.preview-bar span').textContent = 'Live Preview · '+new Date().toLocaleTimeString();
   modal._blobUrl = url;
   modal.classList.add('open');
-}
+};
 
-function closePreview(){
+window.closePreview = function(){
   const modal = document.getElementById('previewModal');
   modal.classList.remove('open');
   if(modal._blobUrl){ URL.revokeObjectURL(modal._blobUrl); modal._blobUrl=null; }
   modal.querySelector('iframe').src='about:blank';
-}
+};
 
 // ───────── RUN LOGGING & QUALITY RATING ─────────
 function logRun(model, usage, preview) {
@@ -1425,12 +1424,12 @@ function showQualityRater(runId, afterEl) {
   afterEl.after(div);
 }
 
-function rateRun(runId, score, el) {
+window.rateRun = function(runId, score, el) {
   const runs = JSON.parse(localStorage.getItem('orlix_runs') || '[]');
   const run = runs.find(r => r.id === runId);
   if (run) { run.quality = score; localStorage.setItem('orlix_runs', JSON.stringify(runs)); }
   if (el) el.remove();
-}
+};
 
 // ───────── DASHBOARD REFRESH ─────────
 function refreshDashboard() {
