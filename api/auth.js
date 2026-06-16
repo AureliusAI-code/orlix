@@ -3,15 +3,17 @@
 // Env vars required: PRIVY_APP_SECRET
 // App ID is public and hardcoded below
 
-const APP_ID  = 'cmqh5fvyg00co0ci68birz0s2';
-const BASE    = 'https://auth.privy.io/api/v1';
+const APP_ID       = 'cmqh5fvyg00co0ci68birz0s2';
+const APP_ORIGIN   = 'https://orlixai.xyz';
+const BASE         = 'https://auth.privy.io/api/v1';
 
-function privyHeaders(secret) {
+function privyHeaders(secret, extra = {}) {
   const creds = Buffer.from(`${APP_ID}:${secret}`).toString('base64');
   return {
     'Content-Type':  'application/json',
     'Authorization': `Basic ${creds}`,
     'privy-app-id':  APP_ID,
+    ...extra,
   };
 }
 
@@ -85,23 +87,19 @@ module.exports = async function handler(req, res) {
   if (req.method === 'POST' && action === 'oauth-init') {
     const { provider, redirectUri } = req.body || {};
     if (!provider) return res.status(400).json({ error: 'Missing: provider' });
-    const origin = `https://${req.headers.host || 'orlixai.xyz'}`;
+    const redirectTo = redirectUri || `${APP_ORIGIN}/api/auth?action=oauth-callback`;
     try {
       const r = await fetch(`${BASE}/oauth/init`, {
         method: 'POST',
-        headers: privyHeaders(SECRET),
-        body: JSON.stringify({
-          provider,
-          redirect_uri: redirectUri || `${origin}/api/auth?action=oauth-callback`,
-          origin,
-        }),
+        // Privy requires Origin as an HTTP header, not in the body
+        headers: privyHeaders(SECRET, { 'Origin': APP_ORIGIN }),
+        body: JSON.stringify({ provider, redirect_uri: redirectTo }),
       });
       const data = await r.json();
-      // Surface Privy errors clearly
       if (!r.ok) {
         return res.status(r.status).json({
           error: data.error || data.message || data.cause || 'Privy OAuth init failed',
-          privy_response: data,
+          privy_raw: data,
         });
       }
       return res.status(200).json(data);
