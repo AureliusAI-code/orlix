@@ -325,9 +325,13 @@ select.inp{cursor:pointer}
       <span class="tb-title">dashboard</span>
     </div>
     <div class="tb-right">
-      <span class="status-dot"></span>
-      <span style="color:var(--green);font-size:.74rem">online</span>
-      <a href="/">← home</a>
+      <button class="wallet-btn" id="walletBtn" onclick="toggleWallet()">
+        <span class="wallet-dot"></span>
+        <span id="walletLabel">Connect Wallet</span>
+      </button>
+      <a href="/gallery" style="color:var(--violet)" class="hide-mobile">gallery</a>
+      <span id="userDisplay" style="display:none;font-size:.72rem;color:var(--dim);max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" class="hide-mobile"></span>
+      <a href="/" class="hide-mobile">← home</a>
     </div>
   </div>
 </div>
@@ -362,7 +366,9 @@ select.inp{cursor:pointer}
       <div class="sb-item" data-view="settings"><span class="ic">S</span>settings</div>
     </div>
     <div class="sb-footer">
+      <div class="sb-ver" id="sbUserLine" style="margin-bottom:8px;display:none;color:var(--dim-2);font-size:.69rem"></div>
       <div class="sb-ver"><span class="sb-status"></span>Mimo engine active<br>orlix v0.6.0 · local-first</div>
+      <button onclick="logoutUser()" class="btn sm danger" style="margin-top:10px;width:100%;justify-content:center">← sign out</button>
     </div>
   </nav>
 
@@ -743,6 +749,21 @@ select.inp{cursor:pointer}
 </div>
 
 <script>
+// ── Auth gate — runs synchronously before any render ──
+(function(){
+  const p = new URLSearchParams(location.search);
+  const t = p.get('privy_token');
+  const u = p.get('privy_user');
+  if (t) {
+    localStorage.setItem('orlix_privy_token', t);
+    if (u) { try { localStorage.setItem('orlix_privy_user', decodeURIComponent(u)); } catch(e){} }
+    history.replaceState({}, '', '/app');
+  }
+  if (!localStorage.getItem('orlix_privy_token')) {
+    location.replace('/login');
+  }
+})();
+
 // ───────── DATA ─────────
 let memories = [
   {id:1,text:'Prefer async communication over meetings for deep work blocks',tag:'work',added:'2m ago'},
@@ -1557,7 +1578,283 @@ document.addEventListener('DOMContentLoaded', () => {
       refreshDashboard();
     }
   });
+
+  // populate auth user display
+  initAuth();
 });
+
+// ───────── AUTH HELPERS ─────────
+function initAuth(){
+  try {
+    const user  = JSON.parse(localStorage.getItem('orlix_privy_user') || '{}');
+    const accts = user.linked_accounts || user.linkedAccounts || [];
+    const tw    = accts.find(a => a.type === 'twitter_oauth');
+    const wl    = accts.find(a => a.type === 'wallet');
+    let label   = '';
+    if      (tw && tw.username)    label = '@' + tw.username;
+    else if (wl && wl.address)     label = wl.address.slice(0,6)+'…'+wl.address.slice(-4);
+    const disp = document.getElementById('userDisplay');
+    const line = document.getElementById('sbUserLine');
+    if (label) {
+      if (disp){ disp.textContent = label; disp.style.display = ''; }
+      if (line){ line.textContent = 'signed in as '+label; line.style.display = ''; }
+    }
+  } catch(e){}
+}
+
+function logoutUser(){
+  if (!confirm('Sign out of Orlix?')) return;
+  localStorage.removeItem('orlix_privy_token');
+  localStorage.removeItem('orlix_privy_user');
+  location.href = '/login';
+}
+
+// ───────── BASE ONCHAIN — WALLET & TRANSACTIONS ─────────
+const BASE_CHAIN_ID   = 8453;
+const BASE_CHAIN_HEX  = '0x2105';
+const BASE_RPC        = 'https://mainnet.base.org';
+const BASESCAN        = 'https://basescan.org/tx/';
+
+let _walletProvider = null;
+let _walletSigner   = null;
+let _walletAddress  = null;
+
+async function toggleWallet(){
+  if(_walletAddress){ disconnectWallet(); return; }
+  await connectWallet();
+}
+
+async function connectWallet(){
+  if(!window.ethereum){
+    alert('No wallet detected.\nInstall MetaMask or Coinbase Wallet to use onchain features.');
+    return;
+  }
+  try{
+    _walletProvider = new ethers.providers.Web3Provider(window.ethereum,'any');
+    await _walletProvider.send('eth_requestAccounts',[]);
+    // Switch to Base
+    try{
+      await window.ethereum.request({method:'wallet_switchEthereumChain',params:[{chainId:BASE_CHAIN_HEX}]});
+    }catch(e){
+      if(e.code===4902){
+        await window.ethereum.request({method:'wallet_addEthereumChain',params:[{
+          chainId:BASE_CHAIN_HEX,chainName:'Base',
+          nativeCurrency:{name:'Ethereum',symbol:'ETH',decimals:18},
+          rpcUrls:[BASE_RPC],blockExplorerUrls:['https://basescan.org']
+        }]});
+        await window.ethereum.request({method:'wallet_switchEthereumChain',params:[{chainId:BASE_CHAIN_HEX}]});
+      }
+    }
+    _walletProvider = new ethers.providers.Web3Provider(window.ethereum,'any');
+    _walletSigner   = _walletProvider.getSigner();
+    _walletAddress  = await _walletSigner.getAddress();
+    updateWalletUI();
+    logAudit('action','User','connected wallet: '+shortAddr(_walletAddress));
+  }catch(e){
+    if(e.code!==4001) alert('Wallet error: '+e.message);
+  }
+}
+
+function disconnectWallet(){
+  _walletProvider=null; _walletSigner=null; _walletAddress=null;
+  updateWalletUI();
+}
+
+function shortAddr(addr){ return addr?addr.slice(0,6)+'…'+addr.slice(-4):''; }
+
+function updateWalletUI(){
+  const btn=document.getElementById('walletBtn');
+  const lbl=document.getElementById('walletLabel');
+  if(_walletAddress){
+    btn.classList.add('connected');
+    lbl.textContent = shortAddr(_walletAddress);
+  } else {
+    btn.classList.remove('connected');
+    lbl.textContent = 'Connect Wallet';
+  }
+}
+
+// Listen for account/chain changes
+if(window.ethereum){
+  window.ethereum.on('accountsChanged', accs => { if(!accs.length) disconnectWallet(); });
+  window.ethereum.on('chainChanged', ()=> window.location.reload());
+}
+
+// ── Render transaction approval card ──
+const TX_ICONS = {transfer:'↗',swap:'⇄',approve:'✓',lend:'⬆',borrow:'⬇',repay:'↩',withdraw:'⬇'};
+const TX_LABELS = {transfer:'Transfer',swap:'Swap',approve:'Token Approval',lend:'Supply / Lend',borrow:'Borrow',repay:'Repay',withdraw:'Withdraw'};
+
+function renderTxCard(id, tx){
+  const typeKey = (tx.type||'transfer').toLowerCase();
+  const icon    = TX_ICONS[typeKey]  || '◈';
+  const label   = TX_LABELS[typeKey] || tx.type || 'Transaction';
+  const ethVal  = tx.value ? ethers.utils.formatEther(ethers.BigNumber.from(tx.value)) : '0';
+  const gasEst  = tx.gasLimit ? parseInt(tx.gasLimit).toLocaleString()+' gas' : 'auto';
+
+  const rows = [];
+  if(tx.description) rows.push(['Action', tx.description]);
+  if(tx.to) rows.push(['To', shortAddr(tx.to)+'  <span style="color:var(--dim);font-size:.67rem">'+tx.to+'</span>']);
+  if(tx.value && tx.value!=='0') rows.push(['Value', ethVal+' ETH']);
+  if(tx.tokenSymbol && tx.tokenAmount) rows.push(['Amount', tx.tokenAmount+' '+tx.tokenSymbol]);
+  if(tx.protocol) rows.push(['Protocol', tx.protocol]);
+  rows.push(['Network', 'Base Mainnet']);
+  rows.push(['Gas', gasEst]);
+
+  return `<div class="tx-card" id="txcard-${id}">
+    <div class="tx-card-header">
+      <div class="tx-type-icon" style="color:#5b9aff">${icon}</div>
+      <div class="tx-title">${esc2(label)}</div>
+      <span class="tx-badge">BASE</span>
+    </div>
+    <div class="tx-body">
+      ${rows.map(([k,v])=>`<div class="tx-row"><span class="tx-label">${k}</span><span class="tx-value">${v}</span></div>`).join('')}
+    </div>
+    <div class="tx-warn">⚠ Review all details carefully before signing. Blockchain transactions are irreversible.</div>
+    <div class="tx-actions">
+      <button class="tx-sign-btn" id="txsign-${id}" data-tx-id="${id}">⬡ Sign &amp; Execute on Base</button>
+      <button class="tx-reject-btn" data-tx-reject="${id}">Reject</button>
+    </div>
+  </div>`;
+}
+
+async function signTransaction(id){
+  const btn = document.getElementById('txsign-'+id);
+  if(!btn || btn.disabled) return;
+  const raw = _codeStore[id];
+  if(!raw) return;
+  let tx;
+  try{ tx = JSON.parse(raw); }catch{ return; }
+
+  if(!_walletAddress){
+    await connectWallet();
+    if(!_walletAddress) return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = '⏳ Waiting for signature…';
+
+  try{
+    const txReq = { to: tx.to, chainId: BASE_CHAIN_ID };
+    if(tx.value && tx.value!=='0') txReq.value = ethers.BigNumber.from(tx.value);
+    if(tx.data) txReq.data = tx.data;
+    if(tx.gasLimit) txReq.gasLimit = ethers.BigNumber.from(tx.gasLimit);
+
+    const result = await _walletSigner.sendTransaction(txReq);
+    btn.classList.add('success');
+    btn.textContent = '✓ Submitted — '+shortAddr(result.hash);
+    btn.onclick = ()=> window.open(BASESCAN+result.hash,'_blank');
+    logAudit('action','Orlix','tx submitted on Base: '+result.hash);
+    addMsg('assistant','Transaction submitted to Base ✓\n\nHash: `'+result.hash+'`\n\nView on Basescan: '+BASESCAN+result.hash);
+  }catch(e){
+    btn.disabled = false;
+    if(e.code===4001){
+      btn.textContent = '⬡ Sign & Execute on Base';
+    } else {
+      btn.classList.add('error');
+      btn.textContent = '✕ Failed: '+e.message.slice(0,60);
+      setTimeout(()=>{ btn.classList.remove('error'); btn.textContent='⬡ Sign & Execute on Base'; btn.disabled=false; }, 4000);
+    }
+  }
+}
+
+// ───────── GALLERY & LEADERBOARD ─────────
+function getGalleryBuilds(){
+  try{ return JSON.parse(localStorage.getItem('orlix_gallery')||'[]'); }
+  catch{ return []; }
+}
+
+async function publishBuild(btn, id){
+  const code = _codeStore[id];
+  if(!code || btn.disabled) return;
+  const titleMatch = code.match(/<title[^>]*>(.*?)<\/title>/i);
+  const title = titleMatch ? titleMatch[1].trim() : 'Build #'+(Date.now()%9999);
+
+  btn.textContent='Publishing…'; btn.disabled=true;
+
+  // Save to localStorage immediately (works offline)
+  const local = getGalleryBuilds();
+  if(!local.find(b=>b.id===id)){
+    local.unshift({id, code, title, ts:Date.now()});
+    localStorage.setItem('orlix_gallery', JSON.stringify(local.slice(0,50)));
+  }
+
+  // Also POST to Vercel KV for public/cross-device gallery
+  try{
+    const r = await fetch('/api/gallery',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({id, code, title})
+    });
+    const data = await r.json();
+    if(data.error) throw new Error(data.error);
+    btn.textContent='✓ Published!';
+  }catch(e){
+    // KV might not be configured yet — localStorage save still worked
+    btn.textContent='✓ Saved locally';
+    console.warn('Gallery API:', e.message);
+  }
+  btn.style.borderColor='var(--green)';
+  btn.style.color='var(--green)';
+  btn.style.background='rgba(126,224,168,.08)';
+  logAudit('action','Orlix','published build to gallery: '+title);
+}
+
+function shareOnX(id){
+  const builds = getGalleryBuilds();
+  const build = builds.find(b=>b.id===id);
+  const title = build ? build.title : 'an app';
+  const tweet = `Just built "${title}" with @OrlixAI ⚡\n\norlixai.xyz/gallery\n\n#OrliAI #BuildWithAI`;
+  window.open('https://twitter.com/intent/tweet?text='+encodeURIComponent(tweet),'_blank','noopener');
+}
+
+function renderLeaderboard(){
+  const myBuilds = getGalleryBuilds().length;
+  const runs = getRunLog ? getRunLog() : [];
+  const rated = runs.filter(r=>r.quality>0);
+  const myAvgQ = rated.length ? (rated.reduce((s,r)=>s+r.quality,0)/rated.length).toFixed(1) : '—';
+
+  document.getElementById('lb-my-builds').textContent = myBuilds;
+  document.getElementById('lb-my-quality').textContent = myAvgQ;
+
+  // Seeded global leaderboard (realistic demo data)
+  const seed = [
+    {name:'0x_sato',   em:'🦊', builds:47, q:'4.9'},
+    {name:'mimo_max',  em:'⚡', builds:38, q:'4.7'},
+    {name:'aeon_dev',  em:'🚀', builds:31, q:'4.6'},
+    {name:'base_coder',em:'🔵', builds:24, q:'4.5'},
+    {name:'orlix_chad',em:'🤖', builds:18, q:'4.3'},
+    {name:'web3_buildr',em:'💎',builds:14, q:'4.1'},
+    {name:'nft_wizard', em:'🪄',builds: 9, q:'3.9'},
+  ];
+
+  // Insert user into the list
+  const me = {name:'You', em:'★', builds:myBuilds, q:myAvgQ==='—'?0:+myAvgQ, isYou:true};
+  const builders = [...seed, me].sort((a,b)=>b.builds-a.builds);
+  const myRank = builders.findIndex(b=>b.isYou)+1;
+  document.getElementById('lb-my-rank').textContent = myRank ? '#'+myRank : '—';
+
+  const rankIcons = ['🥇','🥈','🥉'];
+  function rankClass(i){ return i===0?'g1':i===1?'g2':i===2?'g3':''; }
+
+  document.getElementById('lb-builders').innerHTML = builders.map((b,i)=>`
+    <div class="lb-row${b.isYou?' lb-you':''}">
+      <div class="lb-rank ${rankClass(i)}">${i<3?rankIcons[i]:'#'+(i+1)}</div>
+      <div class="lb-avatar" style="${b.isYou?'background:var(--amber-soft)':''}">${b.em}</div>
+      <div class="lb-name">${b.name}${b.isYou?`<span class="lb-badge">you</span>`:''}</div>
+      <div class="lb-score">${b.builds} <span style="color:var(--dim);font-weight:400;font-size:.7rem">builds</span></div>
+    </div>`).join('');
+
+  const qualList = [...seed.map(b=>({...b,q:+b.q})), {...me,q:myAvgQ==='—'?0:+myAvgQ}]
+    .filter(b=>b.q>0).sort((a,b)=>b.q-a.q);
+
+  document.getElementById('lb-quality').innerHTML = qualList.map((b,i)=>`
+    <div class="lb-row${b.isYou?' lb-you':''}">
+      <div class="lb-rank ${rankClass(i)}">${i<3?rankIcons[i]:'#'+(i+1)}</div>
+      <div class="lb-avatar" style="${b.isYou?'background:var(--amber-soft)':''}">${b.em}</div>
+      <div class="lb-name">${b.name}${b.isYou?`<span class="lb-badge">you</span>`:''}</div>
+      <div class="lb-score">${b.q} <span style="color:var(--dim);font-weight:400;font-size:.7rem">avg</span></div>
+    </div>`).join('');
+}
 
 // ───────── SYSTEM PROMPT & GROK ─────────
 const GROK_SYSTEM = `You are Orlix — an autonomous AI OS powered by Mimo as its primary reasoning engine. You have a soul.

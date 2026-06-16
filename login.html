@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Orlix AI — Sign In</title>
+<meta name="description" content="Sign in to your Orlix AI workspace">
+<link rel="icon" type="image/x-icon" href="/favicon.ico">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://www.orlixai.xyz/login">
+<meta property="og:title" content="Orlix AI — Sign In">
+<meta property="og:description" content="Personal AI Operating System">
+<meta property="og:image" content="https://www.orlixai.xyz/og-image.png">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a0a0a;--bg-panel:#111;
+  --line:rgba(255,255,255,.09);--line-bright:rgba(255,255,255,.16);
+  --text:#c0b8b0;--bright:#f0ebe3;
+  --dim:#665e58;--dim-2:rgba(255,255,255,.18);
+  --amber:#ff9a52;--amber-soft:rgba(255,154,82,.1);
+  --violet:#b9a4ff;--violet-soft:rgba(185,164,255,.1);
+  --red:#e03030;--green:#7ee0a8;
+  --mono:'JetBrains Mono',monospace;
+  --display:'Space Grotesk',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{background:var(--bg);color:var(--text);min-height:100%;height:100%}
+body{font-family:var(--mono);font-size:13px;line-height:1.6;-webkit-font-smoothing:antialiased;display:flex;align-items:center;justify-content:center;overflow:hidden}
+
+/* animated grid */
+body::before{
+  content:'';position:fixed;inset:0;z-index:-1;
+  background-image:
+    linear-gradient(rgba(255,154,82,.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,154,82,.03) 1px, transparent 1px);
+  background-size:36px 36px;
+  animation:gridScroll 28s linear infinite;
+}
+@keyframes gridScroll{to{background-position:36px 36px}}
+
+/* subtle radial glow */
+body::after{
+  content:'';position:fixed;inset:0;z-index:-1;
+  background:radial-gradient(ellipse 60% 50% at 50% 40%, rgba(185,164,255,.07) 0%, transparent 70%);
+}
+
+/* card */
+.login-card{
+  width:100%;max-width:380px;
+  background:rgba(17,17,17,.92);
+  border:1px solid var(--line-bright);
+  border-radius:14px;
+  padding:40px 36px 36px;
+  backdrop-filter:blur(20px);
+  box-shadow:0 0 60px rgba(0,0,0,.6), 0 0 0 1px rgba(255,255,255,.04) inset;
+  margin:20px;
+}
+
+.brand{
+  display:flex;align-items:center;gap:8px;
+  font-family:var(--mono);font-weight:700;font-size:.85rem;
+  letter-spacing:.16em;color:var(--bright);text-transform:uppercase;
+  margin-bottom:28px;
+}
+.brand-dot{color:var(--red);font-size:.5rem}
+
+.login-title{
+  font-family:var(--display);font-size:1.4rem;font-weight:700;
+  color:var(--bright);margin-bottom:6px;letter-spacing:-.01em;
+}
+.login-sub{
+  color:var(--dim);font-size:.78rem;margin-bottom:32px;line-height:1.5;
+}
+
+.divider{height:1px;background:var(--line);margin:24px 0}
+
+.login-btn{
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  width:100%;padding:13px 18px;border-radius:8px;font-size:.82rem;
+  font-family:var(--mono);font-weight:600;cursor:pointer;transition:.15s;
+  border:1px solid;text-decoration:none;letter-spacing:.02em;
+  position:relative;
+}
+.login-btn:disabled{opacity:.5;cursor:not-allowed}
+.login-btn .btn-icon{font-size:1rem;flex-shrink:0}
+
+.btn-twitter{
+  background:rgba(255,154,82,.12);
+  border-color:rgba(255,154,82,.35);
+  color:var(--amber);
+  margin-bottom:12px;
+}
+.btn-twitter:hover:not(:disabled){
+  background:rgba(255,154,82,.2);
+  border-color:rgba(255,154,82,.6);
+  box-shadow:0 0 20px rgba(255,154,82,.15);
+}
+
+.btn-wallet{
+  background:rgba(185,164,255,.1);
+  border-color:rgba(185,164,255,.3);
+  color:var(--violet);
+}
+.btn-wallet:hover:not(:disabled){
+  background:rgba(185,164,255,.18);
+  border-color:rgba(185,164,255,.55);
+  box-shadow:0 0 20px rgba(185,164,255,.12);
+}
+
+.step-info{
+  display:none;text-align:center;font-size:.73rem;
+  color:var(--dim);margin-top:10px;min-height:18px;
+}
+.step-info.visible{display:block}
+
+.error-box{
+  display:none;background:rgba(224,48,48,.08);border:1px solid rgba(224,48,48,.3);
+  border-radius:6px;padding:10px 13px;color:var(--red);font-size:.75rem;
+  margin-top:14px;line-height:1.5;
+}
+.error-box.visible{display:block}
+
+.login-footer{
+  text-align:center;color:var(--dim);font-size:.7rem;margin-top:24px;line-height:1.6;
+}
+.login-footer a{color:var(--dim);text-decoration:underline;text-underline-offset:3px}
+.login-footer a:hover{color:var(--text)}
+
+/* spinner */
+@keyframes spin{to{transform:rotate(360deg)}}
+.spin{display:inline-block;animation:spin .7s linear infinite}
+
+/* wallet step indicator */
+.wallet-steps{display:none;margin-top:14px}
+.wallet-steps.visible{display:block}
+.wstep{
+  display:flex;align-items:center;gap:9px;padding:6px 0;
+  font-size:.72rem;color:var(--dim);
+}
+.wstep .ws-dot{
+  width:6px;height:6px;border-radius:50%;
+  background:var(--line-bright);flex-shrink:0;transition:.3s;
+}
+.wstep.done .ws-dot{background:var(--green)}
+.wstep.active .ws-dot{background:var(--amber);box-shadow:0 0 6px var(--amber)}
+.wstep.done span{color:var(--dim)}
+.wstep.active span{color:var(--amber)}
+</style>
+</head>
+<body>
+
+<div class="login-card">
+  <div class="brand">
+    <span class="brand-dot">●</span>
+    ORLIX
+  </div>
+
+  <div class="login-title">Sign in</div>
+  <div class="login-sub">Connect to your personal AI operating system.</div>
+
+  <button class="login-btn btn-twitter" id="twitterBtn" onclick="loginWithTwitter()">
+    <span class="btn-icon">𝕏</span>
+    <span id="twitterLabel">Continue with X</span>
+  </button>
+
+  <button class="login-btn btn-wallet" id="walletBtn" onclick="loginWithWallet()">
+    <span class="btn-icon">⬡</span>
+    <span id="walletLabel">Connect Wallet</span>
+  </button>
+
+  <div class="wallet-steps" id="walletSteps">
+    <div class="wstep" id="ws1"><div class="ws-dot"></div><span>Connect MetaMask</span></div>
+    <div class="wstep" id="ws2"><div class="ws-dot"></div><span>Sign message</span></div>
+    <div class="wstep" id="ws3"><div class="ws-dot"></div><span>Verify signature</span></div>
+  </div>
+
+  <div class="error-box" id="errorBox"></div>
+
+  <div class="divider"></div>
+  <div class="login-footer">
+    By connecting you agree to our
+    <a href="/terms">Terms</a> &amp; <a href="/privacy">Privacy Policy</a>.<br>
+    <a href="/" style="margin-top:4px;display:inline-block">← back to homepage</a>
+  </div>
+</div>
+
+<script>
+// ── Already logged in? Skip to app ──
+(function(){
+  const p = new URLSearchParams(location.search);
+  const t = p.get('privy_token');
+  if (t) return; // handled by app.html gate
+  if (localStorage.getItem('orlix_privy_token')) location.replace('/app');
+})();
+
+function showError(msg){
+  const b = document.getElementById('errorBox');
+  b.textContent = msg;
+  b.classList.add('visible');
+}
+function clearError(){ document.getElementById('errorBox').classList.remove('visible'); }
+
+// ── Twitter / X OAuth ──
+async function loginWithTwitter(){
+  clearError();
+  const btn = document.getElementById('twitterBtn');
+  const lbl = document.getElementById('twitterLabel');
+  btn.disabled = true;
+  lbl.innerHTML = '<span class="spin">◌</span> Redirecting…';
+  try {
+    const res = await fetch('/api/auth?action=oauth-init', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ provider: 'twitter' }),
+    });
+    const data = await res.json();
+    const url = data.auth_url || data.redirect_url || data.url || data.oauth_url || data.authorizeUrl;
+    if (!url) throw new Error(data.error || 'No OAuth URL returned. Check PRIVY_APP_SECRET is set.');
+    location.href = url;
+  } catch(e) {
+    showError(e.message);
+    btn.disabled = false;
+    lbl.textContent = 'Continue with X';
+  }
+}
+
+// ── Wallet / SIWE ──
+function setWalletStep(n) {
+  [1,2,3].forEach(i => {
+    const el = document.getElementById('ws'+i);
+    if (!el) return;
+    el.classList.remove('active','done');
+    if (i < n) el.classList.add('done');
+    if (i === n) el.classList.add('active');
+  });
+}
+
+async function loginWithWallet(){
+  clearError();
+  const btn   = document.getElementById('walletBtn');
+  const lbl   = document.getElementById('walletLabel');
+  const steps = document.getElementById('walletSteps');
+
+  if (!window.ethereum) {
+    showError('No wallet detected. Install MetaMask or Coinbase Wallet to continue.');
+    return;
+  }
+
+  btn.disabled = true;
+  steps.classList.add('visible');
+  lbl.innerHTML = '<span class="spin">◌</span> Connecting…';
+
+  try {
+    // Step 1 — connect
+    setWalletStep(1);
+    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+    const address  = accounts[0];
+
+    // Step 2 — get nonce
+    setWalletStep(2);
+    lbl.innerHTML = '<span class="spin">◌</span> Waiting for signature…';
+    const initRes = await fetch('/api/auth?action=siwe-init', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ address }),
+    });
+    const initData = await initRes.json();
+    if (!initData.nonce) throw new Error(initData.error || 'No nonce from server. Check PRIVY_APP_SECRET.');
+
+    // Build EIP-4361 SIWE message
+    const domain  = location.hostname;
+    const uri     = location.origin;
+    const now     = new Date().toISOString();
+    const message = [
+      `${domain} wants you to sign in with your Ethereum account:`,
+      address,
+      '',
+      'Sign in to Orlix AI',
+      '',
+      `URI: ${uri}`,
+      'Version: 1',
+      'Chain ID: 8453',
+      `Nonce: ${initData.nonce}`,
+      `Issued At: ${now}`,
+    ].join('\n');
+
+    const signature = await window.ethereum.request({
+      method: 'personal_sign',
+      params: [message, address],
+    });
+
+    // Step 3 — authenticate
+    setWalletStep(3);
+    lbl.innerHTML = '<span class="spin">◌</span> Verifying…';
+    const authRes = await fetch('/api/auth?action=siwe-authenticate', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ message, signature, chainId: 8453 }),
+    });
+    const authData = await authRes.json();
+    if (!authData.token) throw new Error(authData.error || authData.cause || 'Authentication failed');
+
+    localStorage.setItem('orlix_privy_token', authData.token);
+    localStorage.setItem('orlix_privy_user', JSON.stringify(authData.user || {}));
+    location.href = '/app';
+
+  } catch(e) {
+    steps.classList.remove('visible');
+    if (e.code !== 4001) showError(e.message); // 4001 = user rejected signature
+    btn.disabled = false;
+    lbl.textContent = 'Connect Wallet';
+  }
+}
+</script>
+</body>
+</html>
