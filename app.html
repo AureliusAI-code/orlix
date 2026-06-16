@@ -1764,21 +1764,36 @@ function getGalleryBuilds(){
   catch{ return []; }
 }
 
-function publishBuild(btn, id){
+async function publishBuild(btn, id){
   const code = _codeStore[id];
-  if(!code) return;
-  if(btn.disabled) return;
+  if(!code || btn.disabled) return;
   const titleMatch = code.match(/<title[^>]*>(.*?)<\/title>/i);
   const title = titleMatch ? titleMatch[1].trim() : 'Build #'+(Date.now()%9999);
-  const builds = getGalleryBuilds();
-  // avoid duplicates
-  if(builds.find(b=>b.id===id)) {
-    btn.textContent='✓ Already published'; btn.disabled=true; return;
+
+  btn.textContent='Publishing…'; btn.disabled=true;
+
+  // Save to localStorage immediately (works offline)
+  const local = getGalleryBuilds();
+  if(!local.find(b=>b.id===id)){
+    local.unshift({id, code, title, ts:Date.now()});
+    localStorage.setItem('orlix_gallery', JSON.stringify(local.slice(0,50)));
   }
-  builds.unshift({id, code, title, ts:Date.now()});
-  localStorage.setItem('orlix_gallery', JSON.stringify(builds.slice(0,50)));
-  btn.textContent='✓ Published!';
-  btn.disabled=true;
+
+  // Also POST to Vercel KV for public/cross-device gallery
+  try{
+    const r = await fetch('/api/gallery',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({id, code, title})
+    });
+    const data = await r.json();
+    if(data.error) throw new Error(data.error);
+    btn.textContent='✓ Published!';
+  }catch(e){
+    // KV might not be configured yet — localStorage save still worked
+    btn.textContent='✓ Saved locally';
+    console.warn('Gallery API:', e.message);
+  }
   btn.style.borderColor='var(--green)';
   btn.style.color='var(--green)';
   btn.style.background='rgba(126,224,168,.08)';

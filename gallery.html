@@ -201,9 +201,33 @@ nav{position:sticky;top:0;z-index:100;background:rgba(10,10,10,.94);backdrop-fil
 </div>
 
 <script>
-function getBuilds(){
+function getLocalBuilds(){
   try{ return JSON.parse(localStorage.getItem('orlix_gallery')||'[]'); }
   catch{ return []; }
+}
+
+async function fetchBuilds(){
+  // Try API first
+  try{
+    const r = await fetch('/api/gallery');
+    if(r.ok){
+      const { builds, error } = await r.json();
+      if(error) throw new Error(error);
+      // Merge: API builds + local-only builds not yet in API
+      const apiIds = new Set((builds||[]).map(b=>b.id));
+      const localOnly = getLocalBuilds().filter(b=>!apiIds.has(b.id));
+      return [...(builds||[]), ...localOnly];
+    }
+  }catch(e){ console.warn('Gallery API unavailable, using localStorage:', e.message); }
+  // Fallback to localStorage
+  return getLocalBuilds();
+}
+
+let _builds = [];
+async function loadBuilds(){
+  _builds = await fetchBuilds();
+  document.getElementById('statBuilders').textContent = new Set(_builds.map(b=>b.author||'You')).size;
+  renderBuilds();
 }
 
 function timeAgo(ts){
@@ -220,7 +244,7 @@ let currentFilter='all';
 let currentSearch='';
 
 function renderBuilds(){
-  const all = getBuilds();
+  const all = _builds;
   let filtered = all;
   if(currentFilter==='mine') filtered=all.filter(b=>b.author==='You'||!b.author);
   if(currentFilter==='recent') filtered=[...all].sort((a,b)=>b.ts-a.ts).slice(0,12);
@@ -262,7 +286,7 @@ function renderBuilds(){
 }
 
 function openPreview(id){
-  const builds=getBuilds();
+  const builds=_builds;
   const b=builds.find(x=>x.id===id);
   if(!b) return;
   document.getElementById('modalTitle').textContent=b.title;
@@ -284,11 +308,20 @@ function shareOnX(id, title){
   window.open('https://twitter.com/intent/tweet?text='+encodeURIComponent(tweet),'_blank','noopener');
 }
 
-function deleteBuild(id){
-  if(!confirm('Remove this build from your gallery?')) return;
-  const builds=getBuilds().filter(b=>b.id!==id);
-  localStorage.setItem('orlix_gallery',JSON.stringify(builds));
-  renderBuilds();
+async function deleteBuild(id){
+  if(!confirm('Remove this build from the gallery?')) return;
+  // Remove from localStorage
+  const local=getLocalBuilds().filter(b=>b.id!==id);
+  localStorage.setItem('orlix_gallery',JSON.stringify(local));
+  // Remove from API
+  try{
+    await fetch('/api/gallery',{
+      method:'DELETE',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({id})
+    });
+  }catch(e){ console.warn('Delete API failed:',e.message); }
+  await loadBuilds();
 }
 
 // Event delegation
@@ -322,7 +355,7 @@ document.getElementById('searchInp').addEventListener('input',function(){
 });
 
 // Init
-renderBuilds();
+loadBuilds();
 </script>
 </body>
 </html>
