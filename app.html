@@ -442,7 +442,7 @@ body::before{
     <div class="tb-right">
       <button class="wallet-btn" id="walletBtn" onclick="toggleWallet()">
         <span class="wallet-dot"></span>
-        <span id="walletLabel">Connect Wallet</span>
+        <span id="walletLabel">Connect</span>
       </button>
       <a href="/gallery" style="color:var(--violet)" class="hide-mobile">gallery</a>
       <span id="userDisplay" style="display:none;font-size:.72rem;color:var(--dim);max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" class="hide-mobile"></span>
@@ -931,34 +931,6 @@ body::before{
 </div>
 
 <script>
-// ── Auth gate ──
-(function(){
-  const p = new URLSearchParams(location.search);
-  const t = p.get('privy_token');
-  const u = p.get('privy_user');
-  // Handle Twitter OAuth callback — store under unified keys
-  if (t) {
-    localStorage.setItem('orlix_token', 'privy:' + decodeURIComponent(t));
-    if (u) { try {
-      const usr = JSON.parse(decodeURIComponent(u));
-      const tw  = (usr.linked_accounts||usr.linkedAccounts||[]).find(a=>a.type==='twitter_oauth');
-      localStorage.setItem('orlix_user', JSON.stringify({
-        id:      usr.id||'',
-        type:    'twitter',
-        display: tw ? '@'+tw.username : usr.id||'',
-        raw:     usr,
-      }));
-    } catch(e){} }
-    history.replaceState({}, '', '/app');
-  }
-  // Also migrate old key if it exists
-  if (!localStorage.getItem('orlix_token') && localStorage.getItem('orlix_privy_token')) {
-    localStorage.setItem('orlix_token', localStorage.getItem('orlix_privy_token'));
-  }
-  if (!localStorage.getItem('orlix_token')) {
-    location.replace('/login');
-  }
-})();
 
 // ───────── DATA ─────────
 let memories = [
@@ -1910,15 +1882,18 @@ function initAuth(){
     // Auto-populate wallet state if user logged in via wallet
     if (type === 'wallet' && address && !_walletAddress) {
       _walletAddress = address;
-      updateWalletUI();
     }
+    updateWalletUI();
   } catch(e){}
 }
 
 function logoutUser(){
   if (!confirm('Sign out of Orlix?')) return;
+  if (window.__privyDisconnect) window.__privyDisconnect().catch(()=>{});
   ['orlix_token','orlix_user','orlix_privy_token','orlix_privy_user'].forEach(k=>localStorage.removeItem(k));
-  location.href = '/login';
+  _walletAddress = null;
+  initAuth();
+  updateWalletUI();
 }
 
 // ───────── BASE ONCHAIN — WALLET & TRANSACTIONS ─────────
@@ -1932,6 +1907,19 @@ let _walletSigner   = null;
 let _walletAddress  = null;
 
 async function toggleWallet(){
+  // Use Privy SDK if loaded
+  if (window.__privyConnect) {
+    const connected = !!localStorage.getItem('orlix_token');
+    if (connected && window.__privyDisconnect) {
+      if (confirm('Disconnect from Orlix?')) {
+        await window.__privyDisconnect();
+      }
+    } else {
+      window.__privyConnect();
+    }
+    return;
+  }
+  // Fallback: direct MetaMask
   if(_walletAddress){ disconnectWallet(); return; }
   await connectWallet();
 }
@@ -1977,12 +1965,20 @@ function shortAddr(addr){ return addr?addr.slice(0,6)+'…'+addr.slice(-4):''; }
 function updateWalletUI(){
   const btn=document.getElementById('walletBtn');
   const lbl=document.getElementById('walletLabel');
+  try {
+    const u = JSON.parse(localStorage.getItem('orlix_user')||'{}');
+    if (u.display) {
+      btn.classList.add('connected');
+      lbl.textContent = u.display;
+      return;
+    }
+  } catch(e){}
   if(_walletAddress){
     btn.classList.add('connected');
     lbl.textContent = shortAddr(_walletAddress);
   } else {
     btn.classList.remove('connected');
-    lbl.textContent = 'Connect Wallet';
+    lbl.textContent = 'Connect';
   }
   // Keep sidebar profile wallet line in sync
   const wl = document.getElementById('sbWalletLine');
@@ -2273,6 +2269,93 @@ document.getElementById('previewCloseBtn').addEventListener('click', closePrevie
     if(window.innerWidth <= 640 && e.target.closest('.sb-item')) closeSidebar();
   });
 })();
+</script>
+
+<!-- Privy SDK — powers the Connect button in the top-right titlebar -->
+<script type="module">
+// iOS Safari: a passive touchstart listener on document makes ALL elements tappable
+// inside React portals (fixes the known React 18 portal touch-event issue on iOS)
+document.addEventListener('touchstart', function(){}, {passive: true});
+
+import { createElement as h, useEffect } from 'https://esm.sh/react@18.3.1';
+import { createRoot }                     from 'https://esm.sh/react-dom@18.3.1/client';
+import { PrivyProvider, usePrivy }        from 'https://esm.sh/@privy-io/react-auth@2?deps=react@18.3.1,react-dom@18.3.1';
+
+function AuthBridge() {
+  const { ready, authenticated, user, login, logout, getAccessToken } = usePrivy();
+
+  // Expose login/logout to the vanilla-JS toggleWallet() function
+  useEffect(() => {
+    if (!ready) return;
+    window.__privyConnect    = login;
+    window.__privyDisconnect = logout;
+  }, [ready, login, logout]);
+
+  // On successful auth — persist session + update UI
+  useEffect(() => {
+    if (!ready) return;
+    if (authenticated && user) {
+      (async () => {
+        try {
+          const token  = await getAccessToken();
+          const accts  = user.linkedAccounts || [];
+          const tw     = accts.find(a => a.type === 'twitter_oauth');
+          const wl     = accts.find(a => a.type === 'wallet');
+          const display = tw ? '@' + tw.username
+                        : wl ? wl.address.slice(0,6) + '…' + wl.address.slice(-4)
+                        : user.id?.slice(0,12) || 'user';
+          const userData = {
+            id: user.id, display,
+            type:     tw ? 'twitter' : wl ? 'wallet' : 'other',
+            username: tw?.username || '',
+            name:     tw?.name || '',
+            avatar:   tw?.profile_picture_url || '',
+            address:  wl?.address || '',
+          };
+          localStorage.setItem('orlix_token', 'privy:' + token);
+          localStorage.setItem('orlix_user',  JSON.stringify(userData));
+          // Update sidebar profile + titlebar
+          typeof initAuth === 'function' && initAuth();
+          // Auto-connect raw wallet for transactions if addresses match
+          if (wl?.address && window.ethereum) {
+            window.ethereum.request({method:'eth_accounts'}).then(accs => {
+              if (accs[0]?.toLowerCase() === wl.address.toLowerCase()) {
+                _walletAddress = accs[0];
+                typeof updateWalletUI === 'function' && updateWalletUI();
+              }
+            }).catch(()=>{});
+          }
+        } catch(e) { console.error('[Privy]', e); }
+      })();
+    } else if (!authenticated) {
+      // Signed out — clear state
+      localStorage.removeItem('orlix_token');
+      localStorage.removeItem('orlix_user');
+      _walletAddress = null;
+      typeof initAuth       === 'function' && initAuth();
+      typeof updateWalletUI === 'function' && updateWalletUI();
+    }
+  }, [ready, authenticated, user]);
+
+  return null;
+}
+
+// Mount on a fresh div appended to body — keeps Privy's event root
+// at the same level as the portal it renders, so React fiber-tree
+// event propagation works on iOS Safari
+const _pm = document.createElement('div');
+document.body.appendChild(_pm);
+createRoot(_pm).render(
+  h(PrivyProvider, {
+    appId:    'cmqh5fvyg00co0ci68birz0s2',
+    clientId: 'client-WY6aRspZ68mzwa8hexMRYu9xiCKWRkscPMKYYu3oayZ99',
+    config: {
+      loginMethods:    ['twitter', 'wallet'],
+      appearance:      { theme: 'dark', accentColor: '#ff9a52' },
+      embeddedWallets: { createOnLogin: 'off' },
+    },
+  }, h(AuthBridge))
+);
 </script>
 
 </body>
