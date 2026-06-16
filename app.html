@@ -217,8 +217,10 @@ select.inp{cursor:pointer}
 .code-actions{display:flex;gap:6px}
 .code-actions button{background:rgba(255,255,255,.07);border:1px solid var(--line);border-radius:4px;color:var(--dim);font-size:.69rem;padding:2px 8px;cursor:pointer;font-family:var(--mono);transition:.15s}
 .code-actions button:hover{background:rgba(255,255,255,.13);color:var(--text)}
-.code-actions .preview-btn{color:var(--green);border-color:rgba(126,224,168,.3)}
-.code-actions .preview-btn:hover{background:rgba(126,224,168,.1);color:var(--green)}
+.code-actions .copy-btn{color:var(--violet);border-color:rgba(185,164,255,.3)}
+.code-actions .copy-btn:hover{background:rgba(185,164,255,.1);color:var(--violet)}
+.msg-preview-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin-top:10px;padding:10px 16px;background:rgba(126,224,168,.08);border:1px solid rgba(126,224,168,.3);border-radius:6px;color:var(--green);font-family:var(--mono);font-size:.8rem;font-weight:600;cursor:pointer;transition:.15s}
+.msg-preview-btn:hover{background:rgba(126,224,168,.16);border-color:var(--green)}
 .code-block pre{margin:0;padding:12px;overflow-x:auto;white-space:pre;line-height:1.6}
 .code-block pre code{color:#e0ddd8;font-family:var(--mono)}
 .preview-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9000;padding:24px}
@@ -1341,64 +1343,84 @@ let _codeIdx = 0;
 function esc2(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
 function renderContent(text){
-  // Match ```lang\n...``` — handles CRLF, trailing spaces after lang label
-  const RE = /(```([\w]*)[^\S\r\n]*\r?\n([\s\S]*?)```)/g;
+  // Match ```lang...``` blocks — permissive: optional lang, optional trailing spaces
+  const RE = /```([\w]*)[^\S\r\n]*\r?\n([\s\S]*?)```/g;
   let result = '';
   let last = 0;
   let match;
+  let lastHtmlId = null; // track last HTML block for bottom preview button
+
   while((match = RE.exec(text)) !== null){
-    // text before this block
     const before = text.slice(last, match.index);
     if(before) result += esc2(before).replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>');
     last = match.index + match[0].length;
 
-    const lang   = match[2] || '';
-    const code   = match[3];
-    const id     = 'c'+(++_codeIdx);
-    _codeStore[id] = code; // store raw — never HTML-escaped
+    const lang  = match[1] || '';
+    const code  = match[2];
+    const id    = 'c'+(++_codeIdx);
+    _codeStore[id] = code;
 
-    const label = lang||'code';
+    const label = lang || 'code';
+    const isHtml = /^htm/i.test(lang) || (!lang && (code.trimStart().startsWith('<') || /<!DOCTYPE|<html/i.test(code)));
+    if(isHtml) lastHtmlId = id;
+
     result += `<div class="code-block">
       <div class="code-header">
         <span class="code-lang">${esc2(label)}</span>
         <div class="code-actions">
-          <button class="preview-btn" onclick="openPreview('${id}')">&#9658; Preview</button>
-          <button onclick="copyCode('${id}')">&#x2398; Copy</button>
+          <button class="copy-btn" data-copy="${id}">Copy</button>
         </div>
       </div>
       <pre><code>${esc2(code)}</code></pre>
     </div>`;
   }
-  // remaining text after last block
+
   const tail = text.slice(last);
   if(tail) result += esc2(tail).replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>');
+
+  // Add big preview button BELOW the message if HTML was found
+  if(lastHtmlId){
+    result += `<button class="msg-preview-btn" data-preview="${lastHtmlId}">&#9654; Open Preview</button>`;
+  }
+
   return result || esc2(text).replace(/\n/g,'<br>');
 }
 
-window.copyCode = function(id){
+function copyCode(id){
   const code = _codeStore[id]||'';
   navigator.clipboard.writeText(code).catch(()=>{});
-  const btn = document.querySelector(`[onclick="copyCode('${id}')"]`);
+  const btn = document.querySelector(`.copy-btn[data-copy="${id}"]`);
   if(btn){ const o=btn.textContent; btn.textContent='Copied!'; setTimeout(()=>btn.textContent=o,2000); }
-};
+}
 
-window.openPreview = function(id){
+function openPreview(id){
   const code = _codeStore[id]||'';
-  const blob = new Blob([code],{type:'text/html'});
-  const url  = URL.createObjectURL(blob);
   const modal = document.getElementById('previewModal');
-  modal.querySelector('iframe').src = url;
-  modal.querySelector('.preview-bar span').textContent = 'Live Preview · '+new Date().toLocaleTimeString();
-  modal._blobUrl = url;
+  const iframe = modal.querySelector('iframe');
+  // Write directly to iframe document — most reliable approach
   modal.classList.add('open');
-};
+  const doc = iframe.contentDocument || iframe.contentWindow.document;
+  doc.open(); doc.write(code); doc.close();
+  modal.querySelector('.preview-bar span').textContent = 'Live Preview · '+new Date().toLocaleTimeString();
+}
 
-window.closePreview = function(){
+function closePreview(){
   const modal = document.getElementById('previewModal');
   modal.classList.remove('open');
-  if(modal._blobUrl){ URL.revokeObjectURL(modal._blobUrl); modal._blobUrl=null; }
-  modal.querySelector('iframe').src='about:blank';
-};
+  const iframe = modal.querySelector('iframe');
+  const doc = iframe.contentDocument || iframe.contentWindow.document;
+  doc.open(); doc.write(''); doc.close();
+}
+
+// Event delegation — handles all dynamically created buttons in chat
+document.addEventListener('click', function(e){
+  const copyBtn = e.target.closest('[data-copy]');
+  const previewBtn = e.target.closest('[data-preview]');
+  const rateBtn = e.target.closest('[data-rate]');
+  if(copyBtn) copyCode(copyBtn.dataset.copy);
+  if(previewBtn) openPreview(previewBtn.dataset.preview);
+  if(rateBtn) rateRun(rateBtn.dataset.runId, +rateBtn.dataset.rate, rateBtn.parentElement);
+});
 
 // ───────── RUN LOGGING & QUALITY RATING ─────────
 function logRun(model, usage, preview) {
@@ -1420,16 +1442,16 @@ function logRun(model, usage, preview) {
 function showQualityRater(runId, afterEl) {
   const div = document.createElement('div');
   div.className = 'quality-rater';
-  div.innerHTML = `<span style="color:var(--dim);font-size:.72rem">Rate this run:</span> ${[1,2,3,4,5].map(n=>`<button class="quality-btn" onclick="rateRun('${runId}',${n},this.parentElement)">${n}</button>`).join('')}`;
+  div.innerHTML = `<span style="color:var(--dim);font-size:.72rem">Rate:</span> ${[1,2,3,4,5].map(n=>`<button class="quality-btn" data-rate="${n}" data-run-id="${runId}">${n}</button>`).join('')}`;
   afterEl.after(div);
 }
 
-window.rateRun = function(runId, score, el) {
+function rateRun(runId, score, el) {
   const runs = JSON.parse(localStorage.getItem('orlix_runs') || '[]');
   const run = runs.find(r => r.id === runId);
   if (run) { run.quality = score; localStorage.setItem('orlix_runs', JSON.stringify(runs)); }
   if (el) el.remove();
-};
+}
 
 // ───────── DASHBOARD REFRESH ─────────
 function refreshDashboard() {
@@ -1598,10 +1620,13 @@ Never say "I can't browse" or "I don't have real-time data." Use the tools.
 <div id="previewModal" class="preview-modal">
   <div class="preview-bar">
     <span></span>
-    <button class="preview-close" onclick="closePreview()">✕ Close Preview</button>
+    <button class="preview-close" id="previewCloseBtn">&#x2715; Close Preview</button>
   </div>
-  <div class="preview-inner"><iframe sandbox="allow-scripts allow-same-origin allow-forms"></iframe></div>
+  <div class="preview-inner"><iframe sandbox="allow-scripts allow-same-origin allow-forms allow-modals"></iframe></div>
 </div>
+<script>
+document.getElementById('previewCloseBtn').addEventListener('click', closePreview);
+</script>
 
 </body>
 </html>
