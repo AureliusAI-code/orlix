@@ -1350,13 +1350,20 @@ let _codeIdx = 0;
 
 function esc2(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
+function isHtmlContent(lang, code){
+  if(/^htm/i.test(lang)) return true;
+  if(/<!DOCTYPE\s+html/i.test(code)) return true;
+  if(/<html[\s>]/i.test(code)) return true;
+  if(!lang && code.trimStart().startsWith('<') && /<\/?(div|body|head|span|p|a|ul|li|script|style|meta|link|title)[\s>/]/i.test(code)) return true;
+  return false;
+}
+
 function renderContent(text){
-  // Match ```lang...``` blocks — permissive: optional lang, optional trailing spaces
-  const RE = /```([\w]*)[^\S\r\n]*\r?\n([\s\S]*?)```/g;
+  const RE = /`{3,}([\w-]*)[^\S\r\n]*\r?\n([\s\S]*?)`{3,}/g;
   let result = '';
   let last = 0;
   let match;
-  let lastHtmlId = null; // track last HTML block for bottom preview button
+  let lastHtmlId = null;
 
   while((match = RE.exec(text)) !== null){
     const before = text.slice(last, match.index);
@@ -1369,8 +1376,7 @@ function renderContent(text){
     _codeStore[id] = code;
 
     const label = lang || 'code';
-    const isHtml = /^htm/i.test(lang) || (!lang && (code.trimStart().startsWith('<') || /<!DOCTYPE|<html/i.test(code)));
-    if(isHtml) lastHtmlId = id;
+    if(isHtmlContent(lang, code)) lastHtmlId = id;
 
     result += `<div class="code-block">
       <div class="code-header">
@@ -1386,7 +1392,16 @@ function renderContent(text){
   const tail = text.slice(last);
   if(tail) result += esc2(tail).replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>');
 
-  // Add big preview button BELOW the message if HTML was found
+  // Fallback: AI dumped raw HTML without code fences
+  if(!lastHtmlId && /<!DOCTYPE\s+html|<html[\s>]/i.test(text)){
+    const raw = text.match(/(<!DOCTYPE[\s\S]*|<html[\s\S]*)/i);
+    if(raw){
+      const id = 'c'+(++_codeIdx);
+      _codeStore[id] = raw[1];
+      lastHtmlId = id;
+    }
+  }
+
   if(lastHtmlId){
     result += `<button class="msg-preview-btn" data-preview="${lastHtmlId}">&#9654; Open Preview</button>`;
   }
@@ -1402,13 +1417,18 @@ function copyCode(id){
 }
 
 function openPreview(id){
-  const code = _codeStore[id]||'';
+  const code = _codeStore[id];
+  if(!code){ console.warn('[preview] no code found for id:', id, 'store keys:', Object.keys(_codeStore)); return; }
   const modal = document.getElementById('previewModal');
+  if(!modal){ console.warn('[preview] modal not found'); return; }
   const iframe = modal.querySelector('iframe');
-  // Write directly to iframe document — most reliable approach
   modal.classList.add('open');
-  const doc = iframe.contentDocument || iframe.contentWindow.document;
-  doc.open(); doc.write(code); doc.close();
+  try{
+    const doc = iframe.contentDocument || iframe.contentWindow.document;
+    doc.open('text/html','replace'); doc.write(code); doc.close();
+  } catch(err){
+    iframe.srcdoc = code;
+  }
   modal.querySelector('.preview-bar span').textContent = 'Live Preview · '+new Date().toLocaleTimeString();
 }
 
