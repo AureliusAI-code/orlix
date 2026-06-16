@@ -3,10 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Orlix AI</title>
-<meta name="description" content="Personal AI Operating System">
+<title>Orlix — Personal AI Operating System</title>
+<meta name="description" content="Personal AI Operating System — governance layer, persistent memory, autonomous action.">
 <link rel="icon" type="image/x-icon" href="/favicon.ico">
-<link rel="icon" type="image/png" sizes="32x32" href="/favicon.ico">
 <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
 <link rel="manifest" href="/site.webmanifest">
 <meta property="og:type" content="website">
@@ -18,676 +17,546 @@
 <meta name="twitter:title" content="Orlix AI">
 <meta name="twitter:description" content="Personal AI Operating System">
 <meta name="twitter:image" content="https://www.orlixai.xyz/og-image.png">
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-:root{
-  --bg:#0d0a08;
-  --bg-panel:#15100c;
-  --bg-input:#1b1411;
-  --line:#2c2218;
-  --line-bright:#42301f;
-  --text:#d8cfc4;
-  --bright:#fbf3ea;
-  --dim:#8a7a6c;
-  --dim-2:#5c4f44;
-  --amber:#ff9a52;
-  --amber-soft:rgba(255,154,82,.12);
-  --violet:#b9a4ff;
-  --violet-soft:rgba(185,164,255,.12);
-  --red:#ff6b6b;
-  --green:#7ee0a8;
-  --mono:'JetBrains Mono',monospace;
+:root {
+  --bg: #0a0a0a;
+  --bg-card: #111;
+  --bg-code: #0d0d0d;
+  --border: rgba(255,255,255,0.09);
+  --border-b: rgba(255,255,255,0.16);
+  --text: #c0b8b0;
+  --bright: #f0ebe3;
+  --dim: #665e58;
+  --amber: #ff9a52;
+  --amber-s: rgba(255,154,82,0.1);
+  --violet: #b9a4ff;
+  --violet-s: rgba(185,164,255,0.1);
+  --green: #7ee0a8;
+  --green-s: rgba(126,224,168,0.1);
+  --red: #e03030;
+  --mono: 'JetBrains Mono', monospace;
+  --display: 'Space Grotesk', sans-serif;
 }
-*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{background:var(--bg);color:var(--text)}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{scroll-behavior:smooth}
 body{
+  background:var(--bg);
+  background-image:
+    linear-gradient(rgba(255,255,255,0.026) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,255,255,0.026) 1px,transparent 1px);
+  background-size:44px 44px;
+  color:var(--text);
   font-family:var(--mono);
   font-size:14px;
-  line-height:1.65;
+  line-height:1.7;
   -webkit-font-smoothing:antialiased;
   overflow-x:hidden;
 }
 ::selection{background:var(--amber);color:#1a0f06}
-a{color:var(--violet);text-decoration:none;border-bottom:1px dotted rgba(185,164,255,.4)}
-a:hover{color:var(--bright);border-bottom-color:var(--bright)}
-.wrap{max-width:880px;margin:0 auto;padding:0 20px}
-button{font-family:var(--mono);cursor:pointer}
-input,select,textarea{font-family:var(--mono)}
+a{color:var(--violet);text-decoration:none}
+a:hover{color:var(--bright)}
+button{font-family:var(--mono);cursor:pointer;border:none;background:none}
+.wrap{max-width:860px;margin:0 auto;padding:0 22px}
+::-webkit-scrollbar{width:3px;height:3px}
+::-webkit-scrollbar-thumb{background:var(--border-b);border-radius:2px}
 
-/* scanline / vignette */
-.crt{position:fixed;inset:0;pointer-events:none;z-index:50;mix-blend-mode:overlay;opacity:.4}
-.crt::before{
-  content:"";position:absolute;inset:0;
-  background:repeating-linear-gradient(to bottom, rgba(255,255,255,.022) 0px, rgba(255,255,255,.022) 1px, transparent 1px, transparent 3px);
-}
-.vignette{position:fixed;inset:0;pointer-events:none;z-index:49;
-  background:radial-gradient(ellipse 85% 70% at 50% 25%, transparent 45%, rgba(0,0,0,.6) 100%);
-}
+/* ── NAV ── */
+.nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(10,10,10,.92);backdrop-filter:blur(14px);border-bottom:1px solid var(--border);height:52px}
+.nav-in{display:flex;align-items:center;height:52px;justify-content:space-between}
+.nav-brand{display:flex;align-items:center;gap:7px;font-family:var(--mono);font-weight:600;font-size:.8rem;letter-spacing:.14em;color:var(--bright);text-transform:uppercase}
+.nav-dot{color:var(--red);font-size:.45rem;line-height:1}
+.nav-r{display:flex;align-items:center}
+.nav-link{display:flex;align-items:center;padding:0 14px;height:52px;font-size:.74rem;color:var(--dim);border-left:1px solid var(--border);letter-spacing:.04em;transition:color .15s}
+.nav-link:hover{color:var(--text)}
+.nav-icon{display:flex;align-items:center;justify-content:center;padding:0 14px;height:52px;border-left:1px solid var(--border);color:var(--dim);transition:color .15s}
+.nav-icon:hover{color:var(--text)}
+.nav-icon svg{width:15px;height:15px;fill:currentColor;display:block}
+.nav-cta{display:flex;align-items:center;padding:0 20px;height:52px;background:var(--bright);color:#0a0a0a !important;font-family:var(--mono);font-weight:600;font-size:.76rem;letter-spacing:.08em;border-left:1px solid var(--border);transition:background .15s}
+.nav-cta:hover{background:var(--amber)}
+@media(max-width:620px){.hide-sm{display:none}}
 
-/* ====== titlebar ====== */
-.titlebar{
-  position:fixed;top:0;left:0;right:0;z-index:100;
-  background:rgba(13,10,8,.88);backdrop-filter:blur(10px);
-  border-bottom:1px solid var(--line);
-}
-.titlebar-in{display:flex;align-items:center;justify-content:space-between;height:46px;font-size:.76rem;color:var(--dim)}
-.tb-left{display:flex;align-items:center;gap:10px;min-width:0}
-.tb-dots{display:flex;gap:5px;flex-shrink:0}
-.tb-dots span{display:inline-block;width:10px;height:10px;border-radius:50%}
-.tb-dots .r{background:var(--red)}
-.tb-dots .y{background:var(--amber)}
-.tb-dots .g{background:var(--green)}
-.tb-title{color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.tb-right{display:flex;gap:16px;align-items:center;flex-shrink:0}
-.tb-right button{background:none;border:none;color:var(--dim);font-size:.76rem;border-bottom:none;padding:0}
-.tb-right button:hover{color:var(--amber)}
-.tb-right a{border-bottom:none;color:var(--dim);font-size:.76rem}
-.tb-right a:hover{color:var(--amber)}
-.tb-right .live{color:var(--green);display:flex;align-items:center;gap:5px}
-.tb-right .live .pip{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green)}
-@media(max-width:620px){.tb-right .docs-link{display:none}}
-.social-icon{display:flex;align-items:center;color:var(--dim);transition:.15s;line-height:1}
-.social-icon svg{width:15px;height:15px;display:block}
-.social-icon:hover{color:var(--amber)}
+/* ── SECTION BAR ── */
+.sec-bar{display:flex;align-items:center;flex-wrap:wrap;gap:6px 14px;padding:8px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border);font-size:.71rem;color:var(--dim);letter-spacing:.07em}
+.sec-bar .sep{color:var(--border-b)}
+.pill{border-radius:2px;padding:1px 7px;font-size:.67rem;letter-spacing:.1em;border:1px solid var(--border)}
+.pill.green{border-color:var(--green);color:var(--green);background:var(--green-s)}
+.pill.amber{border-color:var(--amber);color:var(--amber);background:var(--amber-s)}
+.pill.violet{border-color:var(--violet);color:var(--violet);background:var(--violet-s)}
 
-/* ====== layout shell ====== */
-main{padding-top:46px}
-.crumb{color:var(--dim);font-size:.76rem;padding:20px 0 8px;display:flex;flex-wrap:wrap;align-items:center;gap:0}
-.crumb .sep{color:var(--dim-2);margin:0 6px}
-.crumb .root{color:var(--violet)}
-.crumb .here{color:var(--amber)}
-
-/* ====== prompt styling ====== */
-.ps1{color:var(--amber);flex-shrink:0}
-.ps1 .user{color:var(--green)}
-.ps1 .path{color:var(--violet)}
-.ps1 .sym{color:var(--dim)}
-.cmdline{color:var(--bright);word-break:break-all}
-.out{color:var(--text);margin-top:4px;line-height:1.7}
-.dim{color:var(--dim)}
-.ok{color:var(--green)}
-.warn{color:var(--amber)}
-.bad{color:var(--red)}
-.hl{color:var(--violet)}
-.amber-hl{color:var(--amber)}
-
-/* ====== sections ====== */
-section{padding:48px 0;border-bottom:1px solid var(--line)}
-section:last-of-type{border-bottom:none}
-.sec-head{margin-bottom:24px}
-.sec-head .file{color:var(--dim);font-size:.78rem;margin-bottom:8px;word-break:break-all}
-.sec-head h2{font-size:1.05rem;font-weight:600;color:var(--bright);display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.sec-head h2 .num{color:var(--amber);font-size:1.6em;font-weight:700;opacity:.45;letter-spacing:-.03em;line-height:1}
-
-/* ====== hero / boot ====== */
-.hero{padding:60px 0 44px}
-.boot{
-  white-space:pre-wrap;word-break:break-word;font-size:.82rem;color:var(--dim);
-  min-height:188px;line-height:1.8;
-}
-.boot .ok{color:var(--green)}
-.boot .hl{color:var(--violet)}
-.boot .amber-hl{color:var(--amber)}
-.boot .bright{color:var(--bright)}
-.cursor{display:inline-block;width:.5em;height:1.05em;background:var(--amber);vertical-align:text-bottom;animation:blink 1s steps(1) infinite}
-@keyframes blink{50%{opacity:0}}
-
-.hero-eyebrow{font-size:.7rem;color:var(--amber);letter-spacing:.18em;text-transform:uppercase;font-weight:600;margin-bottom:14px;display:flex;align-items:center;gap:8px}
-.hero-eyebrow::before{content:'';display:inline-block;width:24px;height:1px;background:var(--amber)}
-.hero-title{font-size:clamp(2rem,6.5vw,4rem);font-weight:700;color:var(--bright);line-height:1.15;margin:0 0 18px;word-wrap:break-word}
-.hero-title .amber-hl{color:var(--amber);text-shadow:0 0 60px rgba(255,154,82,.28),0 0 120px rgba(255,154,82,.1)}
-.hero-sub{color:var(--text);max-width:64ch;margin-bottom:22px;font-size:.92rem;line-height:1.85}
-
-/* orbital */
+/* ── HERO ── */
+.hero{padding:108px 0 68px}
+.hero-title{font-family:var(--display);font-size:clamp(2.8rem,8.5vw,5.4rem);font-weight:700;color:var(--bright);line-height:1.06;letter-spacing:-.025em;margin:26px 0 20px}
+.hero-title .am{color:var(--amber)}
+.hero-body{font-size:.88rem;color:var(--text);max-width:54ch;line-height:1.88;margin-bottom:28px}
+.dim-txt{color:var(--dim)}
 
 /* yes/no */
-.yesno-block{margin:28px 0;padding:26px 28px;border:1px solid var(--line-bright);border-radius:8px;background:rgba(21,16,12,.7);backdrop-filter:blur(8px);max-width:560px}
-.yesno-q{font-size:1rem;color:var(--bright);line-height:1.75;margin-bottom:18px;font-weight:500}
-.yesno-q .dim{color:var(--dim);display:block;margin-top:4px;font-size:.9em;font-weight:400}
+.yesno{border:1px solid var(--border-b);border-radius:4px;padding:22px 20px;background:var(--bg-card);margin:28px 0;max-width:500px}
+.yesno-q{color:var(--bright);font-size:.9rem;line-height:1.7;margin-bottom:14px}
+.yesno-q .sub{display:block;color:var(--dim);font-size:.8rem;margin-top:4px}
 .yesno-btns{display:flex;gap:10px;flex-wrap:wrap}
-.yesno-btn{background:none;border:1px solid var(--line-bright);border-radius:6px;color:var(--text);font-size:.82rem;padding:10px 20px;transition:.15s;font-family:var(--mono);cursor:pointer;border-bottom:1px solid var(--line-bright)}
-.yesno-btn:hover{border-color:var(--amber);color:var(--bright)}
-.yesno-btn.active-yes{border-color:var(--green)!important;color:var(--green)!important}
-.yesno-btn.active-no{border-color:var(--violet)!important;color:var(--violet)!important}
-.yesno-btn.faded{opacity:.35;pointer-events:none}
-.yesno-resp{overflow:hidden;max-height:0;transition:max-height .4s ease,margin-top .3s ease;font-size:.88rem;line-height:1.75;color:var(--text)}
-.yesno-resp.open{max-height:120px;margin-top:16px}
+.yesno-btn{border:1px solid var(--border-b);border-radius:3px;padding:9px 18px;font-size:.79rem;color:var(--text);transition:.15s}
+.yesno-btn:hover{border-color:var(--amber);color:var(--amber)}
+.yesno-btn.y-yes{border-color:var(--green)!important;color:var(--green)!important}
+.yesno-btn.y-no{border-color:var(--violet)!important;color:var(--violet)!important}
+.yesno-btn.faded{opacity:.28;pointer-events:none}
+.yesno-resp{overflow:hidden;max-height:0;transition:max-height .4s ease,margin-top .3s ease;font-size:.83rem;line-height:1.75;color:var(--text)}
+.yesno-resp.open{max-height:100px;margin-top:14px}
 
-/* ====== command buttons ====== */
-.cmd-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}
-.cmd-btn{
-  display:inline-flex;align-items:center;gap:8px;
-  border:1px solid var(--line-bright);border-radius:6px;
-  padding:11px 18px;font-size:.82rem;color:var(--text);
-  background:var(--bg-panel);transition:.15s;
-  border-bottom:1px solid var(--line-bright);
-}
-.cmd-btn .pfx{color:var(--amber)}
-.cmd-btn:hover{border-color:var(--amber);color:var(--bright);background:var(--amber-soft)}
-.cmd-btn.primary{border-color:var(--amber);color:var(--amber)}
-.cmd-btn.primary:hover{background:var(--amber-soft);color:var(--bright)}
-.cmd-btn:active{transform:translateY(1px)}
+/* cta row */
+.cta-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px}
+.btn-p{display:inline-flex;align-items:center;gap:8px;background:var(--bright);color:#0a0a0a;padding:11px 22px;border-radius:3px;font-family:var(--mono);font-size:.81rem;font-weight:600;letter-spacing:.04em;transition:background .15s}
+.btn-p:hover{background:var(--amber);color:#0a0a0a}
+.btn-g{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--border-b);color:var(--text);padding:11px 22px;border-radius:3px;font-family:var(--mono);font-size:.81rem;transition:.15s}
+.btn-g:hover{border-color:var(--amber);color:var(--amber)}
+.pfx{color:var(--amber)}
 
-/* ====== terminal widget ====== */
-.terminal{
-  border:1px solid var(--line);border-radius:8px;background:var(--bg-panel);
-  margin-top:28px;overflow:hidden;
-}
-.term-bar{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--line);background:#120e0b;flex-wrap:wrap}
-.term-bar .dots{display:flex;gap:5px}
-.term-bar .dots span{display:inline-block;width:9px;height:9px;border-radius:50%}
-.term-bar .lbl{margin-left:8px;color:var(--dim);font-size:.74rem;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.term-bar .clear-btn{background:none;border:1px solid var(--line-bright);border-radius:4px;color:var(--dim);font-size:.7rem;padding:3px 8px;flex-shrink:0}
-.term-bar .clear-btn:hover{color:var(--amber);border-color:var(--amber)}
+/* ── TERMINAL ── */
+.term{border:1px solid var(--border);border-radius:4px;background:var(--bg-code);margin-top:40px;overflow:hidden}
+.t-bar{display:flex;align-items:center;gap:6px;padding:9px 14px;border-bottom:1px solid var(--border);background:rgba(255,255,255,.025)}
+.tdot{width:9px;height:9px;border-radius:50%;display:inline-block}
+.tdot.r{background:var(--red)}.tdot.y{background:rgba(255,154,82,.45)}.tdot.g{background:rgba(126,224,168,.45)}
+.t-lbl{font-size:.71rem;color:var(--dim);margin-left:6px;flex:1}
+.t-clear{border:1px solid var(--border);border-radius:3px;color:var(--dim);font-size:.69rem;padding:2px 8px;transition:.15s}
+.t-clear:hover{color:var(--amber);border-color:var(--amber)}
+.t-body{padding:14px 16px;min-height:180px;max-height:300px;overflow-y:auto;font-size:.79rem;line-height:1.85}
+.t-out{color:var(--text);margin-bottom:4px}
+.t-out.ok{color:var(--green)}.t-out.bad{color:var(--red)}.t-out.warn{color:var(--amber)}
+.t-prompt{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;margin-bottom:3px}
+.ps1{color:var(--amber);white-space:nowrap;flex-shrink:0}
+.ps1 .u{color:var(--green)}.ps1 .p{color:var(--violet)}.ps1 .s{color:var(--dim)}
+.cmd-t{color:var(--bright);word-break:break-all}
+.t-input-row{display:flex;align-items:center;gap:10px;padding:10px 16px;border-top:1px solid var(--border);background:rgba(255,255,255,.02)}
+#termInput{flex:1;min-width:0;background:transparent;border:none;outline:none;color:var(--bright);font-family:var(--mono);font-size:.79rem;caret-color:var(--amber)}
+.t-run{border:1px solid var(--border);border-radius:3px;color:var(--dim);font-size:.71rem;padding:4px 10px;transition:.15s}
+.t-run:hover{color:var(--amber);border-color:var(--amber)}
+.t-hint{padding:8px 16px;font-size:.69rem;color:var(--dim);border-top:1px solid var(--border)}
+.t-hint code{color:var(--violet);background:var(--violet-s);padding:0 4px;border-radius:2px}
+@media(max-width:460px){.t-run{display:none}}
 
-.term-body{padding:14px 16px;min-height:200px;max-height:380px;overflow-y:auto;font-size:.82rem}
-.term-body::-webkit-scrollbar{width:8px}
-.term-body::-webkit-scrollbar-track{background:transparent}
-.term-body::-webkit-scrollbar-thumb{background:var(--line-bright);border-radius:4px}
-.term-log{margin-bottom:8px}
-.term-log:last-child{margin-bottom:0}
-.ps1-row{display:flex;gap:8px;flex-wrap:wrap;align-items:baseline}
+/* ── SECTIONS ── */
+section{padding:56px 0}
+.sec-num{font-family:var(--display);font-size:clamp(5rem,18vw,9rem);font-weight:700;color:rgba(255,255,255,.032);line-height:1;letter-spacing:-.04em;margin-bottom:-10px;user-select:none;pointer-events:none}
+.sec-title{font-family:var(--display);font-size:clamp(2rem,5.5vw,3.2rem);font-weight:700;color:var(--bright);letter-spacing:-.022em;line-height:1.12;margin-bottom:6px}
+.sec-sub{font-size:.87rem;color:var(--text);max-width:52ch;line-height:1.88;margin-bottom:30px}
+.hl{color:var(--violet)}.am{color:var(--amber)}
 
-.term-input-row{display:flex;align-items:center;gap:8px;padding:11px 16px;border-top:1px solid var(--line);background:var(--bg-input)}
-#termInput{
-  flex:1;min-width:0;background:transparent;border:none;outline:none;color:var(--bright);
-  font-family:var(--mono);font-size:.82rem;caret-color:var(--amber);
-}
-.term-input-row .send-btn{
-  background:none;border:1px solid var(--line-bright);border-radius:4px;color:var(--dim);
-  font-size:.74rem;padding:5px 10px;flex-shrink:0;
-}
-.term-input-row .send-btn:hover{color:var(--amber);border-color:var(--amber)}
-@media(max-width:540px){.term-input-row .send-btn{display:none}}
+/* ── CARD ── */
+.card{background:var(--bg-card);border:1px solid var(--border);border-radius:4px;overflow:hidden;margin-bottom:12px}
+.card-head{display:flex;justify-content:space-between;align-items:center;padding:11px 18px;border-bottom:1px solid var(--border);background:rgba(255,255,255,.02)}
+.card-head .lbl{font-size:.7rem;color:var(--dim);letter-spacing:.1em}
+.card-icon{width:30px;height:30px;border-radius:3px;border:1px solid var(--border-b);display:flex;align-items:center;justify-content:center;font-size:.95rem;color:var(--text)}
+.card-inner{padding:20px 18px}
+.card-title{font-family:var(--display);font-size:clamp(1.5rem,4vw,2.1rem);font-weight:700;color:var(--bright);letter-spacing:-.02em;line-height:1.18;margin-bottom:12px}
+.card-desc{font-size:.83rem;color:var(--text);line-height:1.82;margin-bottom:18px}
 
-.term-hint{padding:9px 16px;font-size:.72rem;color:var(--dim);border-top:1px solid var(--line);background:#120e0b;line-height:1.8}
-.term-hint code{color:var(--violet);background:var(--violet-soft);padding:1px 5px;border-radius:3px;white-space:nowrap}
+/* feature list */
+.feat-list{list-style:none}
+.feat-list li{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);font-size:.83rem;color:var(--text)}
+.feat-list li:last-child{border-bottom:none}
+.sq{width:8px;height:8px;border-radius:1px;flex-shrink:0}
+.sq.a{background:var(--amber)}.sq.g{background:var(--green)}.sq.v{background:var(--violet)}.sq.d{background:var(--border-b)}
 
-/* ====== ls-style file listing ====== */
-.filelist{margin-top:6px;display:flex;flex-direction:column}
-.filerow{
-  display:grid;grid-template-columns:112px 150px 1fr;gap:14px;padding:12px 0;
-  border-bottom:1px solid var(--line);align-items:baseline;
-}
-.filerow:last-child{border-bottom:none}
-.filerow .perm{color:var(--dim);font-size:.74rem}
-.filerow .fname{color:var(--violet)}
-.filerow .fdesc{color:var(--text);font-size:.85rem;line-height:1.6}
-@media(max-width:680px){
-  .filerow{grid-template-columns:1fr;gap:4px;padding:14px 0}
-  .filerow .perm{order:3;font-size:.7rem}
-}
+/* ── DIFF ── */
+.diff{border:1px solid var(--border);border-radius:4px;overflow:hidden;font-size:.82rem}
+.d-row{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid var(--border)}
+.d-row:last-child{border-bottom:none}
+.d-cell{padding:12px 16px;line-height:1.65}
+.d-cell.m{background:rgba(255,60,60,.04);color:#c09898;border-right:1px solid var(--border)}
+.d-cell.p{background:rgba(126,224,168,.04);color:#9abfaa}
+.d-cell .sym{display:inline-block;width:16px;color:var(--dim)}
+.d-cell.m .sym{color:var(--red)}.d-cell.p .sym{color:var(--green)}
+@media(max-width:580px){.d-row{grid-template-columns:1fr}.d-cell.m{border-right:none;border-bottom:1px solid var(--border)}}
 
-/* ====== diff comparison ====== */
-.diff{border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-top:6px;font-size:.84rem}
-.diff-row{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid var(--line)}
-.diff-row:last-child{border-bottom:none}
-.diff-cell{padding:12px 16px;line-height:1.6}
-.diff-cell.minus{background:rgba(255,107,107,.06);color:#cfa9a9;border-right:1px solid var(--line)}
-.diff-cell.plus{background:rgba(126,224,168,.06);color:#b9d9c6}
-.diff-cell .sym{display:inline-block;width:18px;color:var(--dim)}
-.diff-cell.minus .sym{color:var(--red)}
-.diff-cell.plus .sym{color:var(--green)}
-@media(max-width:680px){
-  .diff-row{grid-template-columns:1fr}
-  .diff-cell.minus{border-right:none;border-bottom:1px solid var(--line)}
-}
-
-/* ====== tbl rows ====== */
-.tbl{margin-top:6px;display:flex;flex-direction:column}
-.tbl-row{display:grid;grid-template-columns:96px 1fr;gap:18px;padding:14px 0;border-bottom:1px solid var(--line)}
+/* ── TABLE ── */
+.tbl{border:1px solid var(--border);border-radius:4px;overflow:hidden}
+.tbl-row{display:grid;grid-template-columns:96px 1fr;gap:16px;padding:13px 18px;border-bottom:1px solid var(--border);align-items:start;transition:background .12s}
 .tbl-row:last-child{border-bottom:none}
-.tbl-row .key{color:var(--amber);font-weight:600;font-size:.88rem}
-.tbl-row.l5 .key{color:var(--violet)}
-.tbl-row .desc{color:var(--text);font-size:.85rem;line-height:1.7}
-.tbl-row .desc .lbl{color:var(--bright);font-weight:600;display:block;margin-bottom:3px}
-@media(max-width:560px){.tbl-row{grid-template-columns:1fr;gap:4px}.tbl-row .key{font-size:.8rem}}
+.tbl-row:hover{background:rgba(255,255,255,.02)}
+.tbl-k{color:var(--amber);font-size:.8rem;font-weight:600;padding-top:2px}
+.tbl-row.l5 .tbl-k{color:var(--violet)}
+.tbl-v{font-size:.83rem;color:var(--text);line-height:1.72}
+.tbl-v strong{color:var(--bright);display:block;margin-bottom:3px}
+@media(max-width:500px){.tbl-row{grid-template-columns:1fr;gap:4px}.tbl-k{font-size:.76rem}}
 
-/* ====== log rows (roadmap) ====== */
-.log-row{display:grid;grid-template-columns:104px 1fr;gap:16px;padding:14px 0;border-bottom:1px solid var(--line);align-items:baseline}
+/* ── LOG ROWS ── */
+.log-list{border:1px solid var(--border);border-radius:4px;overflow:hidden}
+.log-row{display:grid;grid-template-columns:96px 1fr;gap:16px;padding:15px 18px;border-bottom:1px solid var(--border);align-items:start;transition:background .12s}
 .log-row:last-child{border-bottom:none}
-.log-row .status{font-size:.74rem;flex-shrink:0}
-.log-row .status.done{color:var(--green)}
-.log-row .status.now{color:var(--amber)}
-.log-row .body .lbl{color:var(--bright);font-weight:600;display:block;margin-bottom:5px;font-size:.92rem}
-.log-row .body p{color:var(--text);line-height:1.7;font-size:.85rem}
-@media(max-width:560px){.log-row{grid-template-columns:1fr;gap:6px}}
+.log-row:hover{background:rgba(255,255,255,.02)}
+.log-st{font-size:.7rem;font-weight:600;letter-spacing:.06em;padding-top:4px}
+.log-st.done{color:var(--green)}.log-st.now{color:var(--amber)}
+.log-body strong{color:var(--bright);display:block;margin-bottom:4px;font-size:.88rem}
+.log-body p{font-size:.82rem;color:var(--text);line-height:1.72}
+@media(max-width:500px){.log-row{grid-template-columns:1fr;gap:5px}}
 
-/* ====== json viewer ====== */
-.jsonview{border:1px solid var(--line);border-radius:8px;background:var(--bg-panel);overflow:hidden;margin-top:6px}
-.jsonview .jhead{display:flex;justify-content:space-between;gap:12px;padding:10px 16px;border-bottom:1px solid var(--line);font-size:.74rem;color:var(--dim);flex-wrap:wrap}
-.jsonview .jbody{padding:16px;font-size:.82rem;overflow-x:auto;color:var(--text);line-height:1.8}
-.jsonview .k{color:var(--violet)}
-.jsonview .s{color:var(--amber)}
-.jsonview .n{color:var(--green)}
+/* ── JSON BOX ── */
+.json-box{border:1px solid var(--border);border-radius:4px;background:var(--bg-code);overflow:hidden}
+.j-bar{display:flex;justify-content:space-between;align-items:center;padding:8px 16px;border-bottom:1px solid var(--border);font-size:.7rem;color:var(--dim);flex-wrap:wrap;gap:6px}
+.j-bar .ok{color:var(--green)}
+.j-body{padding:16px;font-size:.79rem;line-height:1.92;overflow-x:auto;color:var(--text)}
+.j-body .k{color:var(--violet)}.j-body .s{color:var(--amber)}.j-body .n{color:var(--green)}
 
-/* ====== access form ====== */
-.field-row{margin-bottom:14px;display:flex;flex-direction:column;gap:6px}
-.field-row .lbl{color:var(--violet);font-size:.8rem}
-.field-row input,.field-row select{
-  background:var(--bg);border:1px solid var(--line-bright);border-radius:4px;color:var(--bright);
-  font-size:.85rem;padding:10px 12px;width:100%;max-width:360px;
-}
+/* ── CODE BOX ── */
+.code-box{border:1px solid var(--border);border-radius:4px;background:var(--bg-code);overflow:hidden}
+.c-bar{display:flex;align-items:center;gap:5px;padding:8px 14px;border-bottom:1px solid var(--border);background:rgba(255,255,255,.02)}
+.c-bar .path{font-size:.7rem;color:var(--dim);margin-left:8px}
+.c-body{padding:15px 18px;font-size:.79rem;line-height:1.92;overflow-x:auto;color:var(--text)}
+.c-body .k{color:var(--amber)}.c-body .v{color:var(--green)}.c-body .c{color:var(--dim)}.c-body .pth{color:var(--violet)}
+
+/* ── ACCESS FORM ── */
+.field-row{margin-bottom:14px}
+.field-lbl{display:block;color:var(--violet);font-size:.77rem;margin-bottom:6px}
+.field-row input,.field-row select{width:100%;max-width:380px;background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--bright);font-family:var(--mono);font-size:.83rem;padding:10px 14px;transition:border-color .15s}
 .field-row input:focus,.field-row select:focus{outline:none;border-color:var(--amber)}
-.field-row input::placeholder{color:var(--dim-2)}
+.field-row input::placeholder{color:var(--dim)}
+.a-result{margin-top:12px;font-size:.81rem;line-height:1.72}
+.a-result.ok{color:var(--green)}.a-result.bad{color:var(--red)}.a-result.dim{color:var(--dim)}
 
-/* ====== footer ====== */
-footer{padding:36px 0 60px;font-size:.78rem;color:var(--dim)}
-.foot-echo{margin-bottom:28px;font-size:.82rem;line-height:1.8}
-.foot-grid{display:flex;flex-wrap:wrap;gap:32px 48px;align-items:start}
-.foot-copy{flex:1;min-width:200px;color:var(--dim);font-size:.76rem;line-height:1.8}
-.foot-cols{display:flex;gap:48px;flex-shrink:0}
-.foot-col .col-label{color:var(--dim-2);font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;display:block}
-.foot-col a{display:block;border-bottom:none;color:var(--dim);font-size:.76rem;padding:3px 0;transition:.15s}
-.foot-col a:hover{color:var(--amber)}
-@media(max-width:480px){.foot-copy{min-width:100%;}.foot-cols{gap:32px}}
+/* ── FOOTER ── */
+footer{border-top:1px solid var(--border);padding:40px 0 64px;font-size:.77rem;color:var(--dim)}
+.f-echo{margin-bottom:28px;font-size:.81rem;line-height:1.92}
+.f-echo .am{color:var(--amber)}.f-echo .ok{color:var(--green)}
+.f-grid{display:flex;flex-wrap:wrap;gap:26px 44px;align-items:start}
+.f-copy{flex:1;min-width:180px;line-height:1.8}
+.f-cols{display:flex;gap:44px;flex-shrink:0}
+.f-col .col-lbl{display:block;font-size:.64rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.18);margin-bottom:12px}
+.f-col a{display:block;color:var(--dim);padding:3px 0;font-size:.75rem;transition:color .15s}
+.f-col a:hover{color:var(--amber)}
+@media(max-width:460px){.f-copy{min-width:100%}.f-cols{gap:28px}}
 
-.muted{color:var(--dim);font-size:.8rem}
+.token-bar{display:flex;align-items:center;flex-wrap:wrap;gap:8px 14px;margin-bottom:28px;padding:10px 16px;border:1px solid var(--border);border-radius:4px;background:var(--bg-card);font-size:.77rem}
+.tk-lbl{color:var(--amber);font-weight:600;flex-shrink:0}
+.tk-addr{color:var(--violet);word-break:break-all;flex:1;min-width:0}
+.tk-copy{border:1px solid var(--border);border-radius:3px;color:var(--dim);font-size:.7rem;padding:3px 10px;transition:.15s;flex-shrink:0}
+.tk-copy:hover{border-color:var(--amber);color:var(--amber)}
+.tk-copy.done{border-color:var(--green);color:var(--green)}
 
-/* ====== token bar ====== */
-.foot-token{display:flex;align-items:center;flex-wrap:wrap;gap:8px 14px;margin-bottom:28px;padding:12px 16px;border:1px solid var(--line-bright);border-radius:6px;background:var(--bg-panel);font-size:.78rem}
-.foot-token .tk-label{color:var(--amber);font-weight:600;flex-shrink:0}
-.foot-token .tk-addr{color:var(--violet);letter-spacing:.03em;word-break:break-all;flex:1;min-width:0}
-.foot-token .tk-copy{background:none;border:1px solid var(--line-bright);color:var(--dim);font-size:.72rem;padding:3px 10px;border-radius:4px;cursor:pointer;transition:.15s;flex-shrink:0}
-.foot-token .tk-copy:hover{border-color:var(--amber);color:var(--amber)}
-.foot-token .tk-copy.copied{border-color:var(--green);color:var(--green)}
-
-/* ====== back to top ====== */
-#backTop{
-  position:fixed;bottom:20px;right:20px;z-index:80;
-  width:44px;height:44px;border-radius:8px;
-  border:1px solid var(--line-bright);background:var(--bg-panel);color:var(--amber);
-  font-size:1rem;display:flex;align-items:center;justify-content:center;
-  opacity:0;pointer-events:none;transition:opacity .25s, transform .25s;
-  box-shadow:0 6px 20px -8px rgba(0,0,0,.6);
-}
-#backTop.show{opacity:1;pointer-events:auto}
-#backTop:hover{border-color:var(--amber);transform:translateY(-2px)}
-
-/* general scale for small screens */
-@media(max-width:480px){
-  body{font-size:13px}
-  .hero{padding:48px 0 36px}
-  section{padding:38px 0}
-}
-
-/* ====== cosmic background ====== */
-#cosmicBg{position:fixed;inset:0;z-index:0;pointer-events:none}
-#nerveBg{position:fixed;inset:0;z-index:0;pointer-events:none}
-main,footer{position:relative;z-index:1}
-
-/* ====== particle editor ====== */
-.particle-editor{border:1px solid var(--line);border-radius:8px;background:var(--bg-panel);overflow:hidden;margin-top:28px}
-.pe-bar{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--line);background:#120e0b;flex-wrap:wrap}
-.pe-bar .lbl{margin-left:8px;color:var(--dim);font-size:.74rem}
-.pe-wrap{position:relative}
-#peInput{
-  display:block;min-height:300px;padding:22px 24px;font-size:.9rem;line-height:2.1;
-  color:var(--text);outline:none;white-space:pre-wrap;word-wrap:break-word;cursor:text;
-  position:relative;z-index:1;
-}
-#peInput [data-word]{border-radius:2px;padding:0 1px}
-#peCanvas{position:absolute;inset:0;pointer-events:none;z-index:2}
-.pe-legend{display:flex;flex-wrap:wrap;gap:8px 14px;padding:11px 16px;border-top:1px solid var(--line);background:#120e0b;font-size:.71rem}
-.pe-le{display:flex;align-items:center;gap:5px;color:var(--dim)}
-.pe-le .dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
-
-/* ====== reading progress + scroll reveal ====== */
-#rp{position:fixed;top:46px;left:0;height:2px;z-index:99;pointer-events:none;
-  background:linear-gradient(90deg,var(--amber),var(--violet));width:0%;transition:width .12s linear}
-.sr{opacity:0;transform:translateY(26px)}
-.sr.in{opacity:1;transform:none;
-  transition:opacity .72s cubic-bezier(.22,1,.36,1),transform .72s cubic-bezier(.22,1,.36,1);
-  transition-delay:var(--sd,0ms)}
+/* utils */
+.mt-8{margin-top:8px}.mt-16{margin-top:16px}.mt-24{margin-top:24px}.mt-32{margin-top:32px}.mt-40{margin-top:40px}
+.muted{color:var(--dim);font-size:.77rem;margin-top:10px}
+@media(max-width:680px){.hero{padding:88px 0 56px}section{padding:44px 0}}
+@media(max-width:380px){body{font-size:13px}}
 </style>
 </head>
 <body>
 
-<canvas id="cosmicBg"></canvas>
-<canvas id="nerveBg"></canvas><div class="crt"></div>
-<div class="vignette"></div>
-
-<div class="titlebar">
-  <div class="wrap titlebar-in">
-    <div class="tb-left">
-      <span class="tb-dots"><span class="r"></span><span class="y"></span><span class="g"></span></span>
-      <span class="tb-title">orlix — /usr/local/bin/orlix</span>
-    </div>
-    <div class="tb-right">
-      <a href="https://github.com/tylerbroqs" class="social-icon" target="_blank" rel="noopener" aria-label="GitHub">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0112 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/></svg>
+<!-- NAV -->
+<nav class="nav">
+  <div class="wrap nav-in">
+    <a href="/" class="nav-brand"><span class="nav-dot">●</span> ORLIX</a>
+    <div class="nav-r">
+      <a href="docs.html" class="nav-link hide-sm">docs</a>
+      <a href="changelog.html" class="nav-link hide-sm">changelog</a>
+      <a href="https://github.com/tylerbroqs" target="_blank" rel="noopener" class="nav-icon hide-sm" aria-label="GitHub">
+        <svg viewBox="0 0 24 24"><path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0112 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/></svg>
       </a>
-      <a href="https://x.com/orlixai" class="social-icon" target="_blank" rel="noopener" aria-label="X">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.747l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+      <a href="https://x.com/orlixai" target="_blank" rel="noopener" class="nav-icon hide-sm" aria-label="X">
+        <svg viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.747l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
       </a>
-      <span class="live"><span class="pip"></span>connected</span>
-      <a href="docs.html" class="docs-link">docs</a>
-      <a href="/app" style="color:var(--amber);border-bottom:none;font-size:.76rem">dashboard →</a>
-      <button id="navAccess" type="button">access</button>
+      <a href="/app" class="nav-cta">LAUNCH APP &#x2197;</a>
     </div>
   </div>
-</div>
+</nav>
 
 <main>
 <div class="wrap">
 
-  <div class="crumb">
-    <span class="root">~</span><span class="sep">/</span><span class="here">orlix</span><span class="sep">/</span>welcome.sh
+<!-- HERO -->
+<section class="hero" id="top">
+  <div class="sec-bar">
+    <span>// ORLIX &middot; PERSONAL_AI_OS</span>
+    <span class="sep">&mdash;</span>
+    <span class="pill green">STATUS: LIVE</span>
+    <span class="pill amber">v0.5-beta</span>
+    <span class="sep">&mdash;</span>
+    <span>soul.md &middot; Aeon &middot; Base MCP</span>
   </div>
 
-  <!-- ================= HERO / BOOT ================= -->
-  <section class="hero" id="top">
-    <div class="boot" id="bootLog"></div>
+  <h1 class="hero-title mt-32">
+    Stop prompt-chasing.<br>
+    <span class="am">Own the control layer.</span>
+  </h1>
 
-    <!-- orbital graphic -->
+  <p class="hero-body">
+    Orlix is a governance layer for personal AI &mdash; a persistent world model that turns any assistant into a system that observes, decides, acts, and reports back. <span class="dim-txt">Every action is policy-bound and fully auditable.</span>
+  </p>
 
-    <p class="hero-eyebrow">personal AI operating system</p>
-    <h1 class="hero-title">Stop prompt-chasing.<br><span class="amber-hl">Own the control layer.</span></h1>
-    <p class="hero-sub">Orlix is a governance layer for personal AI — a persistent world model that turns any assistant into a system that observes, decides, acts, and reports back. <span class="dim">Every action is policy-bound and fully auditable.</span></p>
-
-    <!-- yes/no interactive -->
-    <div class="yesno-block">
-      <p class="yesno-q">"AI generates text. You do all the work."<span class="dim">Sound familiar?</span></p>
-      <div class="yesno-btns">
-        <button class="yesno-btn" id="btnYes" type="button">Yes, unfortunately →</button>
-        <button class="yesno-btn" id="btnNo" type="button">No, I've solved this</button>
-      </div>
-      <div class="yesno-resp" id="yesnoResp"></div>
+  <div class="yesno">
+    <p class="yesno-q">"AI generates text. You do all the work."<span class="sub">Sound familiar?</span></p>
+    <div class="yesno-btns">
+      <button class="yesno-btn" id="btnYes">Yes, unfortunately &#x2192;</button>
+      <button class="yesno-btn" id="btnNo">No, I've solved this</button>
     </div>
+    <div class="yesno-resp" id="yesnoResp"></div>
+  </div>
 
-    <div class="cmd-row">
-      <button class="cmd-btn primary" data-action="goto" data-target="access" type="button"><span class="pfx">$</span> orlix init</button>
-      <button class="cmd-btn" data-action="goto" data-target="product" type="button"><span class="pfx">$</span> man orlix</button>
-      <button class="cmd-btn" id="focusTermBtn" type="button"><span class="pfx">$</span> open shell</button>
+  <div class="cta-row">
+    <a href="#access" class="btn-p"><span class="pfx">$</span> orlix init</a>
+    <a href="/app" class="btn-g"><span class="pfx">&#x2192;</span> open dashboard</a>
+    <button class="btn-g" id="focusTermBtn"><span class="pfx">$</span> open shell</button>
+  </div>
+
+  <div class="term mt-40">
+    <div class="t-bar">
+      <span class="tdot r"></span><span class="tdot y"></span><span class="tdot g"></span>
+      <span class="t-lbl">orlix-shell &mdash; bash</span>
+      <button class="t-clear" id="clearTermBtn">clear</button>
     </div>
-
-    <!-- functional terminal -->
-    <div class="terminal">
-      <div class="term-bar">
-        <span class="dots"><span style="background:var(--red)"></span><span style="background:var(--amber)"></span><span style="background:var(--green)"></span></span>
-        <span class="lbl">orlix-shell — bash</span>
-        <button class="clear-btn" type="button" data-action="clear-term">clear</button>
-      </div>
-      <div class="term-body" id="termBody">
-        <div class="term-log">
-          <div class="ps1-row"><span class="ps1"><span class="user">guest</span><span class="sym">@</span><span class="path">orlix</span><span class="sym">:~$</span></span></div>
-          <div class="out">Welcome to the Orlix shell. Type <span class="hl">help</span> to see available commands, or <span class="hl">tour</span> for a guided walkthrough.</div>
+    <div class="t-body" id="termBody">
+      <div>
+        <div class="t-prompt">
+          <span class="ps1"><span class="u">guest</span><span class="s">@</span><span class="p">orlix</span><span class="s">:~$</span></span>
         </div>
-      </div>
-      <div class="term-input-row">
-        <span class="ps1"><span class="user">guest</span><span class="sym">@</span><span class="path">orlix</span><span class="sym">:~$</span></span>
-        <input id="termInput" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="type a command…">
-        <button class="send-btn" type="button" id="termSendBtn">run</button>
-      </div>
-      <div class="term-hint">try: <code>help</code> · <code>tour</code> · <code>ls sections</code> · <code>cat receipt.log</code> · <code>levels</code> · <code>whoami</code> · <code>clear</code></div>
-    </div>
-  </section>
-
-  <!-- ================= PROBLEM ================= -->
-  <section id="problem">
-    <div class="crumb"><span class="root">~/orlix</span><span class="sep">/</span><span class="here">problem.md</span></div>
-    <div class="sec-head">
-      <div class="file">$ cat problem.md</div>
-      <h2><span class="num">01</span>The problem</h2>
-    </div>
-
-    <p class="hero-sub">Everyone has access to the same models. If your edge is <span class="hl">"knowing how to prompt,"</span> that edge is shared by every other person using the same model. <span class="dim">The loop looks like this:</span></p>
-
-    <div class="boot" style="min-height:auto;font-size:.84rem">re-explain <span class="dim">→</span> generate <span class="dim">→</span> copy <span class="dim">→</span> paste <span class="dim">→</span> verify <span class="dim">→</span> repeat <span class="bad">∞</span></div>
-
-    <div class="diff" style="margin-top:26px">
-      <div class="diff-row">
-        <div class="diff-cell minus"><span class="sym">-</span>Context lives in their UI — switch vendors, lose everything</div>
-        <div class="diff-cell plus"><span class="sym">+</span>Memory is portable, versioned, and stays with you</div>
-      </div>
-      <div class="diff-row">
-        <div class="diff-cell minus"><span class="sym">-</span>Rules reset every session, so you re-explain constantly</div>
-        <div class="diff-cell plus"><span class="sym">+</span>Policies persist — set a rule once, enforced everywhere</div>
-      </div>
-      <div class="diff-row">
-        <div class="diff-cell minus"><span class="sym">-</span>Output is a draft — you still send, check, follow up</div>
-        <div class="diff-cell plus"><span class="sym">+</span>Actions execute and are verified against the goal</div>
-      </div>
-      <div class="diff-row">
-        <div class="diff-cell minus"><span class="sym">-</span>No record of why a suggestion was made</div>
-        <div class="diff-cell plus"><span class="sym">+</span>Every decision ships with a reviewable receipt</div>
-      </div>
-      <div class="diff-row">
-        <div class="diff-cell minus"><span class="sym">-</span>Your accumulated context can't be exported</div>
-        <div class="diff-cell plus"><span class="sym">+</span>Swap models anytime — your system stays intact</div>
+        <div class="t-out">Welcome to the Orlix shell. Type <span style="color:var(--violet)">help</span> for commands, or <span style="color:var(--violet)">tour</span> for a walkthrough.</div>
       </div>
     </div>
-    <p class="muted" style="margin-top:14px">// assistants are an interface. orlix is infrastructure.</p>
-  </section>
-
-  <!-- ================= PRODUCT ================= -->
-  <section id="product">
-    <div class="crumb"><span class="root">~/orlix</span><span class="sep">/</span><span class="here">product/</span></div>
-    <div class="sec-head">
-      <div class="file">$ ls -la product/</div>
-      <h2><span class="num">02</span>The governance loop</h2>
+    <div class="t-input-row">
+      <span class="ps1"><span class="u">guest</span><span class="s">@</span><span class="p">orlix</span><span class="s">:~$</span></span>
+      <input id="termInput" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="type a command&hellip;">
+      <button class="t-run" id="termRunBtn">run</button>
     </div>
+    <div class="t-hint">try: <code>help</code> &middot; <code>tour</code> &middot; <code>ls</code> &middot; <code>cat receipt.log</code> &middot; <code>levels</code> &middot; <code>whoami</code></div>
+  </div>
+</section>
 
-    <p class="hero-sub">Most AI tools optimize for the next reply. Orlix optimizes for the <span class="hl">outcome</span> — running a five-step loop continuously, in the background.</p>
+<!-- 01 PROBLEM -->
+<section id="problem">
+  <div class="sec-bar">
+    <span>// PROBLEM &middot; 01</span>
+    <span class="sep">&mdash;</span>
+    <span>context resets every session. rules vanish. you re-explain constantly.</span>
+  </div>
+  <div class="sec-num">01</div>
+  <h2 class="sec-title">The problem.</h2>
+  <p class="sec-sub">Everyone has access to the same models. If your edge is <span class="hl">"knowing how to prompt,"</span> that edge is shared by every other person using the same model.</p>
 
-    <div class="filelist">
-      <div class="filerow"><span class="perm">-rwxr-xr-x</span><span class="fname">01_observe.sh</span><span class="fdesc">Watches your calendar, goals, signals, and memory — feeds the world model in real time.</span></div>
-      <div class="filerow"><span class="perm">-rwxr-xr-x</span><span class="fname">02_decide.sh</span><span class="fdesc">Weighs priorities against your policies and checks authority before anything happens.</span></div>
-      <div class="filerow"><span class="perm">-rwxr-xr-x</span><span class="fname">03_act.sh</span><span class="fdesc">Executes the task directly, or requests approval first — depending on the tier you set.</span></div>
-      <div class="filerow"><span class="perm">-rwxr-xr-x</span><span class="fname">04_verify.sh</span><span class="fdesc">Checks results against the original goal — not just whether something was "sent".</span></div>
-      <div class="filerow"><span class="perm">-rwxr-xr-x</span><span class="fname">05_learn.sh</span><span class="fdesc">Updates policy from real outcomes. Every change is versioned and reviewable.</span></div>
+  <div class="diff">
+    <div class="d-row">
+      <div class="d-cell m"><span class="sym">&#x2212;</span>Context lives in their UI &mdash; switch vendors, lose everything</div>
+      <div class="d-cell p"><span class="sym">+</span>Memory is portable, versioned, and stays with you</div>
     </div>
-    <p class="muted" style="margin-top:14px">// key difference: agents do tasks. orlix governs outcomes.</p>
-
-    <div class="sec-head" style="margin-top:42px">
-      <div class="file">$ cat receipt.log | tail -n 1</div>
-      <h2 style="font-size:.95rem"><span class="num">→</span>Every action is logged</h2>
+    <div class="d-row">
+      <div class="d-cell m"><span class="sym">&#x2212;</span>Rules reset every session, so you re-explain constantly</div>
+      <div class="d-cell p"><span class="sym">+</span>Policies persist &mdash; set a rule once, enforced everywhere</div>
     </div>
-    <div class="jsonview">
-      <div class="jhead"><span>receipt #2026-06-13-0847</span><span class="ok">status: verified</span></div>
-      <div class="jbody">
+    <div class="d-row">
+      <div class="d-cell m"><span class="sym">&#x2212;</span>Output is a draft &mdash; you still send, check, follow up</div>
+      <div class="d-cell p"><span class="sym">+</span>Actions execute and are verified against the goal</div>
+    </div>
+    <div class="d-row">
+      <div class="d-cell m"><span class="sym">&#x2212;</span>No record of why a suggestion was made</div>
+      <div class="d-cell p"><span class="sym">+</span>Every decision ships with a reviewable receipt</div>
+    </div>
+    <div class="d-row">
+      <div class="d-cell m"><span class="sym">&#x2212;</span>Your accumulated context can't be exported</div>
+      <div class="d-cell p"><span class="sym">+</span>Swap models anytime &mdash; your system stays intact</div>
+    </div>
+  </div>
+  <p class="muted">// assistants are an interface. orlix is infrastructure.</p>
+</section>
+
+<!-- 02 GOVERNANCE -->
+<section id="product">
+  <div class="sec-bar">
+    <span>// GOVERNANCE_LOOP &middot; 02</span>
+    <span class="sep">&mdash;</span>
+    <span>observe &rarr; decide &rarr; act &rarr; verify &rarr; learn</span>
+  </div>
+  <div class="sec-num">02</div>
+  <h2 class="sec-title">The governance loop.</h2>
+  <p class="sec-sub">Most AI tools optimize for the next reply. Orlix optimizes for the <span class="hl">outcome</span> &mdash; running a five-step loop continuously, in the background.</p>
+
+  <div class="card">
+    <div class="card-head">
+      <span class="lbl">CORE &middot; RUNTIME</span>
+      <div class="card-icon">&#x25CE;</div>
+    </div>
+    <div class="card-inner">
+      <h3 class="card-title">Five steps.<br>Continuous loop.</h3>
+      <ul class="feat-list">
+        <li><span class="sq a"></span>observe.sh &mdash; Watches goals, calendar, memory, live signals</li>
+        <li><span class="sq a"></span>decide.sh &mdash; Weighs priorities against policies, checks authority</li>
+        <li><span class="sq a"></span>act.sh &mdash; Executes or requests approval depending on tier</li>
+        <li><span class="sq a"></span>verify.sh &mdash; Checks results against the original goal, not just "sent"</li>
+        <li><span class="sq a"></span>learn.sh &mdash; Updates policy from real outcomes, every change versioned</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="sec-bar mt-32" style="margin-bottom:16px">
+    <span>// ACTION_RECEIPT &middot; every action is logged and reviewable</span>
+  </div>
+  <div class="json-box">
+    <div class="j-bar"><span>receipt #2026-06-13-0847</span><span class="ok">status: verified</span></div>
+    <div class="j-body">
 <div><span class="k">intent</span>:&nbsp;&nbsp;&nbsp;"Notify user of goal drift"</div>
-<div><span class="k">context</span>:&nbsp;&nbsp;"Goal 'Ship MVP' · 3 blockers · last touched 17d ago"</div>
-<div><span class="k">policy</span>:&nbsp;&nbsp;&nbsp;"Alert if goal drift &gt; 3 days · v14"</div>
-<div><span class="k">action</span>:&nbsp;&nbsp;&nbsp;"Priority alert sent" <span class="ok">✓</span></div>
+<div><span class="k">context</span>:&nbsp;&nbsp;"Goal 'Ship MVP' &middot; 3 blockers &middot; last touched 17d ago"</div>
+<div><span class="k">policy</span>:&nbsp;&nbsp;&nbsp;"Alert if goal drift &gt; 3 days &middot; v14"</div>
+<div><span class="k">action</span>:&nbsp;&nbsp;&nbsp;"Priority alert sent" <span style="color:var(--green)">&#x2713;</span></div>
 <div><span class="k">approval</span>:&nbsp;"User confirmed re-prioritization"</div>
-<div><span class="k">rollback</span>:&nbsp;"available · 30 days"</div>
-      </div>
+<div><span class="k">rollback</span>:&nbsp;"available &middot; 30 days"</div>
     </div>
+  </div>
+  <p class="muted">// agents do tasks. orlix governs outcomes.</p>
+</section>
 
-    <div class="sec-head" style="margin-top:42px">
-      <div class="file">$ orlix policy --list-tiers</div>
-      <h2 style="font-size:.95rem"><span class="num">→</span>Authority tiers</h2>
-    </div>
-    <div class="tbl">
-      <div class="tbl-row"><div class="key">observe</div><div class="desc">Log activity only — Orlix watches, nothing else.</div></div>
-      <div class="tbl-row"><div class="key">suggest</div><div class="desc">Recommendations only — you decide everything.</div></div>
-      <div class="tbl-row"><div class="key">confirm</div><div class="desc">Orlix asks before acting on anything.</div></div>
-      <div class="tbl-row l5"><div class="key">supervised</div><div class="desc">Orlix acts, notifies you, and can roll back. <span class="muted">← default</span></div></div>
-      <div class="tbl-row"><div class="key">autonomous</div><div class="desc">Orlix acts independently within policy bounds.</div></div>
-    </div>
-  </section>
+<!-- 03 LEVELS -->
+<section id="levels">
+  <div class="sec-bar">
+    <span>// AUTONOMY_LEVELS &middot; 03</span>
+    <span class="sep">&mdash;</span>
+    <span>L1 informational &rarr; L5 symbiotic</span>
+  </div>
+  <div class="sec-num">03</div>
+  <h2 class="sec-title">Autonomy levels.</h2>
+  <p class="sec-sub">A simple scale to place any AI tool &mdash; from read-only systems to a fully co-adaptive partner. Orlix is built to run at the top.</p>
 
-  <!-- ================= LEVELS ================= -->
-  <section id="levels">
-    <div class="crumb"><span class="root">~/orlix</span><span class="sep">/</span><span class="here">levels.cfg</span></div>
-    <div class="sec-head">
-      <div class="file">$ orlix levels --describe</div>
-      <h2><span class="num">03</span>Autonomy levels</h2>
-    </div>
-    <p class="hero-sub">A simple scale to place any AI tool — from read-only systems to a fully co-adaptive partner. Orlix is built to run at the top.</p>
+  <div class="tbl">
+    <div class="tbl-row"><div class="tbl-k">L1</div><div class="tbl-v"><strong>Informational</strong>Read-only. Answers questions, takes no action.</div></div>
+    <div class="tbl-row"><div class="tbl-k">L2</div><div class="tbl-v"><strong>Reactive</strong>Responds within a single session, no memory beyond it.</div></div>
+    <div class="tbl-row"><div class="tbl-k">L3</div><div class="tbl-v"><strong>Mixed-initiative</strong>Can suggest or warn, but a human drives every step.</div></div>
+    <div class="tbl-row"><div class="tbl-k">L4</div><div class="tbl-v"><strong>Agentic</strong>Executes multi-step tasks autonomously &mdash; ends when the task does.</div></div>
+    <div class="tbl-row l5"><div class="tbl-k">L5</div><div class="tbl-v"><strong>Symbiotic &mdash; Orlix</strong>Persistent memory, a living model of your goals, policies that evolve from outcomes, full audit trail. The system doesn't end &mdash; it grows with you.</div></div>
+  </div>
 
-    <div class="tbl">
-      <div class="tbl-row"><div class="key">L1</div><div class="desc"><span class="lbl">Informational</span>Read-only. Answers questions, takes no action.</div></div>
-      <div class="tbl-row"><div class="key">L2</div><div class="desc"><span class="lbl">Reactive</span>Responds within a single session, no memory beyond it.</div></div>
-      <div class="tbl-row"><div class="key">L3</div><div class="desc"><span class="lbl">Mixed-initiative</span>Can suggest or warn, but a human drives every step.</div></div>
-      <div class="tbl-row"><div class="key">L4</div><div class="desc"><span class="lbl">Agentic</span>Executes multi-step tasks autonomously — ends when the task does.</div></div>
-      <div class="tbl-row l5"><div class="key">L5</div><div class="desc"><span class="lbl">Symbiotic — Orlix</span>Persistent memory, a living model of your goals, policies that evolve from outcomes, full audit trail. The system doesn't end — it grows with you.</div></div>
-    </div>
+  <div class="sec-bar mt-40" style="margin-bottom:14px"><span>// AUTHORITY_TIERS &middot; configure your permission model</span></div>
+  <div class="tbl">
+    <div class="tbl-row"><div class="tbl-k">observe</div><div class="tbl-v">Log activity only &mdash; Orlix watches, nothing else.</div></div>
+    <div class="tbl-row"><div class="tbl-k">suggest</div><div class="tbl-v">Recommendations only &mdash; you decide everything.</div></div>
+    <div class="tbl-row"><div class="tbl-k">confirm</div><div class="tbl-v">Orlix asks before acting on anything.</div></div>
+    <div class="tbl-row l5"><div class="tbl-k">supervised</div><div class="tbl-v">Orlix acts, notifies you, and can roll back. <span style="color:var(--dim)">&larr; default</span></div></div>
+    <div class="tbl-row"><div class="tbl-k">autonomous</div><div class="tbl-v">Orlix acts independently within policy bounds.</div></div>
+  </div>
+</section>
 
-    <div class="sec-head" style="margin-top:42px">
-      <div class="file">$ cat principles.md</div>
-      <h2 style="font-size:.95rem"><span class="num">→</span>Four principles</h2>
-    </div>
-    <div class="tbl">
-      <div class="tbl-row"><div class="key">#1</div><div class="desc"><span class="lbl">A model of you</span>Orlix maintains a living picture of your goals, preferences, and patterns — updated as you change, not a static profile.</div></div>
-      <div class="tbl-row"><div class="key">#2</div><div class="desc"><span class="lbl">Policy shaped by feedback</span>Every approval, edit, or override becomes a signal. Policy changes from outcomes and explicit corrections — never silent guesses.</div></div>
-      <div class="tbl-row"><div class="key">#3</div><div class="desc"><span class="lbl">Two-way adaptation</span>Orlix learns your patterns; you learn to delegate with confidence. The relationship compounds over time.</div></div>
-      <div class="tbl-row"><div class="key">#4</div><div class="desc"><span class="lbl">You set the direction</span>Orlix never sets its own goals. You define what matters — Orlix gets the autonomy to execute within those bounds.</div></div>
-    </div>
-  </section>
+<!-- 04 MEMORY -->
+<section id="memory">
+  <div class="sec-bar">
+    <span>// MEMORY &middot; 04</span>
+    <span class="sep">&mdash;</span>
+    <span>persistent &middot; versioned &middot; yours forever</span>
+  </div>
+  <div class="sec-num">04</div>
+  <h2 class="sec-title">Memory &amp; ownership.</h2>
+  <p class="sec-sub">Chat history resets whenever a vendor decides. Memory in Orlix is yours by design &mdash; <span class="hl">persistent, versioned, and exportable</span> at any time.</p>
 
-  <!-- ================= MEMORY ================= -->
-  <section id="memory">
-    <div class="crumb"><span class="root">~/orlix</span><span class="sep">/</span><span class="here">memory/</span></div>
-    <div class="sec-head">
-      <div class="file">$ orlix memory --export --preview</div>
-      <h2><span class="num">04</span>Memory &amp; ownership</h2>
+  <div class="card">
+    <div class="card-head">
+      <span class="lbl">MEMORY &middot; SOUL &middot; IDENTITY</span>
+      <div class="card-icon">&#x25C8;</div>
     </div>
-    <p class="hero-sub">Chat history resets whenever a vendor decides. Memory in Orlix is yours by design — <span class="hl">persistent, versioned, and exportable</span> at any time.</p>
-
-    <div class="tbl">
-      <div class="tbl-row"><div class="key">portable</div><div class="desc">Nothing is locked to a single model or vendor. Export your memory, switch providers, keep everything you've built.</div></div>
-      <div class="tbl-row"><div class="key">versioned</div><div class="desc">Every fact, goal, and policy carries a timestamp and version. Roll back if something changes for the worse.</div></div>
-      <div class="tbl-row"><div class="key">sourced</div><div class="desc">Every belief Orlix holds traces back to where it came from — an email, an event, a decision you made.</div></div>
+    <div class="card-inner">
+      <h3 class="card-title">Your context.<br>Never lost.</h3>
+      <ul class="feat-list">
+        <li><span class="sq g"></span>Portable &mdash; nothing locked to any vendor or model</li>
+        <li><span class="sq g"></span>Versioned &mdash; every fact carries a timestamp, roll back anytime</li>
+        <li><span class="sq g"></span>Sourced &mdash; every belief traces back to where it came from</li>
+        <li><span class="sq g"></span>Soul.md &mdash; define your identity, worldview, style. Orlix embodies it.</li>
+        <li><span class="sq g"></span>Exportable &mdash; one command, full JSON dump, forever yours</li>
+      </ul>
     </div>
+  </div>
 
-    <div class="jsonview" style="margin-top:24px">
-      <div class="jhead"><span>orlix-export.json</span><span class="ok">readable · portable · yours</span></div>
-      <div class="jbody">
+  <div class="json-box mt-16">
+    <div class="j-bar"><span>orlix-export.json</span><span class="ok">readable &middot; portable &middot; yours</span></div>
+    <div class="j-body">
 <div>{</div>
 <div>&nbsp;&nbsp;<span class="k">"goals"</span>: [{ <span class="k">"name"</span>: <span class="s">"Ship MVP"</span>, <span class="k">"deadline"</span>: <span class="s">"2026-07-15"</span>, <span class="k">"progress"</span>: <span class="n">0.6</span> }],</div>
-<div>&nbsp;&nbsp;<span class="k">"policies"</span>: [{ <span class="k">"rule"</span>: <span class="s">"notify_if_blocker_gt_48h"</span>, <span class="k">"version"</span>: <span class="n">14</span>, <span class="k">"status"</span>: <span class="s">"active"</span> }],</div>
-<div>&nbsp;&nbsp;<span class="k">"facts"</span>: [{ <span class="k">"content"</span>: <span class="s">"Alex owns the design review"</span>, <span class="k">"source"</span>: <span class="s">"email · 2026-06-02"</span>, <span class="k">"confidence"</span>: <span class="n">0.95</span> }]</div>
+<div>&nbsp;&nbsp;<span class="k">"soul"</span>: { <span class="k">"identity"</span>: <span class="s">"founder"</span>, <span class="k">"style"</span>: <span class="s">"direct"</span>, <span class="k">"worldview"</span>: <span class="s">"ship then refine"</span> },</div>
+<div>&nbsp;&nbsp;<span class="k">"policies"</span>: [{ <span class="k">"rule"</span>: <span class="s">"notify_if_blocker_gt_48h"</span>, <span class="k">"version"</span>: <span class="n">14</span> }],</div>
+<div>&nbsp;&nbsp;<span class="k">"facts"</span>: [{ <span class="k">"content"</span>: <span class="s">"Alex owns the design review"</span>, <span class="k">"source"</span>: <span class="s">"email &middot; 2026-06-02"</span> }]</div>
 <div>}</div>
-      </div>
     </div>
+  </div>
+  <div class="cta-row mt-16">
+    <button class="btn-g" id="downloadExport"><span class="pfx">$</span> download export.json</button>
+  </div>
+</section>
 
-    <div class="cmd-row">
-      <button class="cmd-btn" type="button" id="downloadExport"><span class="pfx">$</span> download export.json</button>
+<!-- 05 ROADMAP -->
+<section id="roadmap">
+  <div class="sec-bar">
+    <span>// ROADMAP &middot; 05</span>
+    <span class="sep">&mdash;</span>
+    <span>git log --oneline --graph</span>
+  </div>
+  <div class="sec-num">05</div>
+  <h2 class="sec-title">Roadmap.</h2>
+  <p class="sec-sub">Five phases. Each one unlocks a new capability. When all five run continuously, Orlix becomes a true personal operating system.</p>
+
+  <div class="log-list">
+    <div class="log-row"><span class="log-st done">&#x2713; shipped</span><div class="log-body"><strong>v0.1 &mdash; Observe</strong><p>Persistent memory across sessions, source-tracked facts, first calendar &amp; notes integrations.</p></div></div>
+    <div class="log-row"><span class="log-st done">&#x2713; shipped</span><div class="log-body"><strong>v0.2 &mdash; Decide</strong><p>Rules-based decision engine with priority weighting and authority checks before any action.</p></div></div>
+    <div class="log-row"><span class="log-st done">&#x2713; shipped</span><div class="log-body"><strong>v0.3 &mdash; Act</strong><p>Approval workflows, action receipts, and supervised execution for real tasks.</p></div></div>
+    <div class="log-row"><span class="log-st done">&#x2713; shipped</span><div class="log-body"><strong>v0.4 &mdash; Verify</strong><p>Outcome tracking that links every action back to the goal it served.</p></div></div>
+    <div class="log-row"><span class="log-st now">&#x25CF; building</span><div class="log-body"><strong>v0.5 &mdash; Evolve</strong><p>Policy evolution from real outcomes, soul.md identity, Aeon framework, autonomous agents on Base.</p></div></div>
+  </div>
+</section>
+
+<!-- 06 ACCESS -->
+<section id="access">
+  <div class="sec-bar">
+    <span>// EARLY_ACCESS &middot; 06</span>
+    <span class="sep">&mdash;</span>
+    <span class="pill amber">LIMITED COHORT</span>
+  </div>
+  <div class="sec-num">06</div>
+  <h2 class="sec-title">Get early access.</h2>
+  <p class="sec-sub">Orlix is in active development. We're building infrastructure for a true human-AI partnership &mdash; and looking for early operators to help shape it.</p>
+
+  <div class="card">
+    <div class="card-head">
+      <span class="lbl">ACCESS_REQUEST &middot; ./access.sh --request</span>
+      <div class="card-icon">&#x2192;</div>
     </div>
-  </section>
-
-  <!-- ================= ROADMAP ================= -->
-  <section id="roadmap">
-    <div class="crumb"><span class="root">~/orlix</span><span class="sep">/</span><span class="here">CHANGELOG</span></div>
-    <div class="sec-head">
-      <div class="file">$ git log --oneline --graph</div>
-      <h2><span class="num">05</span>Roadmap</h2>
-    </div>
-    <p class="hero-sub">Five phases. Each one unlocks a new capability. When all five run continuously, Orlix becomes a true personal operating system.</p>
-
-    <div>
-      <div class="log-row"><span class="status done">✓ shipped</span><div class="body"><span class="lbl">v0.1 — Observe</span><p>Persistent memory across sessions, source-tracked facts, first calendar &amp; notes integrations.</p></div></div>
-      <div class="log-row"><span class="status done">✓ shipped</span><div class="body"><span class="lbl">v0.2 — Decide</span><p>Rules-based decision engine with priority weighting and authority checks before any action.</p></div></div>
-      <div class="log-row"><span class="status done">✓ shipped</span><div class="body"><span class="lbl">v0.3 — Act</span><p>Approval workflows, action receipts, and supervised execution for real tasks.</p></div></div>
-      <div class="log-row"><span class="status done">✓ shipped</span><div class="body"><span class="lbl">v0.4 — Verify</span><p>Outcome tracking that links every action back to the goal it served.</p></div></div>
-      <div class="log-row"><span class="status now">● building</span><div class="body"><span class="lbl">v0.5 — Evolve</span><p>Policy evolution from real outcomes, pattern detection, adaptive behavior — agent → partner.</p></div></div>
-    </div>
-  </section>
-
-  <!-- ================= ACCESS / CTA ================= -->
-  <section id="access">
-    <div class="crumb"><span class="root">~/orlix</span><span class="sep">/</span><span class="here">access.sh</span></div>
-    <div class="sec-head">
-      <div class="file">$ ./access.sh --request</div>
-      <h2><span class="num">06</span>Get early access</h2>
-    </div>
-    <p class="hero-sub">Orlix is in active development. We're building infrastructure for a true human-AI partnership — and looking for early operators to help shape it.</p>
-
-    <form id="accessForm" class="terminal" style="margin-top:24px">
-      <div class="term-bar">
-        <span class="dots"><span style="background:var(--red)"></span><span style="background:var(--amber)"></span><span style="background:var(--green)"></span></span>
-        <span class="lbl">access-request — form</span>
-      </div>
-      <div class="term-body" style="max-height:none;min-height:auto">
-        <div class="term-log"><div class="ps1-row"><span class="ps1"><span class="user">guest</span><span class="sym">@</span><span class="path">orlix</span><span class="sym">:~$</span></span><span class="cmdline">./access.sh --request</span></div></div>
-        <div class="term-log" style="margin-top:14px">
-          <div class="field-row">
-            <span class="lbl">&gt; email_address</span>
-            <input type="email" required id="accessEmail" placeholder="you@domain.com">
-          </div>
-          <div class="field-row">
-            <span class="lbl">&gt; role</span>
-            <select id="accessRole">
-              <option>founder</option><option>operator</option><option>creator</option><option>builder</option>
-            </select>
-          </div>
+    <div class="card-inner">
+      <form id="accessForm">
+        <div class="field-row">
+          <span class="field-lbl">&gt; email_address</span>
+          <input type="email" required id="accessEmail" placeholder="you@domain.com">
         </div>
-      </div>
-      <div class="term-input-row" style="justify-content:flex-end">
-        <button type="submit" class="cmd-btn primary"><span class="pfx">$</span> submit --confirm</button>
-      </div>
-      <div class="term-hint" id="accessResult">your data stays local until you submit. no spam, ever.</div>
-    </form>
-  </section>
-
-  <!-- ================= PARTICLE EDITOR ================= -->
-  <section id="playground">
-    <div class="crumb"><span class="root">~/orlix</span><span class="sep">/</span><span class="here">playground/</span></div>
-    <div class="sec-head">
-      <div class="file">$ orlix particle-editor --interactive</div>
-      <h2><span class="num">07</span>Particle editor</h2>
+        <div class="field-row">
+          <span class="field-lbl">&gt; role</span>
+          <select id="accessRole">
+            <option>founder</option><option>operator</option><option>creator</option><option>builder</option>
+          </select>
+        </div>
+        <div class="cta-row mt-8">
+          <button type="submit" class="btn-p"><span class="pfx">$</span> submit --confirm</button>
+        </div>
+        <div class="a-result" id="accessResult"></div>
+      </form>
+      <p class="muted mt-16">your data stays local until you submit. no spam, ever.</p>
     </div>
-    <p class="hero-sub">Type anything. Words like <span class="amber-hl">fire</span>, <span class="hl">lightning</span>, <span class="ok">metal</span>, <span style="color:#50c8ff">wind</span> render live particle effects — edit the text below and watch.</p>
-
-    <div class="particle-editor">
-      <div class="pe-bar">
-        <span class="dots"><span style="background:var(--red)"></span><span style="background:var(--amber)"></span><span style="background:var(--green)"></span></span>
-        <span class="lbl">particle-editor.txt — interactive · try typing new words</span>
-      </div>
-      <div class="pe-wrap">
-        <div id="peInput" contenteditable="true" spellcheck="false">The engine howls on metal and fire,
-its exhaust rising as smoke into the cold air.
-A sudden wind tears through the valley,
-carrying the shadow of approaching thunder.
-Lightning cracks the iron peaks,
-while frost crawls over the steel rails below.
-The blaze reflects off water in the dark,
-every spark fading into void.</div>
-        <canvas id="peCanvas"></canvas>
-      </div>
-      <div class="pe-legend">
-        <span class="pe-le"><span class="dot" style="background:#ff6030"></span>fire · flame · blaze</span>
-        <span class="pe-le"><span class="dot" style="background:#aaa"></span>smoke · fog · mist</span>
-        <span class="pe-le"><span class="dot" style="background:#b8b0ff"></span>metal · steel · iron</span>
-        <span class="pe-le"><span class="dot" style="background:#50c8ff"></span>wind · breeze · gust</span>
-        <span class="pe-le"><span class="dot" style="background:#ffe840"></span>lightning · thunder · spark</span>
-        <span class="pe-le"><span class="dot" style="background:#5ad0a0"></span>water · rain · ocean</span>
-        <span class="pe-le"><span class="dot" style="background:#90c8ff"></span>ice · frost · snow</span>
-        <span class="pe-le"><span class="dot" style="background:#9070c0"></span>shadow · dark · void</span>
-      </div>
-    </div>
-  </section>
+  </div>
+</section>
 
 </div>
 </main>
 
-<button id="backTop" type="button" aria-label="back to top">↑</button>
-
 <footer>
   <div class="wrap">
-    <div class="foot-echo">
-      <span class="amber-hl">orlix</span><span class="dim">@</span>system<span class="dim">:~$</span> echo "the future of AI is not assistance — it's partnership."
-      <br><span class="ok">the future of AI is not assistance — it's partnership.</span>
+    <div class="f-echo">
+      <span class="am">orlix</span><span style="color:var(--dim)">@system:~$</span> echo "the future of AI is not assistance &mdash; it is partnership."
+      <br><span class="ok">the future of AI is not assistance &mdash; it is partnership.</span>
     </div>
-    <div class="foot-token">
-      <span class="tk-label">$ORLIX</span>
+    <div class="token-bar">
+      <span class="tk-lbl">$ORLIX</span>
       <span class="tk-addr" id="caAddr">CA: 0x799c28BAC95B3E0B26534D1e9A586511895EcBA3</span>
-      <button class="tk-copy" id="caBtn" type="button">copy</button>
+      <button class="tk-copy" id="caBtn">copy</button>
     </div>
-    <div class="foot-grid">
-      <div class="foot-copy">
-        © 2026 Orlix<br>local-first, sovereign, auditable.
-      </div>
-      <div class="foot-cols">
-        <div class="foot-col">
-          <span class="col-label">resources</span>
+    <div class="f-grid">
+      <div class="f-copy">&copy; 2026 Orlix<br>local-first, sovereign, auditable.</div>
+      <div class="f-cols">
+        <div class="f-col">
+          <span class="col-lbl">resources</span>
           <a href="docs.html">docs</a>
           <a href="changelog.html">changelog</a>
         </div>
-        <div class="foot-col">
-          <span class="col-label">legal</span>
+        <div class="f-col">
+          <span class="col-lbl">legal</span>
           <a href="terms.html">terms</a>
           <a href="privacy.html">privacy</a>
         </div>
@@ -697,803 +566,71 @@ every spark fading into void.</div>
 </footer>
 
 <script>
-/* ===================== helpers ===================== */
-function escapeHtml(str){
-  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
-function gotoSection(id){
-  const el = document.getElementById(id);
-  if(el) el.scrollIntoView({behavior:'smooth', block:'start'});
-}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function goto(id){const el=document.getElementById(id);if(el)el.scrollIntoView({behavior:'smooth',block:'start'})}
 
-/* ===================== BOOT SEQUENCE ===================== */
-const bootLines = [
-  {t:'$ orlix --version', c:''},
-  {t:'orlix v0.5.0-beta · personal AI operating system', c:'ok'},
-  {t:'$ orlix status', c:''},
-  {t:'[ok] world model ........... online', c:'ok'},
-  {t:'[ok] policy engine ......... 14 active rules', c:'ok'},
-  {t:'[ok] memory ................ persistent · local-first', c:'ok'},
-  {t:'[ok] audit log ............. recording', c:'ok'},
-  {t:'$ echo $MOTTO', c:''},
-  {t:'"AI generates text. You do all the work." — not anymore.', c:'hl'},
-];
-
-const bootEl = document.getElementById('bootLog');
-let bi = 0, ci = 0;
-let renderedLines = [];
-
-function bootTick(){
-  if(bi >= bootLines.length){
-    bootEl.innerHTML = renderedLines.join('\n') + '\n<span class="cursor"></span>';
-    return;
-  }
-  const line = bootLines[bi];
-  const full = line.t;
-  if(ci <= full.length){
-    redrawBoot(full.slice(0, ci), line.c);
-    ci++;
-    setTimeout(bootTick, line.t.startsWith('$') ? 20 : 7);
-  } else {
-    finalizeLine(full, line.c);
-    bi++; ci = 0;
-    setTimeout(bootTick, 90);
-  }
-}
-function redrawBoot(partial, cls){
-  const lines = renderedLines.slice();
-  const span = cls ? `<span class="${cls}">${escapeHtml(partial)}</span>` : escapeHtml(partial);
-  lines.push(span + '<span class="cursor"></span>');
-  bootEl.innerHTML = lines.join('\n');
-}
-function finalizeLine(full, cls){
-  const span = cls ? `<span class="${cls}">${escapeHtml(full)}</span>` : escapeHtml(full);
-  renderedLines.push(span);
-  bootEl.innerHTML = renderedLines.join('\n') + '<span class="cursor"></span>';
-}
-bootTick();
-
-/* ===================== FUNCTIONAL SHELL ===================== */
-const termBody = document.getElementById('termBody');
-const termInput = document.getElementById('termInput');
-
-const sectionMap = {
-  top:'top', problem:'problem', product:'product', levels:'levels',
-  memory:'memory', roadmap:'roadmap', access:'access', playground:'playground'
+/* terminal */
+const tb=document.getElementById('termBody');
+const ti=document.getElementById('termInput');
+function out(html,cls){const d=document.createElement('div');d.className='t-out'+(cls?' '+cls:'');d.innerHTML=html;tb.appendChild(d);tb.scrollTop=tb.scrollHeight}
+function prompt(cmd){const d=document.createElement('div');d.innerHTML='<div class="t-prompt"><span class="ps1"><span class="u">guest</span><span class="s">@</span><span class="p">orlix</span><span class="s">:~$</span></span><span class="cmd-t">'+esc(cmd)+'</span></div>';tb.appendChild(d);tb.scrollTop=tb.scrollHeight}
+const C={
+  help(){out('available commands:');out('  <span style="color:var(--violet)">help</span>  tour  ls  cd &lt;section&gt;  cat receipt.log  levels  whoami  orlix app  clear')},
+  tour(){out('starting guided tour...','ok');['problem','product','levels','memory','roadmap'].forEach((id,i)=>setTimeout(()=>{goto(id);out('['+( i+1)+'/5] jumped to <span style="color:var(--violet)">#'+id+'</span>','ok')},(i+1)*900))},
+  ls(){out('drwxr-xr-x  problem/ &nbsp;product/ &nbsp;levels/ &nbsp;memory/ &nbsp;roadmap/ &nbsp;access/')},
+  cd(a){const m={problem:1,product:1,levels:1,memory:1,roadmap:1,access:1,top:1};const t=(a[0]||'').toLowerCase();if(m[t]){goto(t);out('jumped to <span style="color:var(--violet)">#'+t+'</span>','ok')}else out('cd: '+esc(t||'')+': no such section','bad')},
+  cat(a){if((a[0]||'').toLowerCase()==='receipt.log'){out('{');out('  <span style="color:var(--violet)">intent</span>:   "Notify user of goal drift",');out('  <span style="color:var(--violet)">policy</span>:   "Alert if goal drift &gt; 3 days v14",');out('  <span style="color:var(--violet)">action</span>:   "Priority alert sent" <span style="color:var(--green)">&#x2713;</span>,');out('  <span style="color:var(--violet)">rollback</span>: "available 30 days"');out('}')}else out('cat: '+esc(a[0]||'')+': no such file. try: receipt.log','bad')},
+  levels(){out('L1 Informational &mdash; read-only');out('L2 Reactive &mdash; single-session');out('L3 Mixed-initiative &mdash; suggests');out('L4 Agentic &mdash; executes tasks');out('L5 Symbiotic &mdash; <span style="color:var(--violet)">orlix runs here</span>','ok')},
+  whoami(){out('guest@orlix &mdash; anonymous session. authority: observe.')},
+  access(){goto('access');out('scrolled to early access form','ok')},
+  clear(){tb.innerHTML=''},
+  app(){out('launching dashboard...','ok');setTimeout(()=>window.open('/app','_blank'),400)},
+  orlix(a){if(a[0]==='app')C.app();else if(a[0]==='status')C.whoami();else out('unknown subcommand. try: orlix app','bad')},
+  sudo(){out('guest sessions run at authority: <span style="color:var(--violet)">observe</span>.','warn')},
+  man(){out('ORLIX(1) &mdash; Personal AI OS');out('Observes goals, decides against policies, acts, verifies outcomes, updates policy from results.')}
 };
+function run(raw){const t=raw.trim();if(!t)return;prompt(t);const p=t.split(/\s+/);const c=p[0].toLowerCase();if(C[c])C[c](p.slice(1));else out('command not found: '+esc(c)+' &mdash; type <span style="color:var(--violet)">help</span>','bad')}
+ti.addEventListener('keydown',e=>{if(e.key==='Enter'){run(ti.value);ti.value=''}});
+document.getElementById('termRunBtn').addEventListener('click',()=>{run(ti.value);ti.value='';ti.focus()});
+document.getElementById('clearTermBtn').addEventListener('click',()=>tb.innerHTML='');
+tb.addEventListener('click',()=>ti.focus());
+document.getElementById('focusTermBtn').addEventListener('click',()=>{document.querySelector('.term').scrollIntoView({behavior:'smooth',block:'center'});setTimeout(()=>ti.focus(),400)});
 
-function printLine(html, cls){
-  const div = document.createElement('div');
-  div.className = 'out';
-  if(cls) div.classList.add(cls);
-  div.innerHTML = html;
-  termBody.appendChild(div);
-  termBody.scrollTop = termBody.scrollHeight;
-}
-function printPrompt(cmd){
-  const div = document.createElement('div');
-  div.className = 'term-log';
-  div.innerHTML = `<div class="ps1-row"><span class="ps1"><span class="user">guest</span><span class="sym">@</span><span class="path">orlix</span><span class="sym">:~$</span></span><span class="cmdline">${escapeHtml(cmd)}</span></div>`;
-  termBody.appendChild(div);
-  termBody.scrollTop = termBody.scrollHeight;
-}
+/* yes/no */
+(function(){
+  const bY=document.getElementById('btnYes'),bN=document.getElementById('btnNo'),r=document.getElementById('yesnoResp');
+  if(!bY||!bN||!r)return;let done=false;
+  bY.addEventListener('click',()=>{if(done)return;done=true;r.innerHTML='<span style="color:var(--green)">&#x2713;</span>&nbsp;That\'s exactly the problem Orlix was built to solve. Set the rules once &mdash; Orlix governs the outcomes.';r.classList.add('open');bY.classList.add('y-yes');bN.classList.add('faded');setTimeout(()=>goto('problem'),700)});
+  bN.addEventListener('click',()=>{if(done)return;done=true;r.innerHTML='<span style="color:var(--violet)">Impressive.</span>&nbsp;<span style="color:var(--dim)">You\'re either way ahead of everyone &mdash; or you\'re exactly the operator we\'re building for.</span>';r.classList.add('open');bN.classList.add('y-no');bY.classList.add('faded')});
+})();
 
-const commands = {
-  help(){
-    printLine(`Available commands:`);
-    printLine(`  <span class="hl">help</span>          show this list`);
-    printLine(`  <span class="hl">tour</span>          guided walkthrough of orlix`);
-    printLine(`  <span class="hl">ls sections</span>   list page sections`);
-    printLine(`  <span class="hl">cd &lt;section&gt;</span>  jump to a section (problem, product, levels, memory, roadmap, access)`);
-    printLine(`  <span class="hl">cat receipt.log</span>  view a sample action receipt`);
-    printLine(`  <span class="hl">levels</span>        show the autonomy levels (L1–L5)`);
-    printLine(`  <span class="hl">whoami</span>        about this guest session`);
-    printLine(`  <span class="hl">access</span>        jump to early access form`);
-    printLine(`  <span class="hl">orlix app</span>     open the live dashboard`);
-    printLine(`  <span class="hl">clear</span>         clear the terminal`);
-  },
-  tour(){
-    printLine(`Starting guided tour — scrolling through orlix in 5 steps…`, 'ok');
-    const stops = ['problem','product','levels','memory','roadmap'];
-    stops.forEach((id, i) => {
-      setTimeout(() => {
-        gotoSection(id);
-        printLine(`[${i+1}/5] → jumped to <span class="hl">#${id}</span>`, 'ok');
-      }, (i+1) * 900);
-    });
-  },
-  'ls'(args){
-    if(args[0] === 'sections' || args.length === 0){
-      printLine(`drwxr-xr-x  problem/`);
-      printLine(`drwxr-xr-x  product/`);
-      printLine(`drwxr-xr-x  levels/`);
-      printLine(`drwxr-xr-x  memory/`);
-      printLine(`drwxr-xr-x  roadmap/`);
-      printLine(`drwxr-xr-x  access/`);
-      printLine(`drwxr-xr-x  <span class="hl">playground/</span>    ← particle editor`);
-    } else {
-      printLine(`ls: cannot access '${escapeHtml(args.join(' '))}': no such directory`, 'bad');
-    }
-  },
-  cd(args){
-    const target = (args[0]||'').replace(/^\.?\/?/,'').toLowerCase();
-    if(sectionMap[target]){
-      gotoSection(sectionMap[target]);
-      printLine(`→ now viewing <span class="hl">#${target}</span>`, 'ok');
-    } else {
-      printLine(`cd: ${escapeHtml(args.join(' ')||'')}: no such section. try: problem, product, levels, memory, roadmap, access`, 'bad');
-    }
-  },
-  cat(args){
-    const f = (args[0]||'').toLowerCase();
-    if(f === 'receipt.log'){
-      printLine(`{`);
-      printLine(`  <span class="hl">intent</span>:   "Notify user of goal drift",`);
-      printLine(`  <span class="hl">context</span>:  "Goal 'Ship MVP' · 3 blockers · last touched 17d ago",`);
-      printLine(`  <span class="hl">policy</span>:   "Alert if goal drift &gt; 3 days · v14",`);
-      printLine(`  <span class="hl">action</span>:   "Priority alert sent" <span class="ok">✓</span>,`);
-      printLine(`  <span class="hl">approval</span>: "User confirmed re-prioritization",`);
-      printLine(`  <span class="hl">rollback</span>: "available · 30 days"`);
-      printLine(`}`);
-    } else if(f === 'motto' || f === 'motto.txt'){
-      printLine(`"AI generates text. You do all the work." — not anymore.`, 'hl');
-    } else {
-      printLine(`cat: ${escapeHtml(f||'')}: No such file. try: receipt.log`, 'bad');
-    }
-  },
-  levels(){
-    printLine(`L1  Informational    — read-only, no action`);
-    printLine(`L2  Reactive         — single-session, no memory`);
-    printLine(`L3  Mixed-initiative — suggests, human drives`);
-    printLine(`L4  Agentic          — executes tasks, ends with task`);
-    printLine(`L5  Symbiotic        — <span class="hl">orlix runs here</span>: persistent memory, evolving policy, full audit`, 'ok');
-  },
-  whoami(){
-    printLine(`guest@orlix — anonymous session. memory: none stored. authority tier: observe.`);
-  },
-  access(){
-    gotoSection('access');
-    printLine(`→ scrolled to early access form`, 'ok');
-  },
-  clear(){
-    termBody.innerHTML = '';
-  },
-  app(){
-    printLine(`→ launching orlix dashboard…`, 'ok');
-    setTimeout(()=>window.open('/app','_blank'), 400);
-  },
-  orlix(args){
-    if(args[0]==='app'){ commands.app(); }
-    else if(args[0]==='status'){ commands.whoami(); }
-    else { printLine(`orlix: unknown subcommand '${escapeHtml(args[0]||'')}' — try: orlix app, orlix status`, 'bad'); }
-  },
-  sudo(){
-    printLine(`Nice try. guest sessions run at authority tier: <span class="hl">observe</span>.`, 'warn');
-  },
-  man(){
-    printLine(`ORLIX(1)              Personal AI Operating System              ORLIX(1)`);
-    printLine(``);
-    printLine(`<span class="hl">NAME</span>`);
-    printLine(`    orlix — governance layer for personal AI`);
-    printLine(``);
-    printLine(`<span class="hl">DESCRIPTION</span>`);
-    printLine(`    Orlix observes your goals and context, decides what matters against`);
-    printLine(`    your policies, acts (with approval where required), verifies the`);
-    printLine(`    outcome, and updates its policy from what happened. Every step is`);
-    printLine(`    logged as a reviewable receipt.`);
-    printLine(``);
-    printLine(`<span class="hl">SEE ALSO</span>`);
-    printLine(`    levels(1), receipt.log(5), access.sh(1)`);
-  },
-};
-
-function runCommand(raw){
-  const trimmed = raw.trim();
-  if(!trimmed) return;
-  printPrompt(trimmed);
-  const parts = trimmed.split(/\s+/);
-  const cmd = parts[0].toLowerCase();
-  const args = parts.slice(1);
-  if(commands[cmd]){
-    commands[cmd](args);
-  } else {
-    printLine(`command not found: ${escapeHtml(cmd)} — type <span class="hl">help</span> for a list`, 'bad');
-  }
-}
-
-termInput.addEventListener('keydown', (e) => {
-  if(e.key === 'Enter'){
-    runCommand(termInput.value);
-    termInput.value = '';
-  }
-});
-document.getElementById('termSendBtn').addEventListener('click', () => {
-  runCommand(termInput.value);
-  termInput.value = '';
-  termInput.focus();
-});
-termBody.addEventListener('click', () => termInput.focus());
-
-document.getElementById('focusTermBtn').addEventListener('click', () => {
-  document.querySelector('.terminal').scrollIntoView({behavior:'smooth', block:'center'});
-  setTimeout(()=>termInput.focus(), 400);
+/* download export */
+document.getElementById('downloadExport').addEventListener('click',()=>{
+  const d={goals:[{name:'Ship MVP',deadline:'2026-07-15',progress:0.6}],soul:{identity:'founder',style:'direct',worldview:'ship then refine'},policies:[{rule:'notify_if_blocker_gt_48h',version:14,status:'active'}],facts:[{content:'Alex owns the design review',source:'email 2026-06-02',confidence:0.95}]};
+  const a=document.createElement('a');a.href='data:application/json,'+encodeURIComponent(JSON.stringify(d,null,2));a.download='orlix-export.json';document.body.appendChild(a);a.click();document.body.removeChild(a)
 });
 
-/* ===================== generic data-action buttons ===================== */
-document.querySelectorAll('[data-action="goto"]').forEach(btn => {
-  btn.addEventListener('click', (e) => {
-    e.preventDefault();
-    gotoSection(btn.getAttribute('data-target'));
-  });
-});
-document.querySelectorAll('[data-action="clear-term"]').forEach(btn => {
-  btn.addEventListener('click', () => { termBody.innerHTML = ''; });
-});
-document.getElementById('navAccess').addEventListener('click', () => gotoSection('access'));
-
-/* ===================== download export.json ===================== */
-document.getElementById('downloadExport').addEventListener('click', () => {
-  const data = {
-    goals: [{ name: "Ship MVP", deadline: "2026-07-15", progress: 0.6 }],
-    policies: [{ rule: "notify_if_blocker_gt_48h", version: 14, status: "active" }],
-    facts: [{ content: "Alex owns the design review", source: "email · 2026-06-02", confidence: 0.95 }]
-  };
-  const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = 'orlix-export.json';
-  document.body.appendChild(a); a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-});
-
-/* ===================== ACCESS FORM ===================== */
-document.getElementById('accessForm').addEventListener('submit', async (e) => {
+/* access form */
+document.getElementById('accessForm').addEventListener('submit',async e=>{
   e.preventDefault();
-  const email = document.getElementById('accessEmail').value;
-  const role = document.getElementById('accessRole').value;
-  const result = document.getElementById('accessResult');
-  const btn = e.target.querySelector('button[type=submit]');
-  if(!email){ result.innerHTML=`<span class="bad">error: email_address is required</span>`; return; }
-  btn.disabled=true; btn.style.opacity='.5';
-  result.innerHTML=`<span class="dim">submitting…</span>`;
-  try{
-    const res = await fetch('https://formspree.io/f/xpwzqpyp',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','Accept':'application/json'},
-      body:JSON.stringify({email,role})
-    });
-    if(res.ok){
-      result.innerHTML=`<span class="ok">✓ request received — ${escapeHtml(email)} (${escapeHtml(role)}). we'll reach out when your cohort opens.</span>`;
-    } else {
-      result.innerHTML=`<span class="ok">✓ request queued — ${escapeHtml(email)} (${escapeHtml(role)}). we'll reach out when your cohort opens.</span>`;
-    }
-  }catch{
-    result.innerHTML=`<span class="ok">✓ request queued — ${escapeHtml(email)} (${escapeHtml(role)}). we'll reach out when your cohort opens.</span>`;
-  }
+  const email=document.getElementById('accessEmail').value,role=document.getElementById('accessRole').value;
+  const res=document.getElementById('accessResult'),btn=e.target.querySelector('button[type=submit]');
+  if(!email){res.className='a-result bad';res.textContent='error: email_address is required';return}
+  btn.disabled=true;btn.style.opacity='.5';res.className='a-result dim';res.textContent='submitting...';
+  try{await fetch('https://formspree.io/f/xpwzqpyp',{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({email,role})})}catch{}
+  res.className='a-result ok';res.textContent='request received — '+email+' ('+role+'). we\'ll reach out when your cohort opens.'
 });
 
-/* ===================== YES / NO INTERACTION ===================== */
-(function(){
-  const btnYes  = document.getElementById('btnYes');
-  const btnNo   = document.getElementById('btnNo');
-  const resp    = document.getElementById('yesnoResp');
-  if(!btnYes||!btnNo||!resp) return;
-  let answered  = false;
-
-  btnYes.addEventListener('click',()=>{
-    if(answered) return; answered = true;
-    resp.innerHTML = `<span class="ok">✓</span>&nbsp;That's exactly the problem Orlix was built to solve. Set the rules once — Orlix governs the outcomes. <a href="#problem" data-action="goto" data-target="problem" style="color:var(--amber);border-bottom:1px dotted rgba(255,154,82,.4)">See the problem →</a>`;
-    resp.classList.add('open');
-    btnYes.classList.add('active-yes'); btnNo.classList.add('faded');
-    setTimeout(()=>gotoSection('problem'), 700);
-  });
-
-  btnNo.addEventListener('click',()=>{
-    if(answered) return; answered = true;
-    resp.innerHTML = `<span class="hl">Impressive.</span>&nbsp;<span class="dim">You're either way ahead of everyone — or you're exactly the operator we're building for.</span>&nbsp;<a href="#access" data-action="goto" data-target="access" style="color:var(--amber);border-bottom:1px dotted rgba(255,154,82,.4)">Get early access →</a>`;
-    resp.classList.add('open');
-    btnNo.classList.add('active-no'); btnYes.classList.add('faded');
-  });
-})();
-
-/* ===================== NERVE NETWORK BACKGROUND ===================== */
-(function(){
-  const cv = document.getElementById('nerveBg');
-  const cx = cv.getContext('2d');
-  const N = 22;
-  let nodes = [], edges = [], W, H;
-
-  function resize(){
-    W = cv.width = innerWidth;
-    H = cv.height = innerHeight;
-  }
-  resize();
-  window.addEventListener('resize', resize);
-
-  function init(){
-    nodes = [];
-    edges = [];
-    for(let i=0;i<N;i++){
-      nodes.push({
-        x:(0.05+Math.random()*.9)*W,
-        y:(0.05+Math.random()*.9)*H,
-        vx:(Math.random()-.5)*.18,
-        vy:(Math.random()-.5)*.12,
-        w:Math.random(),
-        pa:0, pv:0
-      });
-    }
-    const conn=new Set([0]);
-    const rem=Array.from({length:N-1},(_,i)=>i+1);
-    while(conn.size<N){
-      const from=[...conn][Math.floor(Math.random()*conn.size)];
-      const ti=Math.floor(Math.random()*rem.length);
-      edges.push([from,rem[ti]]);
-      conn.add(rem[ti]);
-      rem.splice(ti,1);
-    }
-    for(let i=0;i<28;i++){
-      const a=Math.floor(Math.random()*N),b=Math.floor(Math.random()*N);
-      if(a!==b&&!edges.some(e=>(e[0]===a&&e[1]===b)||(e[0]===b&&e[1]===a)))
-        edges.push([a,b]);
-    }
-  }
-  init();
-
-  function getPath(start){
-    const vis=new Set([start]);
-    const path=[start];
-    let cur=start;
-    for(let s=0;s<8;s++){
-      const nb=edges
-        .filter(e=>e[0]===cur||e[1]===cur)
-        .map(e=>e[0]===cur?e[1]:e[0])
-        .filter(n=>!vis.has(n));
-      if(!nb.length) break;
-      const best=nb.reduce((a,b)=>nodes[a].w>nodes[b].w?a:b);
-      vis.add(best);path.push(best);cur=best;
-    }
-    return path;
-  }
-
-  let pathA=getPath(0), pathV=getPath(Math.floor(N/2));
-  let t=0;
-  let lastRepath=0;
-
-  function tick(){
-    t+=0.016;
-
-    // drift nodes gently
-    nodes.forEach(n=>{
-      n.x+=n.vx; n.y+=n.vy;
-      if(n.x<0||n.x>W) n.vx*=-1;
-      if(n.y<0||n.y>H) n.vy*=-1;
-    });
-
-    // repath every ~3s, pick random starts
-    if(t-lastRepath>3){
-      lastRepath=t;
-      pathA=getPath(Math.floor(Math.random()*N));
-      pathV=getPath(Math.floor(Math.random()*N));
-    }
-
-    // decay pulses
-    nodes.forEach(n=>{n.pa*=0.93;n.pv*=0.93;});
-
-    // pulse along amber path
-    const segA=Math.floor(t*1.4)%Math.max(pathA.length-1,1);
-    if(pathA[segA]!=null)   nodes[pathA[segA]].pa=1;
-    if(pathA[segA+1]!=null) nodes[pathA[segA+1]].pa=Math.min(1,nodes[pathA[segA+1]].pa+0.6);
-
-    // pulse along violet path
-    const segV=Math.floor(t*1.1)%Math.max(pathV.length-1,1);
-    if(pathV[segV]!=null)   nodes[pathV[segV]].pv=1;
-    if(pathV[segV+1]!=null) nodes[pathV[segV+1]].pv=Math.min(1,nodes[pathV[segV+1]].pv+0.6);
-  }
-
-  function draw(){
-    cx.clearRect(0,0,W,H);
-
-    // base edges
-    cx.lineWidth=1;
-    edges.forEach(([ai,bi])=>{
-      const a=nodes[ai],b=nodes[bi];
-      cx.strokeStyle='rgba(255,255,255,0.045)';
-      cx.beginPath();cx.moveTo(a.x,a.y);cx.lineTo(b.x,b.y);cx.stroke();
-    });
-
-    // amber active path
-    for(let i=0;i<pathA.length-1;i++){
-      const a=nodes[pathA[i]],b=nodes[pathA[i+1]];
-      const al=0.38-i*0.045;if(al<=0) break;
-      cx.strokeStyle=`rgba(255,154,82,${al})`;
-      cx.lineWidth=1.5;
-      cx.beginPath();cx.moveTo(a.x,a.y);cx.lineTo(b.x,b.y);cx.stroke();
-    }
-
-    // violet active path
-    for(let i=0;i<pathV.length-1;i++){
-      const a=nodes[pathV[i]],b=nodes[pathV[i+1]];
-      const al=0.38-i*0.045;if(al<=0) break;
-      cx.strokeStyle=`rgba(185,164,255,${al})`;
-      cx.lineWidth=1.5;
-      cx.beginPath();cx.moveTo(a.x,a.y);cx.lineTo(b.x,b.y);cx.stroke();
-    }
-
-    // nodes
-    nodes.forEach(n=>{
-      const pt=n.pa+n.pv;
-      const baseR=2.5+n.w*3;
-      const r=baseR+pt*5;
-
-      if(pt>0.05){
-        const d=pt||1;
-        const lr=((255*n.pa+185*n.pv)/d)|0;
-        const lg=((154*n.pa+164*n.pv)/d)|0;
-        const lb=((82*n.pa+255*n.pv)/d)|0;
-        const grd=cx.createRadialGradient(n.x,n.y,0,n.x,n.y,r*3.5);
-        grd.addColorStop(0,`rgba(${lr},${lg},${lb},${pt*.45})`);
-        grd.addColorStop(1,'rgba(0,0,0,0)');
-        cx.fillStyle=grd;
-        cx.fillRect(n.x-r*3.5,n.y-r*3.5,r*7,r*7);
-      }
-
-      cx.beginPath();cx.arc(n.x,n.y,r,0,Math.PI*2);
-      if(pt>0.05){
-        const d=pt||1;
-        const lr=((255*n.pa+185*n.pv)/d)|0;
-        const lg=((154*n.pa+164*n.pv)/d)|0;
-        const lb=((82*n.pa+255*n.pv)/d)|0;
-        cx.fillStyle=`rgba(${lr},${lg},${lb},${Math.min(pt,.95)})`;
-      } else {
-        cx.fillStyle=`rgba(216,207,196,${0.18+n.w*.18})`;
-      }
-      cx.fill();
-    });
-  }
-
-  (function loop(){tick();draw();requestAnimationFrame(loop);})();
-})();
-
-/* ===================== COSMIC BACKGROUND ===================== */
-(function(){
-  const cv = document.getElementById('cosmicBg');
-  const cx = cv.getContext('2d');
-  const resize = () => { cv.width = innerWidth; cv.height = innerHeight; };
-  resize();
-  window.addEventListener('resize', resize);
-
-  const stars = Array.from({length:200}, () => ({
-    x: Math.random(), y: Math.random(),
-    r: Math.random()*1.4+0.2,
-    a: Math.random()*0.8+0.1,
-    da: (Math.random()-0.5)*0.008,
-    vy: -(Math.random()*0.00012+0.00004)
-  }));
-
-  const nebulae = [
-    {x:.15, y:.30, r:370, vx: .000022, vy: .000009, rgb:'185,164,255'},
-    {x:.78, y:.55, r:450, vx:-.000016, vy: .000011, rgb:'255,154,82'},
-    {x:.50, y:.82, r:280, vx: .000019, vy:-.000008, rgb:'126,224,168'},
-    {x:.33, y:.14, r:210, vx:-.000014, vy: .000017, rgb:'90,140,255'},
-  ];
-
-  let shooters = [];
-  const spawnShooter = () => {
-    if(shooters.length < 2) shooters.push({
-      x: Math.random()*cv.width*.75, y: Math.random()*cv.height*.4,
-      vx: 7+Math.random()*7, vy: 2+Math.random()*3,
-      a: 1, len: 70+Math.random()*100
-    });
-    setTimeout(spawnShooter, 2800+Math.random()*5000);
-  };
-  setTimeout(spawnShooter, 1800);
-
-  function tick(){
-    cx.clearRect(0,0,cv.width,cv.height);
-
-    nebulae.forEach(n=>{
-      n.x+=n.vx; n.y+=n.vy;
-      if(n.x<-.3||n.x>1.3) n.vx*=-1;
-      if(n.y<-.3||n.y>1.3) n.vy*=-1;
-      const gx=n.x*cv.width, gy=n.y*cv.height;
-      const g=cx.createRadialGradient(gx,gy,0,gx,gy,n.r);
-      g.addColorStop(0,`rgba(${n.rgb},.055)`);
-      g.addColorStop(.5,`rgba(${n.rgb},.018)`);
-      g.addColorStop(1,`rgba(${n.rgb},0)`);
-      cx.fillStyle=g; cx.fillRect(0,0,cv.width,cv.height);
-    });
-
-    stars.forEach(s=>{
-      s.a+=s.da;
-      if(s.a>0.95||s.a<0.07) s.da*=-1;
-      s.y+=s.vy;
-      if(s.y<0){s.y=1;s.x=Math.random();}
-      cx.beginPath();
-      cx.arc(s.x*cv.width,s.y*cv.height,s.r,0,Math.PI*2);
-      cx.fillStyle=`rgba(251,243,234,${s.a})`;
-      cx.fill();
-    });
-
-    shooters=shooters.filter(s=>s.a>0.02);
-    shooters.forEach(s=>{
-      const ang=Math.atan2(s.vy,s.vx);
-      const x2=s.x-Math.cos(ang)*s.len, y2=s.y-Math.sin(ang)*s.len;
-      const g=cx.createLinearGradient(s.x,s.y,x2,y2);
-      g.addColorStop(0,`rgba(255,243,228,${s.a})`);
-      g.addColorStop(1,'rgba(255,243,228,0)');
-      cx.beginPath(); cx.moveTo(s.x,s.y); cx.lineTo(x2,y2);
-      cx.strokeStyle=g; cx.lineWidth=1.5; cx.stroke();
-      s.x+=s.vx; s.y+=s.vy; s.a-=0.011;
-    });
-
-    requestAnimationFrame(tick);
-  }
-  tick();
-})();
-
-/* ===================== PARTICLE TEXT EDITOR ===================== */
-(function(){
-  const editor = document.getElementById('peInput');
-  const cv     = document.getElementById('peCanvas');
-  if(!editor||!cv) return;
-  const cx = cv.getContext('2d');
-
-  const WORDS = {
-    fire:    {c:'#ff6030',t:'fire'},    flame:  {c:'#ff7020',t:'fire'},   blaze:  {c:'#ff9030',t:'fire'},
-    smoke:   {c:'#aaaaaa',t:'smoke'},   fog:    {c:'#bbbbbb',t:'smoke'},  mist:   {c:'#c8c8c8',t:'smoke'},
-    metal:   {c:'#b8b0ff',t:'metal'},   steel:  {c:'#a8c0ff',t:'metal'}, iron:   {c:'#90a8ff',t:'metal'},
-    wind:    {c:'#50c8ff',t:'wind'},    breeze: {c:'#70d8ff',t:'wind'},   gust:   {c:'#40b8f0',t:'wind'},
-    lightning:{c:'#ffe840',t:'lightning'},thunder:{c:'#ffcc20',t:'lightning'},spark:{c:'#ffee60',t:'lightning'},
-    water:   {c:'#5ad0a0',t:'water'},   rain:   {c:'#40b890',t:'water'},  ocean:  {c:'#30a8b8',t:'water'},
-    ice:     {c:'#90c8ff',t:'ice'},     frost:  {c:'#b0dcff',t:'ice'},    snow:   {c:'#d8eeff',t:'ice'},
-    shadow:  {c:'#9070c0',t:'shadow'},  dark:   {c:'#7050a0',t:'shadow'}, void:   {c:'#503080',t:'shadow'},
-  };
-
-  const WORD_RE = new RegExp('\\b('+Object.keys(WORDS).join('|')+')\\b','gi');
-
-  class Pt {
-    constructor(x,y,type){
-      this.x=x+(Math.random()-.5)*24; this.y=y+(Math.random()-.5)*6;
-      this.life=1; this.type=type; this.grav=0; this.grow=0;
-      switch(type){
-        case 'fire':
-          this.vx=(Math.random()-.5)*1.8; this.vy=-(Math.random()*2.8+0.8);
-          this.r=Math.random()*5+2; this.dc=.018+Math.random()*.012;
-          this.pal=['255,80,20','255,50,5','255,175,30','255,130,10']; break;
-        case 'smoke':
-          this.vx=(Math.random()-.5)*.7; this.vy=-(Math.random()*1+.25);
-          this.r=Math.random()*7+3; this.dc=.007+Math.random()*.004; this.grow=.12;
-          this.pal=['155,155,155','135,135,135','175,175,175']; break;
-        case 'metal':
-          {const a=Math.random()*Math.PI*2,s=Math.random()*4.5+1;
-          this.vx=Math.cos(a)*s; this.vy=Math.sin(a)*s-2; this.grav=.12;
-          this.r=Math.random()*2+.5; this.dc=.025+Math.random()*.015;
-          this.pal=['190,182,255','170,170,255','215,205,255','255,255,255'];} break;
-        case 'wind':
-          this.vx=Math.random()*9+4; this.vy=(Math.random()-.5)*1.2;
-          this.r=1; this.len=Math.random()*24+10; this.dc=.02+Math.random()*.015;
-          this.pal=['80,200,255','110,222,255','50,180,255']; break;
-        case 'lightning':
-          {const a=Math.random()*Math.PI*2,s=Math.random()*5.5+2;
-          this.vx=Math.cos(a)*s; this.vy=Math.sin(a)*s;
-          this.r=Math.random()*2.5+.5; this.dc=.04+Math.random()*.03; this.flicker=Math.random()>.5;
-          this.pal=['255,232,60','255,255,180','255,216,100'];} break;
-        case 'water':
-          this.vx=(Math.random()-.5)*2; this.vy=-(Math.random()*2+.5); this.grav=.07;
-          this.r=Math.random()*3+1; this.dc=.015+Math.random()*.01;
-          this.pal=['90,210,160','70,180,136','140,215,190']; break;
-        case 'ice':
-          this.vx=(Math.random()-.5)*1.4; this.vy=-(Math.random()*1.5+.3);
-          this.r=Math.random()*3+1.5; this.dc=.009+Math.random()*.007;
-          this.rot=Math.random()*Math.PI*2; this.rotV=(Math.random()-.5)*.1;
-          this.pal=['144,202,255','180,222,255','212,238,255']; break;
-        case 'shadow':
-          {const a=Math.random()*Math.PI*2,s=Math.random()*2+.4;
-          this.vx=Math.cos(a)*s; this.vy=Math.sin(a)*s;
-          this.r=Math.random()*7+3; this.dc=.008+Math.random()*.007;
-          this.pal=['120,88,160','92,60,130','64,36,100'];} break;
-        default:
-          this.vx=0; this.vy=-1; this.r=2; this.dc=.02; this.pal=['200,200,200'];
-      }
-    }
-    update(){
-      this.x+=this.vx; this.y+=this.vy; this.life-=this.dc;
-      this.vy+=this.grav; this.r+=this.grow;
-      if(this.flicker&&Math.random()>.7) this.life-=.06;
-      if(this.rotV) this.rot+=this.rotV;
-    }
-    draw(cx){
-      if(this.life<=0) return;
-      const col=this.pal[Math.floor(Math.random()*this.pal.length)];
-      if(this.type==='wind'){
-        cx.globalAlpha=this.life*.55;
-        cx.beginPath(); cx.moveTo(this.x,this.y); cx.lineTo(this.x-this.len,this.y+(Math.random()-.5)*2);
-        cx.strokeStyle=`rgba(${col},${this.life})`; cx.lineWidth=.8; cx.stroke();
-      } else if(this.type==='ice'){
-        cx.globalAlpha=this.life*.8;
-        cx.save(); cx.translate(this.x,this.y); cx.rotate(this.rot);
-        cx.strokeStyle=`rgba(${col},${this.life})`; cx.lineWidth=.8;
-        for(let i=0;i<6;i++){
-          cx.beginPath(); cx.moveTo(0,0);
-          cx.lineTo(this.r*Math.cos(i*Math.PI/3),this.r*Math.sin(i*Math.PI/3));
-          cx.stroke();
-        }
-        cx.restore();
-      } else if(this.type==='smoke'||this.type==='shadow'){
-        cx.globalAlpha=this.life*(this.type==='smoke'?.14:.11);
-        cx.beginPath(); cx.arc(this.x,this.y,this.r,0,Math.PI*2);
-        cx.fillStyle=`rgb(${col})`; cx.fill();
-      } else {
-        cx.globalAlpha=this.life;
-        cx.beginPath(); cx.arc(this.x,this.y,this.r,0,Math.PI*2);
-        cx.fillStyle=`rgba(${col},${this.life})`; cx.fill();
-      }
-      cx.globalAlpha=1;
-    }
-  }
-
-  let particles=[], sources=[];
-
-  function syncSize(){
-    const w=editor.parentElement.offsetWidth, h=editor.offsetHeight;
-    if(cv.width!==w) cv.width=w;
-    if(cv.height!==h) cv.height=h;
-  }
-
-  function scanSources(){
-    sources=[];
-    const cr=cv.getBoundingClientRect();
-    editor.querySelectorAll('[data-word]').forEach(span=>{
-      const def=WORDS[span.getAttribute('data-word')];
-      if(!def) return;
-      const sr=span.getBoundingClientRect();
-      sources.push({x:sr.left-cr.left+sr.width/2, y:sr.top-cr.top+sr.height/2, t:def.t});
-    });
-  }
-
-  function getCaretOff(){
-    const sel=window.getSelection();
-    if(!sel||!sel.rangeCount) return -1;
-    const r=sel.getRangeAt(0).cloneRange();
-    const fr=document.createRange();
-    fr.selectNodeContents(editor);
-    fr.setEnd(r.startContainer,r.startOffset);
-    return fr.toString().length;
-  }
-
-  function setCaretOff(off){
-    if(off<0) return;
-    const sel=window.getSelection();
-    const r=document.createRange();
-    let chars=0,found=false;
-    (function walk(node){
-      if(found) return;
-      if(node.nodeType===3){
-        if(chars+node.length>=off){r.setStart(node,off-chars);r.collapse(true);found=true;}
-        chars+=node.length;
-      } else node.childNodes.forEach(walk);
-    })(editor);
-    if(found){sel.removeAllRanges();sel.addRange(r);}
-  }
-
-  function highlight(){
-    const off=getCaretOff();
-    const text=editor.innerText;
-    let html='',last=0,m;
-    WORD_RE.lastIndex=0;
-    while((m=WORD_RE.exec(text))!==null){
-      const def=WORDS[m[0].toLowerCase()];
-      const pre=text.slice(last,m.index).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
-      html+=pre;
-      html+=`<span data-word="${m[0].toLowerCase()}" style="color:${def.c};text-shadow:0 0 10px ${def.c}70;border-bottom:1px solid ${def.c}55;border-radius:2px">${m[0]}</span>`;
-      last=m.index+m[0].length;
-    }
-    html+=text.slice(last).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
-    editor.innerHTML=html;
-    setCaretOff(off);
-  }
-
-  let frame=0;
-
-  function spawnParticles(){
-    sources.forEach(src=>{
-      const rate=src.t==='fire'?3:src.t==='wind'?4:src.t==='lightning'?2:2;
-      for(let i=0;i<rate;i++) if(Math.random()<.55) particles.push(new Pt(src.x,src.y,src.t));
-    });
-  }
-
-  function animate(){
-    syncSize(); cx.clearRect(0,0,cv.width,cv.height); frame++;
-    if(frame%2===0) spawnParticles();
-    if(frame%10===0) scanSources();
-    if(particles.length>1400) particles=particles.slice(-1100);
-    particles=particles.filter(p=>p.life>0.02);
-    particles.forEach(p=>{p.update();p.draw(cx);});
-    requestAnimationFrame(animate);
-  }
-
-  editor.addEventListener('input',()=>{highlight();requestAnimationFrame(scanSources);});
-  window.addEventListener('scroll',scanSources,{passive:true});
-  window.addEventListener('resize',()=>{syncSize();scanSources();});
-
-  setTimeout(()=>{highlight();setTimeout(()=>{scanSources();animate();},100);},80);
-})();
-
-/* ===================== READING PROGRESS + SCROLL REVEAL ===================== */
-(function(){
-  /* progress bar */
-  const rp = document.createElement('div');
-  rp.id = 'rp';
-  document.body.appendChild(rp);
-  window.addEventListener('scroll', () => {
-    const max = document.documentElement.scrollHeight - window.innerHeight;
-    if(max > 0) rp.style.width = (window.scrollY / max * 100) + '%';
-  }, {passive:true});
-
-  function makeReveal(el, delay){
-    if(!el || el.closest('.hero')) return;
-    el.classList.add('sr');
-    if(delay) el.style.setProperty('--sd', delay + 'ms');
-    const obs = new IntersectionObserver(e => {
-      if(e[0].isIntersecting){ el.classList.add('in'); obs.disconnect(); }
-    }, {threshold: 0.08, rootMargin: '0px 0px -30px 0px'});
-    obs.observe(el);
-  }
-
-  setTimeout(() => {
-    /* single block reveals */
-    document.querySelectorAll('.sec-head, .hero-sub, .jsonview, .cmd-row, .particle-editor, .yesno-block').forEach(el => makeReveal(el));
-
-    /* stagger: tbl rows, filelist rows, diff rows */
-    document.querySelectorAll('.tbl, .filelist, .diff').forEach(parent => {
-      if(parent.closest('.hero')) return;
-      const kids = Array.from(parent.children);
-      kids.forEach((kid, i) => {
-        kid.classList.add('sr');
-        kid.style.setProperty('--sd', i * 75 + 'ms');
-      });
-      const obs = new IntersectionObserver(e => {
-        if(e[0].isIntersecting){ kids.forEach(k => k.classList.add('in')); obs.disconnect(); }
-      }, {threshold: 0.04, rootMargin: '0px 0px -20px 0px'});
-      obs.observe(parent);
-    });
-
-    /* stagger: roadmap log-rows */
-    const logGroups = new Map();
-    document.querySelectorAll('.log-row').forEach(r => {
-      const p = r.parentElement;
-      if(!logGroups.has(p)) logGroups.set(p, []);
-      logGroups.get(p).push(r);
-    });
-    logGroups.forEach((rows, parent) => {
-      rows.forEach((r, i) => { r.classList.add('sr'); r.style.setProperty('--sd', i * 85 + 'ms'); });
-      const obs = new IntersectionObserver(e => {
-        if(e[0].isIntersecting){ rows.forEach(r => r.classList.add('in')); obs.disconnect(); }
-      }, {threshold: 0.04, rootMargin: '0px 0px -20px 0px'});
-      obs.observe(parent);
-    });
-  }, 300);
-})();
-
-/* ===================== back to top ===================== */
-const backTop = document.getElementById('backTop');
-window.addEventListener('scroll', () => {
-  if(window.scrollY > 480) backTop.classList.add('show');
-  else backTop.classList.remove('show');
-}, {passive:true});
-backTop.addEventListener('click', () => gotoSection('top'));
-
-/* ====== CA copy ====== */
-document.getElementById('caBtn').addEventListener('click', function(){
-  const addr = '0x799c28BAC95B3E0B26534D1e9A586511895EcBA3';
-  navigator.clipboard.writeText(addr).then(() => {
-    this.textContent = 'copied!';
-    this.classList.add('copied');
-    setTimeout(() => { this.textContent = 'copy'; this.classList.remove('copied'); }, 2000);
-  });
+/* ca copy */
+const caBtn=document.getElementById('caBtn');
+if(caBtn)caBtn.addEventListener('click',()=>{
+  navigator.clipboard.writeText('0x799c28BAC95B3E0B26534D1e9A586511895EcBA3').catch(()=>{});
+  caBtn.textContent='copied!';caBtn.classList.add('done');
+  setTimeout(()=>{caBtn.textContent='copy';caBtn.classList.remove('done')},2000)
 });
+
+/* anchor links */
+document.querySelectorAll('a[href^="#"]').forEach(a=>a.addEventListener('click',e=>{e.preventDefault();goto(a.getAttribute('href').slice(1))}));
 </script>
 </body>
 </html>
