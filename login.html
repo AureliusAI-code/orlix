@@ -193,24 +193,6 @@ async function loginX(){
   }
 }
 
-    if(!res.ok){
-      throw new Error(data.error || data.message || data.cause || JSON.stringify(data));
-    }
-
-    const url = data.redirectUrl || data.redirect_url || data.auth_url
-              || data.url || data.oauth_url
-              || (data.data && (data.data.redirectUrl || data.data.url));
-    if(!url) throw new Error('No redirect URL in response: ' + JSON.stringify(Object.keys(data)));
-
-    location.href = url;
-
-  }catch(e){
-    showErr(e.message);
-    btn.disabled=false;
-    lbl.textContent='Continue with X';
-  }
-}
-
 // ── Handle OAuth callback (Twitter redirects back to /login?code=&state=) ────
 async function handleOAuthCallback(){
   const p     = new URLSearchParams(location.search);
