@@ -18,6 +18,7 @@
 <meta name="twitter:description" content="Personal AI Operating System">
 <meta name="twitter:image" content="https://www.orlixai.xyz/og-image.png">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.ethers.io/lib/ethers-5.7.2.umd.min.js" type="application/javascript"></script>
 <style>
 :root{
   --bg:#0a0a0a;--bg-panel:#111;--bg-input:#161616;
@@ -301,6 +302,7 @@ select.inp{cursor:pointer}
 .skill-card .sk-tag{display:inline-block;margin-top:8px;font-size:.63rem;padding:1px 6px;border-radius:3px;background:var(--amber-soft);color:var(--amber);border:1px solid rgba(255,154,82,.2)}
 
 /* ── mobile ── */
+@media(max-width:640px){.hide-mobile{display:none}}
 .menu-btn{display:none;align-items:center;justify-content:center;width:34px;height:34px;background:none;border:1px solid var(--line-bright);border-radius:5px;color:var(--text);font-size:1rem;cursor:pointer;flex-shrink:0;transition:.15s}
 .menu-btn:hover{border-color:var(--amber);color:var(--amber)}
 .sidebar-overlay{display:none;position:fixed;inset:0;z-index:80;background:rgba(0,0,0,.55)}
@@ -315,6 +317,34 @@ select.inp{cursor:pointer}
   .provider-grid{grid-template-columns:1fr}
   .chat-wrap{height:calc(100vh - 200px)}
 }
+
+/* ── wallet button (titlebar) ── */
+.wallet-btn{display:flex;align-items:center;gap:6px;padding:4px 10px;border:1px solid rgba(0,82,255,.35);background:rgba(0,82,255,.08);border-radius:5px;color:#5b9aff;font-size:.71rem;font-family:var(--mono);cursor:pointer;transition:.15s;white-space:nowrap}
+.wallet-btn:hover{background:rgba(0,82,255,.16);border-color:#5b9aff}
+.wallet-btn.connected{border-color:rgba(126,224,168,.4);background:rgba(126,224,168,.07);color:var(--green)}
+.wallet-dot{width:6px;height:6px;border-radius:50%;background:#5b9aff;flex-shrink:0}
+.wallet-btn.connected .wallet-dot{background:var(--green);box-shadow:0 0 5px var(--green)}
+
+/* ── transaction card (inline in chat) ── */
+.tx-card{background:rgba(0,82,255,.06);border:1px solid rgba(0,82,255,.28);border-radius:8px;overflow:hidden;margin:10px 0}
+.tx-card-header{display:flex;align-items:center;gap:9px;padding:10px 14px;border-bottom:1px solid rgba(0,82,255,.18);background:rgba(0,82,255,.08)}
+.tx-type-icon{width:28px;height:28px;border-radius:6px;background:rgba(0,82,255,.2);border:1px solid rgba(0,82,255,.35);display:flex;align-items:center;justify-content:center;font-size:.85rem;flex-shrink:0}
+.tx-title{color:#5b9aff;font-size:.78rem;font-weight:600;flex:1}
+.tx-badge{font-size:.63rem;padding:2px 7px;border-radius:3px;background:rgba(0,82,255,.15);color:#5b9aff;border:1px solid rgba(0,82,255,.3);letter-spacing:.06em}
+.tx-body{padding:12px 14px;display:flex;flex-direction:column;gap:7px}
+.tx-row{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.tx-label{color:var(--dim);font-size:.71rem}
+.tx-value{color:var(--bright);font-size:.75rem;font-family:var(--mono);text-align:right;max-width:60%;overflow:hidden;text-overflow:ellipsis}
+.tx-divider{height:1px;background:rgba(0,82,255,.12);margin:3px 0}
+.tx-actions{display:flex;gap:8px;padding:10px 14px;border-top:1px solid rgba(0,82,255,.15)}
+.tx-sign-btn{flex:1;padding:9px 14px;background:rgba(0,82,255,.15);border:1px solid rgba(0,82,255,.4);border-radius:6px;color:#5b9aff;font-family:var(--mono);font-size:.78rem;font-weight:600;cursor:pointer;transition:.15s}
+.tx-sign-btn:hover{background:rgba(0,82,255,.28);border-color:#5b9aff;color:#fff}
+.tx-sign-btn:disabled{opacity:.5;cursor:default}
+.tx-sign-btn.success{background:rgba(126,224,168,.1);border-color:rgba(126,224,168,.4);color:var(--green)}
+.tx-sign-btn.error{background:rgba(255,60,60,.08);border-color:rgba(255,60,60,.3);color:var(--red)}
+.tx-reject-btn{padding:9px 12px;border:1px solid var(--line-bright);border-radius:6px;color:var(--dim);font-family:var(--mono);font-size:.78rem;cursor:pointer;background:none;transition:.15s}
+.tx-reject-btn:hover{border-color:var(--red);color:var(--red)}
+.tx-warn{display:flex;align-items:center;gap:6px;padding:7px 14px;background:rgba(255,154,82,.06);border-top:1px solid rgba(255,154,82,.15);font-size:.7rem;color:var(--amber)}
 
 /* ── quality rater ── */
 .quality-rater{padding:6px 16px;display:flex;align-items:center;gap:8px;border-top:1px solid var(--line)}
@@ -410,10 +440,12 @@ body::before{
       <span class="tb-title">dashboard</span>
     </div>
     <div class="tb-right">
-      <span class="status-dot"></span>
-      <span style="color:var(--green);font-size:.74rem">online</span>
-      <a href="/gallery" style="color:var(--violet)">gallery</a>
-      <a href="/">← home</a>
+      <button class="wallet-btn" id="walletBtn" onclick="toggleWallet()">
+        <span class="wallet-dot"></span>
+        <span id="walletLabel">Connect Wallet</span>
+      </button>
+      <a href="/gallery" style="color:var(--violet)" class="hide-mobile">gallery</a>
+      <a href="/" class="hide-mobile">← home</a>
     </div>
   </div>
 </div>
@@ -1520,6 +1552,17 @@ function renderContent(text){
     _codeStore[id] = code;
 
     const label = lang || 'code';
+
+    // ── Transaction block: render as approval card, not code ──
+    if(/^transaction$/i.test(lang)){
+      try{
+        const tx = JSON.parse(code);
+        _codeStore[id] = code;
+        result += renderTxCard(id, tx);
+        continue;
+      }catch{}
+    }
+
     if(isHtmlContent(lang, code)) lastHtmlId = id;
 
     result += `<div class="code-block">
@@ -1619,11 +1662,18 @@ document.addEventListener('click', function(e){
   const rateBtn    = e.target.closest('[data-rate]');
   const shareBtn   = e.target.closest('[data-share]');
   const publishBtn = e.target.closest('[data-publish]');
+  const txSignBtn  = e.target.closest('[data-tx-id]');
+  const txReject   = e.target.closest('[data-tx-reject]');
   if(copyBtn)    copyCode(copyBtn.dataset.copy);
   if(previewBtn) openPreview(previewBtn.dataset.preview);
   if(rateBtn)    rateRun(rateBtn.dataset.runId, +rateBtn.dataset.rate, rateBtn.parentElement);
   if(shareBtn)   shareOnX(shareBtn.dataset.share);
   if(publishBtn) publishBuild(publishBtn, publishBtn.dataset.publish);
+  if(txSignBtn)  signTransaction(txSignBtn.dataset.txId);
+  if(txReject){
+    const card = document.getElementById('txcard-'+txReject.dataset.txReject);
+    if(card){ card.style.opacity='.4'; card.style.pointerEvents='none'; }
+  }
 });
 
 // ───────── RUN LOGGING & QUALITY RATING ─────────
@@ -1784,6 +1834,154 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
+// ───────── BASE ONCHAIN — WALLET & TRANSACTIONS ─────────
+const BASE_CHAIN_ID   = 8453;
+const BASE_CHAIN_HEX  = '0x2105';
+const BASE_RPC        = 'https://mainnet.base.org';
+const BASESCAN        = 'https://basescan.org/tx/';
+
+let _walletProvider = null;
+let _walletSigner   = null;
+let _walletAddress  = null;
+
+async function toggleWallet(){
+  if(_walletAddress){ disconnectWallet(); return; }
+  await connectWallet();
+}
+
+async function connectWallet(){
+  if(!window.ethereum){
+    alert('No wallet detected.\nInstall MetaMask or Coinbase Wallet to use onchain features.');
+    return;
+  }
+  try{
+    _walletProvider = new ethers.providers.Web3Provider(window.ethereum,'any');
+    await _walletProvider.send('eth_requestAccounts',[]);
+    // Switch to Base
+    try{
+      await window.ethereum.request({method:'wallet_switchEthereumChain',params:[{chainId:BASE_CHAIN_HEX}]});
+    }catch(e){
+      if(e.code===4902){
+        await window.ethereum.request({method:'wallet_addEthereumChain',params:[{
+          chainId:BASE_CHAIN_HEX,chainName:'Base',
+          nativeCurrency:{name:'Ethereum',symbol:'ETH',decimals:18},
+          rpcUrls:[BASE_RPC],blockExplorerUrls:['https://basescan.org']
+        }]});
+        await window.ethereum.request({method:'wallet_switchEthereumChain',params:[{chainId:BASE_CHAIN_HEX}]});
+      }
+    }
+    _walletProvider = new ethers.providers.Web3Provider(window.ethereum,'any');
+    _walletSigner   = _walletProvider.getSigner();
+    _walletAddress  = await _walletSigner.getAddress();
+    updateWalletUI();
+    logAudit('action','User','connected wallet: '+shortAddr(_walletAddress));
+  }catch(e){
+    if(e.code!==4001) alert('Wallet error: '+e.message);
+  }
+}
+
+function disconnectWallet(){
+  _walletProvider=null; _walletSigner=null; _walletAddress=null;
+  updateWalletUI();
+}
+
+function shortAddr(addr){ return addr?addr.slice(0,6)+'…'+addr.slice(-4):''; }
+
+function updateWalletUI(){
+  const btn=document.getElementById('walletBtn');
+  const lbl=document.getElementById('walletLabel');
+  if(_walletAddress){
+    btn.classList.add('connected');
+    lbl.textContent = shortAddr(_walletAddress);
+  } else {
+    btn.classList.remove('connected');
+    lbl.textContent = 'Connect Wallet';
+  }
+}
+
+// Listen for account/chain changes
+if(window.ethereum){
+  window.ethereum.on('accountsChanged', accs => { if(!accs.length) disconnectWallet(); });
+  window.ethereum.on('chainChanged', ()=> window.location.reload());
+}
+
+// ── Render transaction approval card ──
+const TX_ICONS = {transfer:'↗',swap:'⇄',approve:'✓',lend:'⬆',borrow:'⬇',repay:'↩',withdraw:'⬇'};
+const TX_LABELS = {transfer:'Transfer',swap:'Swap',approve:'Token Approval',lend:'Supply / Lend',borrow:'Borrow',repay:'Repay',withdraw:'Withdraw'};
+
+function renderTxCard(id, tx){
+  const typeKey = (tx.type||'transfer').toLowerCase();
+  const icon    = TX_ICONS[typeKey]  || '◈';
+  const label   = TX_LABELS[typeKey] || tx.type || 'Transaction';
+  const ethVal  = tx.value ? ethers.utils.formatEther(ethers.BigNumber.from(tx.value)) : '0';
+  const gasEst  = tx.gasLimit ? parseInt(tx.gasLimit).toLocaleString()+' gas' : 'auto';
+
+  const rows = [];
+  if(tx.description) rows.push(['Action', tx.description]);
+  if(tx.to) rows.push(['To', shortAddr(tx.to)+'  <span style="color:var(--dim);font-size:.67rem">'+tx.to+'</span>']);
+  if(tx.value && tx.value!=='0') rows.push(['Value', ethVal+' ETH']);
+  if(tx.tokenSymbol && tx.tokenAmount) rows.push(['Amount', tx.tokenAmount+' '+tx.tokenSymbol]);
+  if(tx.protocol) rows.push(['Protocol', tx.protocol]);
+  rows.push(['Network', 'Base Mainnet']);
+  rows.push(['Gas', gasEst]);
+
+  return `<div class="tx-card" id="txcard-${id}">
+    <div class="tx-card-header">
+      <div class="tx-type-icon" style="color:#5b9aff">${icon}</div>
+      <div class="tx-title">${esc2(label)}</div>
+      <span class="tx-badge">BASE</span>
+    </div>
+    <div class="tx-body">
+      ${rows.map(([k,v])=>`<div class="tx-row"><span class="tx-label">${k}</span><span class="tx-value">${v}</span></div>`).join('')}
+    </div>
+    <div class="tx-warn">⚠ Review all details carefully before signing. Blockchain transactions are irreversible.</div>
+    <div class="tx-actions">
+      <button class="tx-sign-btn" id="txsign-${id}" data-tx-id="${id}">⬡ Sign &amp; Execute on Base</button>
+      <button class="tx-reject-btn" data-tx-reject="${id}">Reject</button>
+    </div>
+  </div>`;
+}
+
+async function signTransaction(id){
+  const btn = document.getElementById('txsign-'+id);
+  if(!btn || btn.disabled) return;
+  const raw = _codeStore[id];
+  if(!raw) return;
+  let tx;
+  try{ tx = JSON.parse(raw); }catch{ return; }
+
+  if(!_walletAddress){
+    await connectWallet();
+    if(!_walletAddress) return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = '⏳ Waiting for signature…';
+
+  try{
+    const txReq = { to: tx.to, chainId: BASE_CHAIN_ID };
+    if(tx.value && tx.value!=='0') txReq.value = ethers.BigNumber.from(tx.value);
+    if(tx.data) txReq.data = tx.data;
+    if(tx.gasLimit) txReq.gasLimit = ethers.BigNumber.from(tx.gasLimit);
+
+    const result = await _walletSigner.sendTransaction(txReq);
+    btn.classList.add('success');
+    btn.textContent = '✓ Submitted — '+shortAddr(result.hash);
+    btn.onclick = ()=> window.open(BASESCAN+result.hash,'_blank');
+    logAudit('action','Orlix','tx submitted on Base: '+result.hash);
+    addMsg('assistant','Transaction submitted to Base ✓\n\nHash: `'+result.hash+'`\n\nView on Basescan: '+BASESCAN+result.hash);
+  }catch(e){
+    btn.disabled = false;
+    if(e.code===4001){
+      btn.textContent = '⬡ Sign & Execute on Base';
+    } else {
+      btn.classList.add('error');
+      btn.textContent = '✕ Failed: '+e.message.slice(0,60);
+      setTimeout(()=>{ btn.classList.remove('error'); btn.textContent='⬡ Sign & Execute on Base'; btn.disabled=false; }, 4000);
+    }
+  }
+}
+
 // ───────── GALLERY & LEADERBOARD ─────────
 function getGalleryBuilds(){
   try{ return JSON.parse(localStorage.getItem('orlix_gallery')||'[]'); }
@@ -1921,7 +2119,29 @@ When asked to build/make/create any app, website, game, tool, or UI:
 - Wrap it in \`\`\`html ... \`\`\` fences.
 - Everything inline — CSS in <style>, JS in <script>. No external files.
 - Do not truncate. Do not say "here's a start" or "partial code". Full code only.
-- After the code block you may add 1-2 lines of explanation max.`;
+- After the code block you may add 1-2 lines of explanation max.
+
+## Base Onchain Transactions
+When the user wants to transfer, swap, lend, borrow, or do anything onchain on Base:
+1. Use base_get_eth_balance to check balance first. Use base_get_gas_price for gas.
+2. Gather: recipient address, amount, token (if not ETH), protocol (for DeFi).
+3. Prepare the transaction and output it in this EXACT format:
+\`\`\`transaction
+{
+  "type": "transfer",
+  "description": "Send 0.01 ETH to 0x1234…",
+  "to": "0xRECIPIENT_ADDRESS",
+  "value": "10000000000000000",
+  "data": "0x",
+  "gasLimit": "21000",
+  "chainId": 8453
+}
+\`\`\`
+Type values: "transfer" | "swap" | "lend" | "borrow" | "repay" | "withdraw" | "approve"
+For ERC-20 transfers or DeFi, also include: "tokenSymbol", "tokenAmount", "protocol", "tokenAddress"
+value field must be in wei (ETH×10^18). data field for contract calls (0x for plain ETH transfer).
+4. After the transaction block, explain in 1-2 sentences what will happen.
+NEVER make up addresses. If you don't have the recipient address, ask for it.`;
 
 
 </script>
