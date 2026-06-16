@@ -93,7 +93,7 @@ module.exports = async function handler(req, res) {
         method: 'POST',
         // Privy requires Origin as an HTTP header, not in the body
         headers: privyHeaders(SECRET, { 'Origin': APP_ORIGIN }),
-        body: JSON.stringify({ provider, redirect_uri: redirectTo }),
+        body: JSON.stringify({ provider, redirect_to: redirectTo }),
       });
       const data = await r.json();
       if (!r.ok) {
