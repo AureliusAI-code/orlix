@@ -1870,15 +1870,47 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ───────── AUTH HELPERS ─────────
+function hh(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
 function initAuth(){
   try {
-    const user  = JSON.parse(localStorage.getItem('orlix_user') || '{}');
-    const label = user.display || '';
-    const disp  = document.getElementById('userDisplay');
-    const line  = document.getElementById('sbUserLine');
-    if (label) {
-      if (disp){ disp.textContent = label; disp.style.display = ''; }
-      if (line){ line.textContent = 'signed in as ' + label; line.style.display = ''; }
+    const user    = JSON.parse(localStorage.getItem('orlix_user') || '{}');
+    const label   = user.display || '';
+    const avatar  = user.avatar  || '';
+    const type    = user.type    || '';
+    const address = user.address || '';
+
+    // Titlebar: avatar + label
+    const disp = document.getElementById('userDisplay');
+    if (disp && label) {
+      if (avatar) {
+        disp.innerHTML = `<img src="${hh(avatar)}" style="width:22px;height:22px;border-radius:50%;object-fit:cover;vertical-align:middle;margin-right:5px" onerror="this.style.display='none'">${hh(label)}`;
+      } else {
+        disp.textContent = label;
+      }
+      disp.style.display = '';
+    }
+
+    // Sidebar profile card
+    const line = document.getElementById('sbUserLine');
+    if (line && label) {
+      let iconHtml;
+      if (avatar && type === 'twitter') {
+        iconHtml = `<img src="${hh(avatar)}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;flex-shrink:0" onerror="this.style.display='none'">`;
+      } else if (type === 'wallet') {
+        iconHtml = `<div style="width:32px;height:32px;border-radius:50%;background:rgba(185,164,255,.12);border:1px solid rgba(185,164,255,.25);display:flex;align-items:center;justify-content:center;font-size:.9rem;flex-shrink:0">⬡</div>`;
+      } else {
+        iconHtml = `<div style="width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;font-size:.75rem;flex-shrink:0;color:var(--dim)">◈</div>`;
+      }
+      const subLabel = type === 'twitter' ? 'via X / Twitter' : type === 'wallet' ? 'wallet' : '';
+      line.innerHTML = `<div style="display:flex;align-items:center;gap:9px;padding:8px 0 5px">${iconHtml}<div style="min-width:0"><div style="color:var(--bright);font-size:.77rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${hh(label)}</div><div style="color:var(--dim);font-size:.66rem" id="sbWalletLine">${hh(subLabel)}</div></div></div>`;
+      line.style.display = '';
+    }
+
+    // Auto-populate wallet state if user logged in via wallet
+    if (type === 'wallet' && address && !_walletAddress) {
+      _walletAddress = address;
+      updateWalletUI();
     }
   } catch(e){}
 }
@@ -1951,6 +1983,20 @@ function updateWalletUI(){
   } else {
     btn.classList.remove('connected');
     lbl.textContent = 'Connect Wallet';
+  }
+  // Keep sidebar profile wallet line in sync
+  const wl = document.getElementById('sbWalletLine');
+  if (wl) {
+    try {
+      const type = (JSON.parse(localStorage.getItem('orlix_user')||'{}').type)||'';
+      if (_walletAddress && type !== 'wallet') {
+        wl.innerHTML = 'X · <span style="color:var(--violet)">' + shortAddr(_walletAddress) + '</span>';
+      } else if (type === 'wallet') {
+        wl.textContent = 'wallet';
+      } else {
+        wl.textContent = type === 'twitter' ? 'via X / Twitter' : '';
+      }
+    } catch(e){}
   }
 }
 
