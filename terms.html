@@ -17,68 +17,79 @@
 <meta name="twitter:title" content="Orlix AI">
 <meta name="twitter:description" content="Personal AI Operating System">
 <meta name="twitter:image" content="https://www.orlixai.xyz/og-image.png">
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-:root{
-  --bg:#0d0a08;
-  --bg-panel:#15100c;
-  --bg-input:#1b1411;
-  --line:#2c2218;
-  --line-bright:#42301f;
-  --text:#d8cfc4;
-  --bright:#fbf3ea;
-  --dim:#8a7a6c;
-  --dim-2:#5c4f44;
-  --amber:#ff9a52;
-  --amber-soft:rgba(255,154,82,.12);
-  --violet:#b9a4ff;
-  --violet-soft:rgba(185,164,255,.12);
-  --red:#ff6b6b;
-  --green:#7ee0a8;
-  --mono:'JetBrains Mono',monospace;
+:root {
+  --bg: #0a0a0a;
+  --bg-card: #111;
+  --bg-code: #0d0d0d;
+  --border: rgba(255,255,255,0.09);
+  --border-b: rgba(255,255,255,0.16);
+  --text: #c0b8b0;
+  --bright: #f0ebe3;
+  --dim: #665e58;
+  --amber: #ff9a52;
+  --amber-s: rgba(255,154,82,0.1);
+  --violet: #b9a4ff;
+  --violet-s: rgba(185,164,255,0.1);
+  --green: #7ee0a8;
+  --green-s: rgba(126,224,168,0.1);
+  --red: #e03030;
+  --mono: 'JetBrains Mono', monospace;
+  --display: 'Space Grotesk', sans-serif;
 }
-*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{background:var(--bg);color:var(--text)}
-body{font-family:var(--mono);font-size:14px;line-height:1.65;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{scroll-behavior:smooth}
+body{
+  background:var(--bg);
+  background-image:
+    linear-gradient(rgba(255,255,255,0.026) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,255,255,0.026) 1px,transparent 1px);
+  background-size:44px 44px;
+  color:var(--text);
+  font-family:var(--mono);
+  font-size:14px;
+  line-height:1.7;
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
 ::selection{background:var(--amber);color:#1a0f06}
-a{color:var(--violet);text-decoration:none;border-bottom:1px dotted rgba(185,164,255,.4)}
-a:hover{color:var(--bright);border-bottom-color:var(--bright)}
-.wrap{max-width:880px;margin:0 auto;padding:0 20px}
-button{font-family:var(--mono);cursor:pointer}
+a{color:var(--violet);text-decoration:none}
+a:hover{color:var(--bright)}
+button{font-family:var(--mono);cursor:pointer;border:none;background:none}
+.wrap{max-width:880px;margin:0 auto;padding:0 22px}
+::-webkit-scrollbar{width:3px;height:3px}
+::-webkit-scrollbar-thumb{background:var(--border-b);border-radius:2px}
 
-.crt{position:fixed;inset:0;pointer-events:none;z-index:50;mix-blend-mode:overlay;opacity:.4}
-.crt::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(to bottom,rgba(255,255,255,.022) 0px,rgba(255,255,255,.022) 1px,transparent 1px,transparent 3px)}
-.vignette{position:fixed;inset:0;pointer-events:none;z-index:49;background:radial-gradient(ellipse 85% 70% at 50% 25%,transparent 45%,rgba(0,0,0,.6) 100%)}
+/* ── NAV ── */
+.nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(10,10,10,.92);backdrop-filter:blur(14px);border-bottom:1px solid var(--border);height:52px}
+.nav-in{display:flex;align-items:center;height:52px;justify-content:space-between}
+.nav-brand{display:flex;align-items:center;gap:7px;font-family:var(--mono);font-weight:600;font-size:.8rem;letter-spacing:.14em;color:var(--bright);text-transform:uppercase}
+.nav-dot{color:var(--red);font-size:.45rem;line-height:1}
+.nav-r{display:flex;align-items:center}
+.nav-link{display:flex;align-items:center;padding:0 14px;height:52px;font-size:.74rem;color:var(--dim);border-left:1px solid var(--border);letter-spacing:.04em;transition:color .15s}
+.nav-link:hover{color:var(--text)}
+.nav-icon{display:flex;align-items:center;justify-content:center;padding:0 14px;height:52px;border-left:1px solid var(--border);color:var(--dim);transition:color .15s}
+.nav-icon:hover{color:var(--text)}
+.nav-icon svg{width:15px;height:15px;fill:currentColor;display:block}
+.nav-cta{display:flex;align-items:center;padding:0 20px;height:52px;background:var(--bright);color:#0a0a0a !important;font-family:var(--mono);font-weight:600;font-size:.76rem;letter-spacing:.08em;border-left:1px solid var(--border);transition:background .15s}
+.nav-cta:hover{background:var(--amber)}
+@media(max-width:620px){.hide-sm{display:none}}
 
-.titlebar{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(13,10,8,.88);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
-.titlebar-in{display:flex;align-items:center;justify-content:space-between;height:46px;font-size:.76rem;color:var(--dim)}
-.tb-left{display:flex;align-items:center;gap:10px;min-width:0}
-.tb-dots{display:flex;gap:5px;flex-shrink:0}
-.tb-dots span{display:inline-block;width:10px;height:10px;border-radius:50%}
-.tb-dots .r{background:var(--red)}
-.tb-dots .y{background:var(--amber)}
-.tb-dots .g{background:var(--green)}
-.tb-title{color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.tb-right{display:flex;gap:16px;align-items:center;flex-shrink:0}
-.tb-right a{border-bottom:none;color:var(--dim);font-size:.76rem}
-.tb-right a:hover{color:var(--amber)}
-.social-icon{display:flex;align-items:center;color:var(--dim);transition:.15s;line-height:1}
-.social-icon svg{width:15px;height:15px;display:block}
-.social-icon:hover{color:var(--amber)}
+main{padding-top:52px}
 
-main{padding-top:46px}
 .crumb{color:var(--dim);font-size:.76rem;padding:20px 0 8px;display:flex;flex-wrap:wrap;align-items:center;gap:0}
-.crumb .sep{color:var(--dim-2);margin:0 6px}
+.crumb .sep{color:var(--border-b);margin:0 6px}
 .crumb .root{color:var(--violet)}
 .crumb .here{color:var(--amber)}
 
-.page-header{padding:48px 0 32px;border-bottom:1px solid var(--line)}
+.page-header{padding:48px 0 32px;border-bottom:1px solid var(--border)}
 .page-header .file{color:var(--dim);font-size:.78rem;margin-bottom:8px}
 .page-header h1{font-size:1.2rem;font-weight:700;color:var(--bright);margin-bottom:10px}
 .page-header .meta{color:var(--dim);font-size:.78rem}
 .page-header .meta span{color:var(--amber)}
 
-.doc-section{padding:36px 0;border-bottom:1px solid var(--line)}
+.doc-section{padding:36px 0;border-bottom:1px solid var(--border)}
 .doc-section:last-of-type{border-bottom:none}
 .doc-section h2{font-size:.95rem;font-weight:600;color:var(--bright);margin-bottom:14px;display:flex;align-items:center;gap:8px}
 .doc-section h2 .num{color:var(--amber);font-size:.85em}
@@ -92,42 +103,43 @@ main{padding-top:46px}
 .amber-hl{color:var(--amber)}
 .dim{color:var(--dim)}
 .muted{color:var(--dim);font-size:.8rem}
-.warn-block{border:1px solid rgba(255,154,82,.3);background:var(--amber-soft);border-radius:6px;padding:14px 18px;margin:14px 0;font-size:.84rem;line-height:1.8;color:var(--text)}
+.warn-block{border:1px solid rgba(255,154,82,.3);background:var(--amber-s);border-radius:6px;padding:14px 18px;margin:14px 0;font-size:.84rem;line-height:1.8;color:var(--text)}
 .warn-block .label{color:var(--amber);font-weight:600;display:block;margin-bottom:4px}
 
-footer{padding:36px 0 60px;font-size:.78rem;color:var(--dim)}
-.foot-grid{display:flex;justify-content:space-between;flex-wrap:wrap;gap:16px}
-.foot-links{display:flex;gap:16px;flex-wrap:wrap}
-.foot-links a{border-bottom:none;color:var(--dim);font-size:.76rem}
-.foot-links a:hover{color:var(--amber)}
-.foot-echo{margin-bottom:18px;font-size:.82rem;line-height:1.8}
+/* ── FOOTER ── */
+footer{border-top:1px solid var(--border);padding:40px 0 64px;font-size:.77rem;color:var(--dim)}
+.f-echo{margin-bottom:28px;font-size:.81rem;line-height:1.92}
+.f-echo .am{color:var(--amber)}.f-echo .ok{color:var(--green)}
+.f-grid{display:flex;flex-wrap:wrap;gap:26px 44px;align-items:start}
+.f-copy{flex:1;min-width:180px;line-height:1.8}
+.f-cols{display:flex;gap:44px;flex-shrink:0}
+.f-col .col-lbl{display:block;font-size:.64rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.18);margin-bottom:12px}
+.f-col a{display:block;color:var(--dim);padding:3px 0;font-size:.75rem;transition:color .15s}
+.f-col a:hover{color:var(--amber)}
+@media(max-width:460px){.f-copy{min-width:100%}.f-cols{gap:28px}}
 
 @media(max-width:480px){body{font-size:13px}.page-header{padding:36px 0 24px}}
 </style>
 </head>
 <body>
 
-<div class="crt"></div>
-<div class="vignette"></div>
-
-<div class="titlebar">
-  <div class="wrap titlebar-in">
-    <div class="tb-left">
-      <span class="tb-dots"><span class="r"></span><span class="y"></span><span class="g"></span></span>
-      <span class="tb-title">orlix — /usr/local/bin/orlix</span>
-    </div>
-    <div class="tb-right">
-      <a href="https://github.com/tylerbroqs" class="social-icon" target="_blank" rel="noopener" aria-label="GitHub">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0112 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/></svg>
+<!-- NAV -->
+<nav class="nav">
+  <div class="wrap nav-in">
+    <a href="/" class="nav-brand"><span class="nav-dot">●</span> ORLIX</a>
+    <div class="nav-r">
+      <a href="docs.html" class="nav-link hide-sm">docs</a>
+      <a href="changelog.html" class="nav-link hide-sm">changelog</a>
+      <a href="https://github.com/tylerbroqs" target="_blank" rel="noopener" class="nav-icon hide-sm" aria-label="GitHub">
+        <svg viewBox="0 0 24 24"><path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0112 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/></svg>
       </a>
-      <a href="https://x.com/orlixai" class="social-icon" target="_blank" rel="noopener" aria-label="X">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.747l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+      <a href="https://x.com/orlixai" target="_blank" rel="noopener" class="nav-icon hide-sm" aria-label="X">
+        <svg viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.747l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
       </a>
-      <a href="index.html">home</a>
-      <a href="docs.html">docs</a>
+      <a href="/app" class="nav-cta">LAUNCH APP &#x2197;</a>
     </div>
   </div>
-</div>
+</nav>
 
 <main>
 <div class="wrap">
@@ -207,18 +219,23 @@ footer{padding:36px 0 60px;font-size:.78rem;color:var(--dim)}
 
 <footer>
   <div class="wrap">
-    <div class="foot-echo">
-      <span class="amber-hl">orlix</span><span class="dim">@</span>system<span class="dim">:~$</span> echo "local-first, sovereign, auditable."
-      <br><span class="ok">local-first, sovereign, auditable.</span>
+    <div class="f-echo">
+      <span class="am">orlix</span><span style="color:var(--dim)">@system:~$</span> echo "the future of AI is not assistance &mdash; it is partnership."
+      <br><span class="ok">the future of AI is not assistance &mdash; it is partnership.</span>
     </div>
-    <div class="foot-grid">
-      <div>© 2026 Orlix — local-first, sovereign, auditable.</div>
-      <div class="foot-links">
-        <a href="index.html">home</a>
-        <a href="docs.html">docs</a>
-        <a href="changelog.html">changelog</a>
-        <a href="terms.html">terms</a>
-        <a href="privacy.html">privacy</a>
+    <div class="f-grid">
+      <div class="f-copy">&copy; 2026 Orlix<br>local-first, sovereign, auditable.</div>
+      <div class="f-cols">
+        <div class="f-col">
+          <span class="col-lbl">resources</span>
+          <a href="docs.html">docs</a>
+          <a href="changelog.html">changelog</a>
+        </div>
+        <div class="f-col">
+          <span class="col-lbl">legal</span>
+          <a href="terms.html">terms</a>
+          <a href="privacy.html">privacy</a>
+        </div>
       </div>
     </div>
   </div>
