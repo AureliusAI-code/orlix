@@ -322,7 +322,7 @@ select.inp{cursor:pointer}
 .quality-btn:hover{border-color:var(--amber);color:var(--amber)}
 
 /* ── WOW: animated grid background ── */
-body::after{
+body::before{
   content:'';
   position:fixed;
   inset:0;
@@ -331,11 +331,10 @@ body::after{
     linear-gradient(90deg, rgba(255,255,255,.028) 1px, transparent 1px);
   background-size:44px 44px;
   pointer-events:none;
-  z-index:0;
+  z-index:-1;
   animation:gridScroll 28s linear infinite;
 }
 @keyframes gridScroll{0%{background-position:0 0}100%{background-position:44px 44px}}
-.app-layout,.titlebar{position:relative;z-index:1}
 
 /* ── WOW: glowing colored stat cards ── */
 .stat-card{transition:box-shadow .25s,border-color .25s,transform .2s}
