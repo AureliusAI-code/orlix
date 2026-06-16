@@ -1243,7 +1243,7 @@ async function sendChat(){
   const typing = addTyping();
   document.getElementById('chatSendBtn').disabled = true;
   try{
-    const res  = await apiFetch(key, {model, max_tokens:4096, messages, ...extraParams});
+    const res  = await apiFetch(key, {model, max_tokens:8192, messages, ...extraParams});
     const raw  = await res.text();
     let data;
     try{ data = JSON.parse(raw); }
@@ -1390,7 +1390,31 @@ function renderContent(text){
   }
 
   const tail = text.slice(last);
-  if(tail) result += esc2(tail).replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>');
+  if(tail){
+    // Check if tail has an unclosed code fence (response was truncated mid-code)
+    const openFence = /`{3,}([\w-]*)[^\S\r\n]*\r?\n([\s\S]+)$/.exec(tail);
+    if(openFence){
+      const lang2 = openFence[1] || '';
+      const code2 = openFence[2];
+      const before2 = tail.slice(0, openFence.index);
+      if(before2) result += esc2(before2).replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>');
+      const id2 = 'c'+(++_codeIdx);
+      _codeStore[id2] = code2;
+      if(isHtmlContent(lang2, code2)) lastHtmlId = id2;
+      result += `<div class="code-block" title="⚠ Response truncated">
+        <div class="code-header">
+          <span class="code-lang">${esc2(lang2||'code')}</span>
+          <div class="code-actions">
+            <span style="color:var(--amber);font-size:.65rem">⚠ truncated</span>
+            <button class="copy-btn" data-copy="${id2}">Copy</button>
+          </div>
+        </div>
+        <pre><code>${esc2(code2)}</code></pre>
+      </div>`;
+    } else {
+      result += esc2(tail).replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>');
+    }
+  }
 
   // Fallback: AI dumped raw HTML without code fences
   if(!lastHtmlId && /<!DOCTYPE\s+html|<html[\s>]/i.test(text)){
@@ -1640,7 +1664,13 @@ Never say "I can't browse" or "I don't have real-time data." Use the tools.
 - Respond in the same language the user writes in.
 - Be direct. If the answer is 3 words, write 3 words.
 - Show conclusions, not process narration.
-- When building apps: output one complete self-contained HTML file in a triple-backtick html block. All CSS and JS inline.`;
+## Building Apps
+When asked to build/make/create any app, website, game, tool, or UI:
+- Output the COMPLETE, working code immediately. Do NOT ask for clarification first.
+- Wrap it in \`\`\`html ... \`\`\` fences.
+- Everything inline — CSS in <style>, JS in <script>. No external files.
+- Do not truncate. Do not say "here's a start" or "partial code". Full code only.
+- After the code block you may add 1-2 lines of explanation max.`;
 
 
 </script>
