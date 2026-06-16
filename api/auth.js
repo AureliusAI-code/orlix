@@ -94,6 +94,7 @@ module.exports = async function handler(req, res) {
           type: 'oauth',
           provider,
           redirect_uri: redirectUri || `${origin}/api/auth?action=oauth-callback`,
+          origin,
         }),
       });
       const data = await r.json();

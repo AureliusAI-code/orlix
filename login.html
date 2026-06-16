@@ -170,6 +170,13 @@ body::after{
     <span id="walletLabel">Connect Wallet</span>
   </button>
 
+  <div id="mobileWalletHint" style="display:none;margin-top:10px;background:rgba(185,164,255,.08);border:1px solid rgba(185,164,255,.2);border-radius:8px;padding:12px 14px;font-size:.73rem;line-height:1.6;color:var(--dim)">
+    Open this page inside your wallet's browser:<br>
+    <a href="" id="mmLink" style="color:var(--violet);font-weight:600">⬡ Open in MetaMask</a>
+    &nbsp;·&nbsp;
+    <a href="" id="cbLink" style="color:var(--violet);font-weight:600">⬡ Coinbase Wallet</a>
+  </div>
+
   <div class="wallet-steps" id="walletSteps">
     <div class="wstep" id="ws1"><div class="ws-dot"></div><span>Connect MetaMask</span></div>
     <div class="wstep" id="ws2"><div class="ws-dot"></div><span>Sign message</span></div>
@@ -244,7 +251,18 @@ async function loginWithWallet(){
   const steps = document.getElementById('walletSteps');
 
   if (!window.ethereum) {
-    showError('No wallet detected. Install MetaMask or Coinbase Wallet to continue.');
+    // On mobile: show deep links to open inside wallet browser
+    const pageUrl = encodeURIComponent(location.href);
+    const hint = document.getElementById('mobileWalletHint');
+    const mm   = document.getElementById('mmLink');
+    const cb   = document.getElementById('cbLink');
+    if (hint && mm && cb) {
+      mm.href = `https://metamask.app.link/dapp/${location.host}${location.pathname}`;
+      cb.href = `https://go.cb-w.com/dapp?cb_url=${pageUrl}`;
+      hint.style.display = '';
+    } else {
+      showError('No wallet detected. Install MetaMask or Coinbase Wallet, then open this page inside the wallet\'s browser.');
+    }
     return;
   }
 
