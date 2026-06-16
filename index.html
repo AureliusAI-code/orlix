@@ -214,6 +214,30 @@ section{padding:56px 0}
 .a-result{margin-top:12px;font-size:.81rem;line-height:1.72}
 .a-result.ok{color:var(--green)}.a-result.bad{color:var(--red)}.a-result.dim{color:var(--dim)}
 
+/* ── BASE MCP ── */
+.base-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(0,82,255,.1);border:1px solid rgba(0,82,255,.28);border-radius:3px;padding:3px 10px;font-size:.69rem;color:#5b9aff;letter-spacing:.08em;margin-bottom:16px}
+.base-glow{background:linear-gradient(135deg,rgba(0,82,255,.07) 0%,rgba(185,164,255,.04) 100%);border:1px solid rgba(0,82,255,.18);border-radius:5px;padding:26px 22px;position:relative;overflow:hidden;margin-bottom:22px}
+.base-glow::before{content:'';position:absolute;top:-40px;right:-40px;width:220px;height:220px;background:radial-gradient(circle,rgba(0,82,255,.18) 0%,transparent 65%);pointer-events:none}
+.base-flow{display:flex;align-items:stretch;gap:3px;margin:22px 0;flex-wrap:wrap}
+.bstep{flex:1;min-width:90px;background:var(--bg-card);border:1px solid var(--border);border-radius:4px;padding:12px 10px;text-align:center;display:flex;flex-direction:column;gap:4px}
+.bstep.hi{border-color:rgba(0,82,255,.35);background:rgba(0,82,255,.06)}
+.bstep .sn{color:var(--dim);font-size:.63rem;letter-spacing:.1em}
+.bstep .sl{color:var(--bright);font-size:.76rem;font-weight:600}
+.bstep.hi .sl{color:#5b9aff}
+.bstep .ss{color:var(--dim);font-size:.67rem}
+.barr{color:var(--dim);align-self:center;flex-shrink:0;font-size:.9rem;padding:0 1px}
+.base-actions{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:20px 0}
+.bact{background:var(--bg-card);border:1px solid var(--border);border-radius:4px;padding:14px 15px;transition:border-color .18s}
+.bact:hover{border-color:rgba(0,82,255,.3)}
+.bact .bi{font-size:1.1rem;margin-bottom:7px;display:block}
+.bact .bn{color:var(--bright);font-size:.8rem;font-weight:600;margin-bottom:3px}
+.bact .bd{color:var(--dim);font-size:.71rem;line-height:1.55}
+.proto-row{display:flex;flex-wrap:wrap;gap:7px;margin-top:14px}
+.proto{border:1px solid var(--border);border-radius:3px;padding:4px 10px;font-size:.7rem;color:var(--dim);transition:.15s}
+.proto:hover{border-color:rgba(0,82,255,.4);color:#5b9aff}
+.approve-note{display:flex;align-items:flex-start;gap:10px;padding:13px 15px;background:rgba(126,224,168,.05);border:1px solid rgba(126,224,168,.15);border-radius:4px;font-size:.78rem;color:var(--text);margin-top:20px;line-height:1.65}
+@media(max-width:500px){.base-actions{grid-template-columns:1fr}.base-flow{gap:2px}.bstep{min-width:70px;padding:9px 6px}}
+
 /* ── FOOTER ── */
 footer{border-top:1px solid var(--border);padding:40px 0 64px;font-size:.77rem;color:var(--dim)}
 .f-echo{margin-bottom:28px;font-size:.81rem;line-height:1.92}
@@ -475,10 +499,95 @@ footer{border-top:1px solid var(--border);padding:40px 0 64px;font-size:.77rem;c
   </div>
 </section>
 
-<!-- 05 ROADMAP -->
+<!-- 05 BASE MCP -->
+<section id="base">
+  <div class="sec-bar">
+    <span>// BASE_MCP &middot; 05</span>
+    <span class="sep">&mdash;</span>
+    <span class="pill" style="border-color:#0052ff;color:#5b9aff;background:rgba(0,82,255,.08)">ONCHAIN</span>
+  </div>
+  <div class="sec-num">05</div>
+  <h2 class="sec-title">Agents that act <span style="color:#5b9aff">onchain.</span></h2>
+  <p class="sec-sub">Base MCP scales what Orlix agents can achieve on Base. Prepare transfers, swaps, lending, and borrowing across top apps — every transaction approved by you.</p>
+
+  <div class="base-glow">
+    <div class="base-badge">⬡ POWERED BY BASE</div>
+    <div style="font-family:var(--display);font-size:clamp(1.25rem,3.5vw,1.85rem);font-weight:700;color:var(--bright);line-height:1.22;margin-bottom:10px">Bringing the ecosystem<br>into the agentic economy.</div>
+    <p style="color:var(--text);font-size:.83rem;max-width:46ch;line-height:1.82">Your Orlix agent navigates DeFi on your behalf — researches protocols, prepares transactions, and simulates outcomes. You see exactly what will happen before anything executes onchain.</p>
+  </div>
+
+  <div class="base-flow">
+    <div class="bstep">
+      <span class="sn">01</span>
+      <span class="sl">Agent Prepares</span>
+      <span class="ss">researches + builds tx</span>
+    </div>
+    <div class="barr">→</div>
+    <div class="bstep">
+      <span class="sn">02</span>
+      <span class="sl">You Review</span>
+      <span class="ss">full details shown</span>
+    </div>
+    <div class="barr">→</div>
+    <div class="bstep">
+      <span class="sn">03</span>
+      <span class="sl">You Approve</span>
+      <span class="ss">one-click confirm</span>
+    </div>
+    <div class="barr">→</div>
+    <div class="bstep hi">
+      <span class="sn">04</span>
+      <span class="sl">Executes</span>
+      <span class="ss">onchain, verified</span>
+    </div>
+  </div>
+
+  <div class="base-actions">
+    <div class="bact">
+      <span class="bi">↗</span>
+      <div class="bn">Transfers</div>
+      <div class="bd">Send ETH or ERC-20 tokens to any address. Agent handles gas estimation automatically.</div>
+    </div>
+    <div class="bact">
+      <span class="bi">⇄</span>
+      <div class="bn">Swaps</div>
+      <div class="bd">Token swaps across top Base DEXs. Agent finds best routes and optimal slippage.</div>
+    </div>
+    <div class="bact">
+      <span class="bi">⬆</span>
+      <div class="bn">Lending</div>
+      <div class="bd">Supply assets to lending protocols. Monitor APY and health factor in real time.</div>
+    </div>
+    <div class="bact">
+      <span class="bi">⬇</span>
+      <div class="bn">Borrowing</div>
+      <div class="bd">Borrow against your collateral. Get alerted before positions approach liquidation.</div>
+    </div>
+  </div>
+
+  <div style="color:var(--dim);font-size:.73rem;letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px">Top apps on Base</div>
+  <div class="proto-row">
+    <span class="proto">Uniswap v3</span>
+    <span class="proto">Aerodrome</span>
+    <span class="proto">Aave v3</span>
+    <span class="proto">Moonwell</span>
+    <span class="proto">Compound</span>
+    <span class="proto">BaseSwap</span>
+    <span class="proto">Extra Finance</span>
+    <span class="proto">Seamless</span>
+    <span class="proto">+ more</span>
+  </div>
+
+  <div class="approve-note">
+    <span style="font-size:1.1rem;flex-shrink:0">🔐</span>
+    <span><strong style="color:var(--bright)">Every transaction is approved by you.</strong> Orlix never executes onchain actions without your explicit confirmation. Your keys, your rules — the agent only prepares, you decide.</span>
+  </div>
+</section>
+
+<!-- 06 ROADMAP -->
 <section id="roadmap">
   <div class="sec-bar">
-    <span>// ROADMAP &middot; 05</span>
+    <span>// ROADMAP &middot; 06</span>
     <span class="sep">&mdash;</span>
     <span>git log --oneline --graph</span>
   </div>
@@ -495,10 +604,10 @@ footer{border-top:1px solid var(--border);padding:40px 0 64px;font-size:.77rem;c
   </div>
 </section>
 
-<!-- 06 ACCESS -->
+<!-- 07 ACCESS -->
 <section id="access">
   <div class="sec-bar">
-    <span>// EARLY_ACCESS &middot; 06</span>
+    <span>// EARLY_ACCESS &middot; 07</span>
     <span class="sep">&mdash;</span>
     <span class="pill amber">LIMITED COHORT</span>
   </div>
