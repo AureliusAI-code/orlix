@@ -4,14 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Orlix AI — Sign In</title>
-<meta name="description" content="Sign in to your Orlix AI workspace">
 <link rel="icon" type="image/x-icon" href="/favicon.ico">
 <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
-<meta property="og:type" content="website">
-<meta property="og:url" content="https://www.orlixai.xyz/login">
-<meta property="og:title" content="Orlix AI — Sign In">
-<meta property="og:description" content="Personal AI Operating System">
-<meta property="og:image" content="https://www.orlixai.xyz/og-image.png">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -20,323 +14,190 @@
   --text:#c0b8b0;--bright:#f0ebe3;
   --dim:#665e58;--dim-2:rgba(255,255,255,.18);
   --amber:#ff9a52;--amber-soft:rgba(255,154,82,.1);
-  --violet:#b9a4ff;--violet-soft:rgba(185,164,255,.1);
+  --violet:#b9a4ff;
   --red:#e03030;--green:#7ee0a8;
   --mono:'JetBrains Mono',monospace;
   --display:'Space Grotesk',sans-serif;
 }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{background:var(--bg);color:var(--text);min-height:100%;height:100%}
+html,body{background:var(--bg);color:var(--text);height:100%}
 body{font-family:var(--mono);font-size:13px;line-height:1.6;-webkit-font-smoothing:antialiased;display:flex;align-items:center;justify-content:center;overflow:hidden}
-
-/* animated grid */
-body::before{
-  content:'';position:fixed;inset:0;z-index:-1;
-  background-image:
-    linear-gradient(rgba(255,154,82,.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,154,82,.03) 1px, transparent 1px);
-  background-size:36px 36px;
-  animation:gridScroll 28s linear infinite;
-}
+body::before{content:'';position:fixed;inset:0;z-index:-1;background-image:linear-gradient(rgba(255,154,82,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,154,82,.03) 1px,transparent 1px);background-size:36px 36px;animation:gridScroll 28s linear infinite}
 @keyframes gridScroll{to{background-position:36px 36px}}
+body::after{content:'';position:fixed;inset:0;z-index:-1;background:radial-gradient(ellipse 60% 50% at 50% 40%,rgba(185,164,255,.07) 0%,transparent 70%)}
 
-/* subtle radial glow */
-body::after{
-  content:'';position:fixed;inset:0;z-index:-1;
-  background:radial-gradient(ellipse 60% 50% at 50% 40%, rgba(185,164,255,.07) 0%, transparent 70%);
-}
+.card{width:100%;max-width:380px;margin:20px;background:rgba(17,17,17,.94);border:1px solid var(--line-bright);border-radius:14px;padding:40px 36px 36px;backdrop-filter:blur(20px);box-shadow:0 0 60px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.04) inset}
 
-/* card */
-.login-card{
-  width:100%;max-width:380px;
-  background:rgba(17,17,17,.92);
-  border:1px solid var(--line-bright);
-  border-radius:14px;
-  padding:40px 36px 36px;
-  backdrop-filter:blur(20px);
-  box-shadow:0 0 60px rgba(0,0,0,.6), 0 0 0 1px rgba(255,255,255,.04) inset;
-  margin:20px;
-}
-
-.brand{
-  display:flex;align-items:center;gap:8px;
-  font-family:var(--mono);font-weight:700;font-size:.85rem;
-  letter-spacing:.16em;color:var(--bright);text-transform:uppercase;
-  margin-bottom:28px;
-}
+.brand{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-weight:700;font-size:.85rem;letter-spacing:.16em;color:var(--bright);text-transform:uppercase;margin-bottom:28px}
 .brand-dot{color:var(--red);font-size:.5rem}
+.login-title{font-family:var(--display);font-size:1.4rem;font-weight:700;color:var(--bright);margin-bottom:6px}
+.login-sub{color:var(--dim);font-size:.78rem;margin-bottom:32px;line-height:1.5}
 
-.login-title{
-  font-family:var(--display);font-size:1.4rem;font-weight:700;
-  color:var(--bright);margin-bottom:6px;letter-spacing:-.01em;
-}
-.login-sub{
-  color:var(--dim);font-size:.78rem;margin-bottom:32px;line-height:1.5;
-}
+.btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:13px 18px;border-radius:8px;font-size:.82rem;font-family:var(--mono);font-weight:600;cursor:pointer;transition:.15s;border:1px solid;letter-spacing:.02em}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn-x{background:rgba(255,154,82,.12);border-color:rgba(255,154,82,.35);color:var(--amber);margin-bottom:12px}
+.btn-x:hover:not(:disabled){background:rgba(255,154,82,.2);border-color:rgba(255,154,82,.6);box-shadow:0 0 20px rgba(255,154,82,.15)}
+.btn-wallet{background:rgba(185,164,255,.1);border-color:rgba(185,164,255,.3);color:var(--violet)}
+.btn-wallet:hover:not(:disabled){background:rgba(185,164,255,.18);border-color:rgba(185,164,255,.55);box-shadow:0 0 20px rgba(185,164,255,.12)}
+
+.steps{margin-top:14px;display:none}
+.steps.show{display:block}
+.step{display:flex;align-items:center;gap:9px;padding:5px 0;font-size:.72rem;color:var(--dim)}
+.step .dot{width:6px;height:6px;border-radius:50%;background:var(--line-bright);flex-shrink:0;transition:.3s}
+.step.active .dot{background:var(--amber);box-shadow:0 0 6px var(--amber)}
+.step.active span{color:var(--amber)}
+.step.done .dot{background:var(--green)}
+
+.hint{display:none;margin-top:10px;background:rgba(185,164,255,.08);border:1px solid rgba(185,164,255,.2);border-radius:8px;padding:12px 14px;font-size:.73rem;line-height:1.7;color:var(--dim)}
+.hint a{color:var(--violet);font-weight:600}
+
+.err{display:none;margin-top:14px;background:rgba(224,48,48,.08);border:1px solid rgba(224,48,48,.3);border-radius:6px;padding:10px 13px;color:var(--red);font-size:.75rem;line-height:1.5}
+.err.show{display:block}
 
 .divider{height:1px;background:var(--line);margin:24px 0}
+.footer{text-align:center;color:var(--dim);font-size:.7rem;line-height:1.7}
+.footer a{color:var(--dim);text-decoration:underline;text-underline-offset:3px}
+.footer a:hover{color:var(--text)}
 
-.login-btn{
-  display:flex;align-items:center;justify-content:center;gap:10px;
-  width:100%;padding:13px 18px;border-radius:8px;font-size:.82rem;
-  font-family:var(--mono);font-weight:600;cursor:pointer;transition:.15s;
-  border:1px solid;text-decoration:none;letter-spacing:.02em;
-  position:relative;
-}
-.login-btn:disabled{opacity:.5;cursor:not-allowed}
-.login-btn .btn-icon{font-size:1rem;flex-shrink:0}
-
-.btn-twitter{
-  background:rgba(255,154,82,.12);
-  border-color:rgba(255,154,82,.35);
-  color:var(--amber);
-  margin-bottom:12px;
-}
-.btn-twitter:hover:not(:disabled){
-  background:rgba(255,154,82,.2);
-  border-color:rgba(255,154,82,.6);
-  box-shadow:0 0 20px rgba(255,154,82,.15);
-}
-
-.btn-wallet{
-  background:rgba(185,164,255,.1);
-  border-color:rgba(185,164,255,.3);
-  color:var(--violet);
-}
-.btn-wallet:hover:not(:disabled){
-  background:rgba(185,164,255,.18);
-  border-color:rgba(185,164,255,.55);
-  box-shadow:0 0 20px rgba(185,164,255,.12);
-}
-
-.step-info{
-  display:none;text-align:center;font-size:.73rem;
-  color:var(--dim);margin-top:10px;min-height:18px;
-}
-.step-info.visible{display:block}
-
-.error-box{
-  display:none;background:rgba(224,48,48,.08);border:1px solid rgba(224,48,48,.3);
-  border-radius:6px;padding:10px 13px;color:var(--red);font-size:.75rem;
-  margin-top:14px;line-height:1.5;
-}
-.error-box.visible{display:block}
-
-.login-footer{
-  text-align:center;color:var(--dim);font-size:.7rem;margin-top:24px;line-height:1.6;
-}
-.login-footer a{color:var(--dim);text-decoration:underline;text-underline-offset:3px}
-.login-footer a:hover{color:var(--text)}
-
-/* spinner */
 @keyframes spin{to{transform:rotate(360deg)}}
 .spin{display:inline-block;animation:spin .7s linear infinite}
-
-/* wallet step indicator */
-.wallet-steps{display:none;margin-top:14px}
-.wallet-steps.visible{display:block}
-.wstep{
-  display:flex;align-items:center;gap:9px;padding:6px 0;
-  font-size:.72rem;color:var(--dim);
-}
-.wstep .ws-dot{
-  width:6px;height:6px;border-radius:50%;
-  background:var(--line-bright);flex-shrink:0;transition:.3s;
-}
-.wstep.done .ws-dot{background:var(--green)}
-.wstep.active .ws-dot{background:var(--amber);box-shadow:0 0 6px var(--amber)}
-.wstep.done span{color:var(--dim)}
-.wstep.active span{color:var(--amber)}
 </style>
 </head>
 <body>
-
-<div class="login-card">
-  <div class="brand">
-    <span class="brand-dot">●</span>
-    ORLIX
-  </div>
-
+<div class="card">
+  <div class="brand"><span class="brand-dot">●</span>ORLIX</div>
   <div class="login-title">Sign in</div>
   <div class="login-sub">Connect to your personal AI operating system.</div>
 
-  <button class="login-btn btn-twitter" id="twitterBtn" onclick="loginWithTwitter()">
-    <span class="btn-icon">𝕏</span>
-    <span id="twitterLabel">Continue with X</span>
+  <button class="btn btn-x" id="btnX" onclick="loginX()">
+    <span>𝕏</span><span id="lblX">Continue with X</span>
   </button>
 
-  <button class="login-btn btn-wallet" id="walletBtn" onclick="loginWithWallet()">
-    <span class="btn-icon">⬡</span>
-    <span id="walletLabel">Connect Wallet</span>
+  <button class="btn btn-wallet" id="btnW" onclick="loginWallet()">
+    <span>⬡</span><span id="lblW">Connect Wallet</span>
   </button>
 
-  <div id="mobileWalletHint" style="display:none;margin-top:10px;background:rgba(185,164,255,.08);border:1px solid rgba(185,164,255,.2);border-radius:8px;padding:12px 14px;font-size:.73rem;line-height:1.6;color:var(--dim)">
-    Open this page inside your wallet's browser:<br>
-    <a href="" id="mmLink" style="color:var(--violet);font-weight:600">⬡ Open in MetaMask</a>
-    &nbsp;·&nbsp;
-    <a href="" id="cbLink" style="color:var(--violet);font-weight:600">⬡ Coinbase Wallet</a>
+  <div class="steps" id="walletSteps">
+    <div class="step" id="s1"><div class="dot"></div><span>Connect wallet</span></div>
+    <div class="step" id="s2"><div class="dot"></div><span>Sign message</span></div>
   </div>
 
-  <div class="wallet-steps" id="walletSteps">
-    <div class="wstep" id="ws1"><div class="ws-dot"></div><span>Connect MetaMask</span></div>
-    <div class="wstep" id="ws2"><div class="ws-dot"></div><span>Sign message</span></div>
-    <div class="wstep" id="ws3"><div class="ws-dot"></div><span>Verify signature</span></div>
+  <div class="hint" id="mobileHint">
+    Open this page inside your wallet browser:<br>
+    <a id="mmLink" href="#">⬡ Open in MetaMask</a> &nbsp;·&nbsp;
+    <a id="cbLink" href="#">⬡ Coinbase Wallet</a>
   </div>
 
-  <div class="error-box" id="errorBox"></div>
+  <div class="err" id="errBox"></div>
 
   <div class="divider"></div>
-  <div class="login-footer">
-    By connecting you agree to our
-    <a href="/terms">Terms</a> &amp; <a href="/privacy">Privacy Policy</a>.<br>
-    <a href="/" style="margin-top:4px;display:inline-block">← back to homepage</a>
+  <div class="footer">
+    By connecting you agree to our <a href="/terms">Terms</a> &amp; <a href="/privacy">Privacy</a>.<br>
+    <a href="/">← back to homepage</a>
   </div>
 </div>
 
 <script>
-// ── Already logged in? Skip to app ──
+// Already logged in?
 (function(){
   const p = new URLSearchParams(location.search);
-  const t = p.get('privy_token');
-  if (t) return; // handled by app.html gate
-  if (localStorage.getItem('orlix_privy_token')) location.replace('/app');
+  if (p.get('privy_token')) return; // app.html will handle
+  if (localStorage.getItem('orlix_token')) location.replace('/app');
 })();
 
-function showError(msg){
-  const b = document.getElementById('errorBox');
-  b.textContent = msg;
-  b.classList.add('visible');
-}
-function clearError(){ document.getElementById('errorBox').classList.remove('visible'); }
-
-// ── Twitter / X OAuth ──
-async function loginWithTwitter(){
-  clearError();
-  const btn = document.getElementById('twitterBtn');
-  const lbl = document.getElementById('twitterLabel');
-  btn.disabled = true;
-  lbl.innerHTML = '<span class="spin">◌</span> Redirecting…';
-  try {
-    const res = await fetch('/api/auth?action=oauth-init', {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ provider: 'twitter' }),
-    });
-    const data = await res.json();
-    // Privy may return the URL under different field names depending on version
-    const url = data.redirectUrl || data.auth_url || data.redirect_url
-             || data.url || data.oauth_url || data.authorizeUrl
-             || (data.data && (data.data.redirectUrl || data.data.url));
-    if (!url) {
-      // Show the raw response to help debug
-      const detail = data.error || data.message || data.cause
-        || 'Keys received: ' + Object.keys(data).join(', ') || 'Empty response';
-      throw new Error(detail);
-    }
-    location.href = url;
-  } catch(e) {
-    showError(e.message);
-    btn.disabled = false;
-    lbl.textContent = 'Continue with X';
-  }
-}
-
-// ── Wallet / SIWE ──
-function setWalletStep(n) {
-  [1,2,3].forEach(i => {
-    const el = document.getElementById('ws'+i);
-    if (!el) return;
+function err(msg){ const b=document.getElementById('errBox'); b.textContent=msg; b.classList.add('show'); }
+function clearErr(){ document.getElementById('errBox').classList.remove('show'); }
+function step(n){
+  [1,2].forEach(i=>{
+    const el=document.getElementById('s'+i);
+    if(!el)return;
     el.classList.remove('active','done');
-    if (i < n) el.classList.add('done');
-    if (i === n) el.classList.add('active');
+    if(i<n) el.classList.add('done');
+    if(i===n) el.classList.add('active');
   });
 }
 
-async function loginWithWallet(){
-  clearError();
-  const btn   = document.getElementById('walletBtn');
-  const lbl   = document.getElementById('walletLabel');
-  const steps = document.getElementById('walletSteps');
-
-  if (!window.ethereum) {
-    // On mobile: show deep links to open inside wallet browser
-    const pageUrl = encodeURIComponent(location.href);
-    const hint = document.getElementById('mobileWalletHint');
-    const mm   = document.getElementById('mmLink');
-    const cb   = document.getElementById('cbLink');
-    if (hint && mm && cb) {
-      mm.href = `https://metamask.app.link/dapp/${location.host}${location.pathname}`;
-      cb.href = `https://go.cb-w.com/dapp?cb_url=${pageUrl}`;
-      hint.style.display = '';
-    } else {
-      showError('No wallet detected. Install MetaMask or Coinbase Wallet, then open this page inside the wallet\'s browser.');
+// ── X / Twitter login via Privy server ───────────────────────────────────────
+async function loginX(){
+  clearErr();
+  const btn=document.getElementById('btnX'), lbl=document.getElementById('lblX');
+  btn.disabled=true;
+  lbl.innerHTML='<span class="spin">◌</span> Redirecting…';
+  try{
+    const res  = await fetch('/api/auth?action=oauth-init',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({provider:'twitter'}),
+    });
+    const data = await res.json();
+    const url  = data.redirectUrl||data.redirect_url||data.auth_url
+                ||data.url||data.oauth_url||data.authorizeUrl
+                ||(data.data&&(data.data.redirectUrl||data.data.url));
+    if(!url){
+      const detail = data.error||data.message||data.cause
+                    ||'Privy keys: '+Object.keys(data).join(', ');
+      throw new Error(detail);
     }
+    location.href = url;
+  }catch(e){
+    err(e.message);
+    btn.disabled=false;
+    lbl.textContent='Continue with X';
+  }
+}
+
+// ── Wallet login — direct MetaMask, no server needed ─────────────────────────
+async function loginWallet(){
+  clearErr();
+  const btn=document.getElementById('btnW'), lbl=document.getElementById('lblW');
+  const stepsEl=document.getElementById('walletSteps');
+
+  // Mobile: no ethereum injected
+  if(!window.ethereum){
+    const hint=document.getElementById('mobileHint');
+    document.getElementById('mmLink').href=`https://metamask.app.link/dapp/${location.host}${location.pathname}`;
+    document.getElementById('cbLink').href=`https://go.cb-w.com/dapp?cb_url=${encodeURIComponent(location.href)}`;
+    hint.style.display='block';
     return;
   }
 
-  btn.disabled = true;
-  steps.classList.add('visible');
-  lbl.innerHTML = '<span class="spin">◌</span> Connecting…';
+  btn.disabled=true;
+  stepsEl.classList.add('show');
 
-  try {
-    // Step 1 — connect
-    setWalletStep(1);
-    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+  try{
+    // 1 — get address
+    step(1);
+    lbl.innerHTML='<span class="spin">◌</span> Connecting…';
+    const accounts = await window.ethereum.request({method:'eth_requestAccounts'});
     const address  = accounts[0];
 
-    // Step 2 — get nonce
-    setWalletStep(2);
-    lbl.innerHTML = '<span class="spin">◌</span> Waiting for signature…';
-    const initRes = await fetch('/api/auth?action=siwe-init', {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ address }),
-    });
-    const initData = await initRes.json();
-    if (!initData.nonce) throw new Error(initData.error || 'No nonce from server. Check PRIVY_APP_SECRET.');
-
-    // Build EIP-4361 SIWE message
-    const domain  = location.hostname;
-    const uri     = location.origin;
-    const now     = new Date().toISOString();
-    const message = [
-      `${domain} wants you to sign in with your Ethereum account:`,
-      address,
-      '',
-      'Sign in to Orlix AI',
-      '',
-      `URI: ${uri}`,
-      'Version: 1',
-      'Chain ID: 8453',
-      `Nonce: ${initData.nonce}`,
-      `Issued At: ${now}`,
-    ].join('\n');
-
+    // 2 — sign a challenge (no server needed)
+    step(2);
+    lbl.innerHTML='<span class="spin">◌</span> Sign in your wallet…';
+    const ts        = Date.now();
+    const challenge = `Sign in to Orlix AI\n\nAddress: ${address}\nTimestamp: ${ts}\n\nThis request will not trigger a blockchain transaction or cost any gas.`;
     const signature = await window.ethereum.request({
-      method: 'personal_sign',
-      params: [message, address],
+      method:'personal_sign',
+      params:[challenge, address],
     });
 
-    // Step 3 — authenticate
-    setWalletStep(3);
-    lbl.innerHTML = '<span class="spin">◌</span> Verifying…';
-    const authRes = await fetch('/api/auth?action=siwe-authenticate', {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ message, signature, chainId: 8453 }),
-    });
-    const authData = await authRes.json();
-    if (!authData.token) throw new Error(authData.error || authData.cause || 'Authentication failed');
-
-    localStorage.setItem('orlix_privy_token', authData.token);
-    localStorage.setItem('orlix_privy_user', JSON.stringify(authData.user || {}));
+    // Store session locally — no Privy dependency for wallet
+    const shortAddr = address.slice(0,6)+'…'+address.slice(-4);
+    localStorage.setItem('orlix_token', `wallet:${address}`);
+    localStorage.setItem('orlix_user',  JSON.stringify({
+      id:       address,
+      type:     'wallet',
+      address,
+      display:  shortAddr,
+      signedAt: ts,
+    }));
     location.href = '/app';
 
-  } catch(e) {
-    steps.classList.remove('visible');
-    if (e.code !== 4001) showError(e.message); // 4001 = user rejected signature
-    btn.disabled = false;
-    lbl.textContent = 'Connect Wallet';
+  }catch(e){
+    stepsEl.classList.remove('show');
+    if(e.code!==4001) err(e.message); // 4001 = user rejected
+    btn.disabled=false;
+    lbl.textContent='Connect Wallet';
   }
 }
 </script>

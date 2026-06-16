@@ -931,17 +931,31 @@ body::before{
 </div>
 
 <script>
-// ── Auth gate — runs synchronously before any render ──
+// ── Auth gate ──
 (function(){
   const p = new URLSearchParams(location.search);
   const t = p.get('privy_token');
   const u = p.get('privy_user');
+  // Handle Twitter OAuth callback — store under unified keys
   if (t) {
-    localStorage.setItem('orlix_privy_token', t);
-    if (u) { try { localStorage.setItem('orlix_privy_user', decodeURIComponent(u)); } catch(e){} }
+    localStorage.setItem('orlix_token', 'privy:' + decodeURIComponent(t));
+    if (u) { try {
+      const usr = JSON.parse(decodeURIComponent(u));
+      const tw  = (usr.linked_accounts||usr.linkedAccounts||[]).find(a=>a.type==='twitter_oauth');
+      localStorage.setItem('orlix_user', JSON.stringify({
+        id:      usr.id||'',
+        type:    'twitter',
+        display: tw ? '@'+tw.username : usr.id||'',
+        raw:     usr,
+      }));
+    } catch(e){} }
     history.replaceState({}, '', '/app');
   }
-  if (!localStorage.getItem('orlix_privy_token')) {
+  // Also migrate old key if it exists
+  if (!localStorage.getItem('orlix_token') && localStorage.getItem('orlix_privy_token')) {
+    localStorage.setItem('orlix_token', localStorage.getItem('orlix_privy_token'));
+  }
+  if (!localStorage.getItem('orlix_token')) {
     location.replace('/login');
   }
 })();
@@ -1858,26 +1872,20 @@ document.addEventListener('DOMContentLoaded', () => {
 // ───────── AUTH HELPERS ─────────
 function initAuth(){
   try {
-    const user  = JSON.parse(localStorage.getItem('orlix_privy_user') || '{}');
-    const accts = user.linked_accounts || user.linkedAccounts || [];
-    const tw    = accts.find(a => a.type === 'twitter_oauth');
-    const wl    = accts.find(a => a.type === 'wallet');
-    let label   = '';
-    if      (tw && tw.username)    label = '@' + tw.username;
-    else if (wl && wl.address)     label = wl.address.slice(0,6)+'…'+wl.address.slice(-4);
-    const disp = document.getElementById('userDisplay');
-    const line = document.getElementById('sbUserLine');
+    const user  = JSON.parse(localStorage.getItem('orlix_user') || '{}');
+    const label = user.display || '';
+    const disp  = document.getElementById('userDisplay');
+    const line  = document.getElementById('sbUserLine');
     if (label) {
       if (disp){ disp.textContent = label; disp.style.display = ''; }
-      if (line){ line.textContent = 'signed in as '+label; line.style.display = ''; }
+      if (line){ line.textContent = 'signed in as ' + label; line.style.display = ''; }
     }
   } catch(e){}
 }
 
 function logoutUser(){
   if (!confirm('Sign out of Orlix?')) return;
-  localStorage.removeItem('orlix_privy_token');
-  localStorage.removeItem('orlix_privy_user');
+  ['orlix_token','orlix_user','orlix_privy_token','orlix_privy_user'].forEach(k=>localStorage.removeItem(k));
   location.href = '/login';
 }
 
