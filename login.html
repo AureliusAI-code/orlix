@@ -9,15 +9,11 @@
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#0a0a0a;--bg-panel:#111;
-  --line:rgba(255,255,255,.09);--line-bright:rgba(255,255,255,.16);
-  --text:#c0b8b0;--bright:#f0ebe3;
-  --dim:#665e58;--dim-2:rgba(255,255,255,.18);
+  --bg:#0a0a0a;--line:rgba(255,255,255,.09);--line-bright:rgba(255,255,255,.16);
+  --text:#c0b8b0;--bright:#f0ebe3;--dim:#665e58;
   --amber:#ff9a52;--amber-soft:rgba(255,154,82,.1);
-  --violet:#b9a4ff;
-  --red:#e03030;--green:#7ee0a8;
-  --mono:'JetBrains Mono',monospace;
-  --display:'Space Grotesk',sans-serif;
+  --violet:#b9a4ff;--red:#e03030;--green:#7ee0a8;
+  --mono:'JetBrains Mono',monospace;--display:'Space Grotesk',sans-serif;
 }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{background:var(--bg);color:var(--text);height:100%}
@@ -27,18 +23,17 @@ body::before{content:'';position:fixed;inset:0;z-index:-1;background-image:linea
 body::after{content:'';position:fixed;inset:0;z-index:-1;background:radial-gradient(ellipse 60% 50% at 50% 40%,rgba(185,164,255,.07) 0%,transparent 70%)}
 
 .card{width:100%;max-width:380px;margin:20px;background:rgba(17,17,17,.94);border:1px solid var(--line-bright);border-radius:14px;padding:40px 36px 36px;backdrop-filter:blur(20px);box-shadow:0 0 60px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.04) inset}
-
 .brand{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-weight:700;font-size:.85rem;letter-spacing:.16em;color:var(--bright);text-transform:uppercase;margin-bottom:28px}
 .brand-dot{color:var(--red);font-size:.5rem}
-.login-title{font-family:var(--display);font-size:1.4rem;font-weight:700;color:var(--bright);margin-bottom:6px}
-.login-sub{color:var(--dim);font-size:.78rem;margin-bottom:32px;line-height:1.5}
+.title{font-family:var(--display);font-size:1.4rem;font-weight:700;color:var(--bright);margin-bottom:6px}
+.sub{color:var(--dim);font-size:.78rem;margin-bottom:32px;line-height:1.5}
 
 .btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:13px 18px;border-radius:8px;font-size:.82rem;font-family:var(--mono);font-weight:600;cursor:pointer;transition:.15s;border:1px solid;letter-spacing:.02em}
 .btn:disabled{opacity:.45;cursor:not-allowed}
 .btn-x{background:rgba(255,154,82,.12);border-color:rgba(255,154,82,.35);color:var(--amber);margin-bottom:12px}
 .btn-x:hover:not(:disabled){background:rgba(255,154,82,.2);border-color:rgba(255,154,82,.6);box-shadow:0 0 20px rgba(255,154,82,.15)}
-.btn-wallet{background:rgba(185,164,255,.1);border-color:rgba(185,164,255,.3);color:var(--violet)}
-.btn-wallet:hover:not(:disabled){background:rgba(185,164,255,.18);border-color:rgba(185,164,255,.55);box-shadow:0 0 20px rgba(185,164,255,.12)}
+.btn-w{background:rgba(185,164,255,.1);border-color:rgba(185,164,255,.3);color:var(--violet)}
+.btn-w:hover:not(:disabled){background:rgba(185,164,255,.18);border-color:rgba(185,164,255,.55);box-shadow:0 0 20px rgba(185,164,255,.12)}
 
 .steps{margin-top:14px;display:none}
 .steps.show{display:block}
@@ -50,15 +45,13 @@ body::after{content:'';position:fixed;inset:0;z-index:-1;background:radial-gradi
 
 .hint{display:none;margin-top:10px;background:rgba(185,164,255,.08);border:1px solid rgba(185,164,255,.2);border-radius:8px;padding:12px 14px;font-size:.73rem;line-height:1.7;color:var(--dim)}
 .hint a{color:var(--violet);font-weight:600}
-
-.err{display:none;margin-top:14px;background:rgba(224,48,48,.08);border:1px solid rgba(224,48,48,.3);border-radius:6px;padding:10px 13px;color:var(--red);font-size:.75rem;line-height:1.5}
+.err{display:none;margin-top:14px;background:rgba(224,48,48,.08);border:1px solid rgba(224,48,48,.3);border-radius:6px;padding:10px 13px;color:var(--red);font-size:.75rem;line-height:1.5;word-break:break-word}
 .err.show{display:block}
 
 .divider{height:1px;background:var(--line);margin:24px 0}
 .footer{text-align:center;color:var(--dim);font-size:.7rem;line-height:1.7}
 .footer a{color:var(--dim);text-decoration:underline;text-underline-offset:3px}
 .footer a:hover{color:var(--text)}
-
 @keyframes spin{to{transform:rotate(360deg)}}
 .spin{display:inline-block;animation:spin .7s linear infinite}
 </style>
@@ -66,18 +59,18 @@ body::after{content:'';position:fixed;inset:0;z-index:-1;background:radial-gradi
 <body>
 <div class="card">
   <div class="brand"><span class="brand-dot">●</span>ORLIX</div>
-  <div class="login-title">Sign in</div>
-  <div class="login-sub">Connect to your personal AI operating system.</div>
+  <div class="title">Sign in</div>
+  <div class="sub">Connect to your personal AI operating system.</div>
 
   <button class="btn btn-x" id="btnX" onclick="loginX()">
     <span>𝕏</span><span id="lblX">Continue with X</span>
   </button>
 
-  <button class="btn btn-wallet" id="btnW" onclick="loginWallet()">
+  <button class="btn btn-w" id="btnW" onclick="loginWallet()">
     <span>⬡</span><span id="lblW">Connect Wallet</span>
   </button>
 
-  <div class="steps" id="walletSteps">
+  <div class="steps" id="wSteps">
     <div class="step" id="s1"><div class="dot"></div><span>Connect wallet</span></div>
     <div class="step" id="s2"><div class="dot"></div><span>Sign message</span></div>
   </div>
@@ -98,61 +91,155 @@ body::after{content:'';position:fixed;inset:0;z-index:-1;background:radial-gradi
 </div>
 
 <script>
-// Already logged in?
-(function(){
-  const p = new URLSearchParams(location.search);
-  if (p.get('privy_token')) return; // app.html will handle
-  if (localStorage.getItem('orlix_token')) location.replace('/app');
-})();
+const PRIVY_APP_ID    = 'cmqh5fvyg00co0ci68birz0s2';
+const PRIVY_CLIENT_ID = 'client-WY6aRspZ68mzwa8hexMRYu9xiCKWRkscPMKYYu3oayZ99';
+const PRIVY_BASE      = 'https://auth.privy.io/api/v1';
 
-function err(msg){ const b=document.getElementById('errBox'); b.textContent=msg; b.classList.add('show'); }
-function clearErr(){ document.getElementById('errBox').classList.remove('show'); }
-function step(n){
+// ── Already logged in? ───────────────────────────────────────────────────────
+if (localStorage.getItem('orlix_token')) {
+  location.replace('/app');
+}
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+function showErr(msg){ const b=document.getElementById('errBox'); b.textContent=msg; b.classList.add('show'); }
+function clearErr()  { document.getElementById('errBox').classList.remove('show'); }
+
+function wStep(n){
   [1,2].forEach(i=>{
-    const el=document.getElementById('s'+i);
-    if(!el)return;
+    const el=document.getElementById('s'+i); if(!el) return;
     el.classList.remove('active','done');
     if(i<n) el.classList.add('done');
     if(i===n) el.classList.add('active');
   });
 }
 
-// ── X / Twitter login via Privy server ───────────────────────────────────────
+// PKCE via Web Crypto API (runs entirely in browser)
+async function genPKCE(){
+  const verifierBytes = crypto.getRandomValues(new Uint8Array(32));
+  const verifier = btoa(String.fromCharCode(...verifierBytes))
+    .replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+  const digest   = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier));
+  const challenge= btoa(String.fromCharCode(...new Uint8Array(digest)))
+    .replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+  return { verifier, challenge };
+}
+
+function genState(){
+  return [...crypto.getRandomValues(new Uint8Array(16))].map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+// ── X / Twitter — fully client-side, browser calls Privy directly ─────────────
 async function loginX(){
   clearErr();
   const btn=document.getElementById('btnX'), lbl=document.getElementById('lblX');
   btn.disabled=true;
-  lbl.innerHTML='<span class="spin">◌</span> Redirecting…';
+  lbl.innerHTML='<span class="spin">◌</span> Connecting…';
+
   try{
-    const res  = await fetch('/api/auth?action=oauth-init',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({provider:'twitter'}),
+    const { verifier, challenge } = await genPKCE();
+    const state = genState();
+
+    // Store PKCE in sessionStorage — survives the Twitter redirect and back
+    sessionStorage.setItem('orlix_pkce_v', verifier);
+    sessionStorage.setItem('orlix_pkce_s', state);
+
+    // Call Privy directly from browser (not proxied) — this is what their SDK does
+    const res  = await fetch(`${PRIVY_BASE}/oauth/init`, {
+      method:  'POST',
+      headers: {
+        'Content-Type':    'application/json',
+        'privy-app-id':    PRIVY_APP_ID,
+        'privy-client-id': PRIVY_CLIENT_ID,
+      },
+      body: JSON.stringify({
+        type:                  'oauth',
+        provider:              'twitter',
+        redirect_to:           `${location.origin}/login`,
+        state,
+        code_challenge:        challenge,
+        code_challenge_method: 'S256',
+      }),
     });
     const data = await res.json();
-    const url  = data.redirectUrl||data.redirect_url||data.auth_url
-                ||data.url||data.oauth_url||data.authorizeUrl
-                ||(data.data&&(data.data.redirectUrl||data.data.url));
-    if(!url){
-      const detail = data.error||data.message||data.cause
-                    ||'Privy keys: '+Object.keys(data).join(', ');
-      throw new Error(detail);
+
+    if(!res.ok){
+      throw new Error(data.error || data.message || data.cause || JSON.stringify(data));
     }
+
+    const url = data.redirectUrl || data.redirect_url || data.auth_url
+              || data.url || data.oauth_url
+              || (data.data && (data.data.redirectUrl || data.data.url));
+    if(!url) throw new Error('No redirect URL in response: ' + JSON.stringify(Object.keys(data)));
+
     location.href = url;
+
   }catch(e){
-    err(e.message);
+    showErr(e.message);
     btn.disabled=false;
     lbl.textContent='Continue with X';
   }
 }
 
-// ── Wallet login — direct MetaMask, no server needed ─────────────────────────
+// ── Handle OAuth callback (Twitter redirects back to /login?code=&state=) ────
+async function handleOAuthCallback(){
+  const p     = new URLSearchParams(location.search);
+  const code  = p.get('code');
+  const state = p.get('state');
+  if(!code || !state) return; // not a callback
+
+  // Clean URL immediately
+  history.replaceState({}, '', '/login');
+
+  const btn=document.getElementById('btnX'), lbl=document.getElementById('lblX');
+  btn.disabled=true;
+  lbl.innerHTML='<span class="spin">◌</span> Signing in…';
+
+  try{
+    const verifier   = sessionStorage.getItem('orlix_pkce_v');
+    const savedState = sessionStorage.getItem('orlix_pkce_s');
+    sessionStorage.removeItem('orlix_pkce_v');
+    sessionStorage.removeItem('orlix_pkce_s');
+
+    if(!verifier || state !== savedState){
+      throw new Error('Session mismatch. Please try again.');
+    }
+
+    // Exchange code for token — also browser-direct
+    const res  = await fetch(`${PRIVY_BASE}/oauth/authenticate`, {
+      method:  'POST',
+      headers: {
+        'Content-Type':    'application/json',
+        'privy-app-id':    PRIVY_APP_ID,
+        'privy-client-id': PRIVY_CLIENT_ID,
+      },
+      body: JSON.stringify({ state, code, code_verifier: verifier }),
+    });
+    const data = await res.json();
+
+    if(!data.token) throw new Error(data.error || data.message || JSON.stringify(data));
+
+    // Resolve display name
+    const usr  = data.user || {};
+    const accts= usr.linked_accounts || usr.linkedAccounts || [];
+    const tw   = accts.find(a=>a.type==='twitter_oauth');
+    const display = tw ? '@'+tw.username : (usr.id||'').slice(0,12);
+
+    localStorage.setItem('orlix_token', 'privy:' + data.token);
+    localStorage.setItem('orlix_user',  JSON.stringify({ id: usr.id, type:'twitter', display, raw: usr }));
+    location.href = '/app';
+
+  }catch(e){
+    showErr(e.message);
+    btn.disabled=false;
+    lbl.textContent='Continue with X';
+  }
+}
+
+// ── Wallet — direct MetaMask, zero server dependency ─────────────────────────
 async function loginWallet(){
   clearErr();
   const btn=document.getElementById('btnW'), lbl=document.getElementById('lblW');
-  const stepsEl=document.getElementById('walletSteps');
 
-  // Mobile: no ethereum injected
   if(!window.ethereum){
     const hint=document.getElementById('mobileHint');
     document.getElementById('mmLink').href=`https://metamask.app.link/dapp/${location.host}${location.pathname}`;
@@ -162,44 +249,35 @@ async function loginWallet(){
   }
 
   btn.disabled=true;
-  stepsEl.classList.add('show');
+  document.getElementById('wSteps').classList.add('show');
 
   try{
-    // 1 — get address
-    step(1);
+    wStep(1);
     lbl.innerHTML='<span class="spin">◌</span> Connecting…';
     const accounts = await window.ethereum.request({method:'eth_requestAccounts'});
     const address  = accounts[0];
 
-    // 2 — sign a challenge (no server needed)
-    step(2);
+    wStep(2);
     lbl.innerHTML='<span class="spin">◌</span> Sign in your wallet…';
     const ts        = Date.now();
-    const challenge = `Sign in to Orlix AI\n\nAddress: ${address}\nTimestamp: ${ts}\n\nThis request will not trigger a blockchain transaction or cost any gas.`;
-    const signature = await window.ethereum.request({
-      method:'personal_sign',
-      params:[challenge, address],
-    });
+    const challenge = `Sign in to Orlix AI\n\nAddress: ${address}\nTimestamp: ${ts}\n\nThis will not trigger a blockchain transaction or cost gas.`;
+    await window.ethereum.request({ method:'personal_sign', params:[challenge, address] });
 
-    // Store session locally — no Privy dependency for wallet
-    const shortAddr = address.slice(0,6)+'…'+address.slice(-4);
-    localStorage.setItem('orlix_token', `wallet:${address}`);
-    localStorage.setItem('orlix_user',  JSON.stringify({
-      id:       address,
-      type:     'wallet',
-      address,
-      display:  shortAddr,
-      signedAt: ts,
-    }));
+    const short = address.slice(0,6)+'…'+address.slice(-4);
+    localStorage.setItem('orlix_token', 'wallet:'+address);
+    localStorage.setItem('orlix_user',  JSON.stringify({ id:address, type:'wallet', display:short }));
     location.href = '/app';
 
   }catch(e){
-    stepsEl.classList.remove('show');
-    if(e.code!==4001) err(e.message); // 4001 = user rejected
+    document.getElementById('wSteps').classList.remove('show');
+    if(e.code!==4001) showErr(e.message);
     btn.disabled=false;
     lbl.textContent='Connect Wallet';
   }
 }
+
+// Run on page load
+handleOAuthCallback();
 </script>
 </body>
 </html>
