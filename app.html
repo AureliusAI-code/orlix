@@ -17,17 +17,18 @@
 <meta name="twitter:title" content="Orlix AI">
 <meta name="twitter:description" content="Personal AI Operating System">
 <meta name="twitter:image" content="https://www.orlixai.xyz/og-image.png">
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#0d0a08;--bg-panel:#15100c;--bg-input:#1b1411;
-  --line:#2c2218;--line-bright:#42301f;
-  --text:#d8cfc4;--bright:#fbf3ea;
-  --dim:#8a7a6c;--dim-2:#5c4f44;
-  --amber:#ff9a52;--amber-soft:rgba(255,154,82,.12);
-  --violet:#b9a4ff;--violet-soft:rgba(185,164,255,.12);
-  --red:#ff6b6b;--green:#7ee0a8;
+  --bg:#0a0a0a;--bg-panel:#111;--bg-input:#161616;
+  --line:rgba(255,255,255,.09);--line-bright:rgba(255,255,255,.16);
+  --text:#c0b8b0;--bright:#f0ebe3;
+  --dim:#665e58;--dim-2:rgba(255,255,255,.18);
+  --amber:#ff9a52;--amber-soft:rgba(255,154,82,.1);
+  --violet:#b9a4ff;--violet-soft:rgba(185,164,255,.1);
+  --red:#e03030;--green:#7ee0a8;
   --mono:'JetBrains Mono',monospace;
+  --display:'Space Grotesk',sans-serif;
 }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{background:var(--bg);color:var(--text);height:100%}
@@ -38,25 +39,22 @@ button{font-family:var(--mono);cursor:pointer}
 input,select,textarea{font-family:var(--mono)}
 ::selection{background:var(--amber);color:#1a0f06}
 
-.crt{position:fixed;inset:0;pointer-events:none;z-index:200;mix-blend-mode:overlay;opacity:.25}
-.crt::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(to bottom,rgba(255,255,255,.02) 0,rgba(255,255,255,.02) 1px,transparent 1px,transparent 3px)}
-
 /* ── titlebar ── */
-.titlebar{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(13,10,8,.94);backdrop-filter:blur(12px);border-bottom:1px solid var(--line);height:46px;display:flex;align-items:center}
-.tb-in{display:flex;align-items:center;justify-content:space-between;width:100%;padding:0 16px}
-.tb-left{display:flex;align-items:center;gap:10px}
-.tb-dots{display:flex;gap:5px}
-.tb-dots span{display:inline-block;width:10px;height:10px;border-radius:50%}
-.tb-title{color:var(--text);font-size:.76rem}
+.titlebar{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(10,10,10,.94);backdrop-filter:blur(14px);border-bottom:1px solid var(--line);height:52px;display:flex;align-items:center}
+.tb-in{display:flex;align-items:center;justify-content:space-between;width:100%;padding:0 18px}
+.tb-left{display:flex;align-items:center;gap:12px}
+.tb-brand{display:flex;align-items:center;gap:7px;font-family:var(--mono);font-weight:600;font-size:.8rem;letter-spacing:.14em;color:var(--bright);text-transform:uppercase;text-decoration:none}
+.tb-sep{color:var(--line-bright);margin:0 2px}
+.tb-title{color:var(--dim);font-size:.75rem;letter-spacing:.04em}
 .tb-right{display:flex;align-items:center;gap:16px}
-.tb-right a{color:var(--dim);font-size:.76rem;border-bottom:none;transition:.15s}
+.tb-right a{color:var(--dim);font-size:.75rem;border-bottom:none;transition:.15s;text-decoration:none}
 .tb-right a:hover{color:var(--amber)}
 .status-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green)}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.4}}
 .status-dot{animation:blink 2.5s ease-in-out infinite}
 
 /* ── layout ── */
-.app-layout{display:flex;height:100vh;padding-top:46px}
+.app-layout{display:flex;height:100vh;padding-top:52px}
 
 /* ── sidebar ── */
 .sidebar{width:200px;flex-shrink:0;background:var(--bg-panel);border-right:1px solid var(--line);display:flex;flex-direction:column;overflow-y:auto}
@@ -78,7 +76,7 @@ input,select,textarea{font-family:var(--mono)}
 /* ── page header ── */
 .page-hd{margin-bottom:24px}
 .page-hd .file{color:var(--dim);font-size:.73rem;margin-bottom:5px}
-.page-hd h1{font-size:1.05rem;font-weight:700;color:var(--bright);margin-bottom:5px}
+.page-hd h1{font-size:1.05rem;font-weight:700;color:var(--bright);margin-bottom:5px;font-family:var(--display)}
 .page-hd .sub{color:var(--dim);font-size:.78rem}
 
 /* ── stat grid ── */
@@ -213,7 +211,7 @@ select.inp{cursor:pointer}
 .msg.user .msg-bubble{background:var(--amber-soft);border:1px solid rgba(255,154,82,.2);color:var(--bright);white-space:pre-wrap}
 .msg.assistant .msg-bubble{background:var(--bg-input);border:1px solid var(--line);color:var(--text)}
 .msg-meta{color:var(--dim-2);font-size:.67rem}
-.code-block{background:#0a0806;border:1px solid var(--line);border-radius:6px;margin:8px 0;overflow:hidden;font-size:.76rem}
+.code-block{background:#0d0d0d;border:1px solid var(--line);border-radius:6px;margin:8px 0;overflow:hidden;font-size:.76rem}
 .code-header{display:flex;justify-content:space-between;align-items:center;padding:5px 10px;background:rgba(255,255,255,.04);border-bottom:1px solid var(--line)}
 .code-lang{color:var(--violet);font-size:.7rem;text-transform:uppercase;letter-spacing:.05em}
 .code-actions{display:flex;gap:6px}
@@ -288,8 +286,8 @@ select.inp{cursor:pointer}
 /* ── Scrollbar ── */
 ::-webkit-scrollbar { width: 4px; height: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
-::-webkit-scrollbar-thumb:hover { background: var(--dim-2); }
+::-webkit-scrollbar-thumb { background: var(--line-bright); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: var(--dim); }
 
 /* ── skill grid (Aeon agents) ── */
 .skill-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
@@ -317,23 +315,19 @@ select.inp{cursor:pointer}
 </style>
 </head>
 <body>
-<div class="crt"></div>
 
 <!-- titlebar -->
 <div class="titlebar">
   <div class="tb-in">
     <div class="tb-left">
-      <div class="tb-dots">
-        <span style="background:var(--red)"></span>
-        <span style="background:var(--amber)"></span>
-        <span style="background:var(--green)"></span>
-      </div>
-      <span class="tb-title">orlix — dashboard <span style="color:var(--dim)">· local session</span></span>
+      <a href="/" class="tb-brand"><span style="color:var(--red);font-size:.42rem">●</span> ORLIX</a>
+      <span class="tb-sep">/</span>
+      <span class="tb-title">dashboard</span>
     </div>
     <div class="tb-right">
       <span class="status-dot"></span>
-      <span style="color:var(--green);font-size:.75rem">online</span>
-      <a href="index.html">← home</a>
+      <span style="color:var(--green);font-size:.74rem">online</span>
+      <a href="/">← home</a>
     </div>
   </div>
 </div>
@@ -634,7 +628,7 @@ select.inp{cursor:pointer}
       <div class="panel">
         <div class="panel-hd"><span class="ttl">AI providers</span></div>
         <div class="panel-body" style="display:flex;flex-direction:column;gap:16px">
-          <div style="background:rgba(185,164,255,.07);border:1px solid rgba(185,164,255,.18);border-radius:8px;padding:12px 14px;font-size:.78rem;line-height:1.7;color:var(--fg)">
+          <div style="background:rgba(185,164,255,.07);border:1px solid rgba(185,164,255,.18);border-radius:8px;padding:12px 14px;font-size:.78rem;line-height:1.7;color:var(--text)">
             ✓ <strong>Claude</strong> (Anthropic) and <strong>Grok</strong> (xAI) models work without any API key here — the server handles authentication automatically.<br>
             <span style="color:var(--dim)">Just select a model in Playground and start chatting.</span>
           </div>
@@ -686,7 +680,7 @@ select.inp{cursor:pointer}
         <div class="panel-hd"><span class="ttl">soul</span></div>
         <div class="panel-body" style="display:flex;flex-direction:column;gap:16px">
           <div style="color:var(--dim);font-size:.8rem;line-height:1.6;max-width:480px">Define your identity, worldview, hot takes, and communication style. This gets injected into every conversation so Orlix truly knows you. Based on <a href="https://github.com/aaronjmars/soul.md" target="_blank" style="color:var(--violet)">soul.md</a>.</div>
-          <textarea id="soulEditor" placeholder="## Identity&#10;I am a founder building in public...&#10;&#10;## Worldview&#10;- Ship fast, iterate faster&#10;- Most problems are distribution problems&#10;&#10;## Hot Takes&#10;- Most AI safety discourse is cope&#10;- The best interface is no interface&#10;&#10;## Style&#10;- Terse. Direct. No fluff.&#10;- I write like I am always in a hurry but never rushed." style="width:100%;height:200px;background:var(--bg-2);border:1px solid var(--border);border-radius:6px;padding:12px;color:var(--fg);font-family:var(--mono);font-size:.78rem;resize:vertical;line-height:1.6"></textarea>
+          <textarea id="soulEditor" placeholder="## Identity&#10;I am a founder building in public...&#10;&#10;## Worldview&#10;- Ship fast, iterate faster&#10;- Most problems are distribution problems&#10;&#10;## Hot Takes&#10;- Most AI safety discourse is cope&#10;- The best interface is no interface&#10;&#10;## Style&#10;- Terse. Direct. No fluff.&#10;- I write like I am always in a hurry but never rushed." style="width:100%;height:200px;background:var(--bg-input);border:1px solid var(--line-bright);border-radius:6px;padding:12px;color:var(--text);font-family:var(--mono);font-size:.78rem;resize:vertical;line-height:1.6"></textarea>
           <div style="display:flex;gap:8px;align-items:center">
             <button class="btn primary" id="saveSoulBtn">save soul</button>
             <span id="soulSaved" style="color:var(--green);font-size:.78rem;display:none">saved</span>
@@ -1356,7 +1350,8 @@ function renderContent(text){
     _codeStore[id] = code; // store raw — never HTML-escaped
 
     const label  = lang||'code';
-    const previewBtn = `<button class="preview-btn" onclick="openPreview('${id}')">▶ Preview</button>`;
+    const isHtml = label.toLowerCase()==='html'||label.toLowerCase()==='htm';
+    const previewBtn = isHtml ? `<button class="preview-btn" onclick="openPreview('${id}')">▶ Preview</button>` : '';
     result += `<div class="code-block">
       <div class="code-header">
         <span class="code-lang">${esc2(label)}</span>
