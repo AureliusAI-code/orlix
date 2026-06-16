@@ -16,13 +16,13 @@
   --mono:'JetBrains Mono',monospace;--display:'Space Grotesk',sans-serif;
 }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{background:var(--bg);color:var(--text);height:100%}
-body{font-family:var(--mono);font-size:13px;line-height:1.6;-webkit-font-smoothing:antialiased;display:flex;align-items:center;justify-content:center;overflow:hidden}
-body::before{content:'';position:fixed;inset:0;z-index:-1;background-image:linear-gradient(rgba(255,154,82,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,154,82,.03) 1px,transparent 1px);background-size:36px 36px;animation:gridScroll 28s linear infinite}
+html,body{background:var(--bg);color:var(--text);min-height:100%}
+body{font-family:var(--mono);font-size:13px;line-height:1.6;-webkit-font-smoothing:antialiased;display:flex;align-items:center;justify-content:center;min-height:100vh}
+body::before{content:'';position:fixed;inset:0;z-index:0;background-image:linear-gradient(rgba(255,154,82,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,154,82,.03) 1px,transparent 1px);background-size:36px 36px;animation:gridScroll 28s linear infinite;pointer-events:none}
 @keyframes gridScroll{to{background-position:36px 36px}}
-body::after{content:'';position:fixed;inset:0;z-index:-1;background:radial-gradient(ellipse 60% 50% at 50% 40%,rgba(185,164,255,.07) 0%,transparent 70%)}
+body::after{content:'';position:fixed;inset:0;z-index:0;background:radial-gradient(ellipse 60% 50% at 50% 40%,rgba(185,164,255,.07) 0%,transparent 70%);pointer-events:none}
 
-.card{width:100%;max-width:380px;margin:20px;background:rgba(17,17,17,.94);border:1px solid var(--line-bright);border-radius:14px;padding:40px 36px 36px;backdrop-filter:blur(20px);box-shadow:0 0 60px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.04) inset}
+.card{position:relative;z-index:1;width:100%;max-width:380px;margin:20px;background:rgba(17,17,17,.94);border:1px solid var(--line-bright);border-radius:14px;padding:40px 36px 36px;backdrop-filter:blur(20px);box-shadow:0 0 60px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.04) inset}
 .brand{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-weight:700;font-size:.85rem;letter-spacing:.16em;color:var(--bright);text-transform:uppercase;margin-bottom:28px}
 .brand-dot{color:var(--red);font-size:.5rem}
 .login-title{font-family:var(--display);font-size:1.4rem;font-weight:700;color:var(--bright);margin-bottom:6px}
