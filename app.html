@@ -445,6 +445,7 @@ body::before{
         <span id="walletLabel">Connect Wallet</span>
       </button>
       <a href="/gallery" style="color:var(--violet)" class="hide-mobile">gallery</a>
+      <span id="userDisplay" style="display:none;font-size:.72rem;color:var(--dim);max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" class="hide-mobile"></span>
       <a href="/" class="hide-mobile">← home</a>
     </div>
   </div>
@@ -482,7 +483,9 @@ body::before{
       <div class="sb-item" data-view="settings"><span class="ic">S</span>settings</div>
     </div>
     <div class="sb-footer">
+      <div class="sb-ver" id="sbUserLine" style="margin-bottom:8px;display:none;color:var(--dim-2);font-size:.69rem"></div>
       <div class="sb-ver"><span class="sb-status"></span>Mimo engine active<br>orlix v0.6.0 · local-first</div>
+      <button onclick="logoutUser()" class="btn sm danger" style="margin-top:10px;width:100%;justify-content:center">← sign out</button>
     </div>
   </nav>
 
@@ -928,6 +931,21 @@ body::before{
 </div>
 
 <script>
+// ── Auth gate — runs synchronously before any render ──
+(function(){
+  const p = new URLSearchParams(location.search);
+  const t = p.get('privy_token');
+  const u = p.get('privy_user');
+  if (t) {
+    localStorage.setItem('orlix_privy_token', t);
+    if (u) { try { localStorage.setItem('orlix_privy_user', decodeURIComponent(u)); } catch(e){} }
+    history.replaceState({}, '', '/app');
+  }
+  if (!localStorage.getItem('orlix_privy_token')) {
+    location.replace('/login');
+  }
+})();
+
 // ───────── DATA ─────────
 let memories = [
   {id:1,text:'Prefer async communication over meetings for deep work blocks',tag:'work',added:'2m ago'},
@@ -1832,7 +1850,36 @@ document.addEventListener('DOMContentLoaded', () => {
       refreshDashboard();
     }
   });
+
+  // populate auth user display
+  initAuth();
 });
+
+// ───────── AUTH HELPERS ─────────
+function initAuth(){
+  try {
+    const user  = JSON.parse(localStorage.getItem('orlix_privy_user') || '{}');
+    const accts = user.linked_accounts || user.linkedAccounts || [];
+    const tw    = accts.find(a => a.type === 'twitter_oauth');
+    const wl    = accts.find(a => a.type === 'wallet');
+    let label   = '';
+    if      (tw && tw.username)    label = '@' + tw.username;
+    else if (wl && wl.address)     label = wl.address.slice(0,6)+'…'+wl.address.slice(-4);
+    const disp = document.getElementById('userDisplay');
+    const line = document.getElementById('sbUserLine');
+    if (label) {
+      if (disp){ disp.textContent = label; disp.style.display = ''; }
+      if (line){ line.textContent = 'signed in as '+label; line.style.display = ''; }
+    }
+  } catch(e){}
+}
+
+function logoutUser(){
+  if (!confirm('Sign out of Orlix?')) return;
+  localStorage.removeItem('orlix_privy_token');
+  localStorage.removeItem('orlix_privy_user');
+  location.href = '/login';
+}
 
 // ───────── BASE ONCHAIN — WALLET & TRANSACTIONS ─────────
 const BASE_CHAIN_ID   = 8453;

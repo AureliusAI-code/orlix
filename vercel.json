@@ -6,15 +6,17 @@
   "functions": {
     "api/chat.js":    { "memory": 256, "maxDuration": 60 },
     "api/ping.js":    { "memory": 128, "maxDuration": 10 },
-    "api/gallery.js": { "memory": 128, "maxDuration": 10 }
+    "api/gallery.js": { "memory": 128, "maxDuration": 10 },
+    "api/auth.js":    { "memory": 128, "maxDuration": 10 }
   },
   "redirects": [
     { "source": "/app.html",       "destination": "/app",       "permanent": true },
     { "source": "/docs.html",      "destination": "/docs",      "permanent": true },
     { "source": "/changelog.html", "destination": "/changelog", "permanent": true },
     { "source": "/privacy.html",   "destination": "/privacy",   "permanent": true },
-    { "source": "/terms.html",   "destination": "/terms",   "permanent": true },
-    { "source": "/gallery.html", "destination": "/gallery", "permanent": true }
+    { "source": "/terms.html",     "destination": "/terms",     "permanent": true },
+    { "source": "/gallery.html",   "destination": "/gallery",   "permanent": true },
+    { "source": "/login.html",     "destination": "/login",     "permanent": true }
   ],
   "rewrites": [
     { "source": "/app",       "destination": "/app.html" },
@@ -22,6 +24,7 @@
     { "source": "/changelog", "destination": "/changelog.html" },
     { "source": "/privacy",   "destination": "/privacy.html" },
     { "source": "/terms",     "destination": "/terms.html" },
-    { "source": "/gallery",   "destination": "/gallery.html" }
+    { "source": "/gallery",   "destination": "/gallery.html" },
+    { "source": "/login",     "destination": "/login.html" }
   ]
 }
