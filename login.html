@@ -139,28 +139,59 @@ async function loginX(){
     const { verifier, challenge } = await genPKCE();
     const state = genState();
 
-    // Store PKCE in sessionStorage — survives the Twitter redirect and back
     sessionStorage.setItem('orlix_pkce_v', verifier);
     sessionStorage.setItem('orlix_pkce_s', state);
 
-    // Call Privy directly from browser (not proxied) — this is what their SDK does
-    const res  = await fetch(`${PRIVY_BASE}/oauth/init`, {
-      method:  'POST',
-      headers: {
-        'Content-Type':    'application/json',
-        'privy-app-id':    PRIVY_APP_ID,
-        'privy-client-id': PRIVY_CLIENT_ID,
-      },
-      body: JSON.stringify({
-        type:                  'oauth',
-        provider:              'twitter',
-        redirect_to:           `${location.origin}/login`,
-        state,
-        code_challenge:        challenge,
-        code_challenge_method: 'S256',
-      }),
-    });
-    const data = await res.json();
+    const redirectTo = `${location.origin}/login`;
+    const body = {
+      type:                  'oauth',
+      provider:              'twitter',
+      redirect_to:           redirectTo,
+      state,
+      code_challenge:        challenge,
+      code_challenge_method: 'S256',
+    };
+
+    let res, data;
+    try {
+      res  = await fetch(`${PRIVY_BASE}/oauth/init`, {
+        method:  'POST',
+        headers: {
+          'Content-Type':    'application/json',
+          'privy-app-id':    PRIVY_APP_ID,
+          'privy-client-id': PRIVY_CLIENT_ID,
+        },
+        body: JSON.stringify(body),
+      });
+      data = await res.json();
+    } catch(fetchErr) {
+      // CORS or network error — fall back to server proxy
+      const proxyRes  = await fetch('/api/auth?action=oauth-init', {
+        method:  'POST',
+        headers: {'Content-Type':'application/json'},
+        body:    JSON.stringify({ provider:'twitter', redirectTo, state, challenge }),
+      });
+      data = await proxyRes.json();
+      if(!proxyRes.ok) throw new Error(data.error || JSON.stringify(data));
+    }
+
+    if(!res?.ok && !data?.redirectUrl && !data?.url && !data?.auth_url){
+      throw new Error(data?.error || data?.message || data?.cause || 'Response: '+JSON.stringify(data));
+    }
+
+    const url = data.redirectUrl || data.redirect_url || data.auth_url
+              || data.url || data.oauth_url
+              || (data.data && (data.data.redirectUrl || data.data.url));
+    if(!url) throw new Error('No URL in response. Keys: ' + Object.keys(data).join(', '));
+
+    location.href = url;
+
+  }catch(e){
+    showErr('X login error: ' + e.message);
+    btn.disabled=false;
+    lbl.textContent='Continue with X';
+  }
+}
 
     if(!res.ok){
       throw new Error(data.error || data.message || data.cause || JSON.stringify(data));

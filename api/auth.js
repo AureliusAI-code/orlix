@@ -113,19 +113,22 @@ module.exports = async function handler(req, res) {
 
   // ── OAuth init ────────────────────────────────────────────────────────────────
   if (req.method === 'POST' && action === 'oauth-init') {
-    const { provider } = req.body || {};
+    const { provider, redirectTo: clientRedirect, state: clientState, challenge: clientChallenge } = req.body || {};
     if (!provider) return res.status(400).json({ error: 'Missing: provider' });
 
-    const redirectTo = `${APP_ORIGIN}/api/auth?action=oauth-callback`;
-    const state      = crypto.randomBytes(16).toString('hex');
-    const verifier   = pkceVerifier();
-    const challenge  = pkceChallenge(verifier);
+    // Use browser-supplied PKCE if available (browser-direct fallback), else generate server-side
+    const redirectTo = clientRedirect || `${APP_ORIGIN}/login`;
+    const state      = clientState    || crypto.randomBytes(16).toString('hex');
+    const challenge  = clientChallenge|| pkceChallenge(pkceVerifier());
 
-    // Store verifier in cookie so callback can read it
-    res.setHeader('Set-Cookie', [
-      `orlix_cv=${verifier}; Path=/; HttpOnly; SameSite=Lax; Max-Age=600`,
-      `orlix_st=${state}; Path=/; HttpOnly; SameSite=Lax; Max-Age=600`,
-    ]);
+    if (!clientState) {
+      // Server-generated — store verifier in cookie for callback
+      const verifier = pkceVerifier();
+      res.setHeader('Set-Cookie', [
+        `orlix_cv=${verifier}; Path=/; HttpOnly; SameSite=Lax; Max-Age=600`,
+        `orlix_st=${state}; Path=/; HttpOnly; SameSite=Lax; Max-Age=600`,
+      ]);
+    }
 
     try {
       const r = await fetch(`${BASE}/oauth/init`, {
