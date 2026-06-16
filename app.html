@@ -1358,7 +1358,8 @@ function renderContent(text){
     _codeStore[id] = code; // store raw — never HTML-escaped
 
     const label  = lang||'code';
-    const isHtml = label.toLowerCase()==='html'||label.toLowerCase()==='htm';
+    const looksLikeHtml = code.trimStart().startsWith('<') || code.includes('<!DOCTYPE') || code.includes('<html');
+    const isHtml = label.toLowerCase()==='html'||label.toLowerCase()==='htm'||(!lang&&looksLikeHtml);
     const previewBtn = isHtml ? `<button class="preview-btn" onclick="openPreview('${id}')">▶ Preview</button>` : '';
     result += `<div class="code-block">
       <div class="code-header">
