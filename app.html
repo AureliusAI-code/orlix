@@ -319,7 +319,7 @@ select.inp{cursor:pointer}
 }
 
 /* ── wallet button (titlebar) ── */
-.wallet-btn{display:flex;align-items:center;gap:6px;padding:4px 10px;border:1px solid rgba(0,82,255,.35);background:rgba(0,82,255,.08);border-radius:5px;color:#5b9aff;font-size:.71rem;font-family:var(--mono);cursor:pointer;transition:.15s;white-space:nowrap}
+.wallet-btn{display:flex;align-items:center;gap:6px;padding:4px 10px;border:1px solid rgba(0,82,255,.35);background:rgba(0,82,255,.08);border-radius:5px;color:#5b9aff;font-size:.71rem;font-family:var(--mono);cursor:pointer;transition:.15s;white-space:nowrap;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 .wallet-btn:hover{background:rgba(0,82,255,.16);border-color:#5b9aff}
 .wallet-btn.connected{border-color:rgba(126,224,168,.4);background:rgba(126,224,168,.07);color:var(--green)}
 .wallet-dot{width:6px;height:6px;border-radius:50%;background:#5b9aff;flex-shrink:0}
@@ -1907,21 +1907,44 @@ let _walletSigner   = null;
 let _walletAddress  = null;
 
 async function toggleWallet(){
-  // Use Privy SDK if loaded
-  if (window.__privyConnect) {
-    const connected = !!localStorage.getItem('orlix_token');
-    if (connected && window.__privyDisconnect) {
-      if (confirm('Disconnect from Orlix?')) {
-        await window.__privyDisconnect();
-      }
-    } else {
-      window.__privyConnect();
+  // If already connected via Privy, offer disconnect
+  if (localStorage.getItem('orlix_token') && window.__privyDisconnect) {
+    if (confirm('Disconnect from Orlix?')) {
+      await window.__privyDisconnect();
     }
     return;
   }
-  // Fallback: direct MetaMask
-  if(_walletAddress){ disconnectWallet(); return; }
-  await connectWallet();
+
+  // Privy SDK ready — open modal immediately
+  if (window.__privyConnect) {
+    window.__privyConnect();
+    return;
+  }
+
+  // SDK still loading from CDN — wait for it then open modal
+  const lbl = document.getElementById('walletLabel');
+  const btn = document.getElementById('walletBtn');
+  if (lbl) lbl.textContent = 'Loading…';
+  if (btn) btn.disabled = true;
+
+  let done = false;
+  function onReady() {
+    if (done) return;
+    done = true;
+    if (btn) btn.disabled = false;
+    updateWalletUI();
+    if (window.__privyConnect) window.__privyConnect();
+  }
+  document.addEventListener('privy:ready', onReady, { once: true });
+
+  // Give up after 12 s
+  setTimeout(() => {
+    if (done) return;
+    done = true;
+    document.removeEventListener('privy:ready', onReady);
+    if (btn) btn.disabled = false;
+    if (lbl) lbl.textContent = 'Connect';
+  }, 12000);
 }
 
 async function connectWallet(){
@@ -2284,11 +2307,13 @@ import { PrivyProvider, usePrivy }        from 'https://esm.sh/@privy-io/react-a
 function AuthBridge() {
   const { ready, authenticated, user, login, logout, getAccessToken } = usePrivy();
 
-  // Expose login/logout to the vanilla-JS toggleWallet() function
+  // Expose login/logout to toggleWallet() and signal ready
   useEffect(() => {
     if (!ready) return;
     window.__privyConnect    = login;
     window.__privyDisconnect = logout;
+    // Let toggleWallet() know SDK is ready (handles clicks that arrived early)
+    document.dispatchEvent(new CustomEvent('privy:ready'));
   }, [ready, login, logout]);
 
   // On successful auth — persist session + update UI
