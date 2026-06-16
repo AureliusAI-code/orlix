@@ -301,13 +301,19 @@ select.inp{cursor:pointer}
 .skill-card .sk-tag{display:inline-block;margin-top:8px;font-size:.63rem;padding:1px 6px;border-radius:3px;background:var(--amber-soft);color:var(--amber);border:1px solid rgba(255,154,82,.2)}
 
 /* ── mobile ── */
+.menu-btn{display:none;align-items:center;justify-content:center;width:34px;height:34px;background:none;border:1px solid var(--line-bright);border-radius:5px;color:var(--text);font-size:1rem;cursor:pointer;flex-shrink:0;transition:.15s}
+.menu-btn:hover{border-color:var(--amber);color:var(--amber)}
+.sidebar-overlay{display:none;position:fixed;inset:0;z-index:80;background:rgba(0,0,0,.55)}
+.sidebar-overlay.open{display:block}
 @media(max-width:640px){
-  .sidebar{position:fixed;left:-200px;top:46px;bottom:0;z-index:90;transition:left .2s}
-  .sidebar.open{left:0}
+  .menu-btn{display:flex}
+  .sidebar{position:fixed;left:-220px;top:52px;bottom:0;width:200px;z-index:90;transition:left .22s ease}
+  .sidebar.open{left:0;box-shadow:4px 0 24px rgba(0,0,0,.6)}
   .main{padding:18px 14px}
   .stat-grid{grid-template-columns:1fr 1fr}
   .agent-actions{display:none}
   .provider-grid{grid-template-columns:1fr}
+  .chat-wrap{height:calc(100vh - 200px)}
 }
 
 /* ── quality rater ── */
@@ -322,6 +328,7 @@ select.inp{cursor:pointer}
 <div class="titlebar">
   <div class="tb-in">
     <div class="tb-left">
+      <button class="menu-btn" id="menuBtn" aria-label="Menu">☰</button>
       <a href="/" class="tb-brand"><span style="color:var(--red);font-size:.42rem">●</span> ORLIX</a>
       <span class="tb-sep">/</span>
       <span class="tb-title">dashboard</span>
@@ -333,6 +340,7 @@ select.inp{cursor:pointer}
     </div>
   </div>
 </div>
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
 
 <div class="app-layout">
 
@@ -1626,6 +1634,23 @@ Never say "I can't browse" or "I don't have real-time data." Use the tools.
 </div>
 <script>
 document.getElementById('previewCloseBtn').addEventListener('click', closePreview);
+
+// Mobile sidebar toggle
+(function(){
+  const menuBtn = document.getElementById('menuBtn');
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('sidebarOverlay');
+  function openSidebar(){sidebar.classList.add('open');overlay.classList.add('open');}
+  function closeSidebar(){sidebar.classList.remove('open');overlay.classList.remove('open');}
+  if(menuBtn) menuBtn.addEventListener('click', function(){
+    sidebar.classList.contains('open') ? closeSidebar() : openSidebar();
+  });
+  if(overlay) overlay.addEventListener('click', closeSidebar);
+  // Close sidebar when a nav item is tapped on mobile
+  sidebar.addEventListener('click', function(e){
+    if(window.innerWidth <= 640 && e.target.closest('.sb-item')) closeSidebar();
+  });
+})();
 </script>
 
 </body>
