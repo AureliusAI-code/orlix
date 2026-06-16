@@ -1,5 +1,6 @@
 // Vercel Serverless Function — /api/chat
 // Routes to the right provider based on model name:
+//   mimo-*            → api.xiaomimimo.com  (MIMO_API_KEY env var) — primary engine
 //   claude-*          → api.anthropic.com   (ANTHROPIC_API_KEY env var) + Base MCP tools
 //   grok-*            → api.x.ai            (XAI_API_KEY env var)
 //   gpt-* / o1/o3/o4  → api.openai.com      (OPENAI_API_KEY env var)
@@ -255,6 +256,7 @@ module.exports = async function handler(req, res) {
     ? req.body : JSON.parse(req.body || '{}');
 
   const model    = (bodyObj.model || '').toLowerCase();
+  const isMimo   = model.startsWith('mimo');
   const isClaude = model.startsWith('claude');
   const isGrok   = model.startsWith('grok');
   const isOpenAI = model.startsWith('gpt-') || /^o[134]/.test(model);
@@ -263,6 +265,16 @@ module.exports = async function handler(req, res) {
     const body = { model: bodyObj.model, messages: bodyObj.messages || [], max_tokens: bodyObj.max_tokens || 2048 };
     if (bodyObj.temperature != null) body.temperature = bodyObj.temperature;
     return fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key }, body: JSON.stringify(body) });
+  }
+
+  // ── Mimo (primary engine) ────────────────────────────────────────────────
+  if (isMimo) {
+    const key = process.env.MIMO_API_KEY || '';
+    if (!key) return res.status(401).json({ error: { message: 'MIMO_API_KEY not set in Vercel Environment Variables. Add it and redeploy.' } });
+    try {
+      const r = await callCompat('https://api.xiaomimimo.com/v1/chat/completions', key);
+      return res.status(r.status).setHeader('Content-Type', 'application/json').send(await r.text());
+    } catch (e) { return res.status(502).json({ error: { message: 'Mimo error: ' + e.message } }); }
   }
 
   // ── Anthropic / Claude + Base MCP tools ──────────────────────────────────
@@ -358,7 +370,7 @@ module.exports = async function handler(req, res) {
   // No provider matched — inform the user
   return res.status(400).json({
     error: {
-      message: 'Unsupported model. Select a Claude (claude-*), Grok (grok-*), or OpenAI (gpt-* / o1/o3/o4) model to use this API.'
+      message: 'Unsupported model. Select a Mimo (mimo-*), Claude (claude-*), Grok (grok-*), or OpenAI (gpt-*/o1/o3/o4) model.'
     }
   });
 };

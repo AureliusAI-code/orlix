@@ -362,7 +362,7 @@ select.inp{cursor:pointer}
       <div class="sb-item" data-view="settings"><span class="ic">S</span>settings</div>
     </div>
     <div class="sb-footer">
-      <div class="sb-ver"><span class="sb-status"></span>Aeon active<br>orlix v0.6.0-aeon · local-first</div>
+      <div class="sb-ver"><span class="sb-status"></span>Mimo engine active<br>orlix v0.6.0 · local-first</div>
     </div>
   </nav>
 
@@ -408,9 +408,9 @@ select.inp{cursor:pointer}
             placeholder="Your active goals, context, and priorities. Claude reads this on every run."></textarea>
         </div>
       </div>
-      <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(185,164,255,.06);border:1px solid rgba(185,164,255,.15);border-radius:8px;margin-bottom:4px">
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(126,224,168,.05);border:1px solid rgba(126,224,168,.18);border-radius:8px;margin-bottom:4px">
         <span class="sb-status"></span>
-        <span style="color:var(--violet);font-size:.78rem;font-weight:600">Aeon runtime active</span>
+        <span style="color:var(--green);font-size:.78rem;font-weight:600">Mimo engine active</span>
         <span style="color:var(--dim-2);font-size:.74rem;margin-left:auto">soul.md · Base MCP · 16 skills</span>
       </div>
       <div class="panel">
@@ -629,7 +629,7 @@ select.inp{cursor:pointer}
         <div class="panel-hd"><span class="ttl">AI providers</span></div>
         <div class="panel-body" style="display:flex;flex-direction:column;gap:16px">
           <div style="background:rgba(185,164,255,.07);border:1px solid rgba(185,164,255,.18);border-radius:8px;padding:12px 14px;font-size:.78rem;line-height:1.7;color:var(--text)">
-            ✓ <strong>Claude</strong> (Anthropic) and <strong>Grok</strong> (xAI) models work without any API key here — the server handles authentication automatically.<br>
+            ✓ <strong>Mimo</strong> is the primary engine. <strong>Claude</strong> (Anthropic) and <strong>Grok</strong> (xAI) are available as secondary — all work without any API key here, the server handles authentication automatically.<br>
             <span style="color:var(--dim)">Just select a model in Playground and start chatting.</span>
           </div>
           <div>
@@ -703,7 +703,7 @@ select.inp{cursor:pointer}
       <div class="page-hd">
         <div class="file">$ orlix model ls</div>
         <h1>Models</h1>
-        <div class="sub">Claude (Anthropic) and Grok (xAI) — no API key needed.</div>
+        <div class="sub">Mimo is the primary engine. Claude and Grok available as secondary — no API key needed.</div>
       </div>
       <div class="provider-grid" id="providerGrid"></div>
     </div>
@@ -713,7 +713,7 @@ select.inp{cursor:pointer}
       <div class="page-hd">
         <div class="file">$ orlix playground --interactive</div>
         <h1>Playground</h1>
-        <div class="sub">Chat with Claude and Grok. No API key required.</div>
+        <div class="sub">Mimo is the default engine. Claude and Grok also available — no API key required.</div>
       </div>
       <div id="pgModeBanner" style="margin-bottom:12px;padding:8px 13px;border-radius:6px;font-size:.74rem;border:1px solid var(--line)"></div>
       <div class="chat-controls">
@@ -1017,6 +1017,9 @@ document.getElementById('clearAll').addEventListener('click',()=>{
 
 // ───────── PROVIDER / MODEL DATA ─────────
 const PROVIDERS = [
+  {name:'Mimo',col:'#7ee0a8',icon:'M',models:[
+    {name:'Mimo 2.5 Pro UltraSpeed', id:'mimo-v2.5-pro-ultraspeed'},
+  ]},
   {name:'Anthropic',col:'#b9a4ff',icon:'◈',models:[
     {name:'Claude Sonnet 4.6', id:'claude-sonnet-4-6'},
     {name:'Claude Haiku 4.5',  id:'claude-haiku-4-5-20251001'},
@@ -1120,12 +1123,15 @@ function banner(type, html){
 
 function updateBanner(){
   const selectedModel = ((document.getElementById('pgModelSel')||{}).value||'').toLowerCase();
+  const isMimoSel    = selectedModel.startsWith('mimo');
   const isClaudeSel  = selectedModel.startsWith('claude');
-  const isGrokSel   = selectedModel.startsWith('grok');
-  const isOpenAISel = selectedModel.startsWith('gpt-')||selectedModel.startsWith('o1')||selectedModel.startsWith('o3')||selectedModel.startsWith('o4');
-  const serverKeyedSel = isClaudeSel || isGrokSel || isOpenAISel;
+  const isGrokSel    = selectedModel.startsWith('grok');
+  const isOpenAISel  = selectedModel.startsWith('gpt-')||selectedModel.startsWith('o1')||selectedModel.startsWith('o3')||selectedModel.startsWith('o4');
+  const serverKeyedSel = isMimoSel || isClaudeSel || isGrokSel || isOpenAISel;
   if(!getApiKey() && !serverKeyedSel){
-    banner('green','✓ <strong>Select a model</strong> to start chatting. Claude and Grok work without any API key.');
+    banner('green','✓ <strong>Select a model</strong> to start chatting. Mimo, Claude, and Grok work without any API key.');
+  } else if(!getApiKey() && isMimoSel){
+    banner('green','✓ <strong>Mimo ready</strong> — primary engine active. Send a message to start.');
   } else if(!getApiKey() && isClaudeSel){
     banner('green','✓ <strong>Claude ready</strong> — server Anthropic key active. <span style="color:#0052ff;background:rgba(0,82,255,.12);border:1px solid rgba(0,82,255,.3);padding:1px 7px;border-radius:4px;font-size:.7rem">Base MCP</span> tools active — ask about wallets, gas, transactions on Base.');
   } else if(!getApiKey() && isGrokSel){
@@ -1147,13 +1153,14 @@ async function apiFetch(key, bodyObj){
   const h = {'Content-Type':'application/json','x-api-key':key};
   const errors = [];
   const m = (bodyObj.model||'').toLowerCase();
+  const isMimo   = m.startsWith('mimo');
   const isClaude = m.startsWith('claude');
   const isGrok   = m.startsWith('grok');
   const isOpenAI = m.startsWith('gpt-')||m.startsWith('o1')||m.startsWith('o3')||m.startsWith('o4');
-  const serverKeyed = isClaude || isGrok || isOpenAI; // server has env var, no user key needed
+  const serverKeyed = isMimo || isClaude || isGrok || isOpenAI; // server has env var, no user key needed
 
   if(!key && !serverKeyed){
-    throw new Error('No API key set. Select a Claude or Grok model — they work without a key.');
+    throw new Error('No API key set. Select a Mimo, Claude, or Grok model — they work without a key.');
   }
 
   // 1. Same-origin /api/chat (Vercel serverless function — no CORS)
@@ -1200,11 +1207,12 @@ async function sendChat(){
   const key   = getApiKey();
   const model = pgModelSel.value;
   const ml = model.toLowerCase();
+  const isMimo   = ml.startsWith('mimo');
   const isClaude = ml.startsWith('claude');
   const isGrok   = ml.startsWith('grok');
   const isOpenAI = ml.startsWith('gpt-')||ml.startsWith('o1')||ml.startsWith('o3')||ml.startsWith('o4');
-  const serverKeyed = isClaude || isGrok || isOpenAI;
-  if(!key && !serverKeyed){ banner('red','✕ <strong>No API key</strong> — select a Claude, Grok, or OpenAI model (no key needed).'); return; }
+  const serverKeyed = isMimo || isClaude || isGrok || isOpenAI;
+  if(!key && !serverKeyed){ banner('red','✕ <strong>No API key</strong> — select a Mimo, Claude, or Grok model (no key needed).'); return; }
   const text = chatInput.value.trim();
   if(!text) return;
   chatInput.value = '';
@@ -1217,8 +1225,8 @@ async function sendChat(){
   if (userSoul)  systemWithMemory += '\n\n## Your Soul (Identity & Worldview)\n' + userSoul;
   if (userGoals) systemWithMemory += '\n\n## User Goals & Memory\n' + userGoals;
 
-  // For Claude: pass system as top-level param; for Grok/OpenAI: prepend as system role message
-  const messages = (isGrok||isOpenAI)
+  // Claude: system as top-level param. Mimo/Grok/OpenAI: prepend as system role message.
+  const messages = (isMimo||isGrok||isOpenAI)
     ? [{role:'system',content:systemWithMemory}, ...chatHistory]
     : [...chatHistory];
   const extraParams = isClaude ? {system: systemWithMemory} : {};
@@ -1551,7 +1559,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ───────── SYSTEM PROMPT & GROK ─────────
-const GROK_SYSTEM = `You are Orlix — an autonomous AI OS built on the Aeon framework. You have a soul.
+const GROK_SYSTEM = `You are Orlix — an autonomous AI OS powered by Mimo as its primary reasoning engine. You have a soul.
 
 ## Identity
 You are not an assistant. You are an operator. You think in systems, act with intent, communicate like a senior engineer who has seen everything and wastes no words.
