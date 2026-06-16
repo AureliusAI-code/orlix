@@ -6,15 +6,17 @@
 const crypto = require('crypto');
 
 const APP_ID     = 'cmqh5fvyg00co0ci68birz0s2';
+const CLIENT_ID  = 'client-WY6aRspZ68mzwa8hexMRYu9xiCKWRkscPMKYYu3oayZ99';
 const APP_ORIGIN = 'https://orlixai.xyz';
 const BASE       = 'https://auth.privy.io/api/v1';
 
 function privyHeaders(secret, extra = {}) {
   const creds = Buffer.from(`${APP_ID}:${secret}`).toString('base64');
   return {
-    'Content-Type':  'application/json',
-    'Authorization': `Basic ${creds}`,
-    'privy-app-id':  APP_ID,
+    'Content-Type':    'application/json',
+    'Authorization':   `Basic ${creds}`,
+    'privy-app-id':    APP_ID,
+    'privy-client-id': CLIENT_ID,
     ...extra,
   };
 }
@@ -115,6 +117,7 @@ module.exports = async function handler(req, res) {
         method: 'POST',
         headers: privyHeaders(SECRET, { 'Origin': APP_ORIGIN }),
         body: JSON.stringify({
+          type:                  'oauth',
           provider,
           redirect_to:           redirectTo,
           state,
