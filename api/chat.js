@@ -267,12 +267,85 @@ module.exports = async function handler(req, res) {
     return fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key }, body: JSON.stringify(body) });
   }
 
-  // ── Mimo (primary engine) ────────────────────────────────────────────────
+  // ── Mimo (primary engine) — Hermes tool-call loop ───────────────────────
   if (isMimo) {
     const key = process.env.MIMO_API_KEY || '';
     if (!key) return res.status(401).json({ error: { message: 'MIMO_API_KEY not set in Vercel Environment Variables. Add it and redeploy.' } });
+
+    // Hermes-style XML tool call parser
+    function parseMimoToolCalls(text) {
+      const calls = [];
+      const re = /<tool_call>([\s\S]*?)<\/tool_call>/g;
+      let m;
+      while ((m = re.exec(text)) !== null) {
+        const inner = m[1];
+        const fn  = (inner.match(/<function>([\s\S]*?)<\/function>/) || [])[1];
+        const raw = (inner.match(/<args>([\s\S]*?)<\/args>/)         || [])[1];
+        if (fn) {
+          let args = {};
+          if (raw) { try { args = JSON.parse(raw.trim()); } catch {} }
+          calls.push({ name: fn.trim(), args });
+        }
+      }
+      return calls;
+    }
+
+    // Describe available tools in Hermes format (injected into system prompt)
+    const toolsDesc = JSON.stringify(ALL_TOOLS.map(t => ({
+      name: t.name, description: t.description, parameters: t.input_schema,
+    })), null, 2);
+    const toolInstructions = `\n\nYou have access to these tools:\n<tools>\n${toolsDesc}\n</tools>\n\nTo call a tool output:\n<tool_call>\n<function>tool_name</function>\n<args>{"param":"value"}</args>\n</tool_call>\nThen wait for the result before continuing.`;
+
+    let msgs = (bodyObj.messages || []).map((m, i) =>
+      (i === 0 && m.role === 'system')
+        ? { ...m, content: m.content + toolInstructions }
+        : m
+    );
+    // If no system message present, prepend one with tool instructions
+    if (!msgs.length || msgs[0].role !== 'system') {
+      msgs = [{ role: 'system', content: 'You are a helpful AI assistant.' + toolInstructions }, ...msgs];
+    }
+
     try {
-      const r = await callCompat('https://api.xiaomimimo.com/v1/chat/completions', key);
+      for (let round = 0; round < 5; round++) {
+        const body = { model: bodyObj.model, messages: msgs, max_tokens: bodyObj.max_tokens || 2048 };
+        if (bodyObj.temperature != null) body.temperature = bodyObj.temperature;
+        const r    = await fetch('https://api.xiaomimimo.com/v1/chat/completions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
+          body: JSON.stringify(body),
+        });
+        const text = await r.text();
+        if (!r.ok) return res.status(r.status).setHeader('Content-Type', 'application/json').send(text);
+
+        const data     = JSON.parse(text);
+        const content  = data.choices?.[0]?.message?.content || '';
+        const toolCalls = parseMimoToolCalls(content);
+
+        if (!toolCalls.length) {
+          // No tool calls — return final response
+          return res.status(200).setHeader('Content-Type', 'application/json').send(text);
+        }
+
+        // Execute tools and build Hermes-style tool_response messages
+        const results = await Promise.all(toolCalls.map(tc => executeTool(tc.name, tc.args)));
+        const toolResponseContent = toolCalls.map((tc, i) =>
+          `<tool_response>\n<function>${tc.name}</function>\n<result>${JSON.stringify(results[i])}</result>\n</tool_response>`
+        ).join('\n\n');
+
+        msgs = [...msgs,
+          { role: 'assistant', content },
+          { role: 'user',      content: toolResponseContent },
+        ];
+      }
+
+      // Max rounds hit — do one final call
+      const body = { model: bodyObj.model, messages: msgs, max_tokens: bodyObj.max_tokens || 2048 };
+      const r = await fetch('https://api.xiaomimimo.com/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
+        body: JSON.stringify(body),
+      });
       return res.status(r.status).setHeader('Content-Type', 'application/json').send(await r.text());
     } catch (e) { return res.status(502).json({ error: { message: 'Mimo error: ' + e.message } }); }
   }
