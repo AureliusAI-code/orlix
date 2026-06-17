@@ -1823,7 +1823,16 @@ function isHtmlContent(lang, code){
 
 function renderContent(text){
   // Strip Hermes-style tool call XML that leaked through (backend should handle these, but just in case)
-  text = text.replace(/<tool_call>[\s\S]*?<\/tool_call>/g, '').replace(/<tool_response>[\s\S]*?<\/tool_response>/g, '').trim();
+  // Strip Mimo/Hermes tool_call XML — handles both closed (<tool_call>...</tool_call>)
+  // and unclosed (<tool_call>\n{json}\n) formats
+  text = text
+    .replace(/<tool_call>[\s\S]*?<\/tool_call>/g, '')
+    .replace(/<tool_response>[\s\S]*?<\/tool_response>/g, '')
+    .replace(/<tool_call>[^<]*/g, '')
+    .replace(/<\/tool_call>/g, '')
+    .replace(/<tool_response>[^<]*/g, '')
+    .replace(/<\/tool_response>/g, '')
+    .trim();
   const RE = /`{3,}([\w-]*)[^\S\r\n]*\r?\n([\s\S]*?)`{3,}/g;
   let result = '';
   let last = 0;
