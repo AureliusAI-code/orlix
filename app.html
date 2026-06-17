@@ -1318,8 +1318,11 @@ document.getElementById('clearAll').addEventListener('click',()=>{
 
 // ───────── PROVIDER / MODEL DATA ─────────
 const PROVIDERS = [
-  {name:'Mimo',col:'#7ee0a8',icon:'M',models:[
-    {name:'Mimo 2.5 Pro UltraSpeed', id:'mimo-v2.5-pro-ultraspeed'},
+  {name:'Groq',col:'#f97316',icon:'⚡',models:[
+    {name:'Llama 3.3 70B',  id:'groq-llama-3.3-70b-versatile'},
+    {name:'Mixtral 8x7B',   id:'groq-mixtral-8x7b-32768'},
+    {name:'Gemma 2 9B',     id:'groq-gemma2-9b-it'},
+    {name:'Llama 3.1 8B',   id:'groq-llama-3.1-8b-instant'},
   ]},
   {name:'Anthropic',col:'#b9a4ff',icon:'◈',models:[
     {name:'Claude Sonnet 4.6', id:'claude-sonnet-4-6'},
@@ -1332,11 +1335,8 @@ const PROVIDERS = [
     {name:'Grok 4.3',      id:'grok-4.3'},
     {name:'Grok 4.1 Fast', id:'grok-4.1-fast'},
   ]},
-  {name:'Groq',col:'#f97316',icon:'⚡',models:[
-    {name:'Llama 3.3 70B',  id:'groq-llama-3.3-70b-versatile'},
-    {name:'Mixtral 8x7B',   id:'groq-mixtral-8x7b-32768'},
-    {name:'Gemma 2 9B',     id:'groq-gemma2-9b-it'},
-    {name:'Llama 3.1 8B',   id:'groq-llama-3.1-8b-instant'},
+  {name:'Mimo',col:'#7ee0a8',icon:'M',models:[
+    {name:'Mimo 2.5 Pro UltraSpeed', id:'mimo-v2.5-pro-ultraspeed'},
   ]},
   {name:'OpenAI',col:'#10a37f',icon:'○',models:[
     {name:'GPT-4o',       id:'gpt-4o'},
@@ -1825,6 +1825,7 @@ function renderContent(text){
   // Strip Hermes-style tool call XML that leaked through (backend should handle these, but just in case)
   // Strip Mimo/Hermes tool_call XML — handles both closed (<tool_call>...</tool_call>)
   // and unclosed (<tool_call>\n{json}\n) formats
+  // Strip all Mimo/Hermes tool-call formats (XML and JSON variants)
   text = text
     .replace(/<tool_call>[\s\S]*?<\/tool_call>/g, '')
     .replace(/<tool_response>[\s\S]*?<\/tool_response>/g, '')
@@ -1838,6 +1839,9 @@ function renderContent(text){
     .replace(/<\/invoke>/g, '')
     .replace(/<function_calls>[^<]*/g, '')
     .replace(/<\/function_calls>/g, '')
+    // JSON function-call formats: {"function": {...}} or {"name":"...","arguments":"..."}
+    .replace(/\{"function"\s*:\s*\{[^}]*\}[^}]*\}/g, '')
+    .replace(/^\s*\{[^\n]*"arguments"[^\n]*\}\s*$/gm, '')
     .trim();
   const RE = /`{3,}([\w-]*)[^\S\r\n]*\r?\n([\s\S]*?)`{3,}/g;
   let result = '';
