@@ -272,7 +272,22 @@ module.exports = async function handler(req, res) {
     const key = process.env.MIMO_API_KEY || '';
     if (!key) return res.status(401).json({ error: { message: 'MIMO_API_KEY not set in Vercel Environment Variables. Add it and redeploy.' } });
     try {
-      const r = await callCompat('https://api.xiaomimimo.com/v1/chat/completions', key);
+      // Inject a no-tool-call instruction into the system message so Mimo
+      // answers directly instead of outputting <tool_call> XML blocks
+      const noToolInstruction = 'IMPORTANT: Do NOT use <tool_call> XML or any function-calling syntax. Answer every question directly in plain text using your own knowledge.';
+      let msgs = bodyObj.messages || [];
+      if (msgs.length && msgs[0].role === 'system') {
+        msgs = [{ ...msgs[0], content: noToolInstruction + '\n\n' + msgs[0].content }, ...msgs.slice(1)];
+      } else {
+        msgs = [{ role: 'system', content: noToolInstruction }, ...msgs];
+      }
+      const body = { model: bodyObj.model, messages: msgs, max_tokens: bodyObj.max_tokens || 4096 };
+      if (bodyObj.temperature != null) body.temperature = bodyObj.temperature;
+      const r = await fetch('https://api.xiaomimimo.com/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
+        body: JSON.stringify(body),
+      });
       return res.status(r.status).setHeader('Content-Type', 'application/json').send(await r.text());
     } catch (e) { return res.status(502).json({ error: { message: 'Mimo error: ' + e.message } }); }
   }
