@@ -419,6 +419,24 @@ body::before{
 .msg-publish-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:7px;padding:8px 12px;background:rgba(185,164,255,.07);border:1px solid rgba(185,164,255,.28);border-radius:6px;color:var(--violet);font-family:var(--mono);font-size:.76rem;cursor:pointer;transition:.15s}
 .msg-publish-btn:hover{background:rgba(185,164,255,.14);border-color:var(--violet)}
 .msg-publish-btn:disabled{opacity:.5;cursor:default}
+
+/* ── learned skills ── */
+.msg-actions{display:flex;gap:6px;margin-top:6px;opacity:0;transition:opacity .15s}
+.msg.assistant:hover .msg-actions{opacity:1}
+.msg-act-btn{background:none;border:1px solid var(--line-bright);color:var(--dim);font-size:.65rem;padding:2px 7px;border-radius:3px;cursor:pointer;font-family:var(--mono);transition:.15s}
+.msg-act-btn:hover{border-color:var(--amber);color:var(--amber)}
+.skill-save-form{margin-top:8px;padding:10px 12px;background:var(--bg-input);border:1px solid var(--line-bright);border-radius:6px;display:none;flex-direction:column;gap:7px}
+.skill-save-form.open{display:flex}
+.skill-save-form input{background:transparent;border:none;border-bottom:1px solid var(--line-bright);color:var(--bright);font-family:var(--mono);font-size:.76rem;padding:3px 0;outline:none}
+.skill-save-form .form-row{display:flex;gap:8px}
+.skill-save-form .form-row button{flex:1;padding:5px 0;border-radius:4px;font-family:var(--mono);font-size:.73rem;cursor:pointer}
+.learned-skill-card{background:var(--bg);border:1px solid rgba(126,224,168,.2);border-radius:8px;padding:14px 16px;position:relative}
+.learned-skill-card .lsk-name{font-size:.82rem;font-weight:600;color:var(--bright);margin-bottom:4px}
+.learned-skill-card .lsk-tags{font-size:.67rem;color:var(--dim);margin-bottom:6px}
+.learned-skill-card .lsk-preview{font-size:.71rem;color:var(--dim);line-height:1.5;max-height:48px;overflow:hidden;text-overflow:ellipsis}
+.learned-skill-card .lsk-del{position:absolute;top:10px;right:10px;background:none;border:none;color:var(--dim);cursor:pointer;font-size:.8rem;opacity:.5}
+.learned-skill-card .lsk-del:hover{opacity:1;color:var(--red)}
+.lsk-badge{display:inline-block;padding:1px 6px;border-radius:3px;font-size:.63rem;background:rgba(126,224,168,.1);color:var(--green);border:1px solid rgba(126,224,168,.2);margin-top:8px}
 </style>
 </head>
 <body>
@@ -462,7 +480,7 @@ body::before{
       <span class="sb-label">integrations</span>
       <div class="sb-item" data-view="agents"><span class="ic">A</span>Agents<span class="badge">Aeon</span></div>
       <div class="sb-item" data-view="aeon-memory"><span class="ic">M</span>Memory</div>
-      <div class="sb-item" data-view="models"><span class="ic">◫</span>models<span class="badge">7</span></div>
+      <div class="sb-item" data-view="models"><span class="ic">◫</span>models<span class="badge">19</span></div>
       <div class="sb-item" data-view="playground"><span class="ic">▷</span>playground</div>
       <div class="sb-item" data-view="leaderboard"><span class="ic">⊞</span>leaderboard</div>
     </div>
@@ -654,6 +672,15 @@ body::before{
         <div class="file">$ orlix agent --list</div>
         <h1>Agents</h1>
         <div class="sub">Aeon-powered autonomous skills. Click any skill to run it in Playground.</div>
+      </div>
+      <div class="panel" style="margin-bottom:18px">
+        <div class="panel-hd">
+          <span class="ttl">learned skills</span>
+          <span style="color:var(--dim);font-size:.69rem">saved from your conversations</span>
+        </div>
+        <div class="panel-body">
+          <div class="skill-grid" id="skillGrid-learned"></div>
+        </div>
       </div>
       <div class="panel">
         <div class="panel-hd"><span class="ttl">Research & Analysis</span></div>
@@ -1102,6 +1129,84 @@ function renderAgents(){
   if (bdg) bdg.textContent = agents.length;
 }
 
+// ───────── SKILL LEARNING LOOP ─────────
+function getLearnedSkills(){
+  try{ return JSON.parse(localStorage.getItem('orlix_skills_learned')||'[]'); }
+  catch{ return []; }
+}
+function saveLearnedSkills(skills){
+  localStorage.setItem('orlix_skills_learned', JSON.stringify(skills));
+}
+
+function saveSkill(name, tags, content){
+  if(!name.trim()) return;
+  const skills = getLearnedSkills();
+  skills.unshift({ id: Date.now(), name: name.trim(), tags: tags.trim(), content, uses: 0, created: Date.now() });
+  saveLearnedSkills(skills.slice(0, 100));
+  renderLearnedSkills();
+}
+
+function deleteSkill(id){
+  saveLearnedSkills(getLearnedSkills().filter(s => s.id !== id));
+  renderLearnedSkills();
+}
+
+function getRelevantSkills(userInput){
+  const skills = getLearnedSkills();
+  if(!skills.length) return [];
+  const words = userInput.toLowerCase().split(/\W+/).filter(w => w.length > 3);
+  return skills.filter(s => {
+    const tags = (s.tags||'').toLowerCase().split(',').map(t => t.trim());
+    const name = s.name.toLowerCase();
+    return words.some(w => tags.some(t => t.includes(w)||w.includes(t)) || name.includes(w));
+  }).slice(0, 3);
+}
+
+function buildSkillContext(userInput){
+  const skills = getRelevantSkills(userInput);
+  if(!skills.length) return '';
+  return '\n\n[LEARNED PATTERNS — apply when relevant]\n' +
+    skills.map(s => `### ${s.name}\nTags: ${s.tags}\n${s.content}`).join('\n\n---\n\n');
+}
+
+function renderLearnedSkills(){
+  const grid = document.getElementById('skillGrid-learned');
+  if(!grid) return;
+  const skills = getLearnedSkills();
+  if(!skills.length){
+    grid.innerHTML = '<div style="color:var(--dim);font-size:.77rem;padding:8px 0">No learned skills yet. After chatting, save a useful AI response as a skill using the save button below each message.</div>';
+    return;
+  }
+  grid.innerHTML = skills.map(s => `
+    <div class="learned-skill-card">
+      <button class="lsk-del" onclick="deleteSkill(${s.id})">✕</button>
+      <div class="lsk-name">${esc2(s.name)}</div>
+      <div class="lsk-tags">${esc2(s.tags||'')}</div>
+      <div class="lsk-preview">${esc2(s.content.slice(0,120))}…</div>
+      <span class="lsk-badge">learned</span>
+    </div>`).join('');
+}
+
+function addSkillActionsToMsg(msgDiv, content){
+  const uid = 'sk_' + Date.now() + '_' + Math.random().toString(36).slice(2,6);
+  const actionsHtml = `
+    <div class="msg-actions">
+      <button class="msg-act-btn" onclick="navigator.clipboard.writeText(${JSON.stringify(content)})">copy</button>
+      <button class="msg-act-btn" onclick="document.getElementById('${uid}').classList.toggle('open')">◈ save skill</button>
+    </div>
+    <div class="skill-save-form" id="${uid}">
+      <input id="${uid}_name" placeholder="Skill name (e.g. Explain async Python)" />
+      <input id="${uid}_tags" placeholder="Tags (e.g. python, async, code)" />
+      <div class="form-row">
+        <button onclick="saveSkill(document.getElementById('${uid}_name').value, document.getElementById('${uid}_tags').value, ${JSON.stringify(content)}); document.getElementById('${uid}').classList.remove('open')" style="border:1px solid rgba(126,224,168,.4);background:rgba(126,224,168,.07);color:var(--green)">save</button>
+        <button onclick="document.getElementById('${uid}').classList.remove('open')" style="border:1px solid var(--line-bright);background:none;color:var(--dim)">cancel</button>
+      </div>
+    </div>`;
+  const wrapper = document.createElement('div');
+  wrapper.innerHTML = actionsHtml;
+  msgDiv.appendChild(wrapper);
+}
+
 // ───────── AEON SKILLS ─────────
 const AEON_SKILLS = {
   research: [
@@ -1207,6 +1312,25 @@ const PROVIDERS = [
     {name:'Grok 4.3',      id:'grok-4.3'},
     {name:'Grok 4.1 Fast', id:'grok-4.1-fast'},
   ]},
+  {name:'Groq',col:'#f97316',icon:'⚡',models:[
+    {name:'Llama 3.3 70B',  id:'groq-llama-3.3-70b-versatile'},
+    {name:'Mixtral 8x7B',   id:'groq-mixtral-8x7b-32768'},
+    {name:'Gemma 2 9B',     id:'groq-gemma2-9b-it'},
+    {name:'Llama 3.1 8B',   id:'groq-llama-3.1-8b-instant'},
+  ]},
+  {name:'OpenAI',col:'#10a37f',icon:'○',models:[
+    {name:'GPT-4o',       id:'gpt-4o'},
+    {name:'GPT-4o Mini',  id:'gpt-4o-mini'},
+    {name:'o4 Mini',      id:'o4-mini'},
+  ]},
+  {name:'DeepSeek',col:'#4a9eff',icon:'◎',models:[
+    {name:'DeepSeek Chat',     id:'deepseek-chat'},
+    {name:'DeepSeek Reasoner', id:'deepseek-reasoner'},
+  ]},
+  {name:'Google',col:'#4285f4',icon:'G',models:[
+    {name:'Gemini 2.5 Pro',   id:'gemini-2.5-pro-preview-06-05'},
+    {name:'Gemini 2.0 Flash', id:'gemini-2.0-flash-001'},
+  ]},
 ];
 
 // ───────── RENDER MODELS ─────────
@@ -1269,6 +1393,7 @@ function addMsg(role, content, meta=''){
   if(empty) empty.remove();
   chatMessages.appendChild(div);
   chatMessages.scrollTop=chatMessages.scrollHeight;
+  if(role==='assistant') addSkillActionsToMsg(div, content);
   return div;
 }
 
@@ -1299,13 +1424,16 @@ function banner(type, html){
 
 function updateBanner(){
   const selectedModel = ((document.getElementById('pgModelSel')||{}).value||'').toLowerCase();
-  const isMimoSel    = selectedModel.startsWith('mimo');
-  const isClaudeSel  = selectedModel.startsWith('claude');
-  const isGrokSel    = selectedModel.startsWith('grok');
-  const isOpenAISel  = selectedModel.startsWith('gpt-')||selectedModel.startsWith('o1')||selectedModel.startsWith('o3')||selectedModel.startsWith('o4');
-  const serverKeyedSel = isMimoSel || isClaudeSel || isGrokSel || isOpenAISel;
+  const isMimoSel     = selectedModel.startsWith('mimo');
+  const isClaudeSel   = selectedModel.startsWith('claude');
+  const isGrokSel     = selectedModel.startsWith('grok') && !selectedModel.startsWith('groq');
+  const isOpenAISel   = selectedModel.startsWith('gpt-')||selectedModel.startsWith('o1')||selectedModel.startsWith('o3')||selectedModel.startsWith('o4');
+  const isGroqSel     = selectedModel.startsWith('groq-');
+  const isDeepSeekSel = selectedModel.startsWith('deepseek-');
+  const isGeminiSel   = selectedModel.startsWith('gemini-');
+  const serverKeyedSel = isMimoSel || isClaudeSel || isGrokSel || isOpenAISel || isGroqSel || isDeepSeekSel || isGeminiSel;
   if(!getApiKey() && !serverKeyedSel){
-    banner('green','✓ <strong>Select a model</strong> to start chatting. Mimo, Claude, and Grok work without any API key.');
+    banner('green','✓ <strong>Select a model</strong> to start chatting. Mimo, Claude, Grok, Groq, DeepSeek, and Gemini work without any API key.');
   } else if(!getApiKey() && isMimoSel){
     banner('green','✓ <strong>Mimo ready</strong> — primary engine active. Send a message to start.');
   } else if(!getApiKey() && isClaudeSel){
@@ -1314,6 +1442,12 @@ function updateBanner(){
     banner('green','✓ <strong>Grok ready</strong> — server xAI key active. Send a message to start.');
   } else if(!getApiKey() && isOpenAISel){
     banner('green','✓ <strong>OpenAI ready</strong> — server OpenAI key active. Send a message to start.');
+  } else if(!getApiKey() && isGroqSel){
+    banner('green','✓ <strong>Groq ready</strong> — server Groq key active. Ultra-fast inference. Send a message to start.');
+  } else if(!getApiKey() && isDeepSeekSel){
+    banner('green','✓ <strong>DeepSeek ready</strong> — server DeepSeek key active. Send a message to start.');
+  } else if(!getApiKey() && isGeminiSel){
+    banner('green','✓ <strong>Gemini ready</strong> — server Google key active. Send a message to start.');
   } else if(IS_LOCAL){
     banner('green','✓ <strong>Local mode</strong> — proxy active via localhost:3001. Ready.');
   } else if(getProxyUrl()){
@@ -1329,14 +1463,17 @@ async function apiFetch(key, bodyObj){
   const h = {'Content-Type':'application/json','x-api-key':key};
   const errors = [];
   const m = (bodyObj.model||'').toLowerCase();
-  const isMimo   = m.startsWith('mimo');
-  const isClaude = m.startsWith('claude');
-  const isGrok   = m.startsWith('grok');
-  const isOpenAI = m.startsWith('gpt-')||m.startsWith('o1')||m.startsWith('o3')||m.startsWith('o4');
-  const serverKeyed = isMimo || isClaude || isGrok || isOpenAI; // server has env var, no user key needed
+  const isMimo     = m.startsWith('mimo');
+  const isClaude   = m.startsWith('claude');
+  const isGrok     = m.startsWith('grok') && !m.startsWith('groq');
+  const isOpenAI   = m.startsWith('gpt-')||m.startsWith('o1')||m.startsWith('o3')||m.startsWith('o4');
+  const isGroq     = m.startsWith('groq-');
+  const isDeepSeek = m.startsWith('deepseek-');
+  const isGemini   = m.startsWith('gemini-');
+  const serverKeyed = isMimo || isClaude || isGrok || isOpenAI || isGroq || isDeepSeek || isGemini; // server has env var, no user key needed
 
   if(!key && !serverKeyed){
-    throw new Error('No API key set. Select a Mimo, Claude, or Grok model — they work without a key.');
+    throw new Error('No API key set. Select a Mimo, Claude, Grok, Groq, DeepSeek, or Gemini model — they work without a key.');
   }
 
   // 1. Same-origin /api/chat (Vercel serverless function — no CORS)
@@ -1383,12 +1520,15 @@ async function sendChat(){
   const key   = getApiKey();
   const model = pgModelSel.value;
   const ml = model.toLowerCase();
-  const isMimo   = ml.startsWith('mimo');
-  const isClaude = ml.startsWith('claude');
-  const isGrok   = ml.startsWith('grok');
-  const isOpenAI = ml.startsWith('gpt-')||ml.startsWith('o1')||ml.startsWith('o3')||ml.startsWith('o4');
-  const serverKeyed = isMimo || isClaude || isGrok || isOpenAI;
-  if(!key && !serverKeyed){ banner('red','✕ <strong>No API key</strong> — select a Mimo, Claude, or Grok model (no key needed).'); return; }
+  const isMimo     = ml.startsWith('mimo');
+  const isClaude   = ml.startsWith('claude');
+  const isGrok     = ml.startsWith('grok') && !ml.startsWith('groq');
+  const isOpenAI   = ml.startsWith('gpt-')||ml.startsWith('o1')||ml.startsWith('o3')||ml.startsWith('o4');
+  const isGroq     = ml.startsWith('groq-');
+  const isDeepSeek = ml.startsWith('deepseek-');
+  const isGemini   = ml.startsWith('gemini-');
+  const serverKeyed = isMimo || isClaude || isGrok || isOpenAI || isGroq || isDeepSeek || isGemini;
+  if(!key && !serverKeyed){ banner('red','✕ <strong>No API key</strong> — select a Mimo, Claude, Grok, Groq, DeepSeek, or Gemini model (no key needed).'); return; }
   const text = chatInput.value.trim();
   if(!text) return;
   chatInput.value = '';
@@ -1400,9 +1540,10 @@ async function sendChat(){
   let systemWithMemory = GROK_SYSTEM;
   if (userSoul)  systemWithMemory += '\n\n## Your Soul (Identity & Worldview)\n' + userSoul;
   if (userGoals) systemWithMemory += '\n\n## User Goals & Memory\n' + userGoals;
+  systemWithMemory += buildSkillContext(text);
 
-  // Claude: system as top-level param. Mimo/Grok/OpenAI: prepend as system role message.
-  const messages = (isMimo||isGrok||isOpenAI)
+  // Claude: system as top-level param. Mimo/Grok/OpenAI/Groq/DeepSeek/Gemini: prepend as system role message.
+  const messages = (isMimo||isGrok||isOpenAI||isGroq||isDeepSeek||isGemini)
     ? [{role:'system',content:systemWithMemory}, ...chatHistory]
     : [...chatHistory];
   const extraParams = isClaude ? {system: systemWithMemory} : {};
@@ -1503,6 +1644,7 @@ renderGoals();
 renderAudit();
 renderAgents();
 renderAgentSkills();
+renderLearnedSkills();
 renderOvLog();
 renderModels();
 populateModelSel();
