@@ -18,7 +18,6 @@
 <meta name="twitter:description" content="Personal AI Operating System">
 <meta name="twitter:image" content="https://www.orlixai.xyz/og-image.png">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-<script src="https://cdn.ethers.io/lib/ethers-5.7.2.umd.min.js" type="application/javascript"></script>
 <style>
 :root{
   --bg:#0a0a0a;--bg-panel:#111;--bg-input:#161616;
@@ -318,12 +317,6 @@ select.inp{cursor:pointer}
   .chat-wrap{height:calc(100vh - 200px)}
 }
 
-/* ── wallet button (titlebar) ── */
-.wallet-btn{display:flex;align-items:center;gap:6px;padding:4px 10px;border:1px solid rgba(0,82,255,.35);background:rgba(0,82,255,.08);border-radius:5px;color:#5b9aff;font-size:.71rem;font-family:var(--mono);cursor:pointer;transition:.15s;white-space:nowrap;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
-.wallet-btn:hover{background:rgba(0,82,255,.16);border-color:#5b9aff}
-.wallet-btn.connected{border-color:rgba(126,224,168,.4);background:rgba(126,224,168,.07);color:var(--green)}
-.wallet-dot{width:6px;height:6px;border-radius:50%;background:#5b9aff;flex-shrink:0}
-.wallet-btn.connected .wallet-dot{background:var(--green);box-shadow:0 0 5px var(--green)}
 
 /* ── transaction card (inline in chat) ── */
 .tx-card{background:rgba(0,82,255,.06);border:1px solid rgba(0,82,255,.28);border-radius:8px;overflow:hidden;margin:10px 0}
@@ -440,12 +433,7 @@ body::before{
       <span class="tb-title">dashboard</span>
     </div>
     <div class="tb-right">
-      <button class="wallet-btn" id="walletBtn" onclick="toggleWallet()">
-        <span class="wallet-dot"></span>
-        <span id="walletLabel">Connect</span>
-      </button>
       <a href="/gallery" style="color:var(--violet)" class="hide-mobile">gallery</a>
-      <span id="userDisplay" style="display:none;font-size:.72rem;color:var(--dim);max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" class="hide-mobile"></span>
       <a href="/" class="hide-mobile">← home</a>
     </div>
   </div>
@@ -483,9 +471,7 @@ body::before{
       <div class="sb-item" data-view="settings"><span class="ic">S</span>settings</div>
     </div>
     <div class="sb-footer">
-      <div class="sb-ver" id="sbUserLine" style="margin-bottom:8px;display:none;color:var(--dim-2);font-size:.69rem"></div>
       <div class="sb-ver"><span class="sb-status"></span>Mimo engine active<br>orlix v0.6.0 · local-first</div>
-      <button onclick="logoutUser()" class="btn sm danger" style="margin-top:10px;width:100%;justify-content:center">← sign out</button>
     </div>
   </nav>
 
@@ -1837,193 +1823,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // populate auth user display
-  initAuth();
 });
 
-// ───────── AUTH HELPERS ─────────
-function hh(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-
-function initAuth(){
-  try {
-    const user    = JSON.parse(localStorage.getItem('orlix_user') || '{}');
-    const label   = user.display || '';
-    const avatar  = user.avatar  || '';
-    const type    = user.type    || '';
-    const address = user.address || '';
-
-    // Titlebar: avatar + label
-    const disp = document.getElementById('userDisplay');
-    if (disp && label) {
-      if (avatar) {
-        disp.innerHTML = `<img src="${hh(avatar)}" style="width:22px;height:22px;border-radius:50%;object-fit:cover;vertical-align:middle;margin-right:5px" onerror="this.style.display='none'">${hh(label)}`;
-      } else {
-        disp.textContent = label;
-      }
-      disp.style.display = '';
-    }
-
-    // Sidebar profile card
-    const line = document.getElementById('sbUserLine');
-    if (line && label) {
-      let iconHtml;
-      if (avatar && type === 'twitter') {
-        iconHtml = `<img src="${hh(avatar)}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;flex-shrink:0" onerror="this.style.display='none'">`;
-      } else if (type === 'wallet') {
-        iconHtml = `<div style="width:32px;height:32px;border-radius:50%;background:rgba(185,164,255,.12);border:1px solid rgba(185,164,255,.25);display:flex;align-items:center;justify-content:center;font-size:.9rem;flex-shrink:0">⬡</div>`;
-      } else {
-        iconHtml = `<div style="width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;font-size:.75rem;flex-shrink:0;color:var(--dim)">◈</div>`;
-      }
-      const subLabel = type === 'twitter' ? 'via X / Twitter' : type === 'wallet' ? 'wallet' : '';
-      line.innerHTML = `<div style="display:flex;align-items:center;gap:9px;padding:8px 0 5px">${iconHtml}<div style="min-width:0"><div style="color:var(--bright);font-size:.77rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${hh(label)}</div><div style="color:var(--dim);font-size:.66rem" id="sbWalletLine">${hh(subLabel)}</div></div></div>`;
-      line.style.display = '';
-    }
-
-    // Auto-populate wallet state if user logged in via wallet
-    if (type === 'wallet' && address && !_walletAddress) {
-      _walletAddress = address;
-    }
-    updateWalletUI();
-  } catch(e){}
-}
-
-function logoutUser(){
-  if (!confirm('Sign out of Orlix?')) return;
-  if (window.__privyDisconnect) window.__privyDisconnect().catch(()=>{});
-  ['orlix_token','orlix_user','orlix_privy_token','orlix_privy_user'].forEach(k=>localStorage.removeItem(k));
-  _walletAddress = null;
-  initAuth();
-  updateWalletUI();
-}
-
-// ───────── BASE ONCHAIN — WALLET & TRANSACTIONS ─────────
-const BASE_CHAIN_ID   = 8453;
-const BASE_CHAIN_HEX  = '0x2105';
-const BASE_RPC        = 'https://mainnet.base.org';
-const BASESCAN        = 'https://basescan.org/tx/';
-
-let _walletProvider = null;
-let _walletSigner   = null;
-let _walletAddress  = null;
-
-async function toggleWallet(){
-  // If already connected via Privy, offer disconnect
-  if (localStorage.getItem('orlix_token') && window.__privyDisconnect) {
-    if (confirm('Disconnect from Orlix?')) {
-      await window.__privyDisconnect();
-    }
-    return;
-  }
-
-  // Privy SDK ready — open modal immediately
-  if (window.__privyConnect) {
-    window.__privyConnect();
-    return;
-  }
-
-  // SDK still loading from CDN — wait for it then open modal
-  const lbl = document.getElementById('walletLabel');
-  const btn = document.getElementById('walletBtn');
-  if (lbl) lbl.textContent = 'Loading…';
-  if (btn) btn.disabled = true;
-
-  let done = false;
-  function onReady() {
-    if (done) return;
-    done = true;
-    if (btn) btn.disabled = false;
-    updateWalletUI();
-    if (window.__privyConnect) window.__privyConnect();
-  }
-  document.addEventListener('privy:ready', onReady, { once: true });
-
-  // Give up after 12 s
-  setTimeout(() => {
-    if (done) return;
-    done = true;
-    document.removeEventListener('privy:ready', onReady);
-    if (btn) btn.disabled = false;
-    if (lbl) lbl.textContent = 'Connect';
-  }, 12000);
-}
-
-async function connectWallet(){
-  if(!window.ethereum){
-    alert('No wallet detected.\nInstall MetaMask or Coinbase Wallet to use onchain features.');
-    return;
-  }
-  try{
-    _walletProvider = new ethers.providers.Web3Provider(window.ethereum,'any');
-    await _walletProvider.send('eth_requestAccounts',[]);
-    // Switch to Base
-    try{
-      await window.ethereum.request({method:'wallet_switchEthereumChain',params:[{chainId:BASE_CHAIN_HEX}]});
-    }catch(e){
-      if(e.code===4902){
-        await window.ethereum.request({method:'wallet_addEthereumChain',params:[{
-          chainId:BASE_CHAIN_HEX,chainName:'Base',
-          nativeCurrency:{name:'Ethereum',symbol:'ETH',decimals:18},
-          rpcUrls:[BASE_RPC],blockExplorerUrls:['https://basescan.org']
-        }]});
-        await window.ethereum.request({method:'wallet_switchEthereumChain',params:[{chainId:BASE_CHAIN_HEX}]});
-      }
-    }
-    _walletProvider = new ethers.providers.Web3Provider(window.ethereum,'any');
-    _walletSigner   = _walletProvider.getSigner();
-    _walletAddress  = await _walletSigner.getAddress();
-    updateWalletUI();
-    logAudit('action','User','connected wallet: '+shortAddr(_walletAddress));
-  }catch(e){
-    if(e.code!==4001) alert('Wallet error: '+e.message);
-  }
-}
-
-function disconnectWallet(){
-  _walletProvider=null; _walletSigner=null; _walletAddress=null;
-  updateWalletUI();
-}
-
 function shortAddr(addr){ return addr?addr.slice(0,6)+'…'+addr.slice(-4):''; }
-
-function updateWalletUI(){
-  const btn=document.getElementById('walletBtn');
-  const lbl=document.getElementById('walletLabel');
-  try {
-    const u = JSON.parse(localStorage.getItem('orlix_user')||'{}');
-    if (u.display) {
-      btn.classList.add('connected');
-      lbl.textContent = u.display;
-      return;
-    }
-  } catch(e){}
-  if(_walletAddress){
-    btn.classList.add('connected');
-    lbl.textContent = shortAddr(_walletAddress);
-  } else {
-    btn.classList.remove('connected');
-    lbl.textContent = 'Connect';
-  }
-  // Keep sidebar profile wallet line in sync
-  const wl = document.getElementById('sbWalletLine');
-  if (wl) {
-    try {
-      const type = (JSON.parse(localStorage.getItem('orlix_user')||'{}').type)||'';
-      if (_walletAddress && type !== 'wallet') {
-        wl.innerHTML = 'X · <span style="color:var(--violet)">' + shortAddr(_walletAddress) + '</span>';
-      } else if (type === 'wallet') {
-        wl.textContent = 'wallet';
-      } else {
-        wl.textContent = type === 'twitter' ? 'via X / Twitter' : '';
-      }
-    } catch(e){}
-  }
-}
-
-// Listen for account/chain changes
-if(window.ethereum){
-  window.ethereum.on('accountsChanged', accs => { if(!accs.length) disconnectWallet(); });
-  window.ethereum.on('chainChanged', ()=> window.location.reload());
-}
 
 // ── Render transaction approval card ──
 const TX_ICONS = {transfer:'↗',swap:'⇄',approve:'✓',lend:'⬆',borrow:'⬇',repay:'↩',withdraw:'⬇'};
@@ -2033,7 +1835,7 @@ function renderTxCard(id, tx){
   const typeKey = (tx.type||'transfer').toLowerCase();
   const icon    = TX_ICONS[typeKey]  || '◈';
   const label   = TX_LABELS[typeKey] || tx.type || 'Transaction';
-  const ethVal  = tx.value ? ethers.utils.formatEther(ethers.BigNumber.from(tx.value)) : '0';
+  const ethVal  = tx.value ? (Number(BigInt(tx.value)) / 1e18).toFixed(6) : '0';
   const gasEst  = tx.gasLimit ? parseInt(tx.gasLimit).toLocaleString()+' gas' : 'auto';
 
   const rows = [];
@@ -2063,43 +1865,7 @@ function renderTxCard(id, tx){
 }
 
 async function signTransaction(id){
-  const btn = document.getElementById('txsign-'+id);
-  if(!btn || btn.disabled) return;
-  const raw = _codeStore[id];
-  if(!raw) return;
-  let tx;
-  try{ tx = JSON.parse(raw); }catch{ return; }
-
-  if(!_walletAddress){
-    await connectWallet();
-    if(!_walletAddress) return;
-  }
-
-  btn.disabled = true;
-  btn.textContent = '⏳ Waiting for signature…';
-
-  try{
-    const txReq = { to: tx.to, chainId: BASE_CHAIN_ID };
-    if(tx.value && tx.value!=='0') txReq.value = ethers.BigNumber.from(tx.value);
-    if(tx.data) txReq.data = tx.data;
-    if(tx.gasLimit) txReq.gasLimit = ethers.BigNumber.from(tx.gasLimit);
-
-    const result = await _walletSigner.sendTransaction(txReq);
-    btn.classList.add('success');
-    btn.textContent = '✓ Submitted — '+shortAddr(result.hash);
-    btn.onclick = ()=> window.open(BASESCAN+result.hash,'_blank');
-    logAudit('action','Orlix','tx submitted on Base: '+result.hash);
-    addMsg('assistant','Transaction submitted to Base ✓\n\nHash: `'+result.hash+'`\n\nView on Basescan: '+BASESCAN+result.hash);
-  }catch(e){
-    btn.disabled = false;
-    if(e.code===4001){
-      btn.textContent = '⬡ Sign & Execute on Base';
-    } else {
-      btn.classList.add('error');
-      btn.textContent = '✕ Failed: '+e.message.slice(0,60);
-      setTimeout(()=>{ btn.classList.remove('error'); btn.textContent='⬡ Sign & Execute on Base'; btn.disabled=false; }, 4000);
-    }
-  }
+  alert('Transaction signing is not available.');
 }
 
 // ───────── GALLERY & LEADERBOARD ─────────
@@ -2294,111 +2060,6 @@ document.getElementById('previewCloseBtn').addEventListener('click', closePrevie
 })();
 </script>
 
-<!-- Privy SDK — powers the Connect button in the top-right titlebar -->
-<script type="module">
-// iOS Safari: passive touchstart makes ALL elements tappable inside React portals
-document.addEventListener('touchstart', function(){}, {passive: true});
-
-async function initPrivy() {
-  try {
-    const [
-      { createElement: h, useEffect },
-      { createRoot },
-      { PrivyProvider, usePrivy }
-    ] = await Promise.all([
-      import('https://esm.sh/react@18.3.1'),
-      import('https://esm.sh/react-dom@18.3.1/client'),
-      import('https://esm.sh/@privy-io/react-auth@2.10.0?deps=react@18.3.1,react-dom@18.3.1'),
-    ]);
-
-    function AuthBridge() {
-      const { ready, authenticated, user, login, logout, getAccessToken } = usePrivy();
-
-      useEffect(() => {
-        if (!ready) return;
-        window.__privyConnect    = login;
-        window.__privyDisconnect = logout;
-        document.dispatchEvent(new CustomEvent('privy:ready'));
-      }, [ready, login, logout]);
-
-      useEffect(() => {
-        if (!ready) return;
-        if (authenticated && user) {
-          (async () => {
-            try {
-              const token  = await getAccessToken();
-              const accts  = user.linkedAccounts || [];
-              const tw     = accts.find(a => a.type === 'twitter_oauth');
-              const wl     = accts.find(a => a.type === 'wallet');
-              const display = tw ? '@' + tw.username
-                            : wl ? wl.address.slice(0,6) + '…' + wl.address.slice(-4)
-                            : user.id?.slice(0,12) || 'user';
-              const userData = {
-                id: user.id, display,
-                type:     tw ? 'twitter' : wl ? 'wallet' : 'other',
-                username: tw?.username || '',
-                name:     tw?.name || '',
-                avatar:   tw?.profile_picture_url || '',
-                address:  wl?.address || '',
-              };
-              localStorage.setItem('orlix_token', 'privy:' + token);
-              localStorage.setItem('orlix_user',  JSON.stringify(userData));
-              typeof initAuth === 'function' && initAuth();
-              if (wl?.address && window.ethereum) {
-                window.ethereum.request({method:'eth_accounts'}).then(accs => {
-                  if (accs[0]?.toLowerCase() === wl.address.toLowerCase()) {
-                    _walletAddress = accs[0];
-                    typeof updateWalletUI === 'function' && updateWalletUI();
-                  }
-                }).catch(()=>{});
-              }
-            } catch(e) { console.error('[Privy]', e); }
-          })();
-        } else if (!authenticated) {
-          // Only clear Privy-issued tokens — don't wipe wallet sessions on cold load
-          const tok = localStorage.getItem('orlix_token') || '';
-          if (tok.startsWith('privy:')) {
-            localStorage.removeItem('orlix_token');
-            localStorage.removeItem('orlix_user');
-            _walletAddress = null;
-            typeof initAuth       === 'function' && initAuth();
-            typeof updateWalletUI === 'function' && updateWalletUI();
-          }
-        }
-      }, [ready, authenticated, user]);
-
-      return null;
-    }
-
-    const _pm = document.createElement('div');
-    document.body.appendChild(_pm);
-    createRoot(_pm).render(
-      h(PrivyProvider, {
-        appId:    'cmqh5fvyg00co0ci68birz0s2',
-        clientId: 'client-WY6aRspZ68mzwa8hexMRYu9xiCKWRkscPMKYYu3oayZ99',
-        config: {
-          loginMethods:    ['twitter', 'wallet'],
-          appearance:      { theme: 'dark', accentColor: '#ff9a52' },
-          embeddedWallets: { createOnLogin: 'off' },
-        },
-      }, h(AuthBridge))
-    );
-
-  } catch(err) {
-    console.error('[Privy] SDK failed to load:', err);
-    // Unblock the Connect button so users aren't stuck on "Loading…"
-    document.dispatchEvent(new CustomEvent('privy:ready'));
-    const lbl = document.getElementById('walletLabel');
-    const btn = document.getElementById('walletBtn');
-    if (lbl) lbl.textContent = 'Connect';
-    if (btn) btn.disabled = false;
-    // Retry once after 3 s in case it was a transient CDN hiccup
-    setTimeout(initPrivy, 3000);
-  }
-}
-
-initPrivy();
-</script>
 
 </body>
 </html>
