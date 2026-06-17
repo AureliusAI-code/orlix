@@ -272,70 +272,91 @@ module.exports = async function handler(req, res) {
     const key = process.env.MIMO_API_KEY || '';
     if (!key) return res.status(401).json({ error: { message: 'MIMO_API_KEY not set in Vercel Environment Variables. Add it and redeploy.' } });
 
-    // Parse Hermes-style <tool_call> XML from Mimo's response
-    function parseMimoToolCalls(text) {
-      const calls = [];
-      const re = /<tool_call>([\s\S]*?)<\/tool_call>/g;
-      let m;
-      while ((m = re.exec(text)) !== null) {
-        const inner = m[1];
-        const fn  = (inner.match(/<function>([\s\S]*?)<\/function>/) || [])[1];
-        const raw = (inner.match(/<args>([\s\S]*?)<\/args>/)         || [])[1];
+    const msgs    = bodyObj.messages || [];
+    const maxTok  = bodyObj.max_tokens || 4096;
+    const lastMsg = [...msgs].reverse().find(m => m.role === 'user')?.content || '';
+    const lm      = lastMsg.toLowerCase();
+
+    // ── Proactive tool detection (keyword-based, no XML needed) ─────────────
+    const proactive = [];
+    if (/base.{0,25}(network|chain|status|info)|chain.?id|gas.?price|latest.?block|block.?number|basescan/.test(lm)) {
+      proactive.push(
+        { name: 'base_get_network_info',  args: {} },
+        { name: 'base_get_latest_block',  args: {} },
+        { name: 'base_get_gas_price',     args: {} },
+      );
+    }
+    if (/\b(search|news|latest|current price|today|happening|recent|find|look up)\b/.test(lm)) {
+      proactive.push({ name: 'web_search', args: { query: lastMsg, count: 6 } });
+    }
+    const ghMatch  = lastMsg.match(/github\.com\/([^\/\s]+)\/([^\/\s]+)/);
+    if (ghMatch) proactive.push({ name: 'github_repo_info', args: { owner: ghMatch[1], repo: ghMatch[2] } });
+    const urlMatch = lastMsg.match(/https?:\/\/[^\s]+/);
+    if (urlMatch && !ghMatch) proactive.push({ name: 'fetch_webpage', args: { url: urlMatch[0] } });
+    // Wallet balance check
+    const addrMatch = lastMsg.match(/0x[0-9a-fA-F]{40}/);
+    if (addrMatch && /balance|wallet/.test(lm)) {
+      proactive.push({ name: 'base_get_eth_balance', args: { address: addrMatch[0] } });
+    }
+
+    try {
+      let finalMsgs = msgs;
+
+      if (proactive.length) {
+        // Fetch all needed data in parallel before calling Mimo
+        const results  = await Promise.all(proactive.map(t => executeTool(t.name, t.args)));
+        const dataBlock = proactive.map((t, i) =>
+          `[${t.name}]\n${JSON.stringify(results[i], null, 2)}`
+        ).join('\n\n');
+
+        // Inject data into the last user message as plain context
+        finalMsgs = [
+          ...msgs.slice(0, -1),
+          { role: 'user', content: `Real-time data:\n\n${dataBlock}\n\n---\n${lastMsg}` },
+        ];
+      }
+
+      const r = await fetch('https://api.xiaomimimo.com/v1/chat/completions', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
+        body:    JSON.stringify({ model: bodyObj.model, messages: finalMsgs, max_tokens: maxTok }),
+      });
+      const text = await r.text();
+      if (!r.ok) return res.status(r.status).setHeader('Content-Type', 'application/json').send(text);
+
+      // If Mimo still outputs <tool_call> XML (edge case), execute and do one more pass
+      const data    = JSON.parse(text);
+      const content = data.choices?.[0]?.message?.content || '';
+      const xmlRe   = /<tool_call>([\s\S]*?)<\/tool_call>/g;
+      const xmlCalls = [];
+      let xm;
+      while ((xm = xmlRe.exec(content)) !== null) {
+        const fn  = (xm[1].match(/<function>([\s\S]*?)<\/function>/) || [])[1];
+        const raw = (xm[1].match(/<args>([\s\S]*?)<\/args>/)         || [])[1];
         if (fn) {
           let args = {};
           if (raw) { try { args = JSON.parse(raw.trim()); } catch {} }
-          calls.push({ name: fn.trim(), args });
+          xmlCalls.push({ name: fn.trim(), args });
         }
       }
-      return calls;
-    }
 
-    const msgs = bodyObj.messages || [];
-    const maxTok = bodyObj.max_tokens || 4096;
-
-    try {
-      // Step 1 — call Mimo without tool descriptions (let it answer or emit tool calls)
-      const r1 = await fetch('https://api.xiaomimimo.com/v1/chat/completions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
-        body: JSON.stringify({ model: bodyObj.model, messages: msgs, max_tokens: maxTok }),
-      });
-      const text1 = await r1.text();
-      if (!r1.ok) return res.status(r1.status).setHeader('Content-Type', 'application/json').send(text1);
-
-      const data1    = JSON.parse(text1);
-      const content1 = data1.choices?.[0]?.message?.content || '';
-      const toolCalls = parseMimoToolCalls(content1);
-
-      // No tool calls — return Mimo's answer directly
-      if (!toolCalls.length) {
-        return res.status(200).setHeader('Content-Type', 'application/json').send(text1);
+      if (xmlCalls.length) {
+        const xResults  = await Promise.all(xmlCalls.map(tc => executeTool(tc.name, tc.args)));
+        const xData     = xmlCalls.map((tc, i) => `[${tc.name}]\n${JSON.stringify(xResults[i], null, 2)}`).join('\n\n');
+        const fallback  = [
+          ...finalMsgs,
+          { role: 'assistant', content },
+          { role: 'user',      content: `Data retrieved:\n\n${xData}\n\nNow answer the original question using this data.` },
+        ];
+        const r2 = await fetch('https://api.xiaomimimo.com/v1/chat/completions', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
+          body:    JSON.stringify({ model: bodyObj.model, messages: fallback, max_tokens: maxTok }),
+        });
+        return res.status(r2.status).setHeader('Content-Type', 'application/json').send(await r2.text());
       }
 
-      // Step 2 — execute the requested tools in parallel
-      const results = await Promise.all(toolCalls.map(tc => executeTool(tc.name, tc.args)));
-
-      // Step 3 — build a plain-text data block and inject it back as user context
-      // (Mimo just reads the data and answers — no tool_response XML needed)
-      const dataBlock = toolCalls.map((tc, i) =>
-        `[${tc.name}]\n${JSON.stringify(results[i], null, 2)}`
-      ).join('\n\n');
-
-      const userMsg = [...msgs].reverse().find(m => m.role === 'user')?.content || '';
-      const enrichedMsgs = [
-        ...msgs.slice(0, -1),
-        {
-          role: 'user',
-          content: `Real-time data retrieved:\n\n${dataBlock}\n\n---\nUsing the data above, answer this:\n${userMsg}`,
-        },
-      ];
-
-      const r2 = await fetch('https://api.xiaomimimo.com/v1/chat/completions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
-        body: JSON.stringify({ model: bodyObj.model, messages: enrichedMsgs, max_tokens: maxTok }),
-      });
-      return res.status(r2.status).setHeader('Content-Type', 'application/json').send(await r2.text());
+      return res.status(200).setHeader('Content-Type', 'application/json').send(text);
     } catch (e) { return res.status(502).json({ error: { message: 'Mimo error: ' + e.message } }); }
   }
 
