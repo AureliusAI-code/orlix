@@ -362,10 +362,27 @@ module.exports = async function handler(req, res) {
       'anthropic-version': '2023-06-01',
     };
 
+    function toAnthropicMessages(messages) {
+      return messages.filter(m => m.role !== 'system').map(m => {
+        if (!Array.isArray(m.content)) return m;
+        return {
+          ...m,
+          content: m.content.map(block => {
+            if (block.type === 'image_url' && block.image_url?.url?.startsWith('data:')) {
+              const [header, data] = block.image_url.url.split(',');
+              const media_type = header.match(/data:([^;]+)/)?.[1] || 'image/jpeg';
+              return { type: 'image', source: { type: 'base64', media_type, data } };
+            }
+            return block;
+          })
+        };
+      });
+    }
+
     try {
       const body = {
         model:      bodyObj.model,
-        messages:   (bodyObj.messages || []).filter(m => m.role !== 'system'),
+        messages:   toAnthropicMessages(bodyObj.messages || []),
         max_tokens: bodyObj.max_tokens || 4096,
         tools:      ALL_TOOLS,
       };
