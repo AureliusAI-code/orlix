@@ -267,6 +267,55 @@ module.exports = async function handler(req, res) {
     return fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key }, body: JSON.stringify(body) });
   }
 
+  // Pipe an OpenAI-compatible SSE stream from upstream to the client response
+  async function pipeOpenAIStream(upstream, res) {
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Transfer-Encoding', 'chunked');
+    const reader = upstream.body.getReader();
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        res.write(value);
+      }
+    } catch {}
+    res.end();
+  }
+
+  // Pipe an Anthropic SSE stream, converting to OpenAI SSE format
+  async function pipeAnthropicStream(upstream, res) {
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Transfer-Encoding', 'chunked');
+    const reader = upstream.body.getReader();
+    const dec = new TextDecoder();
+    let buf = '';
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += dec.decode(value, { stream: true });
+        const lines = buf.split('\n');
+        buf = lines.pop() || '';
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          const raw = line.slice(6).trim();
+          if (!raw) continue;
+          try {
+            const ev = JSON.parse(raw);
+            if (ev.type === 'content_block_delta' && ev.delta?.type === 'text_delta') {
+              res.write(`data: ${JSON.stringify({ choices: [{ delta: { content: ev.delta.text }, finish_reason: null }] })}\n\n`);
+            } else if (ev.type === 'message_stop') {
+              res.write('data: [DONE]\n\n');
+            }
+          } catch {}
+        }
+      }
+    } catch {}
+    res.end();
+  }
+
   // ── Mimo (primary engine) ────────────────────────────────────────────────
   if (isMimo) {
     const key = process.env.MIMO_API_KEY || '';
@@ -283,6 +332,16 @@ module.exports = async function handler(req, res) {
       }
       const body = { model: bodyObj.model, messages: msgs, max_tokens: bodyObj.max_tokens || 4096 };
       if (bodyObj.temperature != null) body.temperature = bodyObj.temperature;
+      if (bodyObj.stream) {
+        body.stream = true;
+        const r = await fetch('https://api.xiaomimimo.com/v1/chat/completions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
+          body: JSON.stringify(body),
+        });
+        if (!r.ok) return res.status(r.status).json({ error: { message: 'Mimo error' } });
+        return pipeOpenAIStream(r, res);
+      }
       const r = await fetch('https://api.xiaomimimo.com/v1/chat/completions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
@@ -361,6 +420,13 @@ module.exports = async function handler(req, res) {
     const key = process.env.XAI_API_KEY || process.env.GROK_API_KEY || '';
     if (!key) return res.status(401).json({ error: { message: 'XAI_API_KEY not set in Vercel Environment Variables.' } });
     try {
+      if (bodyObj.stream) {
+        const streamBody = { model: bodyObj.model, messages: bodyObj.messages || [], max_tokens: bodyObj.max_tokens || 4096, stream: true };
+        if (bodyObj.temperature != null) streamBody.temperature = bodyObj.temperature;
+        const r = await fetch('https://api.x.ai/v1/chat/completions', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key }, body: JSON.stringify(streamBody) });
+        if (!r.ok) return res.status(r.status).json({ error: { message: 'Provider error' } });
+        return pipeOpenAIStream(r, res);
+      }
       const r = await callCompat('https://api.x.ai/v1/chat/completions', key);
       return res.status(r.status).setHeader('Content-Type', 'application/json').send(await r.text());
     } catch (e) { return res.status(502).json({ error: { message: 'xAI error: ' + e.message } }); }
@@ -371,6 +437,13 @@ module.exports = async function handler(req, res) {
     const key = process.env.OPENAI_API_KEY || process.env.OPEN_AI_API_KEY || process.env.OPENAI_KEY || process.env.OPEN_AI_KEY || '';
     if (!key) return res.status(401).json({ error: { message: 'OpenAI API key not found. Add OPENAI_API_KEY in Vercel → Settings → Environment Variables, then redeploy.' } });
     try {
+      if (bodyObj.stream) {
+        const streamBody = { model: bodyObj.model, messages: bodyObj.messages || [], max_tokens: bodyObj.max_tokens || 4096, stream: true };
+        if (bodyObj.temperature != null) streamBody.temperature = bodyObj.temperature;
+        const r = await fetch('https://api.openai.com/v1/chat/completions', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key }, body: JSON.stringify(streamBody) });
+        if (!r.ok) return res.status(r.status).json({ error: { message: 'Provider error' } });
+        return pipeOpenAIStream(r, res);
+      }
       const r    = await callCompat('https://api.openai.com/v1/chat/completions', key);
       const text = await r.text();
       if (!r.ok) {
@@ -388,6 +461,13 @@ module.exports = async function handler(req, res) {
     if (!key) return res.status(401).json({ error: { message: 'GROQ_API_KEY not set in Vercel Environment Variables.' } });
     try {
       const actualModel = model.replace('groq-', '');
+      if (bodyObj.stream) {
+        const streamBody = { model: actualModel, messages: bodyObj.messages || [], max_tokens: bodyObj.max_tokens || 4096, stream: true };
+        if (bodyObj.temperature != null) streamBody.temperature = bodyObj.temperature;
+        const r = await fetch('https://api.groq.com/openai/v1/chat/completions', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key }, body: JSON.stringify(streamBody) });
+        if (!r.ok) return res.status(r.status).json({ error: { message: 'Provider error' } });
+        return pipeOpenAIStream(r, res);
+      }
       const body = { model: actualModel, messages: bodyObj.messages || [], max_tokens: bodyObj.max_tokens || 4096 };
       if (bodyObj.temperature != null) body.temperature = bodyObj.temperature;
       const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -404,6 +484,13 @@ module.exports = async function handler(req, res) {
     const key = process.env.DEEPSEEK_API_KEY || '';
     if (!key) return res.status(401).json({ error: { message: 'DEEPSEEK_API_KEY not set in Vercel Environment Variables.' } });
     try {
+      if (bodyObj.stream) {
+        const streamBody = { model: bodyObj.model, messages: bodyObj.messages || [], max_tokens: bodyObj.max_tokens || 4096, stream: true };
+        if (bodyObj.temperature != null) streamBody.temperature = bodyObj.temperature;
+        const r = await fetch('https://api.deepseek.com/v1/chat/completions', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key }, body: JSON.stringify(streamBody) });
+        if (!r.ok) return res.status(r.status).json({ error: { message: 'Provider error' } });
+        return pipeOpenAIStream(r, res);
+      }
       const r = await callCompat('https://api.deepseek.com/v1/chat/completions', key);
       return res.status(r.status).setHeader('Content-Type', 'application/json').send(await r.text());
     } catch (e) { return res.status(502).json({ error: { message: 'DeepSeek error: ' + e.message } }); }
@@ -414,6 +501,13 @@ module.exports = async function handler(req, res) {
     const key = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || '';
     if (!key) return res.status(401).json({ error: { message: 'GEMINI_API_KEY not set in Vercel Environment Variables.' } });
     try {
+      if (bodyObj.stream) {
+        const streamBody = { model: bodyObj.model, messages: bodyObj.messages || [], max_tokens: bodyObj.max_tokens || 4096, stream: true };
+        if (bodyObj.temperature != null) streamBody.temperature = bodyObj.temperature;
+        const r = await fetch('https://generativelanguage.googleapis.com/v1beta/openai/chat/completions', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key }, body: JSON.stringify(streamBody) });
+        if (!r.ok) return res.status(r.status).json({ error: { message: 'Provider error' } });
+        return pipeOpenAIStream(r, res);
+      }
       const r = await callCompat('https://generativelanguage.googleapis.com/v1beta/openai/chat/completions', key);
       return res.status(r.status).setHeader('Content-Type', 'application/json').send(await r.text());
     } catch (e) { return res.status(502).json({ error: { message: 'Gemini error: ' + e.message } }); }
