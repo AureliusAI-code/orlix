@@ -437,6 +437,21 @@ body::before{
 .learned-skill-card .lsk-del{position:absolute;top:10px;right:10px;background:none;border:none;color:var(--dim);cursor:pointer;font-size:.8rem;opacity:.5}
 .learned-skill-card .lsk-del:hover{opacity:1;color:var(--red)}
 .lsk-badge{display:inline-block;padding:1px 6px;border-radius:3px;font-size:.63rem;background:rgba(126,224,168,.1);color:var(--green);border:1px solid rgba(126,224,168,.2);margin-top:8px}
+
+/* ── chat history sidebar ── */
+.ch-item{display:flex;align-items:center;gap:8px;padding:6px 16px;cursor:pointer;transition:.15s;border-left:2px solid transparent;user-select:none}
+.ch-item:hover{background:rgba(255,255,255,.03);border-left-color:var(--line-bright)}
+.ch-item.active{border-left-color:var(--amber);background:var(--amber-soft)}
+.ch-title{flex:1;font-size:.74rem;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ch-item.active .ch-title{color:var(--amber)}
+.ch-del{background:none;border:none;color:var(--dim);font-size:.7rem;opacity:0;cursor:pointer;padding:0 2px;flex-shrink:0}
+.ch-item:hover .ch-del{opacity:.6}
+.ch-del:hover{opacity:1!important;color:var(--red)}
+.ch-time{font-size:.63rem;color:var(--dim-2);flex-shrink:0}
+.new-chat-btn{display:flex;align-items:center;gap:6px;width:calc(100% - 32px);margin:4px 16px 2px;padding:5px 10px;border:1px solid var(--line-bright);background:none;color:var(--dim);font-size:.72rem;border-radius:5px;cursor:pointer;font-family:var(--mono);transition:.15s}
+.new-chat-btn:hover{border-color:var(--amber);color:var(--amber)}
+/* streaming cursor */
+.stream-cursor{display:inline-block;width:2px;height:1em;background:var(--amber);margin-left:2px;vertical-align:text-bottom;animation:blink 0.7s step-end infinite}
 </style>
 </head>
 <body>
@@ -462,6 +477,11 @@ body::before{
 
   <!-- sidebar -->
   <nav class="sidebar" id="sidebar">
+    <div class="sb-sect">
+      <button class="new-chat-btn" onclick="newChat()">＋ new chat</button>
+      <span class="sb-label" style="margin-top:6px">recent chats</span>
+      <div id="chatHistoryList"></div>
+    </div>
     <div class="sb-sect">
       <span class="sb-label">system</span>
       <div class="sb-item active" data-view="overview"><span class="ic">◈</span>overview</div>
@@ -1363,6 +1383,79 @@ function renderModels(){
   });
 }
 
+// ───────── CHAT HISTORY ─────────
+function getChats(){
+  try{ return JSON.parse(localStorage.getItem('orlix_chats')||'[]'); }catch{ return []; }
+}
+function _activeChatId(){
+  return localStorage.getItem('orlix_active_chat')||null;
+}
+function saveCurrentChat(){
+  if(!chatHistory.length) return;
+  const id    = _activeChatId() || ('chat_'+Date.now());
+  const first = chatHistory.find(m=>m.role==='user')?.content||'Chat';
+  const title = first.replace(/\n/g,' ').slice(0,52);
+  const model = (document.getElementById('pgModelSel')||{}).value||'';
+  const chats = getChats().filter(c=>c.id!==id);
+  chats.unshift({id, title, model, messages:[...chatHistory], updated:Date.now()});
+  localStorage.setItem('orlix_chats', JSON.stringify(chats.slice(0,60)));
+  localStorage.setItem('orlix_active_chat', id);
+  renderHistoryList();
+}
+function deleteChat(id, e){
+  e && e.stopPropagation();
+  const chats = getChats().filter(c=>c.id!==id);
+  localStorage.setItem('orlix_chats', JSON.stringify(chats));
+  if(_activeChatId()===id){ localStorage.removeItem('orlix_active_chat'); }
+  renderHistoryList();
+}
+function loadChat(id){
+  const chat = getChats().find(c=>c.id===id);
+  if(!chat) return;
+  chatHistory = [...chat.messages];
+  localStorage.setItem('orlix_active_chat', id);
+  // Switch to playground view
+  showView('playground');
+  // Set model if exists in selector
+  const sel = document.getElementById('pgModelSel');
+  if(sel && chat.model) sel.value = chat.model;
+  // Re-render all messages (skipHistory=true since chatHistory is already set)
+  const cm = document.getElementById('chatMessages');
+  cm.innerHTML = '';
+  chatHistory.forEach(m=>{ if(m.role!=='system') addMsg(m.role, m.content, '', true); });
+  renderHistoryList();
+}
+function newChat(){
+  saveCurrentChat();
+  chatHistory = [];
+  localStorage.removeItem('orlix_active_chat');
+  const cm = document.getElementById('chatMessages');
+  cm.innerHTML = '<div class="chat-empty" id="chatEmpty"><div style="font-size:1.4rem;margin-bottom:12px">◈</div><div>Select a model and start chatting</div><div style="font-size:.74rem;color:var(--dim-2);margin-top:4px">Mimo, Claude, Grok, Groq, DeepSeek and Gemini work without any API key.</div></div>';
+  renderHistoryList();
+  showView('playground');
+}
+function renderHistoryList(){
+  const el = document.getElementById('chatHistoryList');
+  if(!el) return;
+  const chats  = getChats();
+  const active = _activeChatId();
+  if(!chats.length){
+    el.innerHTML = '<div style="padding:4px 16px;color:var(--dim-2);font-size:.69rem">No chats yet</div>';
+    return;
+  }
+  const fmt = ts => {
+    const d = new Date(ts), now = new Date();
+    if(d.toDateString()===now.toDateString()) return d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+    return d.toLocaleDateString([],{month:'short',day:'numeric'});
+  };
+  el.innerHTML = chats.map(c=>`
+    <div class="ch-item${c.id===active?' active':''}" onclick="loadChat('${c.id}')">
+      <span class="ch-title">${esc2(c.title)}</span>
+      <span class="ch-time">${fmt(c.updated)}</span>
+      <button class="ch-del" onclick="deleteChat('${c.id}',event)" title="Delete">✕</button>
+    </div>`).join('');
+}
+
 // ───────── PLAYGROUND ─────────
 const pgModelSel = document.getElementById('pgModelSel');
 const chatMessages = document.getElementById('chatMessages');
@@ -1381,8 +1474,8 @@ function getApiKey(){
   return localStorage.getItem('bkApiKey')||'';
 }
 
-function addMsg(role, content, meta=''){
-  if(role!=='system') chatHistory.push({role, content});
+function addMsg(role, content, meta='', skipHistory=false){
+  if(role!=='system' && !skipHistory && content!=='') chatHistory.push({role, content});
   const div=document.createElement('div');
   div.className=`msg ${role}`;
   const bubble = role==='assistant'
@@ -1393,7 +1486,7 @@ function addMsg(role, content, meta=''){
   if(empty) empty.remove();
   chatMessages.appendChild(div);
   chatMessages.scrollTop=chatMessages.scrollHeight;
-  if(role==='assistant') addSkillActionsToMsg(div, content);
+  if(role==='assistant' && content) addSkillActionsToMsg(div, content);
   return div;
 }
 
@@ -1550,24 +1643,85 @@ async function sendChat(){
   const typing = addTyping();
   document.getElementById('chatSendBtn').disabled = true;
   try{
-    const res  = await apiFetch(key, {model, max_tokens:8192, messages, ...extraParams});
-    const raw  = await res.text();
-    let data;
-    try{ data = JSON.parse(raw); }
-    catch{ throw new Error('Invalid JSON response: '+raw.slice(0,200)); }
+    // Determine if this provider supports streaming (not Claude with tools)
+    const canStream = !isClaude;
+    const fetchBody = {model, max_tokens:8192, messages, stream: canStream, ...extraParams};
+
+    const res = await apiFetch(key, fetchBody);
     typing.remove();
-    const parsed = parseReply(data);
-    if(parsed.error){
-      addMsg('assistant','⚠ API error: '+esc(parsed.error));
+
+    if(!res.ok){
+      let errMsg = 'Request failed';
+      try{ const j=await res.json(); errMsg=j.error?.message||j.error||errMsg; }catch{}
+      addMsg('assistant','⚠ '+errMsg);
     } else {
-      const u = parsed.usage;
-      const usage = u ? ` · ${u.input_tokens||u.prompt_tokens||0}in / ${u.output_tokens||u.completion_tokens||0}out` : '';
-      totalTokens += (u?.input_tokens||u?.prompt_tokens||0)+(u?.output_tokens||u?.completion_tokens||0);
-      document.getElementById('pgTokens').textContent = totalTokens||'—';
-      const msgEl = addMsg('assistant', parsed.text, model+usage+' · '+new Date().toLocaleTimeString());
-      // Log run and show quality rater
-      const runId = logRun(model, u, parsed.text);
-      showQualityRater(runId, msgEl);
+      const ct = res.headers.get('content-type')||'';
+      const isStream = ct.includes('text/event-stream');
+
+      if(isStream){
+        // Streaming path — append tokens in real-time
+        const msgDiv  = addMsg('assistant','','',true);
+        const bubble  = msgDiv.querySelector('.msg-bubble');
+        const cursor  = document.createElement('span');
+        cursor.className = 'stream-cursor';
+        bubble.appendChild(cursor);
+
+        const reader  = res.body.getReader();
+        const dec     = new TextDecoder();
+        let   buf     = '';
+        let   full    = '';
+
+        try{
+          while(true){
+            const {done, value} = await reader.read();
+            if(done) break;
+            buf += dec.decode(value,{stream:true});
+            const lines = buf.split('\n');
+            buf = lines.pop()||'';
+            for(const line of lines){
+              if(!line.startsWith('data: ')) continue;
+              const data = line.slice(6).trim();
+              if(data==='[DONE]') break;
+              try{
+                const j = JSON.parse(data);
+                const tok = j.choices?.[0]?.delta?.content||'';
+                if(tok){ full+=tok; bubble.innerHTML=renderContent(full); bubble.appendChild(cursor); chatMessages.scrollTop=chatMessages.scrollHeight; }
+              }catch{}
+            }
+          }
+        }catch(e){ console.error('[stream]',e); }
+
+        cursor.remove();
+        bubble.innerHTML = renderContent(full);
+        if(full) addSkillActionsToMsg(msgDiv, full);
+        chatHistory.push({role:'assistant',content:full});
+        if(typeof logAudit==='function') logAudit('chat','Orlix','replied ('+pgModelSel.value+')');
+        saveCurrentChat();
+        renderHistoryList();
+
+      } else {
+        // Non-streaming path (Claude with tools, or fallback)
+        let data;
+        try{ data=await res.json(); }catch{ addMsg('assistant','⚠ Invalid response'); data=null; }
+        if(data){
+          const parsed = parseReply(data);
+          if(parsed.error){
+            addMsg('assistant','⚠ API error: '+esc(parsed.error));
+          } else {
+            const u = parsed.usage;
+            const usage = u ? ` · ${u.input_tokens||u.prompt_tokens||0}in / ${u.output_tokens||u.completion_tokens||0}out` : '';
+            totalTokens += (u?.input_tokens||u?.prompt_tokens||0)+(u?.output_tokens||u?.completion_tokens||0);
+            document.getElementById('pgTokens').textContent = totalTokens||'—';
+            const msgEl = addMsg('assistant', parsed.text, model+usage+' · '+new Date().toLocaleTimeString());
+            if(typeof logAudit==='function') logAudit('chat','Orlix','replied ('+pgModelSel.value+')');
+            saveCurrentChat();
+            renderHistoryList();
+            // Log run and show quality rater
+            const runId = logRun(model, u, parsed.text);
+            showQualityRater(runId, msgEl);
+          }
+        }
+      }
     }
   }catch(e){
     typing.remove();
@@ -1650,6 +1804,7 @@ renderModels();
 populateModelSel();
 pgModelSel.addEventListener('change', updateBanner);
 refreshDashboard();
+renderHistoryList();
 
 // ───────── CODE RENDERING + PREVIEW ─────────
 // Raw code stored by ID so copy/preview get the original, not HTML-escaped
