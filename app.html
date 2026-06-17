@@ -1318,12 +1318,6 @@ document.getElementById('clearAll').addEventListener('click',()=>{
 
 // ───────── PROVIDER / MODEL DATA ─────────
 const PROVIDERS = [
-  {name:'Groq',col:'#f97316',icon:'⚡',models:[
-    {name:'Llama 3.3 70B',  id:'groq-llama-3.3-70b-versatile'},
-    {name:'Mixtral 8x7B',   id:'groq-mixtral-8x7b-32768'},
-    {name:'Gemma 2 9B',     id:'groq-gemma2-9b-it'},
-    {name:'Llama 3.1 8B',   id:'groq-llama-3.1-8b-instant'},
-  ]},
   {name:'Anthropic',col:'#b9a4ff',icon:'◈',models:[
     {name:'Claude Sonnet 4.6', id:'claude-sonnet-4-6'},
     {name:'Claude Haiku 4.5',  id:'claude-haiku-4-5-20251001'},
@@ -1331,12 +1325,14 @@ const PROVIDERS = [
     {name:'Claude Fable 5',    id:'claude-fable-5'},
     {name:'Claude 3.5 Sonnet', id:'claude-3-5-sonnet-20241022'},
   ]},
-  {name:'xAI',col:'#ff9a52',icon:'✕',models:[
-    {name:'Grok 4.3',      id:'grok-4.3'},
-    {name:'Grok 4.1 Fast', id:'grok-4.1-fast'},
-  ]},
   {name:'Mimo',col:'#7ee0a8',icon:'M',models:[
     {name:'Mimo 2.5 Pro UltraSpeed', id:'mimo-v2.5-pro-ultraspeed'},
+  ]},
+  {name:'Groq',col:'#f97316',icon:'⚡',models:[
+    {name:'Llama 3.3 70B',  id:'groq-llama-3.3-70b-versatile'},
+    {name:'Mixtral 8x7B',   id:'groq-mixtral-8x7b-32768'},
+    {name:'Gemma 2 9B',     id:'groq-gemma2-9b-it'},
+    {name:'Llama 3.1 8B',   id:'groq-llama-3.1-8b-instant'},
   ]},
   {name:'OpenAI',col:'#10a37f',icon:'○',models:[
     {name:'GPT-4o',       id:'gpt-4o'},
@@ -1350,6 +1346,10 @@ const PROVIDERS = [
   {name:'Google',col:'#4285f4',icon:'G',models:[
     {name:'Gemini 2.5 Pro',   id:'gemini-2.5-pro-preview-06-05'},
     {name:'Gemini 2.0 Flash', id:'gemini-2.0-flash-001'},
+  ]},
+  {name:'xAI',col:'#ff9a52',icon:'✕',models:[
+    {name:'Grok 4.3',      id:'grok-4.3'},
+    {name:'Grok 4.1 Fast', id:'grok-4.1-fast'},
   ]},
 ];
 
