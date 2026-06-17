@@ -1520,12 +1520,15 @@ async function sendChat(){
   const key   = getApiKey();
   const model = pgModelSel.value;
   const ml = model.toLowerCase();
-  const isMimo   = ml.startsWith('mimo');
-  const isClaude = ml.startsWith('claude');
-  const isGrok   = ml.startsWith('grok');
-  const isOpenAI = ml.startsWith('gpt-')||ml.startsWith('o1')||ml.startsWith('o3')||ml.startsWith('o4');
-  const serverKeyed = isMimo || isClaude || isGrok || isOpenAI;
-  if(!key && !serverKeyed){ banner('red','✕ <strong>No API key</strong> — select a Mimo, Claude, or Grok model (no key needed).'); return; }
+  const isMimo     = ml.startsWith('mimo');
+  const isClaude   = ml.startsWith('claude');
+  const isGrok     = ml.startsWith('grok') && !ml.startsWith('groq');
+  const isOpenAI   = ml.startsWith('gpt-')||ml.startsWith('o1')||ml.startsWith('o3')||ml.startsWith('o4');
+  const isGroq     = ml.startsWith('groq-');
+  const isDeepSeek = ml.startsWith('deepseek-');
+  const isGemini   = ml.startsWith('gemini-');
+  const serverKeyed = isMimo || isClaude || isGrok || isOpenAI || isGroq || isDeepSeek || isGemini;
+  if(!key && !serverKeyed){ banner('red','✕ <strong>No API key</strong> — select a Mimo, Claude, Grok, Groq, DeepSeek, or Gemini model (no key needed).'); return; }
   const text = chatInput.value.trim();
   if(!text) return;
   chatInput.value = '';
@@ -1539,8 +1542,8 @@ async function sendChat(){
   if (userGoals) systemWithMemory += '\n\n## User Goals & Memory\n' + userGoals;
   systemWithMemory += buildSkillContext(text);
 
-  // Claude: system as top-level param. Mimo/Grok/OpenAI: prepend as system role message.
-  const messages = (isMimo||isGrok||isOpenAI)
+  // Claude: system as top-level param. Mimo/Grok/OpenAI/Groq/DeepSeek/Gemini: prepend as system role message.
+  const messages = (isMimo||isGrok||isOpenAI||isGroq||isDeepSeek||isGemini)
     ? [{role:'system',content:systemWithMemory}, ...chatHistory]
     : [...chatHistory];
   const extraParams = isClaude ? {system: systemWithMemory} : {};
