@@ -1828,10 +1828,16 @@ function renderContent(text){
   text = text
     .replace(/<tool_call>[\s\S]*?<\/tool_call>/g, '')
     .replace(/<tool_response>[\s\S]*?<\/tool_response>/g, '')
+    .replace(/<function_calls>[\s\S]*?<\/function_calls>/g, '')
+    .replace(/<invoke>[\s\S]*?<\/invoke>/g, '')
     .replace(/<tool_call>[^<]*/g, '')
     .replace(/<\/tool_call>/g, '')
     .replace(/<tool_response>[^<]*/g, '')
     .replace(/<\/tool_response>/g, '')
+    .replace(/<invoke>[^<]*/g, '')
+    .replace(/<\/invoke>/g, '')
+    .replace(/<function_calls>[^<]*/g, '')
+    .replace(/<\/function_calls>/g, '')
     .trim();
   const RE = /`{3,}([\w-]*)[^\S\r\n]*\r?\n([\s\S]*?)`{3,}/g;
   let result = '';

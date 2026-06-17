@@ -323,7 +323,7 @@ module.exports = async function handler(req, res) {
     try {
       // Inject a no-tool-call instruction into the system message so Mimo
       // answers directly instead of outputting <tool_call> XML blocks
-      const noToolInstruction = 'IMPORTANT: Do NOT use <tool_call> XML or any function-calling syntax. Answer every question directly in plain text using your own knowledge.';
+      const noToolInstruction = 'IMPORTANT: Answer every question directly in plain text. Do NOT output any XML tags whatsoever — no <tool_call>, no <invoke>, no <function_calls>, no <parameter>, no XML of any kind. Never use function-calling syntax. Use only your own knowledge to answer.';
       let msgs = bodyObj.messages || [];
       if (msgs.length && msgs[0].role === 'system') {
         msgs = [{ ...msgs[0], content: noToolInstruction + '\n\n' + msgs[0].content }, ...msgs.slice(1)];
