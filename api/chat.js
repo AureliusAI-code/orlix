@@ -262,17 +262,17 @@ module.exports = async function handler(req, res) {
   const isOpenAI = model.startsWith('gpt-') || /^o[134]/.test(model);
 
   async function callCompat(url, key) {
-    const body = { model: bodyObj.model, messages: bodyObj.messages || [], max_tokens: bodyObj.max_tokens || 2048 };
+    const body = { model: bodyObj.model, messages: bodyObj.messages || [], max_tokens: bodyObj.max_tokens || 4096 };
     if (bodyObj.temperature != null) body.temperature = bodyObj.temperature;
     return fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key }, body: JSON.stringify(body) });
   }
 
-  // ── Mimo (primary engine) — Hermes tool-call loop ───────────────────────
+  // ── Mimo (primary engine) ────────────────────────────────────────────────
   if (isMimo) {
     const key = process.env.MIMO_API_KEY || '';
     if (!key) return res.status(401).json({ error: { message: 'MIMO_API_KEY not set in Vercel Environment Variables. Add it and redeploy.' } });
 
-    // Hermes-style XML tool call parser
+    // Parse Hermes-style <tool_call> XML from Mimo's response
     function parseMimoToolCalls(text) {
       const calls = [];
       const re = /<tool_call>([\s\S]*?)<\/tool_call>/g;
@@ -290,63 +290,52 @@ module.exports = async function handler(req, res) {
       return calls;
     }
 
-    // Describe available tools in Hermes format (injected into system prompt)
-    const toolsDesc = JSON.stringify(ALL_TOOLS.map(t => ({
-      name: t.name, description: t.description, parameters: t.input_schema,
-    })), null, 2);
-    const toolInstructions = `\n\nYou have access to these tools:\n<tools>\n${toolsDesc}\n</tools>\n\nTo call a tool output:\n<tool_call>\n<function>tool_name</function>\n<args>{"param":"value"}</args>\n</tool_call>\nThen wait for the result before continuing.`;
-
-    let msgs = (bodyObj.messages || []).map((m, i) =>
-      (i === 0 && m.role === 'system')
-        ? { ...m, content: m.content + toolInstructions }
-        : m
-    );
-    // If no system message present, prepend one with tool instructions
-    if (!msgs.length || msgs[0].role !== 'system') {
-      msgs = [{ role: 'system', content: 'You are a helpful AI assistant.' + toolInstructions }, ...msgs];
-    }
+    const msgs = bodyObj.messages || [];
+    const maxTok = bodyObj.max_tokens || 4096;
 
     try {
-      for (let round = 0; round < 5; round++) {
-        const body = { model: bodyObj.model, messages: msgs, max_tokens: bodyObj.max_tokens || 2048 };
-        if (bodyObj.temperature != null) body.temperature = bodyObj.temperature;
-        const r    = await fetch('https://api.xiaomimimo.com/v1/chat/completions', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
-          body: JSON.stringify(body),
-        });
-        const text = await r.text();
-        if (!r.ok) return res.status(r.status).setHeader('Content-Type', 'application/json').send(text);
-
-        const data     = JSON.parse(text);
-        const content  = data.choices?.[0]?.message?.content || '';
-        const toolCalls = parseMimoToolCalls(content);
-
-        if (!toolCalls.length) {
-          // No tool calls — return final response
-          return res.status(200).setHeader('Content-Type', 'application/json').send(text);
-        }
-
-        // Execute tools and build Hermes-style tool_response messages
-        const results = await Promise.all(toolCalls.map(tc => executeTool(tc.name, tc.args)));
-        const toolResponseContent = toolCalls.map((tc, i) =>
-          `<tool_response>\n<function>${tc.name}</function>\n<result>${JSON.stringify(results[i])}</result>\n</tool_response>`
-        ).join('\n\n');
-
-        msgs = [...msgs,
-          { role: 'assistant', content },
-          { role: 'user',      content: toolResponseContent },
-        ];
-      }
-
-      // Max rounds hit — do one final call
-      const body = { model: bodyObj.model, messages: msgs, max_tokens: bodyObj.max_tokens || 2048 };
-      const r = await fetch('https://api.xiaomimimo.com/v1/chat/completions', {
+      // Step 1 — call Mimo without tool descriptions (let it answer or emit tool calls)
+      const r1 = await fetch('https://api.xiaomimimo.com/v1/chat/completions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
-        body: JSON.stringify(body),
+        body: JSON.stringify({ model: bodyObj.model, messages: msgs, max_tokens: maxTok }),
       });
-      return res.status(r.status).setHeader('Content-Type', 'application/json').send(await r.text());
+      const text1 = await r1.text();
+      if (!r1.ok) return res.status(r1.status).setHeader('Content-Type', 'application/json').send(text1);
+
+      const data1    = JSON.parse(text1);
+      const content1 = data1.choices?.[0]?.message?.content || '';
+      const toolCalls = parseMimoToolCalls(content1);
+
+      // No tool calls — return Mimo's answer directly
+      if (!toolCalls.length) {
+        return res.status(200).setHeader('Content-Type', 'application/json').send(text1);
+      }
+
+      // Step 2 — execute the requested tools in parallel
+      const results = await Promise.all(toolCalls.map(tc => executeTool(tc.name, tc.args)));
+
+      // Step 3 — build a plain-text data block and inject it back as user context
+      // (Mimo just reads the data and answers — no tool_response XML needed)
+      const dataBlock = toolCalls.map((tc, i) =>
+        `[${tc.name}]\n${JSON.stringify(results[i], null, 2)}`
+      ).join('\n\n');
+
+      const userMsg = [...msgs].reverse().find(m => m.role === 'user')?.content || '';
+      const enrichedMsgs = [
+        ...msgs.slice(0, -1),
+        {
+          role: 'user',
+          content: `Real-time data retrieved:\n\n${dataBlock}\n\n---\nUsing the data above, answer this:\n${userMsg}`,
+        },
+      ];
+
+      const r2 = await fetch('https://api.xiaomimimo.com/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
+        body: JSON.stringify({ model: bodyObj.model, messages: enrichedMsgs, max_tokens: maxTok }),
+      });
+      return res.status(r2.status).setHeader('Content-Type', 'application/json').send(await r2.text());
     } catch (e) { return res.status(502).json({ error: { message: 'Mimo error: ' + e.message } }); }
   }
 
@@ -365,7 +354,7 @@ module.exports = async function handler(req, res) {
       const body = {
         model:      bodyObj.model,
         messages:   (bodyObj.messages || []).filter(m => m.role !== 'system'),
-        max_tokens: bodyObj.max_tokens || 2048,
+        max_tokens: bodyObj.max_tokens || 4096,
         tools:      ALL_TOOLS,
       };
       if (bodyObj.system)      body.system      = bodyObj.system;
@@ -446,7 +435,7 @@ module.exports = async function handler(req, res) {
     if (!key) return res.status(401).json({ error: { message: 'GROQ_API_KEY not set in Vercel Environment Variables.' } });
     try {
       const actualModel = model.replace('groq-', '');
-      const body = { model: actualModel, messages: bodyObj.messages || [], max_tokens: bodyObj.max_tokens || 2048 };
+      const body = { model: actualModel, messages: bodyObj.messages || [], max_tokens: bodyObj.max_tokens || 4096 };
       if (bodyObj.temperature != null) body.temperature = bodyObj.temperature;
       const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
