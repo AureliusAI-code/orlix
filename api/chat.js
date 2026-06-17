@@ -367,10 +367,47 @@ module.exports = async function handler(req, res) {
     } catch (e) { return res.status(502).json({ error: { message: 'OpenAI error: ' + e.message } }); }
   }
 
+  // ── Groq ────────────────────────────────────────────────────────────────────
+  if (model.startsWith('groq-')) {
+    const key = process.env.GROQ_API_KEY || '';
+    if (!key) return res.status(401).json({ error: { message: 'GROQ_API_KEY not set in Vercel Environment Variables.' } });
+    try {
+      const actualModel = model.replace('groq-', '');
+      const body = { model: actualModel, messages: bodyObj.messages || [], max_tokens: bodyObj.max_tokens || 2048 };
+      if (bodyObj.temperature != null) body.temperature = bodyObj.temperature;
+      const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
+        body: JSON.stringify(body)
+      });
+      return res.status(r.status).setHeader('Content-Type', 'application/json').send(await r.text());
+    } catch (e) { return res.status(502).json({ error: { message: 'Groq error: ' + e.message } }); }
+  }
+
+  // ── DeepSeek ─────────────────────────────────────────────────────────────────
+  if (model.startsWith('deepseek-')) {
+    const key = process.env.DEEPSEEK_API_KEY || '';
+    if (!key) return res.status(401).json({ error: { message: 'DEEPSEEK_API_KEY not set in Vercel Environment Variables.' } });
+    try {
+      const r = await callCompat('https://api.deepseek.com/v1/chat/completions', key);
+      return res.status(r.status).setHeader('Content-Type', 'application/json').send(await r.text());
+    } catch (e) { return res.status(502).json({ error: { message: 'DeepSeek error: ' + e.message } }); }
+  }
+
+  // ── Google Gemini (OpenAI-compat endpoint) ────────────────────────────────────
+  if (model.startsWith('gemini-')) {
+    const key = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || '';
+    if (!key) return res.status(401).json({ error: { message: 'GEMINI_API_KEY not set in Vercel Environment Variables.' } });
+    try {
+      const r = await callCompat('https://generativelanguage.googleapis.com/v1beta/openai/chat/completions', key);
+      return res.status(r.status).setHeader('Content-Type', 'application/json').send(await r.text());
+    } catch (e) { return res.status(502).json({ error: { message: 'Gemini error: ' + e.message } }); }
+  }
+
   // No provider matched — inform the user
   return res.status(400).json({
     error: {
-      message: 'Unsupported model. Select a Mimo (mimo-*), Claude (claude-*), Grok (grok-*), or OpenAI (gpt-*/o1/o3/o4) model.'
+      message: 'Unsupported model. Select a Mimo (mimo-*), Claude (claude-*), Grok (grok-*), OpenAI (gpt-*/o1/o3/o4), Groq (groq-*), DeepSeek (deepseek-*), or Gemini (gemini-*) model.'
     }
   });
 };
