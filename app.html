@@ -452,6 +452,20 @@ body::before{
 .new-chat-btn:hover{border-color:var(--amber);color:var(--amber)}
 /* streaming cursor */
 .stream-cursor{display:inline-block;width:2px;height:1em;background:var(--amber);margin-left:2px;vertical-align:text-bottom;animation:blink 0.7s step-end infinite}
+
+/* ── image upload ── */
+#imgPreviewBar{display:none;padding:6px 14px;border-top:1px solid var(--line);gap:8px;align-items:center;flex-wrap:wrap}
+#imgPreviewBar.has-img{display:flex}
+.img-thumb{position:relative;width:56px;height:56px}
+.img-thumb img{width:56px;height:56px;object-fit:cover;border-radius:6px;border:1px solid var(--line)}
+.img-thumb-del{position:absolute;top:-5px;right:-5px;background:var(--red);color:#fff;border:none;border-radius:50%;width:16px;height:16px;font-size:.6rem;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;line-height:1}
+.img-btn{background:none;border:none;color:var(--dim);cursor:pointer;padding:4px 6px;font-size:1rem;border-radius:4px;transition:color .15s}
+.img-btn:hover{color:var(--text)}
+
+/* ── web search toggle ── */
+.search-toggle{background:none;border:1px solid var(--line);color:var(--dim);cursor:pointer;padding:3px 8px;font-size:.7rem;border-radius:4px;transition:all .15s;display:flex;align-items:center;gap:4px;font-family:var(--mono)}
+.search-toggle.active{border-color:var(--amber);color:var(--amber);background:rgba(255,154,82,.08)}
+.search-badge{background:var(--amber);color:#000;border-radius:3px;padding:0 3px;font-size:.6rem;font-weight:700}
 </style>
 </head>
 <body>
@@ -903,6 +917,7 @@ body::before{
       <div class="chat-controls">
         <select class="inp chat-model-sel" id="pgModelSel"></select>
         <button class="btn sm" id="pgClearBtn">clear chat</button>
+        <button class="search-toggle" id="searchToggle" title="Enable web search (requires BRAVE_SEARCH_API_KEY)">🔍 <span>web search</span></button>
         <span id="pgKeyWarn" style="color:var(--red);font-size:.74rem;display:none">⚠ set API key in Settings first</span>
       </div>
       <div class="chat-wrap">
@@ -913,10 +928,13 @@ body::before{
             <div style="font-size:.74rem;color:var(--dim-2)">Select a model above and start chatting</div>
           </div>
         </div>
+        <div id="imgPreviewBar"></div>
+        <input type="file" id="imgFileInput" accept="image/*" style="display:none" multiple>
         <div class="chat-input-row">
           <textarea id="chatInput" placeholder="Type a message… (Enter to send, Shift+Enter for newline)"></textarea>
           <div class="chat-send">
             <button class="btn primary" id="chatSendBtn">send</button>
+            <button class="img-btn" id="imgBtn" title="Attach image">🖼</button>
             <div style="color:var(--dim-2);font-size:.66rem;text-align:center;line-height:1.4">tokens<br><span id="pgTokens">—</span></div>
           </div>
         </div>
@@ -1393,8 +1411,11 @@ function _activeChatId(){
 function saveCurrentChat(){
   if(!chatHistory.length) return;
   const id    = _activeChatId() || ('chat_'+Date.now());
-  const first = chatHistory.find(m=>m.role==='user')?.content||'Chat';
-  const title = first.replace(/\n/g,' ').slice(0,52);
+  const firstContent = chatHistory.find(m=>m.role==='user')?.content||'Chat';
+  const firstText = Array.isArray(firstContent)
+    ? (firstContent.find(b=>b.type==='text')?.text || 'Image message')
+    : firstContent;
+  const title = firstText.replace(/\n/g,' ').slice(0,52);
   const model = (document.getElementById('pgModelSel')||{}).value||'';
   const chats = getChats().filter(c=>c.id!==id);
   chats.unshift({id, title, model, messages:[...chatHistory], updated:Date.now()});
@@ -1422,7 +1443,26 @@ function loadChat(id){
   // Re-render all messages (skipHistory=true since chatHistory is already set)
   const cm = document.getElementById('chatMessages');
   cm.innerHTML = '';
-  chatHistory.forEach(m=>{ if(m.role!=='system') addMsg(m.role, m.content, '', true); });
+  chatHistory.forEach(m=>{
+    if(m.role==='system') return;
+    // Reconstruct display for messages with image arrays
+    if(Array.isArray(m.content) && m.role==='user'){
+      const imgs = m.content.filter(b=>b.type==='image_url');
+      const textBlock = m.content.find(b=>b.type==='text');
+      const imgHtml2 = imgs.length
+        ? '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px">'
+          + imgs.map(b=>`<img src="${b.image_url.url}" style="width:56px;height:56px;object-fit:cover;border-radius:6px;border:1px solid var(--line)">`).join('')
+          + '</div>'
+        : '';
+      const div2 = document.createElement('div');
+      div2.className = 'msg user';
+      div2.innerHTML = `<div class="msg-bubble">${imgHtml2}${esc(textBlock?.text||'')}</div>`;
+      cm.appendChild(div2);
+      cm.scrollTop = cm.scrollHeight;
+    } else {
+      addMsg(m.role, Array.isArray(m.content) ? JSON.stringify(m.content) : m.content, '', true);
+    }
+  });
   renderHistoryList();
 }
 function newChat(){
@@ -1623,9 +1663,42 @@ async function sendChat(){
   const serverKeyed = isMimo || isClaude || isGrok || isOpenAI || isGroq || isDeepSeek || isGemini;
   if(!key && !serverKeyed){ banner('red','✕ <strong>No API key</strong> — select a Mimo, Claude, Grok, Groq, DeepSeek, or Gemini model (no key needed).'); return; }
   const text = chatInput.value.trim();
-  if(!text) return;
+  if(!text && !pendingImages.length) return;
   chatInput.value = '';
-  addMsg('user', text, 'you · '+new Date().toLocaleTimeString());
+
+  // Build user content — images + text if images present, plain text otherwise
+  const userContent = pendingImages.length > 0
+    ? [
+        ...pendingImages.map(img => ({ type: 'image_url', image_url: { url: img.dataUrl } })),
+        { type: 'text', text: text }
+      ]
+    : text;
+
+  // Show image thumbnails in user bubble if any
+  const imgHtml = pendingImages.length > 0
+    ? '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px">'
+      + pendingImages.map(img => `<img src="${img.dataUrl}" style="width:56px;height:56px;object-fit:cover;border-radius:6px;border:1px solid var(--line)">`).join('')
+      + '</div>'
+    : '';
+
+  // Display the user message
+  const displayText = Array.isArray(userContent) ? text : userContent;
+  const userBubbleHtml = imgHtml + esc(displayText);
+  {
+    const div = document.createElement('div');
+    div.className = 'msg user';
+    div.innerHTML = `<div class="msg-bubble">${userBubbleHtml}</div><div class="msg-meta">you · ${new Date().toLocaleTimeString()}</div>`;
+    const empty = document.getElementById('chatEmpty');
+    if(empty) empty.remove();
+    chatMessages.appendChild(div);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+    // push to history
+    chatHistory.push({role:'user', content: userContent});
+  }
+
+  // Clear pending images
+  pendingImages = [];
+  renderImgPreview();
 
   // Inject soul + goals into system prompt
   const userSoul  = localStorage.getItem('orlix_soul')  || '';
@@ -1635,10 +1708,41 @@ async function sendChat(){
   if (userGoals) systemWithMemory += '\n\n## User Goals & Memory\n' + userGoals;
   systemWithMemory += buildSkillContext(text);
 
-  // Claude: system as top-level param. Mimo/Grok/OpenAI/Groq/DeepSeek/Gemini: prepend as system role message.
-  const messages = (isMimo||isGrok||isOpenAI||isGroq||isDeepSeek||isGemini)
-    ? [{role:'system',content:systemWithMemory}, ...chatHistory]
-    : [...chatHistory];
+  // Web search: fetch results and inject as context before user message
+  let searchContext = null;
+  if (webSearchEnabled && text) {
+    document.getElementById('typing-indicator')?.remove?.();
+    const stEl = document.createElement('div');
+    stEl.className = 'msg assistant';
+    stEl.id = 'search-indicator';
+    stEl.innerHTML = `<div class="msg-bubble" style="color:var(--amber)">🔍 Searching the web…</div>`;
+    chatMessages.appendChild(stEl);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+    searchContext = await fetchWebSearch(text);
+    stEl.remove();
+    if (!searchContext) {
+      const warnDiv = document.createElement('div');
+      warnDiv.className = 'msg assistant';
+      warnDiv.innerHTML = `<div class="msg-bubble" style="color:var(--dim)"><em>⚠ Web search unavailable (BRAVE_SEARCH_API_KEY not set)</em></div>`;
+      chatMessages.appendChild(warnDiv);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+  }
+
+  // Build messages array for the API call
+  let messages = (isMimo||isGrok||isOpenAI||isGroq||isDeepSeek||isGemini)
+    ? [{role:'system',content:systemWithMemory}, ...chatHistory.slice(0,-1)]
+    : [...chatHistory.slice(0,-1)];
+
+  // Inject search context as a prefixed user message right before the actual user message
+  if (searchContext) {
+    messages.push({ role: 'user', content: `[Web search results for: "${text}"]\n\n${searchContext}\n\n[Use these results to answer accurately]` });
+    messages.push({ role: 'assistant', content: 'Understood. I will use the web search results to answer.' });
+  }
+
+  // Push the actual user message (with images if any)
+  messages.push({ role: 'user', content: userContent });
+
   const extraParams = isClaude ? {system: systemWithMemory} : {};
   const typing = addTyping();
   document.getElementById('chatSendBtn').disabled = true;
@@ -1737,9 +1841,83 @@ chatInput.addEventListener('keydown',e=>{
 });
 document.getElementById('pgClearBtn').addEventListener('click',()=>{
   chatHistory=[];totalTokens=0;
+  pendingImages=[];renderImgPreview();
   document.getElementById('pgTokens').textContent='—';
   chatMessages.innerHTML=`<div class="chat-empty" id="chatEmpty"><div style="font-size:1.4rem;opacity:.3">▷</div><div>Select a model and start chatting</div><div style="font-size:.74rem;color:var(--dim-2)">Select a model above and start chatting</div></div>`;
 });
+
+// ── IMAGE UPLOAD ─────────
+let pendingImages = []; // [{dataUrl, mimeType, name}]
+
+document.getElementById('imgBtn').addEventListener('click', () => document.getElementById('imgFileInput').click());
+
+document.getElementById('imgFileInput').addEventListener('change', e => {
+  const files = Array.from(e.target.files || []);
+  files.forEach(f => {
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const dataUrl = ev.target.result;
+      const mimeType = f.type || 'image/jpeg';
+      pendingImages.push({ dataUrl, mimeType, name: f.name });
+      renderImgPreview();
+    };
+    reader.readAsDataURL(f);
+  });
+  e.target.value = '';
+});
+
+// drag & drop on chatMessages
+const chatMsgsEl = document.getElementById('chatMessages');
+chatMsgsEl.addEventListener('dragover', e => { e.preventDefault(); chatMsgsEl.style.outline='2px dashed var(--amber)'; });
+chatMsgsEl.addEventListener('dragleave', () => { chatMsgsEl.style.outline=''; });
+chatMsgsEl.addEventListener('drop', e => {
+  e.preventDefault();
+  chatMsgsEl.style.outline='';
+  Array.from(e.dataTransfer.files || []).filter(f=>f.type.startsWith('image/')).forEach(f => {
+    const reader = new FileReader();
+    reader.onload = ev => {
+      pendingImages.push({ dataUrl: ev.target.result, mimeType: f.type, name: f.name });
+      renderImgPreview();
+    };
+    reader.readAsDataURL(f);
+  });
+});
+
+function renderImgPreview() {
+  const bar = document.getElementById('imgPreviewBar');
+  if (!pendingImages.length) { bar.className = ''; bar.innerHTML = ''; return; }
+  bar.className = 'has-img';
+  bar.innerHTML = pendingImages.map((img, i) =>
+    `<div class="img-thumb"><img src="${img.dataUrl}" alt="${esc2(img.name)}"><button class="img-thumb-del" onclick="removeImg(${i})">✕</button></div>`
+  ).join('');
+}
+
+function removeImg(i) {
+  pendingImages.splice(i, 1);
+  renderImgPreview();
+}
+
+// ── WEB SEARCH ─────────
+let webSearchEnabled = false;
+
+document.getElementById('searchToggle').addEventListener('click', () => {
+  webSearchEnabled = !webSearchEnabled;
+  document.getElementById('searchToggle').classList.toggle('active', webSearchEnabled);
+});
+
+async function fetchWebSearch(query) {
+  try {
+    const r = await fetch('/api/search?q=' + encodeURIComponent(query));
+    if (!r.ok) return null;
+    const data = await r.json();
+    if (data.error) return null;
+    const results = data.results;
+    if (!results?.length) return null;
+    return results.map((r, i) =>
+      `[${i+1}] ${r.title}\nURL: ${r.url}\n${r.description}`
+    ).join('\n\n');
+  } catch { return null; }
+}
 
 // ───────── API KEY SETTINGS ─────────
 const bkInput=document.getElementById('bkApiKey');
