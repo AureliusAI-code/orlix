@@ -1469,12 +1469,6 @@ const PROVIDERS = [
     {name:'Grok 4.3',      id:'grok-4.3'},
     {name:'Grok 4.1 Fast', id:'grok-4.1-fast'},
   ]},
-  {name:'Venice 🔒',col:'#8b5cf6',icon:'🔒',models:[
-    {name:'Llama 3.3 70B',         id:'venice-llama-3.3-70b'},
-    {name:'Mistral Large',         id:'venice-mistral-31-24b'},
-    {name:'Dolphin (Uncensored)',  id:'venice-dolphin-2.9.2-qwen2-72b'},
-    {name:'Qwen 2.5 Vision',       id:'venice-qwen-2.5-vl'},
-  ]},
 ];
 
 // ───────── RENDER MODELS ─────────
@@ -1670,10 +1664,9 @@ function updateBanner(){
   const isGroqSel     = selectedModel.startsWith('groq-');
   const isDeepSeekSel = selectedModel.startsWith('deepseek-');
   const isGeminiSel   = selectedModel.startsWith('gemini-');
-  const isVeniceSel   = selectedModel.startsWith('venice-');
-  const serverKeyedSel = isMimoSel || isClaudeSel || isGrokSel || isOpenAISel || isGroqSel || isDeepSeekSel || isGeminiSel || isVeniceSel;
+  const serverKeyedSel = isMimoSel || isClaudeSel || isGrokSel || isOpenAISel || isGroqSel || isDeepSeekSel || isGeminiSel;
   if(!getApiKey() && !serverKeyedSel){
-    banner('green','✓ <strong>Select a model</strong> to start chatting. Mimo, Claude, Grok, Groq, DeepSeek, Gemini, and Venice work without any API key.');
+    banner('green','✓ <strong>Select a model</strong> to start chatting. Mimo, Claude, Grok, Groq, DeepSeek, and Gemini work without any API key.');
   } else if(!getApiKey() && isMimoSel){
     banner('green','✓ <strong>Mimo ready</strong> — primary engine active. Send a message to start.');
   } else if(!getApiKey() && isClaudeSel){
@@ -1688,8 +1681,6 @@ function updateBanner(){
     banner('green','✓ <strong>DeepSeek ready</strong> — server DeepSeek key active. Send a message to start.');
   } else if(!getApiKey() && isGeminiSel){
     banner('green','✓ <strong>Gemini ready</strong> — server Google key active. Send a message to start.');
-  } else if(!getApiKey() && isVeniceSel){
-    banner('green','✓ <strong>Venice ready</strong> — <span style="color:#8b5cf6;background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.3);padding:1px 7px;border-radius:4px;font-size:.7rem">🔒 Privacy Mode</span> active. No logs, no data retention. Send a message to start.');
   } else if(IS_LOCAL){
     banner('green','✓ <strong>Local mode</strong> — proxy active via localhost:3001. Ready.');
   } else if(getProxyUrl()){
@@ -1712,11 +1703,10 @@ async function apiFetch(key, bodyObj){
   const isGroq     = m.startsWith('groq-');
   const isDeepSeek = m.startsWith('deepseek-');
   const isGemini   = m.startsWith('gemini-');
-  const isVenice   = m.startsWith('venice-');
-  const serverKeyed = isMimo || isClaude || isGrok || isOpenAI || isGroq || isDeepSeek || isGemini || isVenice; // server has env var, no user key needed
+  const serverKeyed = isMimo || isClaude || isGrok || isOpenAI || isGroq || isDeepSeek || isGemini; // server has env var, no user key needed
 
   if(!key && !serverKeyed){
-    throw new Error('No API key set. Select a Mimo, Claude, Grok, Groq, DeepSeek, Gemini, or Venice model — they work without a key.');
+    throw new Error('No API key set. Select a Mimo, Claude, Grok, Groq, DeepSeek, or Gemini model — they work without a key.');
   }
 
   // 1. Same-origin /api/chat (Vercel serverless function — no CORS)
@@ -1770,9 +1760,8 @@ async function sendChat(){
   const isGroq     = ml.startsWith('groq-');
   const isDeepSeek = ml.startsWith('deepseek-');
   const isGemini   = ml.startsWith('gemini-');
-  const isVenice   = ml.startsWith('venice-');
-  const serverKeyed = isMimo || isClaude || isGrok || isOpenAI || isGroq || isDeepSeek || isGemini || isVenice;
-  if(!key && !serverKeyed){ banner('red','✕ <strong>No API key</strong> — select a Mimo, Claude, Grok, Groq, DeepSeek, Gemini, or Venice model (no key needed).'); return; }
+  const serverKeyed = isMimo || isClaude || isGrok || isOpenAI || isGroq || isDeepSeek || isGemini;
+  if(!key && !serverKeyed){ banner('red','✕ <strong>No API key</strong> — select a Mimo, Claude, Grok, Groq, DeepSeek, or Gemini model (no key needed).'); return; }
   const text = chatInput.value.trim();
   if(!text && !pendingImages.length) return;
   chatInput.value = '';
