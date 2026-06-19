@@ -46,7 +46,7 @@
   --blue:         #60A5FA;
   --blue-dim:     rgba(96,165,250,0.09);
   --radius:       16px;
-  --transition:   all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition:   all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 *, *::before, *::after {
@@ -281,11 +281,7 @@ nav {
 
 .hero-eyebrow::before,
 .hero-eyebrow::after {
-  content: '';
-  display: block;
-  width: 40px;
-  height: 1px;
-  background: var(--text-3);
+  display: none;
 }
 
 .hero h1 {
@@ -295,6 +291,18 @@ nav {
   line-height: 1.05;
   color: var(--text-1);
   margin-bottom: 24px;
+  cursor: default;
+  transition: transform 0.45s cubic-bezier(.34,1.56,.64,1), filter 0.45s ease;
+  will-change: transform;
+}
+.hero h1:hover {
+  transform: translateY(-6px);
+  filter: drop-shadow(0 20px 48px rgba(240,120,48,0.18));
+}
+.hero h1:active {
+  transform: translateY(-10px) scale(1.012);
+  filter: drop-shadow(0 28px 64px rgba(240,120,48,0.28));
+  transition-duration: 0.12s;
 }
 
 .hero h1 .gradient-text {
@@ -585,12 +593,7 @@ nav {
 }
 
 .section-eyebrow::before {
-  content: '';
-  display: block;
-  width: 16px;
-  height: 2px;
-  background: var(--orange);
-  border-radius: 2px;
+  display: none;
 }
 
 .section-title {
@@ -643,8 +646,8 @@ nav {
 
 .bento-card:hover {
   border-color: var(--border-hover);
-  box-shadow: 0 8px 40px rgba(0,0,0,0.4);
-  transform: translateY(-1px);
+  box-shadow: 0 16px 48px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.06);
+  transform: translateY(-5px);
 }
 
 /* Card placements */
@@ -685,8 +688,8 @@ nav {
 
 /* Card: Chat */
 .card-chat:hover {
-  box-shadow: 0 8px 40px rgba(240,120,48,0.1);
-  border-color: rgba(240,120,48,0.2);
+  box-shadow: 0 20px 56px rgba(240,120,48,0.14), 0 0 0 1px rgba(240,120,48,0.15);
+  border-color: rgba(240,120,48,0.25);
 }
 
 .card-label {
@@ -1217,12 +1220,7 @@ nav {
 }
 
 .feature-eyebrow::before {
-  content: '';
-  display: block;
-  width: 12px;
-  height: 2px;
-  background: var(--orange);
-  border-radius: 1px;
+  display: none;
 }
 
 .feature-title {
@@ -1466,7 +1464,8 @@ nav {
 .model-card:hover {
   border-color: var(--border-hover);
   background: var(--bg-3);
-  transform: translateY(-1px);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 36px rgba(0,0,0,0.45);
 }
 
 .model-icon {
@@ -1573,8 +1572,8 @@ nav {
 
 .roadmap-card:hover {
   border-color: var(--border-hover);
-  transform: translateY(-2px);
-  box-shadow: 0 12px 40px rgba(0,0,0,0.3);
+  transform: translateY(-5px);
+  box-shadow: 0 18px 48px rgba(0,0,0,0.45);
 }
 
 .roadmap-card.active {
