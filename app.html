@@ -2669,8 +2669,16 @@ function renderAnalysisResult(data) {
     verdictClass = 'verdict-safe'; verdictText = '🟢 SAFE';
   }
 
-  const fmt = n => n ? '$' + Number(n).toLocaleString(undefined, {maximumFractionDigits: 2}) : 'N/A';
-  const pct = n => n !== undefined ? (n > 0 ? '+' : '') + Number(n).toFixed(2) + '%' : 'N/A';
+  const fmtPrice = p => {
+    if (!p || Number(p) === 0) return '—';
+    const n = Number(p);
+    if (n < 0.000001) return '$' + n.toFixed(10).replace(/0+$/, '');
+    if (n < 0.001)    return '$' + n.toFixed(8);
+    if (n < 1)        return '$' + n.toFixed(6);
+    return '$' + n.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 4});
+  };
+  const fmt = n => n ? '$' + Number(n).toLocaleString(undefined, {maximumFractionDigits: 2}) : '—';
+  const pct = n => n !== undefined && n !== null ? (n > 0 ? '+' : '') + Number(n).toFixed(2) + '%' : '—';
   const priceChangeClass = d?.priceChange24h > 0 ? 'positive' : d?.priceChange24h < 0 ? 'negative' : '';
 
   return `<div class="token-result">
@@ -2682,19 +2690,19 @@ function renderAnalysisResult(data) {
       </div>
     </div>
     <div class="token-stats">
-      <div class="stat-box"><div class="stat-label">Price</div><div class="stat-value">${d ? fmt(d.priceUsd) : 'Not listed'}</div></div>
-      <div class="stat-box"><div class="stat-label">24h Change</div><div class="stat-value ${priceChangeClass}">${d ? pct(d.priceChange24h) : 'N/A'}</div></div>
-      <div class="stat-box"><div class="stat-label">Liquidity</div><div class="stat-value">${d ? fmt(d.liquidityUsd) : 'N/A'}</div></div>
-      <div class="stat-box"><div class="stat-label">Volume 24h</div><div class="stat-value">${d ? fmt(d.volume24h) : 'N/A'}</div></div>
-      <div class="stat-box"><div class="stat-label">Buys / Sells</div><div class="stat-value">${d ? d.buys24h + ' / ' + d.sells24h : 'N/A'}</div></div>
-      <div class="stat-box"><div class="stat-label">Total Supply</div><div class="stat-value" style="font-size:.72rem">${esc(t.totalSupply || 'N/A')}</div></div>
-      <div class="stat-box"><div class="stat-label">FDV</div><div class="stat-value">${d ? fmt(d.fdv) : 'N/A'}</div></div>
+      <div class="stat-box"><div class="stat-label">Price</div><div class="stat-value">${d ? fmtPrice(d.priceUsd) : '—'}</div></div>
+      <div class="stat-box"><div class="stat-label">24h Change</div><div class="stat-value ${priceChangeClass}">${d ? pct(d.priceChange24h) : '—'}</div></div>
+      <div class="stat-box"><div class="stat-label">Liquidity</div><div class="stat-value">${d ? fmt(d.liquidityUsd) : '—'}</div></div>
+      <div class="stat-box"><div class="stat-label">Volume 24h</div><div class="stat-value">${d ? fmt(d.volume24h) : '—'}</div></div>
+      <div class="stat-box"><div class="stat-label">Buys / Sells</div><div class="stat-value">${d ? d.buys24h + ' / ' + d.sells24h : '—'}</div></div>
+      <div class="stat-box"><div class="stat-label">Total Supply</div><div class="stat-value" style="font-size:.72rem">${esc(t.totalSupply || '—')}</div></div>
+      <div class="stat-box"><div class="stat-label">FDV</div><div class="stat-value">${d ? fmt(d.fdv) : '—'}</div></div>
       <div class="stat-box"><div class="stat-label">DEX</div><div class="stat-value">${d ? esc(d.dexId) : 'None'}</div></div>
     </div>
     <div class="verdict-box ${verdictClass}">${verdictText}</div>
     <div>
       <div style="font-size:.68rem;color:var(--dim);letter-spacing:.5px;margin-bottom:6px">AI ANALYSIS</div>
-      <div class="ai-analysis-box">${esc2(analysis).replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>')}</div>
+      <div class="ai-analysis-box">${esc2(analysis).replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\*(.*?)\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>')}</div>
     </div>
     <div style="font-size:.62rem;color:var(--dim-2);text-align:right">Analysis: ${new Date(data.timestamp).toLocaleTimeString()} · Network: Base Mainnet</div>
   </div>`;

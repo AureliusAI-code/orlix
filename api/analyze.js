@@ -1,7 +1,7 @@
-// api/analyze.js
+// Token Analyzer — Base RPC + DexScreener + AI verdict
 const BASE_RPC = 'https://mainnet.base.org';
 
-async function rpcCall(method, params = []) {
+async function rpc(method, params = []) {
   const r = await fetch(BASE_RPC, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -12,121 +12,109 @@ async function rpcCall(method, params = []) {
   return d.result;
 }
 
-async function ethCall(to, data) {
-  const result = await rpcCall('eth_call', [{ to, data }, 'latest']);
-  return result;
-}
-
-function decodeString(hex) {
-  // ABI decode string from eth_call result
+function decodeStr(hex) {
   try {
     if (!hex || hex === '0x') return '';
-    // Remove 0x prefix and skip offset (first 32 bytes) and length (next 32 bytes)
     const raw = hex.slice(2);
     if (raw.length < 128) return '';
-    const lenHex = raw.slice(64, 128);
-    const len = parseInt(lenHex, 16);
-    const strHex = raw.slice(128, 128 + len * 2);
-    return Buffer.from(strHex, 'hex').toString('utf8').replace(/\0/g, '');
+    const len = parseInt(raw.slice(64, 128), 16);
+    return Buffer.from(raw.slice(128, 128 + len * 2), 'hex').toString('utf8').replace(/\0/g, '');
   } catch { return ''; }
 }
-
-function decodeUint256(hex) {
-  try {
-    if (!hex || hex === '0x') return '0';
-    return BigInt(hex).toString();
-  } catch { return '0'; }
+function decodeUint(hex) {
+  try { return hex && hex !== '0x' ? BigInt(hex).toString() : '0'; } catch { return '0'; }
 }
-
-function decodeUint8(hex) {
-  try {
-    if (!hex || hex === '0x') return 18;
-    return parseInt(hex, 16);
-  } catch { return 18; }
+function decodeU8(hex) {
+  try { return hex && hex !== '0x' ? parseInt(hex, 16) : 18; } catch { return 18; }
 }
 
 async function getTokenInfo(address) {
-  const [nameHex, symbolHex, supplyHex, decimalsHex] = await Promise.allSettled([
-    ethCall(address, '0x06fdde03'), // name()
-    ethCall(address, '0x95d89b41'), // symbol()
-    ethCall(address, '0x18160ddd'), // totalSupply()
-    ethCall(address, '0x313ce567'), // decimals()
+  const [name, symbol, supply, dec] = await Promise.allSettled([
+    rpc('eth_call', [{ to: address, data: '0x06fdde03' }, 'latest']),
+    rpc('eth_call', [{ to: address, data: '0x95d89b41' }, 'latest']),
+    rpc('eth_call', [{ to: address, data: '0x18160ddd' }, 'latest']),
+    rpc('eth_call', [{ to: address, data: '0x313ce567' }, 'latest']),
   ]);
-  const decimals = decimalsHex.status === 'fulfilled' ? decodeUint8(decimalsHex.value) : 18;
-  const rawSupply = supplyHex.status === 'fulfilled' ? decodeUint256(supplyHex.value) : '0';
-  const supply = rawSupply !== '0' ? (Number(BigInt(rawSupply)) / Math.pow(10, decimals)).toLocaleString() : 'Unknown';
+  const decimals = dec.status === 'fulfilled' ? decodeU8(dec.value) : 18;
+  const raw = supply.status === 'fulfilled' ? decodeUint(supply.value) : '0';
+  const totalSupply = raw !== '0'
+    ? (Number(BigInt(raw)) / Math.pow(10, decimals)).toLocaleString()
+    : 'Unknown';
   return {
-    name: nameHex.status === 'fulfilled' ? decodeString(nameHex.value) : 'Unknown',
-    symbol: symbolHex.status === 'fulfilled' ? decodeString(symbolHex.value) : 'Unknown',
+    name:        name.status   === 'fulfilled' ? decodeStr(name.value)   : 'Unknown',
+    symbol:      symbol.status === 'fulfilled' ? decodeStr(symbol.value) : '?',
     decimals,
-    totalSupply: supply,
+    totalSupply,
   };
 }
 
-async function getDexScreener(address) {
+async function getDex(address) {
   const r = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${address}`, {
-    headers: { 'Accept': 'application/json' }
+    headers: { Accept: 'application/json' },
   });
   if (!r.ok) return null;
   const data = await r.json();
-  const pairs = data.pairs || [];
-  if (!pairs.length) return null;
-  // Get the most liquid pair
-  const best = pairs.sort((a, b) => (b.liquidity?.usd || 0) - (a.liquidity?.usd || 0))[0];
+  // Prefer Base pairs, fallback to any chain
+  const basePairs = (data.pairs || []).filter(p => p.chainId === 'base');
+  const allPairs  = data.pairs || [];
+  const pool      = basePairs.length ? basePairs : allPairs;
+  if (!pool.length) return null;
+  const best = pool.sort((a, b) => (b.liquidity?.usd || 0) - (a.liquidity?.usd || 0))[0];
+  const priceRaw = best.priceUsd ? Number(best.priceUsd) : 0;
   return {
-    priceUsd: best.priceUsd || '0',
-    priceChange24h: best.priceChange?.h24 || 0,
-    liquidityUsd: best.liquidity?.usd || 0,
-    volume24h: best.volume?.h24 || 0,
-    txns24h: (best.txns?.h24?.buys || 0) + (best.txns?.h24?.sells || 0),
-    buys24h: best.txns?.h24?.buys || 0,
-    sells24h: best.txns?.h24?.sells || 0,
-    dexId: best.dexId || 'unknown',
-    pairAddress: best.pairAddress || '',
-    pairName: best.baseToken?.symbol + '/' + best.quoteToken?.symbol,
-    fdv: best.fdv || 0,
-    allPairsCount: pairs.length,
-    chainId: best.chainId || 'base',
+    priceUsd:        priceRaw > 0 ? best.priceUsd : null,
+    priceChange24h:  best.priceChange?.h24 ?? 0,
+    liquidityUsd:    best.liquidity?.usd    || 0,
+    volume24h:       best.volume?.h24       || 0,
+    buys24h:         best.txns?.h24?.buys   || 0,
+    sells24h:        best.txns?.h24?.sells  || 0,
+    dexId:           best.dexId             || 'unknown',
+    pairName:        (best.baseToken?.symbol || '?') + '/' + (best.quoteToken?.symbol || '?'),
+    fdv:             best.fdv               || 0,
+    pairsCount:      pool.length,
+    chainId:         best.chainId           || 'base',
+    url:             best.url               || '',
   };
 }
 
-async function aiAnalysis(address, tokenInfo, dexInfo) {
+async function aiVerdict(address, token, dex) {
   const key = process.env.ANTHROPIC_API_KEY || '';
-  if (!key) return 'AI analysis unavailable (ANTHROPIC_API_KEY not set).';
+  if (!key) return '**AI analysis unavailable** — ANTHROPIC_API_KEY not set.';
 
-  const context = `
-Token Contract: ${address}
-Name: ${tokenInfo?.name || 'Unknown'} (${tokenInfo?.symbol || '?'})
-Decimals: ${tokenInfo?.decimals}
-Total Supply: ${tokenInfo?.totalSupply}
-${dexInfo ? `
-Price: $${dexInfo.priceUsd}
-Price Change 24h: ${dexInfo.priceChange24h}%
-Liquidity: $${dexInfo.liquidityUsd?.toLocaleString()}
-Volume 24h: $${dexInfo.volume24h?.toLocaleString()}
-Transactions 24h: ${dexInfo.txns24h} (${dexInfo.buys24h} buys / ${dexInfo.sells24h} sells)
-FDV: $${dexInfo.fdv?.toLocaleString()}
-DEX: ${dexInfo.dexId}
-Trading Pair: ${dexInfo.pairName}
-Number of pairs: ${dexInfo.allPairsCount}
-` : 'No DEX data found (not listed on any DEX or very new).'}
-`.trim();
+  const priceStr = dex?.priceUsd
+    ? `$${Number(dex.priceUsd).toFixed(8)}`
+    : 'Not listed / no price data';
+
+  const ctx = [
+    `Contract: ${address} (Base network)`,
+    `Name: ${token?.name} (${token?.symbol})`,
+    `Decimals: ${token?.decimals} | Total Supply: ${token?.totalSupply}`,
+    dex ? [
+      `Price: ${priceStr}`,
+      `Price Change 24h: ${dex.priceChange24h}%`,
+      `Liquidity: $${Number(dex.liquidityUsd).toLocaleString()}`,
+      `Volume 24h: $${Number(dex.volume24h).toLocaleString()}`,
+      `Buys / Sells 24h: ${dex.buys24h} / ${dex.sells24h}`,
+      `FDV: $${Number(dex.fdv).toLocaleString()}`,
+      `DEX: ${dex.dexId} — Pair: ${dex.pairName} — Pairs found: ${dex.pairsCount}`,
+    ].join('\n') : 'No DEX listing found (token not traded or very new).',
+  ].join('\n');
 
   const r = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01' },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 1024,
-      system: 'You are a crypto security analyst specializing in token analysis on Base network. Analyze the provided token data and give a clear, structured assessment.',
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 800,
+      system: 'You are a crypto security analyst for tokens on Base network. Use **bold** for section headers. Do NOT use ## or ### markdown. Be direct and concise.',
       messages: [{
         role: 'user',
-        content: `Analyze this token on Base network and provide:\n1. **Overview** - what this token appears to be\n2. **Liquidity Assessment** - is liquidity adequate? Risk level?\n3. **Red Flags** - list any suspicious indicators (if none, say so)\n4. **Buy/Sell Pressure** - what do the 24h transaction patterns suggest?\n5. **Verdict** - SAFE / CAUTION / HIGH RISK / SCAM LIKELY with brief reason\n\nToken Data:\n${context}`
-      }]
-    })
+        content: `Analyze this token. Use exactly this format (bold headers, bullet points):\n\n**📊 Overview**\n[what this token is, 1–2 sentences]\n\n**💧 Liquidity**\n[is it adequate? risk level?]\n\n**🚩 Red Flags**\n• [each flag on its own line, or write: None detected]\n\n**📈 Buy/Sell Pressure**\n[what the 24h transaction pattern suggests]\n\n**⚖️ Verdict: SAFE / CAUTION / HIGH RISK / SCAM LIKELY**\n[one sentence reason]\n\nData:\n${ctx}`,
+      }],
+    }),
   });
-  const data = await r.json();
-  return data.content?.[0]?.text || 'Analysis failed.';
+  const d = await r.json();
+  return d.content?.[0]?.text || 'Analysis unavailable.';
 }
 
 module.exports = async function handler(req, res) {
@@ -134,21 +122,17 @@ module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   if (req.method === 'OPTIONS') return res.status(204).end();
 
-  const address = ((req.query.address || '') + '').toLowerCase().trim();
+  const address = ((req.query.address || '') + '').trim().toLowerCase();
   if (!address || !/^0x[0-9a-f]{40}$/i.test(address)) {
-    return res.status(400).json({ error: 'Invalid contract address. Must be 0x followed by 40 hex characters.' });
+    return res.status(400).json({ error: 'Invalid address — must be 0x + 40 hex chars.' });
   }
 
   try {
-    const [tokenResult, dexResult] = await Promise.allSettled([
-      getTokenInfo(address),
-      getDexScreener(address),
-    ]);
-    const tokenInfo = tokenResult.status === 'fulfilled' ? tokenResult.value : null;
-    const dexInfo   = dexResult.status   === 'fulfilled' ? dexResult.value   : null;
-    const analysis  = await aiAnalysis(address, tokenInfo, dexInfo);
-
-    return res.json({ address, tokenInfo, dexInfo, analysis, timestamp: new Date().toISOString() });
+    const [tokR, dexR] = await Promise.allSettled([getTokenInfo(address), getDex(address)]);
+    const token    = tokR.status === 'fulfilled' ? tokR.value : null;
+    const dex      = dexR.status === 'fulfilled' ? dexR.value : null;
+    const analysis = await aiVerdict(address, token, dex);
+    return res.json({ address, tokenInfo: token, dexInfo: dex, analysis, timestamp: new Date().toISOString() });
   } catch (e) {
     return res.status(502).json({ error: e.message });
   }
