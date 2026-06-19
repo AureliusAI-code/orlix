@@ -40,8 +40,6 @@ html,body{width:1280px;height:720px;overflow:hidden;background:#09090B;font-fami
 /* ── SCENE 1: HOOK ── */
 #s1 .line{overflow:hidden}
 #s1 .line > span{display:inline-block;transform:translateY(100%);opacity:0}
-#s1 .cursor{display:inline-block;width:3px;height:.9em;background:#F07830;vertical-align:text-bottom;margin-left:4px;animation:blink .7s step-end infinite}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
 
 /* ── SCENE 2: CHAOS ── */
 .app-grid{display:flex;flex-wrap:wrap;justify-content:center;gap:10px 12px;max-width:620px}
@@ -155,7 +153,7 @@ html,body{width:1280px;height:720px;overflow:hidden;background:#09090B;font-fami
     <div class="giant" style="font-size:64px">
       <div class="line"><span id="s1l1">What if one app</span></div>
       <div class="line" style="margin-top:8px"><span id="s1l2">could <span class="hl">replace</span> all your</span></div>
-      <div class="line" style="margin-top:8px"><span id="s1l3">AI tools?<span class="cursor" id="s1cur" style="opacity:0"></span></span></div>
+      <div class="line" style="margin-top:8px"><span id="s1l3">AI tools?</span></div>
     </div>
   </div>
 </div>
@@ -427,11 +425,9 @@ function animScene1() {
   const l1 = document.getElementById('s1l1');
   const l2 = document.getElementById('s1l2');
   const l3 = document.getElementById('s1l3');
-  const cur = document.getElementById('s1cur');
   anim(l1,{transform:'translateY(0)',opacity:'1'},200,700,'cubic-bezier(.16,1,.3,1)');
   anim(l2,{transform:'translateY(0)',opacity:'1'},600,700,'cubic-bezier(.16,1,.3,1)');
   anim(l3,{transform:'translateY(0)',opacity:'1'},1000,700,'cubic-bezier(.16,1,.3,1)');
-  setTimeout(()=>{ cur.style.opacity='1'; },1600);
 }
 
 function animScene2() {
