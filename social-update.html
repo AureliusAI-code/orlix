@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1200">
+<title>Orlix AI — Update Post</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
+
+  *{margin:0;padding:0;box-sizing:border-box}
+
+  body {
+    width:1200px;height:675px;overflow:hidden;
+    background:#080b10;
+    font-family:'Space Grotesk',sans-serif;
+    display:flex;align-items:center;justify-content:center;
+  }
+
+  /* ── animated background grid ── */
+  .bg {
+    position:absolute;inset:0;
+    background-image:
+      linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px);
+    background-size:48px 48px;
+    animation:bgDrift 20s linear infinite;
+  }
+  @keyframes bgDrift { from{background-position:0 0} to{background-position:48px 48px} }
+
+  /* ── glow blobs ── */
+  .blob {
+    position:absolute;border-radius:50%;filter:blur(90px);pointer-events:none;
+  }
+  .blob-1{width:500px;height:500px;top:-180px;left:-80px;background:rgba(91,154,255,.13);animation:pulse 6s ease-in-out infinite alternate}
+  .blob-2{width:400px;height:400px;bottom:-120px;right:-60px;background:rgba(126,224,168,.10);animation:pulse 8s ease-in-out infinite alternate-reverse}
+  .blob-3{width:300px;height:300px;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(185,164,255,.07);animation:pulse 5s ease-in-out infinite alternate}
+  @keyframes pulse{from{opacity:.6;transform:scale(1)}to{opacity:1;transform:scale(1.1)}}
+  .blob-3{animation:pulse3 5s ease-in-out infinite alternate}
+  @keyframes pulse3{from{opacity:.6;transform:translate(-50%,-50%) scale(1)}to{opacity:1;transform:translate(-50%,-50%) scale(1.1)}}
+
+  /* ── layout ── */
+  .card {
+    position:relative;z-index:2;
+    width:1120px;height:615px;
+    border:1px solid rgba(255,255,255,.08);
+    border-radius:16px;
+    background:rgba(10,14,22,.85);
+    backdrop-filter:blur(12px);
+    padding:44px 52px;
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:0 48px;
+  }
+
+  /* ── left column ── */
+  .left {
+    display:flex;flex-direction:column;justify-content:space-between;
+    border-right:1px solid rgba(255,255,255,.07);
+    padding-right:48px;
+  }
+
+  .logo-row {
+    display:flex;align-items:center;gap:10px;
+    margin-bottom:28px;
+  }
+  .logo-icon {
+    width:36px;height:36px;
+    border-radius:8px;
+    background:linear-gradient(135deg,#5b9aff,#b9a4ff);
+    display:flex;align-items:center;justify-content:center;
+    font-size:1.1rem;font-weight:700;color:#fff;
+    font-family:'Space Mono',monospace;
+    flex-shrink:0;
+  }
+  .logo-name {
+    font-family:'Space Mono',monospace;
+    font-size:.78rem;font-weight:700;
+    letter-spacing:.18em;color:rgba(255,255,255,.5);
+    text-transform:uppercase;
+  }
+
+  .headline {
+    font-size:3.1rem;font-weight:700;line-height:1.08;
+    color:#fff;letter-spacing:-.025em;
+    margin-bottom:16px;
+  }
+  .headline span.blue  {color:#5b9aff}
+  .headline span.green {color:#7ee0a8}
+  .headline span.purple{color:#b9a4ff}
+
+  .sub {
+    font-size:.95rem;color:rgba(255,255,255,.45);
+    line-height:1.65;max-width:38ch;
+    margin-bottom:32px;
+  }
+
+  .tag-row {
+    display:flex;flex-wrap:wrap;gap:8px;
+    margin-bottom:auto;
+  }
+  .tag {
+    border:1px solid rgba(255,255,255,.12);
+    border-radius:4px;
+    padding:4px 12px;
+    font-size:.72rem;font-family:'Space Mono',monospace;
+    color:rgba(255,255,255,.4);
+    letter-spacing:.06em;
+  }
+  .tag.blue  {border-color:rgba(91,154,255,.35);color:#5b9aff;background:rgba(91,154,255,.07)}
+  .tag.green {border-color:rgba(126,224,168,.35);color:#7ee0a8;background:rgba(126,224,168,.07)}
+  .tag.purple{border-color:rgba(185,164,255,.35);color:#b9a4ff;background:rgba(185,164,255,.07)}
+
+  .bottom-row {
+    display:flex;align-items:center;justify-content:space-between;
+    padding-top:28px;
+    border-top:1px solid rgba(255,255,255,.07);
+  }
+  .site {
+    font-family:'Space Mono',monospace;
+    font-size:.72rem;color:rgba(255,255,255,.3);
+    letter-spacing:.08em;
+  }
+  .badge {
+    font-size:.68rem;font-family:'Space Mono',monospace;
+    padding:5px 14px;border-radius:3px;
+    background:linear-gradient(90deg,#5b9aff,#b9a4ff);
+    color:#fff;font-weight:700;letter-spacing:.06em;
+  }
+
+  /* ── right column ── */
+  .right {
+    display:flex;flex-direction:column;gap:14px;
+    justify-content:center;
+  }
+
+  .feature-card {
+    border:1px solid rgba(255,255,255,.07);
+    border-radius:10px;
+    padding:18px 20px;
+    background:rgba(255,255,255,.025);
+    transition:.2s;
+    position:relative;overflow:hidden;
+  }
+  .feature-card::before {
+    content:'';position:absolute;inset:0;
+    background:linear-gradient(135deg,var(--accent-a,.5) 0%,transparent 60%);
+    opacity:.07;
+    border-radius:inherit;
+  }
+  .fc-analyze  {--accent-a:rgba(91,154,255,1)}
+  .fc-wallet   {--accent-a:rgba(126,224,168,1)}
+  .fc-telegram {--accent-a:rgba(185,164,255,1)}
+
+  .fc-head {
+    display:flex;align-items:center;gap:10px;
+    margin-bottom:9px;
+  }
+  .fc-icon {
+    width:32px;height:32px;border-radius:7px;
+    display:flex;align-items:center;justify-content:center;
+    font-size:1rem;flex-shrink:0;
+  }
+  .fc-analyze  .fc-icon {background:rgba(91,154,255,.15)}
+  .fc-wallet   .fc-icon {background:rgba(126,224,168,.15)}
+  .fc-telegram .fc-icon {background:rgba(185,164,255,.15)}
+
+  .fc-title {
+    font-weight:700;font-size:.92rem;color:#fff;
+    letter-spacing:-.01em;
+  }
+  .fc-cmd {
+    font-family:'Space Mono',monospace;
+    font-size:.67rem;color:rgba(255,255,255,.3);
+    margin-left:auto;flex-shrink:0;
+  }
+  .fc-analyze  .fc-cmd {color:#5b9aff}
+  .fc-wallet   .fc-cmd {color:#7ee0a8}
+  .fc-telegram .fc-cmd {color:#b9a4ff}
+
+  .fc-desc {
+    font-size:.78rem;color:rgba(255,255,255,.4);
+    line-height:1.55;
+  }
+
+  .fc-pills {
+    display:flex;flex-wrap:wrap;gap:5px;
+    margin-top:9px;
+  }
+  .pill {
+    font-size:.63rem;font-family:'Space Mono',monospace;
+    padding:2px 8px;border-radius:3px;
+    background:rgba(255,255,255,.06);
+    color:rgba(255,255,255,.3);
+  }
+
+  /* ── scan line overlay ── */
+  .scanline {
+    position:absolute;inset:0;pointer-events:none;z-index:10;
+    background:repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 3px,
+      rgba(0,0,0,.015) 3px,
+      rgba(0,0,0,.015) 4px
+    );
+  }
+
+  /* ── corner accents ── */
+  .corner {
+    position:absolute;width:20px;height:20px;
+    border-color:rgba(91,154,255,.4);
+    border-style:solid;
+  }
+  .corner-tl{top:10px;left:10px;border-width:1.5px 0 0 1.5px}
+  .corner-tr{top:10px;right:10px;border-width:1.5px 1.5px 0 0}
+  .corner-bl{bottom:10px;left:10px;border-width:0 0 1.5px 1.5px}
+  .corner-br{bottom:10px;right:10px;border-width:0 1.5px 1.5px 0}
+
+  /* ── terminal line ── */
+  .terminal-line {
+    font-family:'Space Mono',monospace;
+    font-size:.62rem;color:rgba(126,224,168,.5);
+    letter-spacing:.04em;margin-bottom:12px;
+  }
+  .cursor {
+    display:inline-block;width:6px;height:.75em;
+    background:#7ee0a8;vertical-align:-.05em;
+    animation:blink .9s step-end infinite;
+    margin-left:2px;
+    opacity:.7;
+  }
+  @keyframes blink{0%,100%{opacity:.7}50%{opacity:0}}
+</style>
+</head>
+<body>
+
+<div class="bg"></div>
+<div class="blob blob-1"></div>
+<div class="blob blob-2"></div>
+<div class="blob blob-3"></div>
+
+<div class="card">
+  <div class="corner corner-tl"></div>
+  <div class="corner corner-tr"></div>
+  <div class="corner corner-bl"></div>
+  <div class="corner corner-br"></div>
+  <div class="scanline"></div>
+
+  <!-- LEFT -->
+  <div class="left">
+    <div>
+      <div class="logo-row">
+        <div class="logo-icon">◈</div>
+        <div class="logo-name">Orlix AI</div>
+      </div>
+
+      <div class="terminal-line">// RELEASE_UPDATE &middot; BASE_NETWORK<span class="cursor"></span></div>
+
+      <div class="headline">
+        Crypto tools<br>now <span class="blue">live</span> on<br><span class="purple">Telegram.</span>
+      </div>
+
+      <p class="sub">
+        Analyze any token, track any wallet,<br>
+        and get AI security verdicts —<br>
+        directly inside your Telegram chat.
+      </p>
+
+      <div class="tag-row">
+        <span class="tag blue">Base Mainnet</span>
+        <span class="tag green">DexScreener</span>
+        <span class="tag purple">Claude AI</span>
+        <span class="tag">Blockscout</span>
+        <span class="tag">No API key needed</span>
+      </div>
+    </div>
+
+    <div class="bottom-row">
+      <span class="site">orlixai.xyz · @orlixai_bot</span>
+      <span class="badge">NEW UPDATE</span>
+    </div>
+  </div>
+
+  <!-- RIGHT -->
+  <div class="right">
+
+    <div class="feature-card fc-analyze">
+      <div class="fc-head">
+        <div class="fc-icon">🪙</div>
+        <div class="fc-title">Token Analyzer</div>
+        <div class="fc-cmd">/analyze 0x...</div>
+      </div>
+      <div class="fc-desc">
+        Paste any contract address. Get instant price, liquidity, volume, buy/sell pressure, and an AI security verdict — SAFE, CAUTION, or SCAM LIKELY.
+      </div>
+      <div class="fc-pills">
+        <span class="pill">Price & FDV</span>
+        <span class="pill">Liquidity check</span>
+        <span class="pill">Red flag scan</span>
+        <span class="pill">AI verdict</span>
+      </div>
+    </div>
+
+    <div class="feature-card fc-wallet">
+      <div class="fc-head">
+        <div class="fc-icon">👁</div>
+        <div class="fc-title">Wallet Watcher</div>
+        <div class="fc-cmd">/watch 0x...</div>
+      </div>
+      <div class="fc-desc">
+        Track any wallet on Base. See the ETH balance and last 5 transactions — in, out, and contract calls — instantly in chat.
+      </div>
+      <div class="fc-pills">
+        <span class="pill">ETH balance</span>
+        <span class="pill">Recent txns</span>
+        <span class="pill">Basescan link</span>
+      </div>
+    </div>
+
+    <div class="feature-card fc-telegram">
+      <div class="fc-head">
+        <div class="fc-icon">✈️</div>
+        <div class="fc-title">Telegram Bot</div>
+        <div class="fc-cmd">@orlixai_bot</div>
+      </div>
+      <div class="fc-desc">
+        All of Orlix AI in your pocket. Ask anything, send images for vision analysis, or use the full dashboard for streaming and 19 models.
+      </div>
+      <div class="fc-pills">
+        <span class="pill">Claude Sonnet</span>
+        <span class="pill">Vision</span>
+        <span class="pill">Free to use</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>
