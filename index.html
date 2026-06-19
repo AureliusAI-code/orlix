@@ -2,636 +2,524 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Orlix — Personal AI Operating System</title>
-<meta name="description" content="Personal AI Operating System — governance layer, persistent memory, autonomous action.">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Orlix AI — Neural Command Layer</title>
+<meta name="description" content="Personal AI Operating System — streaming AI, token analysis, wallet monitoring, and 19 models in one interface.">
 <link rel="icon" type="image/x-icon" href="/favicon.ico">
 <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
 <link rel="manifest" href="/site.webmanifest">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://www.orlixai.xyz/">
 <meta property="og:title" content="Orlix AI">
-<meta property="og:description" content="Personal AI Operating System">
+<meta property="og:description" content="Neural Command Layer — AI that acts, analyzes, and adapts in real time.">
 <meta property="og:image" content="https://www.orlixai.xyz/og-image.png">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Orlix AI">
-<meta name="twitter:description" content="Personal AI Operating System">
+<meta name="twitter:description" content="Neural Command Layer — AI that acts, analyzes, and adapts in real time.">
 <meta name="twitter:image" content="https://www.orlixai.xyz/og-image.png">
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-:root {
-  --bg: #0a0a0a;
-  --bg-card: #111;
-  --bg-code: #0d0d0d;
-  --border: rgba(255,255,255,0.09);
-  --border-b: rgba(255,255,255,0.16);
-  --text: #c0b8b0;
-  --bright: #f0ebe3;
-  --dim: #665e58;
-  --amber: #ff9a52;
-  --amber-s: rgba(255,154,82,0.1);
-  --violet: #b9a4ff;
-  --violet-s: rgba(185,164,255,0.1);
-  --green: #7ee0a8;
-  --green-s: rgba(126,224,168,0.1);
-  --red: #e03030;
-  --mono: 'JetBrains Mono', monospace;
-  --display: 'Space Grotesk', sans-serif;
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700;900&family=Space+Mono&family=Anton&display=swap');
+
+:root{
+  --bg:#F2EFE8;--black:#111;--white:#fff;
+  --orange:#F07830;
+  --border:2.5px solid #111;
+  --shadow:4px 4px 0 #111;
 }
-*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+*{margin:0;padding:0;box-sizing:border-box}
 html{scroll-behavior:smooth}
-body{
-  background:var(--bg);
-  background-image:
-    linear-gradient(rgba(255,255,255,0.026) 1px,transparent 1px),
-    linear-gradient(90deg,rgba(255,255,255,0.026) 1px,transparent 1px);
-  background-size:44px 44px;
-  color:var(--text);
-  font-family:var(--mono);
-  font-size:14px;
-  line-height:1.7;
-  -webkit-font-smoothing:antialiased;
-  overflow-x:hidden;
+body{background:var(--bg);color:var(--black);font-family:'Space Grotesk',sans-serif;overflow-x:hidden}
+
+/* NAV */
+nav{
+  background:var(--black);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 40px;height:52px;
+  border-bottom:var(--border);
+  position:sticky;top:0;z-index:100;
 }
-::selection{background:var(--amber);color:#1a0f06}
-a{color:var(--violet);text-decoration:none}
-a:hover{color:var(--bright)}
-button{font-family:var(--mono);cursor:pointer;border:none;background:none}
-.wrap{max-width:860px;margin:0 auto;padding:0 22px}
-::-webkit-scrollbar{width:3px;height:3px}
-::-webkit-scrollbar-thumb{background:var(--border-b);border-radius:2px}
+.logo{
+  font-family:'Anton',sans-serif;
+  font-size:1.35rem;letter-spacing:.06em;color:var(--white);
+  display:flex;align-items:center;gap:10px;
+  text-decoration:none;
+}
+.nav-center{display:flex;gap:0}
+.nav-center a{
+  font-size:.68rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  color:rgba(255,255,255,.45);text-decoration:none;padding:6px 20px;
+  border-left:1px solid #2a2a2a;
+  transition:color .15s;
+}
+.nav-center a:hover{color:#fff}
+.nav-right{display:flex;align-items:center;gap:12px}
+.nav-ticker{
+  font-family:'Space Mono',monospace;font-size:.6rem;color:rgba(255,255,255,.35);
+  letter-spacing:.06em;
+}
+.nav-cta{
+  font-size:.68rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  background:var(--orange);color:#fff;
+  padding:8px 18px;text-decoration:none;
+  clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px);
+  transition:background .15s;
+}
+.nav-cta:hover{background:#e06820}
 
-/* ── NAV ── */
-.nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(10,10,10,.92);backdrop-filter:blur(14px);border-bottom:1px solid var(--border);height:52px}
-.nav-in{display:flex;align-items:center;height:52px;justify-content:space-between}
-.nav-brand{display:flex;align-items:center;gap:7px;font-family:var(--mono);font-weight:600;font-size:.8rem;letter-spacing:.14em;color:var(--bright);text-transform:uppercase}
-.nav-dot{color:var(--red);font-size:.45rem;line-height:1}
-.nav-r{display:flex;align-items:center}
-.nav-link{display:flex;align-items:center;padding:0 14px;height:52px;font-size:.74rem;color:var(--dim);border-left:1px solid var(--border);letter-spacing:.04em;transition:color .15s}
-.nav-link:hover{color:var(--text)}
-.nav-icon{display:flex;align-items:center;justify-content:center;padding:0 14px;height:52px;border-left:1px solid var(--border);color:var(--dim);transition:color .15s}
-.nav-icon:hover{color:var(--text)}
-.nav-icon svg{width:15px;height:15px;fill:currentColor;display:block}
-.nav-cta{display:flex;align-items:center;padding:0 20px;height:52px;background:var(--bright);color:#0a0a0a !important;font-family:var(--mono);font-weight:600;font-size:.76rem;letter-spacing:.08em;border-left:1px solid var(--border);transition:background .15s}
-.nav-cta:hover{background:var(--amber)}
-@media(max-width:620px){.hide-sm{display:none}}
+/* HAMBURGER */
+.ham{
+  display:none;flex-direction:column;gap:5px;
+  cursor:pointer;background:none;border:none;padding:4px;
+}
+.ham span{display:block;width:20px;height:2px;background:#fff}
+.mob-nav{
+  display:none;position:fixed;top:52px;left:0;right:0;z-index:99;
+  background:var(--black);border-bottom:var(--border);
+  flex-direction:column;
+}
+.mob-nav.open{display:flex}
+.mob-nav a{
+  font-size:.75rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  color:rgba(255,255,255,.5);text-decoration:none;
+  padding:16px 28px;border-bottom:1px solid #222;
+  transition:color .15s;
+}
+.mob-nav a:hover{color:#fff}
+.mob-nav .nav-cta{
+  margin:16px 28px 20px;text-align:center;display:block;
+  clip-path:none;
+}
 
-/* ── SECTION BAR ── */
-.sec-bar{display:flex;align-items:center;flex-wrap:wrap;gap:6px 14px;padding:8px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border);font-size:.71rem;color:var(--dim);letter-spacing:.07em}
-.sec-bar .sep{color:var(--border-b)}
-.pill{border-radius:2px;padding:1px 7px;font-size:.67rem;letter-spacing:.1em;border:1px solid var(--border)}
-.pill.green{border-color:var(--green);color:var(--green);background:var(--green-s)}
-.pill.amber{border-color:var(--amber);color:var(--amber);background:var(--amber-s)}
-.pill.violet{border-color:var(--violet);color:var(--violet);background:var(--violet-s)}
+/* HERO */
+.hero{
+  display:grid;grid-template-columns:3fr 2fr;
+  border-bottom:var(--border);
+  min-height:calc(100vh - 52px);
+}
+.hero-main{border-right:var(--border);display:flex;flex-direction:column}
+.hero-eyebrow{
+  padding:16px 40px;
+  border-bottom:var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+  background:var(--black);
+}
+.eyebrow-left{
+  font-family:'Space Mono',monospace;
+  font-size:.62rem;color:rgba(255,255,255,.4);letter-spacing:.1em;
+  display:flex;align-items:center;gap:16px;
+}
+.eyebrow-live{
+  display:flex;align-items:center;gap:6px;
+  font-size:.58rem;color:var(--orange);letter-spacing:.1em;
+}
+.live-dot{
+  width:6px;height:6px;border-radius:50%;
+  background:var(--orange);animation:pulse 1s ease-in-out infinite alternate;
+}
+@keyframes pulse{from{opacity:.4}to{opacity:1}}
+.eyebrow-right{
+  font-family:'Space Mono',monospace;font-size:.6rem;color:rgba(255,255,255,.3);
+}
+.hero-content{
+  flex:1;padding:52px 40px 40px;
+  display:flex;flex-direction:column;justify-content:space-between;
+}
+h1{
+  font-family:'Anton',sans-serif;
+  font-size:clamp(4rem,9vw,8rem);
+  letter-spacing:.01em;line-height:.88;text-transform:uppercase;
+  margin-bottom:28px;
+}
+h1 .accent{
+  color:var(--white);background:var(--orange);
+  padding:4px 12px;display:inline-block;margin-top:6px;
+}
+h1 .outline{
+  display:block;color:transparent;
+  -webkit-text-stroke:2.5px var(--black);
+}
+.hero-body{
+  display:grid;grid-template-columns:1fr 1fr;
+  gap:24px;border-top:var(--border);padding-top:28px;
+}
+.hero-body p{font-size:.88rem;color:#444;line-height:1.7}
+.hero-body .cta-inline{display:flex;flex-direction:column;gap:10px}
+.btn-orange{
+  background:var(--orange);color:#fff;
+  font-weight:700;font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;
+  padding:14px 28px;border:var(--border);cursor:pointer;text-decoration:none;
+  display:inline-block;text-align:center;
+  box-shadow:var(--shadow);transition:box-shadow .1s,transform .1s;
+}
+.btn-orange:hover{box-shadow:none;transform:translate(4px,4px)}
+.btn-blk{
+  background:var(--black);color:#fff;
+  font-weight:700;font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;
+  padding:14px 28px;border:var(--border);cursor:pointer;text-decoration:none;
+  display:inline-block;text-align:center;
+  box-shadow:var(--shadow);transition:box-shadow .1s,transform .1s;
+}
+.btn-blk:hover{box-shadow:none;transform:translate(4px,4px)}
 
-/* ── HERO ── */
-.hero{padding:108px 0 68px}
-.hero-title{font-family:var(--display);font-size:clamp(2.8rem,8.5vw,5.4rem);font-weight:700;color:var(--bright);line-height:1.06;letter-spacing:-.025em;margin:26px 0 20px}
-.hero-title .am{color:var(--amber)}
-.hero-body{font-size:.88rem;color:var(--text);max-width:54ch;line-height:1.88;margin-bottom:28px}
-.dim-txt{color:var(--dim)}
+/* SIDEBAR */
+.hero-sidebar{display:flex;flex-direction:column}
+.sidebar-block{
+  flex:1;padding:28px 24px;border-bottom:var(--border);
+  display:flex;flex-direction:column;justify-content:space-between;
+}
+.sidebar-block:last-child{border-bottom:none}
+.sb-tag{
+  font-family:'Space Mono',monospace;
+  font-size:.58rem;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--orange);margin-bottom:12px;
+  display:flex;align-items:center;gap:6px;
+}
+.sb-tag::after{content:'';flex:1;height:1px;background:var(--orange);opacity:.3}
+.sidebar-block h3{
+  font-family:'Anton',sans-serif;
+  font-size:1.4rem;letter-spacing:.02em;text-transform:uppercase;
+  line-height:1.1;margin-bottom:10px;
+}
+.sidebar-block p{font-size:.75rem;color:#555;line-height:1.6}
+.sb-cmd{
+  margin-top:14px;font-family:'Space Mono',monospace;font-size:.68rem;
+  background:var(--black);color:#00FF88;
+  padding:8px 12px;display:inline-block;letter-spacing:.04em;
+}
+.sb-stat{display:flex;align-items:baseline;gap:6px;margin-top:12px}
+.sb-stat .n{font-family:'Anton',sans-serif;font-size:2.2rem;color:var(--black);line-height:1}
+.sb-stat .l{font-size:.65rem;color:#999;letter-spacing:.08em;text-transform:uppercase}
 
-/* yes/no */
-.yesno{border:1px solid var(--border-b);border-radius:4px;padding:22px 20px;background:var(--bg-card);margin:28px 0;max-width:500px}
-.yesno-q{color:var(--bright);font-size:.9rem;line-height:1.7;margin-bottom:14px}
-.yesno-q .sub{display:block;color:var(--dim);font-size:.8rem;margin-top:4px}
-.yesno-btns{display:flex;gap:10px;flex-wrap:wrap}
-.yesno-btn{border:1px solid var(--border-b);border-radius:3px;padding:9px 18px;font-size:.79rem;color:var(--text);transition:.15s}
-.yesno-btn:hover{border-color:var(--amber);color:var(--amber)}
-.yesno-btn.y-yes{border-color:var(--green)!important;color:var(--green)!important}
-.yesno-btn.y-no{border-color:var(--violet)!important;color:var(--violet)!important}
-.yesno-btn.faded{opacity:.28;pointer-events:none}
-.yesno-resp{overflow:hidden;max-height:0;transition:max-height .4s ease,margin-top .3s ease;font-size:.83rem;line-height:1.75;color:var(--text)}
-.yesno-resp.open{max-height:100px;margin-top:14px}
+/* SECTION HEAD */
+.section-head{
+  background:var(--black);color:var(--white);
+  padding:10px 40px;
+  display:flex;align-items:center;gap:16px;
+  border-bottom:var(--border);border-top:var(--border);
+}
+.section-head h2{font-family:'Anton',sans-serif;font-size:1rem;letter-spacing:.12em;text-transform:uppercase}
+.section-head .line{flex:1;height:1px;background:#333}
+.section-head .meta{font-family:'Space Mono',monospace;font-size:.58rem;color:rgba(255,255,255,.35);letter-spacing:.1em}
 
-/* cta row */
-.cta-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px}
-.btn-p{display:inline-flex;align-items:center;gap:8px;background:var(--bright);color:#0a0a0a;padding:11px 22px;border-radius:3px;font-family:var(--mono);font-size:.81rem;font-weight:600;letter-spacing:.04em;transition:background .15s}
-.btn-p:hover{background:var(--amber);color:#0a0a0a}
-.btn-g{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--border-b);color:var(--text);padding:11px 22px;border-radius:3px;font-family:var(--mono);font-size:.81rem;transition:.15s}
-.btn-g:hover{border-color:var(--amber);color:var(--amber)}
-.pfx{color:var(--amber)}
+/* FEATURES */
+.feat-row{display:grid;grid-template-columns:repeat(3,1fr);border-bottom:var(--border)}
+.feat{padding:32px 28px;border-right:var(--border);position:relative}
+.feat:last-child{border-right:none}
+.feat-label{
+  font-family:'Space Mono',monospace;font-size:.58rem;letter-spacing:.14em;text-transform:uppercase;
+  color:#999;margin-bottom:10px;border-bottom:1.5px solid #ddd;padding-bottom:8px;
+}
+.feat-num{
+  font-family:'Anton',sans-serif;font-size:5rem;color:rgba(0,0,0,.06);
+  position:absolute;top:12px;right:16px;line-height:1;letter-spacing:-.02em;user-select:none;
+}
+.feat h3{
+  font-family:'Anton',sans-serif;font-size:1.5rem;letter-spacing:.02em;text-transform:uppercase;
+  line-height:1.1;margin-bottom:10px;
+}
+.feat p{font-size:.78rem;color:#555;line-height:1.6;max-width:30ch}
+.feat-pill{
+  display:inline-block;margin-top:14px;
+  background:var(--black);color:var(--white);
+  font-family:'Space Mono',monospace;font-size:.58rem;letter-spacing:.1em;
+  padding:3px 10px;
+}
 
-/* ── TERMINAL ── */
-.term{border:1px solid var(--border);border-radius:4px;background:var(--bg-code);margin-top:40px;overflow:hidden}
-.t-bar{display:flex;align-items:center;gap:6px;padding:9px 14px;border-bottom:1px solid var(--border);background:rgba(255,255,255,.025)}
-.tdot{width:9px;height:9px;border-radius:50%;display:inline-block}
-.tdot.r{background:var(--red)}.tdot.y{background:rgba(255,154,82,.45)}.tdot.g{background:rgba(126,224,168,.45)}
-.t-lbl{font-size:.71rem;color:var(--dim);margin-left:6px;flex:1}
-.t-clear{border:1px solid var(--border);border-radius:3px;color:var(--dim);font-size:.69rem;padding:2px 8px;transition:.15s}
-.t-clear:hover{color:var(--amber);border-color:var(--amber)}
-.t-body{padding:14px 16px;min-height:180px;max-height:300px;overflow-y:auto;font-size:.79rem;line-height:1.85}
-.t-out{color:var(--text);margin-bottom:4px}
-.t-out.ok{color:var(--green)}.t-out.bad{color:var(--red)}.t-out.warn{color:var(--amber)}
-.t-prompt{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;margin-bottom:3px}
-.ps1{color:var(--amber);white-space:nowrap;flex-shrink:0}
-.ps1 .u{color:var(--green)}.ps1 .p{color:var(--violet)}.ps1 .s{color:var(--dim)}
-.cmd-t{color:var(--bright);word-break:break-all}
-.t-input-row{display:flex;align-items:center;gap:10px;padding:10px 16px;border-top:1px solid var(--border);background:rgba(255,255,255,.02)}
-#termInput{flex:1;min-width:0;background:transparent;border:none;outline:none;color:var(--bright);font-family:var(--mono);font-size:.79rem;caret-color:var(--amber)}
-.t-run{border:1px solid var(--border);border-radius:3px;color:var(--dim);font-size:.71rem;padding:4px 10px;transition:.15s}
-.t-run:hover{color:var(--amber);border-color:var(--amber)}
-.t-hint{padding:8px 16px;font-size:.69rem;color:var(--dim);border-top:1px solid var(--border)}
-.t-hint code{color:var(--violet);background:var(--violet-s);padding:0 4px;border-radius:2px}
-@media(max-width:460px){.t-run{display:none}}
+/* TICKER */
+.ticker-wrap{overflow:hidden;border-bottom:var(--border);border-top:var(--border);background:var(--orange);padding:8px 0}
+.ticker{display:flex;animation:tick 18s linear infinite;width:max-content}
+.ticker span{
+  font-family:'Anton',sans-serif;font-size:.8rem;letter-spacing:.1em;text-transform:uppercase;
+  color:#fff;padding:0 28px;border-right:1px solid rgba(255,255,255,.3);white-space:nowrap;
+}
+@keyframes tick{from{transform:translateX(0)}to{transform:translateX(-50%)}}
 
-/* ── SECTIONS ── */
-section{padding:56px 0}
-.sec-num{font-family:var(--display);font-size:clamp(5rem,18vw,9rem);font-weight:700;color:rgba(255,255,255,.032);line-height:1;letter-spacing:-.04em;margin-bottom:-10px;user-select:none;pointer-events:none}
-.sec-title{font-family:var(--display);font-size:clamp(2rem,5.5vw,3.2rem);font-weight:700;color:var(--bright);letter-spacing:-.022em;line-height:1.12;margin-bottom:6px}
-.sec-sub{font-size:.87rem;color:var(--text);max-width:52ch;line-height:1.88;margin-bottom:30px}
-.hl{color:var(--violet)}.am{color:var(--amber)}
+/* BOTTOM SPLIT */
+.bottom-split{display:grid;grid-template-columns:1fr 1fr;border-bottom:var(--border)}
+.split-l{padding:56px 48px;border-right:var(--border)}
+.split-l h2{
+  font-family:'Anton',sans-serif;font-size:clamp(2.5rem,5vw,4rem);
+  letter-spacing:.02em;text-transform:uppercase;line-height:.92;margin-bottom:24px;
+}
+.split-l h2 span{display:inline-block;background:var(--orange);color:#fff;padding:2px 10px}
+.split-l p{font-size:.88rem;color:#555;line-height:1.7;max-width:38ch;margin-bottom:32px}
+.split-r{
+  background:var(--black);padding:48px 40px;
+  display:flex;flex-direction:column;justify-content:space-between;
+}
+.split-r h3{
+  font-family:'Anton',sans-serif;font-size:1rem;letter-spacing:.12em;text-transform:uppercase;
+  color:rgba(255,255,255,.35);margin-bottom:20px;
+}
+.model-list{display:flex;flex-direction:column;gap:0}
+.model-item{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 0;border-bottom:1px solid #1f1f1f;
+  transition:padding-left .12s;
+}
+.model-item:last-child{border-bottom:none}
+.model-item:hover{padding-left:5px}
+.model-name{font-size:.78rem;color:var(--white);font-weight:500}
+.model-tag{font-family:'Space Mono',monospace;font-size:.6rem;color:#555;letter-spacing:.08em}
+.model-live{width:6px;height:6px;border-radius:50%;background:#00FF88;box-shadow:0 0 6px #00FF88}
 
-/* ── CARD ── */
-.card{background:var(--bg-card);border:1px solid var(--border);border-radius:4px;overflow:hidden;margin-bottom:12px}
-.card-head{display:flex;justify-content:space-between;align-items:center;padding:11px 18px;border-bottom:1px solid var(--border);background:rgba(255,255,255,.02)}
-.card-head .lbl{font-size:.7rem;color:var(--dim);letter-spacing:.1em}
-.card-icon{width:30px;height:30px;border-radius:3px;border:1px solid var(--border-b);display:flex;align-items:center;justify-content:center;font-size:.95rem;color:var(--text)}
-.card-inner{padding:20px 18px}
-.card-title{font-family:var(--display);font-size:clamp(1.5rem,4vw,2.1rem);font-weight:700;color:var(--bright);letter-spacing:-.02em;line-height:1.18;margin-bottom:12px}
-.card-desc{font-size:.83rem;color:var(--text);line-height:1.82;margin-bottom:18px}
+/* FOOTER */
+footer{
+  background:var(--black);display:grid;grid-template-columns:2fr 1fr 1fr 1fr;
+  border-bottom:var(--border);
+}
+.f-col{padding:32px 28px;border-right:1px solid #1f1f1f}
+.f-col:last-child{border-right:none}
+.f-logo{
+  font-family:'Anton',sans-serif;font-size:1.2rem;letter-spacing:.06em;
+  color:var(--white);margin-bottom:12px;
+  display:flex;align-items:center;gap:10px;
+  text-decoration:none;
+}
+.f-col>p{font-size:.72rem;color:#555;line-height:1.7}
+.f-col h4{font-size:.58rem;letter-spacing:.16em;text-transform:uppercase;color:#444;margin-bottom:14px}
+.f-col a{display:block;font-size:.72rem;color:#555;text-decoration:none;padding:4px 0;transition:color .15s}
+.f-col a:hover{color:var(--orange)}
+.f-bar{
+  background:var(--black);padding:14px 28px;
+  display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;
+  font-family:'Space Mono',monospace;font-size:.6rem;color:#333;letter-spacing:.08em;
+  border-top:1px solid #1a1a1a;
+}
 
-/* feature list */
-.feat-list{list-style:none}
-.feat-list li{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);font-size:.83rem;color:var(--text)}
-.feat-list li:last-child{border-bottom:none}
-.sq{width:8px;height:8px;border-radius:1px;flex-shrink:0}
-.sq.a{background:var(--amber)}.sq.g{background:var(--green)}.sq.v{background:var(--violet)}.sq.d{background:var(--border-b)}
-
-/* ── DIFF ── */
-.diff{border:1px solid var(--border);border-radius:4px;overflow:hidden;font-size:.82rem}
-.d-row{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid var(--border)}
-.d-row:last-child{border-bottom:none}
-.d-cell{padding:12px 16px;line-height:1.65}
-.d-cell.m{background:rgba(255,60,60,.04);color:#c09898;border-right:1px solid var(--border)}
-.d-cell.p{background:rgba(126,224,168,.04);color:#9abfaa}
-.d-cell .sym{display:inline-block;width:16px;color:var(--dim)}
-.d-cell.m .sym{color:var(--red)}.d-cell.p .sym{color:var(--green)}
-@media(max-width:580px){.d-row{grid-template-columns:1fr}.d-cell.m{border-right:none;border-bottom:1px solid var(--border)}}
-
-/* ── TABLE ── */
-.tbl{border:1px solid var(--border);border-radius:4px;overflow:hidden}
-.tbl-row{display:grid;grid-template-columns:96px 1fr;gap:16px;padding:13px 18px;border-bottom:1px solid var(--border);align-items:start;transition:background .12s}
-.tbl-row:last-child{border-bottom:none}
-.tbl-row:hover{background:rgba(255,255,255,.02)}
-.tbl-k{color:var(--amber);font-size:.8rem;font-weight:600;padding-top:2px}
-.tbl-row.l5 .tbl-k{color:var(--violet)}
-.tbl-v{font-size:.83rem;color:var(--text);line-height:1.72}
-.tbl-v strong{color:var(--bright);display:block;margin-bottom:3px}
-@media(max-width:500px){.tbl-row{grid-template-columns:1fr;gap:4px}.tbl-k{font-size:.76rem}}
-
-/* ── LOG ROWS ── */
-.log-list{border:1px solid var(--border);border-radius:4px;overflow:hidden}
-.log-row{display:grid;grid-template-columns:96px 1fr;gap:16px;padding:15px 18px;border-bottom:1px solid var(--border);align-items:start;transition:background .12s}
-.log-row:last-child{border-bottom:none}
-.log-row:hover{background:rgba(255,255,255,.02)}
-.log-st{font-size:.7rem;font-weight:600;letter-spacing:.06em;padding-top:4px}
-.log-st.done{color:var(--green)}.log-st.now{color:var(--amber)}
-.log-body strong{color:var(--bright);display:block;margin-bottom:4px;font-size:.88rem}
-.log-body p{font-size:.82rem;color:var(--text);line-height:1.72}
-@media(max-width:500px){.log-row{grid-template-columns:1fr;gap:5px}}
-
-/* ── JSON BOX ── */
-.json-box{border:1px solid var(--border);border-radius:4px;background:var(--bg-code);overflow:hidden}
-.j-bar{display:flex;justify-content:space-between;align-items:center;padding:8px 16px;border-bottom:1px solid var(--border);font-size:.7rem;color:var(--dim);flex-wrap:wrap;gap:6px}
-.j-bar .ok{color:var(--green)}
-.j-body{padding:16px;font-size:.79rem;line-height:1.92;overflow-x:auto;color:var(--text)}
-.j-body .k{color:var(--violet)}.j-body .s{color:var(--amber)}.j-body .n{color:var(--green)}
-
-/* ── CODE BOX ── */
-.code-box{border:1px solid var(--border);border-radius:4px;background:var(--bg-code);overflow:hidden}
-.c-bar{display:flex;align-items:center;gap:5px;padding:8px 14px;border-bottom:1px solid var(--border);background:rgba(255,255,255,.02)}
-.c-bar .path{font-size:.7rem;color:var(--dim);margin-left:8px}
-.c-body{padding:15px 18px;font-size:.79rem;line-height:1.92;overflow-x:auto;color:var(--text)}
-.c-body .k{color:var(--amber)}.c-body .v{color:var(--green)}.c-body .c{color:var(--dim)}.c-body .pth{color:var(--violet)}
-
-/* ── ACCESS FORM ── */
-.field-row{margin-bottom:14px}
-.field-lbl{display:block;color:var(--violet);font-size:.77rem;margin-bottom:6px}
-.field-row input,.field-row select{width:100%;max-width:380px;background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--bright);font-family:var(--mono);font-size:.83rem;padding:10px 14px;transition:border-color .15s}
-.field-row input:focus,.field-row select:focus{outline:none;border-color:var(--amber)}
-.field-row input::placeholder{color:var(--dim)}
-.a-result{margin-top:12px;font-size:.81rem;line-height:1.72}
-.a-result.ok{color:var(--green)}.a-result.bad{color:var(--red)}.a-result.dim{color:var(--dim)}
-
-
-/* ── FOOTER ── */
-footer{border-top:1px solid var(--border);padding:40px 0 64px;font-size:.77rem;color:var(--dim)}
-.f-echo{margin-bottom:28px;font-size:.81rem;line-height:1.92}
-.f-echo .am{color:var(--amber)}.f-echo .ok{color:var(--green)}
-.f-grid{display:flex;flex-wrap:wrap;gap:26px 44px;align-items:start}
-.f-copy{flex:1;min-width:180px;line-height:1.8}
-.f-cols{display:flex;gap:44px;flex-shrink:0}
-.f-col .col-lbl{display:block;font-size:.64rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.18);margin-bottom:12px}
-.f-col a{display:block;color:var(--dim);padding:3px 0;font-size:.75rem;transition:color .15s}
-.f-col a:hover{color:var(--amber)}
-@media(max-width:460px){.f-copy{min-width:100%}.f-cols{gap:28px}}
-
-.token-bar{display:flex;align-items:center;flex-wrap:wrap;gap:8px 14px;margin-bottom:28px;padding:10px 16px;border:1px solid var(--border);border-radius:4px;background:var(--bg-card);font-size:.77rem}
-.tk-lbl{color:var(--amber);font-weight:600;flex-shrink:0}
-.tk-addr{color:var(--violet);word-break:break-all;flex:1;min-width:0}
-.tk-copy{border:1px solid var(--border);border-radius:3px;color:var(--dim);font-size:.7rem;padding:3px 10px;transition:.15s;flex-shrink:0}
-.tk-copy:hover{border-color:var(--amber);color:var(--amber)}
-.tk-copy.done{border-color:var(--green);color:var(--green)}
-
-/* utils */
-.mt-8{margin-top:8px}.mt-16{margin-top:16px}.mt-24{margin-top:24px}.mt-32{margin-top:32px}.mt-40{margin-top:40px}
-.muted{color:var(--dim);font-size:.77rem;margin-top:10px}
-@media(max-width:680px){.hero{padding:88px 0 56px}section{padding:44px 0}}
-@media(max-width:380px){body{font-size:13px}}
+/* RESPONSIVE */
+@media(max-width:1024px){
+  nav{padding:0 24px}
+  .nav-center{display:none}
+  .nav-ticker{display:none}
+  .ham{display:flex}
+  .hero{grid-template-columns:1fr;min-height:auto}
+  .hero-main{border-right:none;border-bottom:var(--border)}
+  .hero-eyebrow{padding:12px 24px}
+  .hero-content{padding:36px 24px 32px}
+  h1{font-size:clamp(3.5rem,10vw,6rem)}
+  .hero-sidebar{border-top:var(--border)}
+  .feat-row{grid-template-columns:1fr 1fr}
+  .feat:nth-child(2){border-right:none}
+  .feat:nth-child(3){border-top:var(--border);border-right:none;grid-column:span 2}
+  .bottom-split{grid-template-columns:1fr}
+  .split-l{border-right:none;border-bottom:var(--border);padding:40px 24px}
+  .split-r{padding:36px 24px}
+  footer{grid-template-columns:1fr 1fr}
+  .f-col:nth-child(1){grid-column:span 2;border-right:none;border-bottom:1px solid #1f1f1f}
+  .f-col:nth-child(2){border-bottom:1px solid #1f1f1f}
+  .f-col:nth-child(3){border-right:none;border-bottom:1px solid #1f1f1f}
+  .f-col:nth-child(4){border-right:none}
+  .section-head{padding:10px 24px}
+}
+@media(max-width:640px){
+  nav{padding:0 16px;height:48px}
+  .mob-nav{top:48px}
+  .nav-cta{padding:7px 14px;font-size:.62rem}
+  .hero-content{padding:28px 20px 24px}
+  h1{font-size:clamp(3rem,12vw,4.5rem)}
+  .hero-body{grid-template-columns:1fr}
+  .btn-orange,.btn-blk{text-align:center}
+  .feat-row{grid-template-columns:1fr}
+  .feat{border-right:none;border-bottom:var(--border)}
+  .feat:nth-child(3){grid-column:auto;border-bottom:none}
+  .bottom-split{grid-template-columns:1fr}
+  footer{grid-template-columns:1fr}
+  .f-col{border-right:none;border-bottom:1px solid #1f1f1f;padding:24px 20px}
+  .f-col:nth-child(1){grid-column:auto}
+  .f-col:last-child{border-bottom:none}
+  .f-bar{padding:12px 20px;flex-direction:column;gap:4px}
+  .split-r{padding:28px 20px}
+}
 </style>
 </head>
 <body>
 
 <!-- NAV -->
-<nav class="nav">
-  <div class="wrap nav-in">
-    <a href="/" class="nav-brand"><span class="nav-dot">●</span> ORLIX</a>
-    <div class="nav-r">
-      <a href="docs.html" class="nav-link hide-sm">docs</a>
-      <a href="changelog.html" class="nav-link hide-sm">changelog</a>
-      <a href="https://github.com/tylerbroqs" target="_blank" rel="noopener" class="nav-icon hide-sm" aria-label="GitHub">
-        <svg viewBox="0 0 24 24"><path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0112 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/></svg>
-      </a>
-      <a href="https://x.com/orlixai" target="_blank" rel="noopener" class="nav-icon hide-sm" aria-label="X">
-        <svg viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.747l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
-      </a>
-      <a href="/app" class="nav-cta">LAUNCH APP &#x2197;</a>
-    </div>
+<nav>
+  <a href="/" class="logo">ORLIX</a>
+  <div class="nav-center">
+    <a href="#features">Features</a>
+    <a href="docs.html">Docs</a>
+    <a href="#roadmap">Roadmap</a>
+    <a href="changelog.html">Changelog</a>
+  </div>
+  <div class="nav-right">
+    <span class="nav-ticker">$ORLIX · BASE MAINNET</span>
+    <a href="app.html" class="nav-cta">Launch App</a>
+    <button class="ham" onclick="document.querySelector('.mob-nav').classList.toggle('open')" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
   </div>
 </nav>
 
-<main>
-<div class="wrap">
+<div class="mob-nav">
+  <a href="#features">Features</a>
+  <a href="docs.html">Docs</a>
+  <a href="#roadmap">Roadmap</a>
+  <a href="changelog.html">Changelog</a>
+  <a href="app.html" class="nav-cta">Launch App</a>
+</div>
 
 <!-- HERO -->
-<section class="hero" id="top">
-  <div class="sec-bar">
-    <span>// ORLIX &middot; PERSONAL_AI_OS</span>
-    <span class="sep">&mdash;</span>
-    <span class="pill green">STATUS: LIVE</span>
-    <span class="pill amber">v0.5-beta</span>
-    <span class="sep">&mdash;</span>
-    <span>soul.md &middot; Aeon &middot; Base MCP</span>
-  </div>
-
-  <h1 class="hero-title mt-32">
-    Stop prompt-chasing.<br>
-    <span class="am">Own the control layer.</span>
-  </h1>
-
-  <p class="hero-body">
-    Orlix is a governance layer for personal AI &mdash; a persistent world model that turns any assistant into a system that observes, decides, acts, and reports back. <span class="dim-txt">Every action is policy-bound and fully auditable.</span>
-  </p>
-
-  <div class="yesno">
-    <p class="yesno-q">"AI generates text. You do all the work."<span class="sub">Sound familiar?</span></p>
-    <div class="yesno-btns">
-      <button class="yesno-btn" id="btnYes">Yes, unfortunately &#x2192;</button>
-      <button class="yesno-btn" id="btnNo">No, I've solved this</button>
+<section class="hero">
+  <div class="hero-main">
+    <div class="hero-eyebrow">
+      <div class="eyebrow-left">
+        <span>NEURAL COMMAND LAYER</span>
+        <div class="eyebrow-live"><span class="live-dot"></span>LIVE ON BASE</div>
+      </div>
+      <div class="eyebrow-right">orlixai.xyz · @orlixai_bot</div>
     </div>
-    <div class="yesno-resp" id="yesnoResp"></div>
-  </div>
-
-  <div class="cta-row">
-    <a href="#access" class="btn-p"><span class="pfx">$</span> orlix init</a>
-    <a href="/app" class="btn-g"><span class="pfx">&#x2192;</span> open dashboard</a>
-    <button class="btn-g" id="focusTermBtn"><span class="pfx">$</span> open shell</button>
-  </div>
-
-  <div class="term mt-40">
-    <div class="t-bar">
-      <span class="tdot r"></span><span class="tdot y"></span><span class="tdot g"></span>
-      <span class="t-lbl">orlix-shell &mdash; bash</span>
-      <button class="t-clear" id="clearTermBtn">clear</button>
-    </div>
-    <div class="t-body" id="termBody">
+    <div class="hero-content">
       <div>
-        <div class="t-prompt">
-          <span class="ps1"><span class="u">guest</span><span class="s">@</span><span class="p">orlix</span><span class="s">:~$</span></span>
+        <h1>
+          The AI<br>
+          <span class="accent">Command</span>
+          <span class="outline">Layer.</span>
+        </h1>
+      </div>
+      <div class="hero-body">
+        <p>Orlix is not a chatbot. It's a full AI operating layer — streaming responses, on-chain token analysis, real-time wallet monitoring, and web search. Built for operators.</p>
+        <div class="cta-inline">
+          <a href="app.html" class="btn-orange">Launch Orlix AI →</a>
+          <a href="https://t.me/orlixai_bot" class="btn-blk">@orlixai_bot on Telegram</a>
         </div>
-        <div class="t-out">Welcome to the Orlix shell. Type <span style="color:var(--violet)">help</span> for commands, or <span style="color:var(--violet)">tour</span> for a walkthrough.</div>
       </div>
     </div>
-    <div class="t-input-row">
-      <span class="ps1"><span class="u">guest</span><span class="s">@</span><span class="p">orlix</span><span class="s">:~$</span></span>
-      <input id="termInput" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="type a command&hellip;">
-      <button class="t-run" id="termRunBtn">run</button>
+  </div>
+
+  <div class="hero-sidebar">
+    <div class="sidebar-block">
+      <div>
+        <div class="sb-tag">New · Token Analyzer</div>
+        <h3>Scan any Base token in seconds.</h3>
+        <p>Price, liquidity, volume, buy/sell pressure + AI security verdict. SAFE to SCAM LIKELY.</p>
+        <div class="sb-cmd">/analyze 0x...</div>
+      </div>
+      <div class="sb-stat">
+        <span class="n">∞</span>
+        <span class="l">Tokens supported</span>
+      </div>
     </div>
-    <div class="t-hint">try: <code>help</code> &middot; <code>tour</code> &middot; <code>ls</code> &middot; <code>cat receipt.log</code> &middot; <code>levels</code> &middot; <code>whoami</code></div>
-  </div>
-</section>
-
-<!-- 01 PROBLEM -->
-<section id="problem">
-  <div class="sec-bar">
-    <span>// PROBLEM &middot; 01</span>
-    <span class="sep">&mdash;</span>
-    <span>context resets every session. rules vanish. you re-explain constantly.</span>
-  </div>
-  <div class="sec-num">01</div>
-  <h2 class="sec-title">The problem.</h2>
-  <p class="sec-sub">Everyone has access to the same models. If your edge is <span class="hl">"knowing how to prompt,"</span> that edge is shared by every other person using the same model.</p>
-
-  <div class="diff">
-    <div class="d-row">
-      <div class="d-cell m"><span class="sym">&#x2212;</span>Context lives in their UI &mdash; switch vendors, lose everything</div>
-      <div class="d-cell p"><span class="sym">+</span>Memory is portable, versioned, and stays with you</div>
+    <div class="sidebar-block">
+      <div>
+        <div class="sb-tag">New · Wallet Watcher</div>
+        <h3>Monitor any wallet. Live.</h3>
+        <p>Real-time ETH balance and transaction alerts every 12 seconds. Browser notifications.</p>
+        <div class="sb-cmd">/watch 0x...</div>
+      </div>
+      <div class="sb-stat">
+        <span class="n">12s</span>
+        <span class="l">Poll interval</span>
+      </div>
     </div>
-    <div class="d-row">
-      <div class="d-cell m"><span class="sym">&#x2212;</span>Rules reset every session, so you re-explain constantly</div>
-      <div class="d-cell p"><span class="sym">+</span>Policies persist &mdash; set a rule once, enforced everywhere</div>
-    </div>
-    <div class="d-row">
-      <div class="d-cell m"><span class="sym">&#x2212;</span>Output is a draft &mdash; you still send, check, follow up</div>
-      <div class="d-cell p"><span class="sym">+</span>Actions execute and are verified against the goal</div>
-    </div>
-    <div class="d-row">
-      <div class="d-cell m"><span class="sym">&#x2212;</span>No record of why a suggestion was made</div>
-      <div class="d-cell p"><span class="sym">+</span>Every decision ships with a reviewable receipt</div>
-    </div>
-    <div class="d-row">
-      <div class="d-cell m"><span class="sym">&#x2212;</span>Your accumulated context can't be exported</div>
-      <div class="d-cell p"><span class="sym">+</span>Swap models anytime &mdash; your system stays intact</div>
-    </div>
-  </div>
-  <p class="muted">// assistants are an interface. orlix is infrastructure.</p>
-</section>
-
-<!-- 02 GOVERNANCE -->
-<section id="product">
-  <div class="sec-bar">
-    <span>// GOVERNANCE_LOOP &middot; 02</span>
-    <span class="sep">&mdash;</span>
-    <span>observe &rarr; decide &rarr; act &rarr; verify &rarr; learn</span>
-  </div>
-  <div class="sec-num">02</div>
-  <h2 class="sec-title">The governance loop.</h2>
-  <p class="sec-sub">Most AI tools optimize for the next reply. Orlix optimizes for the <span class="hl">outcome</span> &mdash; running a five-step loop continuously, in the background.</p>
-
-  <div class="card">
-    <div class="card-head">
-      <span class="lbl">CORE &middot; RUNTIME</span>
-      <div class="card-icon">&#x25CE;</div>
-    </div>
-    <div class="card-inner">
-      <h3 class="card-title">Five steps.<br>Continuous loop.</h3>
-      <ul class="feat-list">
-        <li><span class="sq a"></span>observe.sh &mdash; Watches goals, calendar, memory, live signals</li>
-        <li><span class="sq a"></span>decide.sh &mdash; Weighs priorities against policies, checks authority</li>
-        <li><span class="sq a"></span>act.sh &mdash; Executes or requests approval depending on tier</li>
-        <li><span class="sq a"></span>verify.sh &mdash; Checks results against the original goal, not just "sent"</li>
-        <li><span class="sq a"></span>learn.sh &mdash; Updates policy from real outcomes, every change versioned</li>
-      </ul>
-    </div>
-  </div>
-
-  <div class="sec-bar mt-32" style="margin-bottom:16px">
-    <span>// ACTION_RECEIPT &middot; every action is logged and reviewable</span>
-  </div>
-  <div class="json-box">
-    <div class="j-bar"><span>receipt #2026-06-13-0847</span><span class="ok">status: verified</span></div>
-    <div class="j-body">
-<div><span class="k">intent</span>:&nbsp;&nbsp;&nbsp;"Notify user of goal drift"</div>
-<div><span class="k">context</span>:&nbsp;&nbsp;"Goal 'Ship MVP' &middot; 3 blockers &middot; last touched 17d ago"</div>
-<div><span class="k">policy</span>:&nbsp;&nbsp;&nbsp;"Alert if goal drift &gt; 3 days &middot; v14"</div>
-<div><span class="k">action</span>:&nbsp;&nbsp;&nbsp;"Priority alert sent" <span style="color:var(--green)">&#x2713;</span></div>
-<div><span class="k">approval</span>:&nbsp;"User confirmed re-prioritization"</div>
-<div><span class="k">rollback</span>:&nbsp;"available &middot; 30 days"</div>
-    </div>
-  </div>
-  <p class="muted">// agents do tasks. orlix governs outcomes.</p>
-</section>
-
-<!-- 03 LEVELS -->
-<section id="levels">
-  <div class="sec-bar">
-    <span>// AUTONOMY_LEVELS &middot; 03</span>
-    <span class="sep">&mdash;</span>
-    <span>L1 informational &rarr; L5 symbiotic</span>
-  </div>
-  <div class="sec-num">03</div>
-  <h2 class="sec-title">Autonomy levels.</h2>
-  <p class="sec-sub">A simple scale to place any AI tool &mdash; from read-only systems to a fully co-adaptive partner. Orlix is built to run at the top.</p>
-
-  <div class="tbl">
-    <div class="tbl-row"><div class="tbl-k">L1</div><div class="tbl-v"><strong>Informational</strong>Read-only. Answers questions, takes no action.</div></div>
-    <div class="tbl-row"><div class="tbl-k">L2</div><div class="tbl-v"><strong>Reactive</strong>Responds within a single session, no memory beyond it.</div></div>
-    <div class="tbl-row"><div class="tbl-k">L3</div><div class="tbl-v"><strong>Mixed-initiative</strong>Can suggest or warn, but a human drives every step.</div></div>
-    <div class="tbl-row"><div class="tbl-k">L4</div><div class="tbl-v"><strong>Agentic</strong>Executes multi-step tasks autonomously &mdash; ends when the task does.</div></div>
-    <div class="tbl-row l5"><div class="tbl-k">L5</div><div class="tbl-v"><strong>Symbiotic &mdash; Orlix</strong>Persistent memory, a living model of your goals, policies that evolve from outcomes, full audit trail. The system doesn't end &mdash; it grows with you.</div></div>
-  </div>
-
-  <div class="sec-bar mt-40" style="margin-bottom:14px"><span>// AUTHORITY_TIERS &middot; configure your permission model</span></div>
-  <div class="tbl">
-    <div class="tbl-row"><div class="tbl-k">observe</div><div class="tbl-v">Log activity only &mdash; Orlix watches, nothing else.</div></div>
-    <div class="tbl-row"><div class="tbl-k">suggest</div><div class="tbl-v">Recommendations only &mdash; you decide everything.</div></div>
-    <div class="tbl-row"><div class="tbl-k">confirm</div><div class="tbl-v">Orlix asks before acting on anything.</div></div>
-    <div class="tbl-row l5"><div class="tbl-k">supervised</div><div class="tbl-v">Orlix acts, notifies you, and can roll back. <span style="color:var(--dim)">&larr; default</span></div></div>
-    <div class="tbl-row"><div class="tbl-k">autonomous</div><div class="tbl-v">Orlix acts independently within policy bounds.</div></div>
-  </div>
-</section>
-
-<!-- 04 MEMORY -->
-<section id="memory">
-  <div class="sec-bar">
-    <span>// MEMORY &middot; 04</span>
-    <span class="sep">&mdash;</span>
-    <span>persistent &middot; versioned &middot; yours forever</span>
-  </div>
-  <div class="sec-num">04</div>
-  <h2 class="sec-title">Memory &amp; ownership.</h2>
-  <p class="sec-sub">Chat history resets whenever a vendor decides. Memory in Orlix is yours by design &mdash; <span class="hl">persistent, versioned, and exportable</span> at any time.</p>
-
-  <div class="card">
-    <div class="card-head">
-      <span class="lbl">MEMORY &middot; SOUL &middot; IDENTITY</span>
-      <div class="card-icon">&#x25C8;</div>
-    </div>
-    <div class="card-inner">
-      <h3 class="card-title">Your context.<br>Never lost.</h3>
-      <ul class="feat-list">
-        <li><span class="sq g"></span>Portable &mdash; nothing locked to any vendor or model</li>
-        <li><span class="sq g"></span>Versioned &mdash; every fact carries a timestamp, roll back anytime</li>
-        <li><span class="sq g"></span>Sourced &mdash; every belief traces back to where it came from</li>
-        <li><span class="sq g"></span>Soul.md &mdash; define your identity, worldview, style. Orlix embodies it.</li>
-        <li><span class="sq g"></span>Exportable &mdash; one command, full JSON dump, forever yours</li>
-      </ul>
-    </div>
-  </div>
-
-  <div class="json-box mt-16">
-    <div class="j-bar"><span>orlix-export.json</span><span class="ok">readable &middot; portable &middot; yours</span></div>
-    <div class="j-body">
-<div>{</div>
-<div>&nbsp;&nbsp;<span class="k">"goals"</span>: [{ <span class="k">"name"</span>: <span class="s">"Ship MVP"</span>, <span class="k">"deadline"</span>: <span class="s">"2026-07-15"</span>, <span class="k">"progress"</span>: <span class="n">0.6</span> }],</div>
-<div>&nbsp;&nbsp;<span class="k">"soul"</span>: { <span class="k">"identity"</span>: <span class="s">"founder"</span>, <span class="k">"style"</span>: <span class="s">"direct"</span>, <span class="k">"worldview"</span>: <span class="s">"ship then refine"</span> },</div>
-<div>&nbsp;&nbsp;<span class="k">"policies"</span>: [{ <span class="k">"rule"</span>: <span class="s">"notify_if_blocker_gt_48h"</span>, <span class="k">"version"</span>: <span class="n">14</span> }],</div>
-<div>&nbsp;&nbsp;<span class="k">"facts"</span>: [{ <span class="k">"content"</span>: <span class="s">"Alex owns the design review"</span>, <span class="k">"source"</span>: <span class="s">"email &middot; 2026-06-02"</span> }]</div>
-<div>}</div>
-    </div>
-  </div>
-  <div class="cta-row mt-16">
-    <button class="btn-g" id="downloadExport"><span class="pfx">$</span> download export.json</button>
-  </div>
-</section>
-
-<!-- 05 ROADMAP -->
-<section id="roadmap">
-  <div class="sec-bar">
-    <span>// ROADMAP &middot; 05</span>
-    <span class="sep">&mdash;</span>
-    <span>git log --oneline --graph</span>
-  </div>
-  <div class="sec-num">05</div>
-  <h2 class="sec-title">Roadmap.</h2>
-  <p class="sec-sub">Five phases. Each one unlocks a new capability. When all five run continuously, Orlix becomes a true personal operating system.</p>
-
-  <div class="log-list">
-    <div class="log-row"><span class="log-st done">&#x2713; shipped</span><div class="log-body"><strong>v0.1 &mdash; Observe</strong><p>Persistent memory across sessions, source-tracked facts, first calendar &amp; notes integrations.</p></div></div>
-    <div class="log-row"><span class="log-st done">&#x2713; shipped</span><div class="log-body"><strong>v0.2 &mdash; Decide</strong><p>Rules-based decision engine with priority weighting and authority checks before any action.</p></div></div>
-    <div class="log-row"><span class="log-st done">&#x2713; shipped</span><div class="log-body"><strong>v0.3 &mdash; Act</strong><p>Approval workflows, action receipts, and supervised execution for real tasks.</p></div></div>
-    <div class="log-row"><span class="log-st done">&#x2713; shipped</span><div class="log-body"><strong>v0.4 &mdash; Verify</strong><p>Outcome tracking that links every action back to the goal it served.</p></div></div>
-    <div class="log-row"><span class="log-st now">&#x25CF; building</span><div class="log-body"><strong>v0.5 &mdash; Evolve</strong><p>Policy evolution from real outcomes, soul.md identity, Aeon framework, autonomous agents on Base.</p></div></div>
-  </div>
-</section>
-
-<!-- 06 ACCESS -->
-<section id="access">
-  <div class="sec-bar">
-    <span>// EARLY_ACCESS &middot; 06</span>
-    <span class="sep">&mdash;</span>
-    <span class="pill amber">LIMITED COHORT</span>
-  </div>
-  <div class="sec-num">06</div>
-  <h2 class="sec-title">Get early access.</h2>
-  <p class="sec-sub">Orlix is in active development. We're building infrastructure for a true human-AI partnership &mdash; and looking for early operators to help shape it.</p>
-
-  <div class="card">
-    <div class="card-head">
-      <span class="lbl">ACCESS_REQUEST &middot; ./access.sh --request</span>
-      <div class="card-icon">&#x2192;</div>
-    </div>
-    <div class="card-inner">
-      <form id="accessForm">
-        <div class="field-row">
-          <span class="field-lbl">&gt; email_address</span>
-          <input type="email" required id="accessEmail" placeholder="you@domain.com">
-        </div>
-        <div class="field-row">
-          <span class="field-lbl">&gt; role</span>
-          <select id="accessRole">
-            <option>founder</option><option>operator</option><option>creator</option><option>builder</option>
-          </select>
-        </div>
-        <div class="cta-row mt-8">
-          <button type="submit" class="btn-p"><span class="pfx">$</span> submit --confirm</button>
-        </div>
-        <div class="a-result" id="accessResult"></div>
-      </form>
-      <p class="muted mt-16">your data stays local until you submit. no spam, ever.</p>
+    <div class="sidebar-block">
+      <div>
+        <div class="sb-tag">Models Available</div>
+        <h3>19 AI models across 7 providers.</h3>
+        <p>Claude, Gemini, GPT-4o, Groq, Mimo, DeepSeek — streaming and switching in one click.</p>
+      </div>
+      <div class="sb-stat">
+        <span class="n">19</span>
+        <span class="l">Models available</span>
+      </div>
     </div>
   </div>
 </section>
 
+<!-- TICKER -->
+<div class="ticker-wrap">
+  <div class="ticker">
+    <span>Token Analyzer</span><span>Wallet Watcher</span><span>Streaming AI</span><span>Web Search</span><span>Vision Upload</span><span>Chat History</span><span>Telegram Bot</span><span>Base Network</span><span>19 AI Models</span>
+    <span>Token Analyzer</span><span>Wallet Watcher</span><span>Streaming AI</span><span>Web Search</span><span>Vision Upload</span><span>Chat History</span><span>Telegram Bot</span><span>Base Network</span><span>19 AI Models</span>
+  </div>
 </div>
-</main>
 
+<!-- FEATURES -->
+<div class="section-head" id="features">
+  <h2>Core Features</h2>
+  <div class="line"></div>
+  <span class="meta">40+ UPDATES SHIPPED</span>
+</div>
+<div class="feat-row">
+  <div class="feat">
+    <div class="feat-num">01</div>
+    <div class="feat-label">Crypto Intelligence</div>
+    <h3>Token Analyzer</h3>
+    <p>Paste any Base contract. Get full market data and AI security analysis in seconds.</p>
+    <span class="feat-pill">DexScreener + Claude AI</span>
+  </div>
+  <div class="feat">
+    <div class="feat-num">02</div>
+    <div class="feat-label">On-Chain Monitoring</div>
+    <h3>Wallet Watcher</h3>
+    <p>Real-time balance and transaction alerts for any wallet on Base Mainnet.</p>
+    <span class="feat-pill">Live · Every 12s</span>
+  </div>
+  <div class="feat">
+    <div class="feat-num">03</div>
+    <div class="feat-label">Mobile Access</div>
+    <h3>Telegram Bot</h3>
+    <p>Full Orlix AI inside Telegram. /analyze and /watch — or ask anything powered by Claude.</p>
+    <span class="feat-pill">@orlixai_bot</span>
+  </div>
+</div>
+
+<!-- BOTTOM SPLIT -->
+<div class="bottom-split">
+  <div class="split-l">
+    <h2>One app.<br><span>Everything</span><br>you need.</h2>
+    <p>Stop switching between tools. Orlix combines AI chat, crypto analysis, wallet monitoring, and web search in a single interface. No signup. No API key required.</p>
+    <a href="app.html" class="btn-orange">Launch Orlix AI →</a>
+  </div>
+  <div class="split-r">
+    <h3>// Active Providers</h3>
+    <div class="model-list">
+      <div class="model-item"><span class="model-name">Claude Sonnet</span><span class="model-tag">Anthropic</span><div class="model-live"></div></div>
+      <div class="model-item"><span class="model-name">Mimo Hermes</span><span class="model-tag">Mimo</span><div class="model-live"></div></div>
+      <div class="model-item"><span class="model-name">GPT-4o</span><span class="model-tag">OpenAI</span><div class="model-live"></div></div>
+      <div class="model-item"><span class="model-name">Gemini 2.5 Flash</span><span class="model-tag">Google</span><div class="model-live"></div></div>
+      <div class="model-item"><span class="model-name">Llama 3.3 70B</span><span class="model-tag">Groq</span><div class="model-live"></div></div>
+    </div>
+    <span style="font-family:'Space Mono',monospace;font-size:.6rem;color:#333;letter-spacing:.08em">+ 14 MORE MODELS</span>
+  </div>
+</div>
+
+<!-- FOOTER -->
 <footer>
-  <div class="wrap">
-    <div class="f-echo">
-      <span class="am">orlix</span><span style="color:var(--dim)">@system:~$</span> echo "the future of AI is not assistance &mdash; it is partnership."
-      <br><span class="ok">the future of AI is not assistance &mdash; it is partnership.</span>
-    </div>
-    <div class="token-bar">
-      <span class="tk-lbl">$ORLIX</span>
-      <span class="tk-addr" id="caAddr">CA: 0x799c28BAC95B3E0B26534D1e9A586511895EcBA3</span>
-      <button class="tk-copy" id="caBtn">copy</button>
-    </div>
-    <div class="f-grid">
-      <div class="f-copy">&copy; 2026 Orlix<br>local-first, sovereign, auditable.</div>
-      <div class="f-cols">
-        <div class="f-col">
-          <span class="col-lbl">resources</span>
-          <a href="docs.html">docs</a>
-          <a href="changelog.html">changelog</a>
-        </div>
-        <div class="f-col">
-          <span class="col-lbl">legal</span>
-          <a href="terms.html">terms</a>
-          <a href="privacy.html">privacy</a>
-        </div>
-      </div>
-    </div>
+  <div class="f-col">
+    <a href="/" class="f-logo">ORLIX</a>
+    <p>Neural command layer for the onchain era. AI that acts, analyzes, and adapts in real time.</p>
+  </div>
+  <div class="f-col">
+    <h4>Product</h4>
+    <a href="app.html">App Dashboard</a>
+    <a href="changelog.html">Changelog</a>
+    <a href="docs.html">Documentation</a>
+  </div>
+  <div class="f-col">
+    <h4>Community</h4>
+    <a href="https://x.com/orlixai">X / Twitter</a>
+    <a href="https://t.me/orlixai_bot">Telegram Bot</a>
+    <a href="#">$ORLIX Token</a>
+  </div>
+  <div class="f-col">
+    <h4>Legal</h4>
+    <a href="privacy.html">Privacy Policy</a>
+    <a href="terms.html">Terms of Service</a>
   </div>
 </footer>
+<div class="f-bar">
+  <span>© 2025 ORLIX AI — ALL RIGHTS RESERVED</span>
+  <span>BASE MAINNET · $ORLIX</span>
+  <span>ORLIXAI.XYZ</span>
+</div>
 
 <script>
-function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
-function goto(id){const el=document.getElementById(id);if(el)el.scrollIntoView({behavior:'smooth',block:'start'})}
-
-/* terminal */
-const tb=document.getElementById('termBody');
-const ti=document.getElementById('termInput');
-function out(html,cls){const d=document.createElement('div');d.className='t-out'+(cls?' '+cls:'');d.innerHTML=html;tb.appendChild(d);tb.scrollTop=tb.scrollHeight}
-function prompt(cmd){const d=document.createElement('div');d.innerHTML='<div class="t-prompt"><span class="ps1"><span class="u">guest</span><span class="s">@</span><span class="p">orlix</span><span class="s">:~$</span></span><span class="cmd-t">'+esc(cmd)+'</span></div>';tb.appendChild(d);tb.scrollTop=tb.scrollHeight}
-const C={
-  help(){out('available commands:');out('  <span style="color:var(--violet)">help</span>  tour  ls  cd &lt;section&gt;  cat receipt.log  levels  whoami  orlix app  clear')},
-  tour(){out('starting guided tour...','ok');['problem','product','levels','memory','roadmap'].forEach((id,i)=>setTimeout(()=>{goto(id);out('['+( i+1)+'/5] jumped to <span style="color:var(--violet)">#'+id+'</span>','ok')},(i+1)*900))},
-  ls(){out('drwxr-xr-x  problem/ &nbsp;product/ &nbsp;levels/ &nbsp;memory/ &nbsp;roadmap/ &nbsp;access/')},
-  cd(a){const m={problem:1,product:1,levels:1,memory:1,roadmap:1,access:1,top:1};const t=(a[0]||'').toLowerCase();if(m[t]){goto(t);out('jumped to <span style="color:var(--violet)">#'+t+'</span>','ok')}else out('cd: '+esc(t||'')+': no such section','bad')},
-  cat(a){if((a[0]||'').toLowerCase()==='receipt.log'){out('{');out('  <span style="color:var(--violet)">intent</span>:   "Notify user of goal drift",');out('  <span style="color:var(--violet)">policy</span>:   "Alert if goal drift &gt; 3 days v14",');out('  <span style="color:var(--violet)">action</span>:   "Priority alert sent" <span style="color:var(--green)">&#x2713;</span>,');out('  <span style="color:var(--violet)">rollback</span>: "available 30 days"');out('}')}else out('cat: '+esc(a[0]||'')+': no such file. try: receipt.log','bad')},
-  levels(){out('L1 Informational &mdash; read-only');out('L2 Reactive &mdash; single-session');out('L3 Mixed-initiative &mdash; suggests');out('L4 Agentic &mdash; executes tasks');out('L5 Symbiotic &mdash; <span style="color:var(--violet)">orlix runs here</span>','ok')},
-  whoami(){out('guest@orlix &mdash; anonymous session. authority: observe.')},
-  access(){goto('access');out('scrolled to early access form','ok')},
-  clear(){tb.innerHTML=''},
-  app(){out('launching dashboard...','ok');setTimeout(()=>window.open('/app','_blank'),400)},
-  orlix(a){if(a[0]==='app')C.app();else if(a[0]==='status')C.whoami();else out('unknown subcommand. try: orlix app','bad')},
-  sudo(){out('guest sessions run at authority: <span style="color:var(--violet)">observe</span>.','warn')},
-  man(){out('ORLIX(1) &mdash; Personal AI OS');out('Observes goals, decides against policies, acts, verifies outcomes, updates policy from results.')}
-};
-function run(raw){const t=raw.trim();if(!t)return;prompt(t);const p=t.split(/\s+/);const c=p[0].toLowerCase();if(C[c])C[c](p.slice(1));else out('command not found: '+esc(c)+' &mdash; type <span style="color:var(--violet)">help</span>','bad')}
-ti.addEventListener('keydown',e=>{if(e.key==='Enter'){run(ti.value);ti.value=''}});
-document.getElementById('termRunBtn').addEventListener('click',()=>{run(ti.value);ti.value='';ti.focus()});
-document.getElementById('clearTermBtn').addEventListener('click',()=>tb.innerHTML='');
-tb.addEventListener('click',()=>ti.focus());
-document.getElementById('focusTermBtn').addEventListener('click',()=>{document.querySelector('.term').scrollIntoView({behavior:'smooth',block:'center'});setTimeout(()=>ti.focus(),400)});
-
-/* yes/no */
-(function(){
-  const bY=document.getElementById('btnYes'),bN=document.getElementById('btnNo'),r=document.getElementById('yesnoResp');
-  if(!bY||!bN||!r)return;let done=false;
-  bY.addEventListener('click',()=>{if(done)return;done=true;r.innerHTML='<span style="color:var(--green)">&#x2713;</span>&nbsp;That\'s exactly the problem Orlix was built to solve. Set the rules once &mdash; Orlix governs the outcomes.';r.classList.add('open');bY.classList.add('y-yes');bN.classList.add('faded');setTimeout(()=>goto('problem'),700)});
-  bN.addEventListener('click',()=>{if(done)return;done=true;r.innerHTML='<span style="color:var(--violet)">Impressive.</span>&nbsp;<span style="color:var(--dim)">You\'re either way ahead of everyone &mdash; or you\'re exactly the operator we\'re building for.</span>';r.classList.add('open');bN.classList.add('y-no');bY.classList.add('faded')});
-})();
-
-/* download export */
-document.getElementById('downloadExport').addEventListener('click',()=>{
-  const d={goals:[{name:'Ship MVP',deadline:'2026-07-15',progress:0.6}],soul:{identity:'founder',style:'direct',worldview:'ship then refine'},policies:[{rule:'notify_if_blocker_gt_48h',version:14,status:'active'}],facts:[{content:'Alex owns the design review',source:'email 2026-06-02',confidence:0.95}]};
-  const a=document.createElement('a');a.href='data:application/json,'+encodeURIComponent(JSON.stringify(d,null,2));a.download='orlix-export.json';document.body.appendChild(a);a.click();document.body.removeChild(a)
-});
-
-/* access form */
-document.getElementById('accessForm').addEventListener('submit',async e=>{
-  e.preventDefault();
-  const email=document.getElementById('accessEmail').value,role=document.getElementById('accessRole').value;
-  const res=document.getElementById('accessResult'),btn=e.target.querySelector('button[type=submit]');
-  if(!email){res.className='a-result bad';res.textContent='error: email_address is required';return}
-  btn.disabled=true;btn.style.opacity='.5';res.className='a-result dim';res.textContent='submitting...';
-  try{await fetch('https://formspree.io/f/xpwzqpyp',{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({email,role})})}catch{}
-  res.className='a-result ok';res.textContent='request received — '+email+' ('+role+'). we\'ll reach out when your cohort opens.'
-});
-
-/* ca copy */
-const caBtn=document.getElementById('caBtn');
-if(caBtn)caBtn.addEventListener('click',()=>{
-  navigator.clipboard.writeText('0x799c28BAC95B3E0B26534D1e9A586511895EcBA3').catch(()=>{});
-  caBtn.textContent='copied!';caBtn.classList.add('done');
-  setTimeout(()=>{caBtn.textContent='copy';caBtn.classList.remove('done')},2000)
-});
-
-/* anchor links */
-document.querySelectorAll('a[href^="#"]').forEach(a=>a.addEventListener('click',e=>{e.preventDefault();goto(a.getAttribute('href').slice(1))}));
+document.querySelectorAll('.mob-nav a').forEach(a =>
+  a.addEventListener('click', () => document.querySelector('.mob-nav').classList.remove('open'))
+);
 </script>
 </body>
 </html>
