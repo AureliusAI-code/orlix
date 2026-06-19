@@ -383,6 +383,51 @@ nav {
   color: var(--text-2);
 }
 
+.hero-ca {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 20px;
+  padding: 9px 16px;
+  background: rgba(240,120,48,.08);
+  border: 1px solid rgba(240,120,48,.22);
+  border-radius: 100px;
+  cursor: pointer;
+  transition: background var(--tr), border-color var(--tr), transform var(--tr);
+  user-select: none;
+}
+.hero-ca:hover {
+  background: rgba(240,120,48,.14);
+  border-color: rgba(240,120,48,.4);
+  transform: translateY(-1px);
+}
+.hero-ca:active { transform: scale(0.98); }
+.ca-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--orange);
+}
+.ca-addr {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--text-2);
+  letter-spacing: .02em;
+}
+.ca-copy-icon {
+  font-size: 0.85rem;
+  color: var(--text-3);
+  transition: color var(--tr);
+}
+.hero-ca:hover .ca-copy-icon { color: var(--orange); }
+.hero-ca.copied {
+  background: rgba(74,222,128,.08);
+  border-color: rgba(74,222,128,.3);
+}
+.hero-ca.copied .ca-label { color: var(--green); }
+.hero-ca.copied .ca-copy-icon { color: var(--green); }
+
 /* Scroll indicator */
 .scroll-indicator {
   position: absolute;
@@ -1802,6 +1847,24 @@ footer {
   color: var(--text-3);
 }
 
+.footer-ca {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: rgba(240,120,48,.07);
+  border: 1px solid rgba(240,120,48,.18);
+  border-radius: 100px;
+  cursor: pointer;
+  transition: background var(--tr), border-color var(--tr);
+}
+.footer-ca:hover { background: rgba(240,120,48,.13); border-color: rgba(240,120,48,.35); }
+.footer-ca.copied { background: rgba(74,222,128,.07); border-color: rgba(74,222,128,.25); }
+.footer-ca.copied .ca-label { color: var(--green); }
+.footer-ca.copied .ca-copy-icon { color: var(--green); }
+.footer-ca .ca-label { font-size: 0.68rem; }
+.footer-ca .ca-addr { font-size: 0.68rem; }
+
 .systems-status {
   display: flex;
   align-items: center;
@@ -2086,6 +2149,12 @@ footer {
       <span>0 setup</span>
       <div class="dot"></div>
       <span>Free beta</span>
+    </div>
+
+    <div class="hero-ca fade-up fade-up-d4" onclick="copyCA(this)" title="Click to copy">
+      <span class="ca-label">$ORLIX CA</span>
+      <span class="ca-addr">0x799c28BAC95B3E0B26534D1e9A586511895EcBA3</span>
+      <span class="ca-copy-icon">⎘</span>
     </div>
   </div>
 
@@ -2795,6 +2864,11 @@ footer {
 
   <div class="footer-bottom">
     <span class="footer-copy">© 2026 Orlix AI · orlixai.xyz · All rights reserved</span>
+    <div class="footer-ca" onclick="copyCA(this)" title="Click to copy">
+      <span class="ca-label">$ORLIX</span>
+      <span class="ca-addr">0x799c28BAC95B3E0B26534D1e9A586511895EcBA3</span>
+      <span class="ca-copy-icon">⎘</span>
+    </div>
     <div class="systems-status">
       <div class="status-pulse"></div>
       All systems operational
@@ -2806,6 +2880,26 @@ footer {
      JAVASCRIPT
      ================================================ -->
 <script>
+// Copy CA to clipboard
+function copyCA(el) {
+  var addr = '0x799c28BAC95B3E0B26534D1e9A586511895EcBA3';
+  navigator.clipboard.writeText(addr).catch(function() {
+    var ta = document.createElement('textarea');
+    ta.value = addr;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+  });
+  el.classList.add('copied');
+  var icon = el.querySelector('.ca-copy-icon');
+  if (icon) icon.textContent = '✓';
+  setTimeout(function() {
+    el.classList.remove('copied');
+    if (icon) icon.textContent = '⎘';
+  }, 2000);
+}
+
 // Hamburger nav toggle
 (function() {
   var ham = document.getElementById('ham');
