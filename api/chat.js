@@ -1,9 +1,13 @@
 // Vercel Serverless Function — /api/chat
 // Routes to the right provider based on model name:
-//   mimo-*            → api.xiaomimimo.com  (MIMO_API_KEY env var) — primary engine
-//   claude-*          → api.anthropic.com   (ANTHROPIC_API_KEY env var) + Base MCP tools
-//   grok-*            → api.x.ai            (XAI_API_KEY env var)
-//   gpt-* / o1/o3/o4  → api.openai.com      (OPENAI_API_KEY env var)
+//   mimo-*            → api.xiaomimimo.com          (MIMO_API_KEY env var) — primary engine
+//   claude-*          → api.anthropic.com            (ANTHROPIC_API_KEY env var) + Base MCP tools
+//   grok-*            → api.x.ai                     (XAI_API_KEY env var)
+//   gpt-* / o1/o3/o4  → api.openai.com               (OPENAI_API_KEY env var)
+//   groq-*            → api.groq.com                  (GROQ_API_KEY env var) — ultra-fast inference
+//   deepseek-*        → api.deepseek.com              (DEEPSEEK_API_KEY env var)
+//   gemini-*          → generativelanguage.googleapis (GEMINI_API_KEY env var)
+//   venice-*          → api.venice.ai                 (VENICE_API_KEY env var) — privacy-first, no logs
 
 // ── Tool definitions (Base MCP + Aeon agentic tools) ─────────────────────────
 const ALL_TOOLS = [
@@ -530,10 +534,34 @@ module.exports = async function handler(req, res) {
     } catch (e) { return res.status(502).json({ error: { message: 'Gemini error: ' + e.message } }); }
   }
 
+  // ── Venice AI (privacy-first, OpenAI-compatible) ──────────────────────────────
+  if (model.startsWith('venice-')) {
+    const key = process.env.VENICE_API_KEY || '';
+    if (!key) return res.status(401).json({ error: { message: 'VENICE_API_KEY not set in Vercel Environment Variables.' } });
+    try {
+      const actualModel = model.replace('venice-', '');
+      if (bodyObj.stream) {
+        const streamBody = { model: actualModel, messages: bodyObj.messages || [], max_tokens: bodyObj.max_tokens || 4096, stream: true };
+        if (bodyObj.temperature != null) streamBody.temperature = bodyObj.temperature;
+        const r = await fetch('https://api.venice.ai/api/v1/chat/completions', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key }, body: JSON.stringify(streamBody) });
+        if (!r.ok) return res.status(r.status).json({ error: { message: 'Venice error' } });
+        return pipeOpenAIStream(r, res);
+      }
+      const body = { model: actualModel, messages: bodyObj.messages || [], max_tokens: bodyObj.max_tokens || 4096 };
+      if (bodyObj.temperature != null) body.temperature = bodyObj.temperature;
+      const r = await fetch('https://api.venice.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
+        body: JSON.stringify(body),
+      });
+      return res.status(r.status).setHeader('Content-Type', 'application/json').send(await r.text());
+    } catch (e) { return res.status(502).json({ error: { message: 'Venice error: ' + e.message } }); }
+  }
+
   // No provider matched — inform the user
   return res.status(400).json({
     error: {
-      message: 'Unsupported model. Select a Mimo (mimo-*), Claude (claude-*), Grok (grok-*), OpenAI (gpt-*/o1/o3/o4), Groq (groq-*), DeepSeek (deepseek-*), or Gemini (gemini-*) model.'
+      message: 'Unsupported model. Select a Mimo (mimo-*), Claude (claude-*), Grok (grok-*), OpenAI (gpt-*/o1/o3/o4), Groq (groq-*), DeepSeek (deepseek-*), Gemini (gemini-*), or Venice (venice-*) model.'
     }
   });
 };
