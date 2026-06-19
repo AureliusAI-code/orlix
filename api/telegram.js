@@ -1,4 +1,4 @@
-// Orlix AI — Telegram Bot Webhook
+// Orlix AI — Telegram Bot Webhook (upgraded: smarter AI, deeper onchain analysis)
 // Setup: set TELEGRAM_BOT_TOKEN env var, then:
 // GET https://api.telegram.org/bot{TOKEN}/setWebhook?url=https://orlixai.xyz/api/telegram
 
@@ -23,7 +23,7 @@ async function send(chatId, text, extra = {}) {
   if (r && !r.ok) {
     const j = await r.json().catch(() => ({}));
     if (j.description?.includes('parse')) {
-      await tg('sendMessage', { chat_id: chatId, text, ...extra });
+      await tg('sendMessage', { chat_id: chatId, text: text.replace(/[*_`\[\]]/g, ''), ...extra });
     }
   }
 }
@@ -41,7 +41,17 @@ async function sendLong(chatId, text) {
   for (const chunk of chunks) await send(chatId, chunk);
 }
 
-// ── On-chain / DexScreener helpers ───────────────────────────────────────────
+function typing(chatId) {
+  return tg('sendChatAction', { chat_id: chatId, action: 'typing' }).catch(() => {});
+}
+
+// ── Detect language from text ────────────────────────────────────────────────
+function detectLang(text) {
+  const idWords = /\b(apa|ini|itu|dan|yang|di|ke|dari|untuk|dengan|tidak|bisa|mau|tolong|gimana|kenapa|berapa|siapa|kapan|dimana|bagaimana|adalah|saya|aku|kamu|kita|mereka|harga|token|analisa|dompet|kripto)\b/i;
+  return idWords.test(text) ? 'id' : 'en';
+}
+
+// ── On-chain helpers ─────────────────────────────────────────────────────────
 
 async function baseRpc(method, params = []) {
   const r = await fetch(BASE_RPC, {
@@ -96,129 +106,157 @@ async function getDex(address) {
   const pool = basePairs.length ? basePairs : (data.pairs || []);
   if (!pool.length) return null;
   const best = pool.sort((a, b) => (b.liquidity?.usd || 0) - (a.liquidity?.usd || 0))[0];
-  const priceRaw = best.priceUsd ? Number(best.priceUsd) : 0;
+  const liq  = best.liquidity?.usd || 0;
+  const mcap = best.marketCap || best.fdv || 0;
+  const liqMcapRatio = mcap > 0 ? ((liq / mcap) * 100).toFixed(1) : null;
+  const buys  = best.txns?.h24?.buys  || 0;
+  const sells = best.txns?.h24?.sells || 0;
   return {
-    priceUsd:       priceRaw > 0 ? best.priceUsd : null,
+    priceUsd:       best.priceUsd ? Number(best.priceUsd) : null,
+    priceChange1h:  best.priceChange?.h1  ?? null,
+    priceChange6h:  best.priceChange?.h6  ?? null,
     priceChange24h: best.priceChange?.h24 ?? 0,
-    liquidityUsd:   best.liquidity?.usd   || 0,
-    volume24h:      best.volume?.h24      || 0,
-    buys24h:        best.txns?.h24?.buys  || 0,
-    sells24h:       best.txns?.h24?.sells || 0,
+    liquidityUsd:   liq,
+    volume1h:       best.volume?.h1  || 0,
+    volume6h:       best.volume?.h6  || 0,
+    volume24h:      best.volume?.h24 || 0,
+    buys24h:        buys,
+    sells24h:       sells,
+    buySellRatio:   sells > 0 ? (buys / sells).toFixed(2) : buys > 0 ? '∞' : '0',
     dexId:          best.dexId            || 'unknown',
     pairName:       (best.baseToken?.symbol || '?') + '/' + (best.quoteToken?.symbol || '?'),
     fdv:            best.fdv              || 0,
+    marketCap:      best.marketCap        || 0,
+    liqMcapRatio,
     pairsCount:     pool.length,
     url:            best.url              || '',
+    pairCreatedAt:  best.pairCreatedAt    || null,
   };
 }
 
-// ── Token Analyzer command ────────────────────────────────────────────────────
+// ── Token Analyzer ────────────────────────────────────────────────────────────
 
-async function cmdAnalyze(chatId, address) {
-  tg('sendChatAction', { chat_id: chatId, action: 'typing' }).catch(() => {});
+async function cmdAnalyze(chatId, address, lang = 'en') {
+  typing(chatId);
 
   const [tokR, dexR] = await Promise.allSettled([getTokenInfo(address), getDex(address)]);
   const token = tokR.status === 'fulfilled' ? tokR.value : null;
   const dex   = dexR.status === 'fulfilled' ? dexR.value : null;
 
-  // ── Build data card ──
   const shortAddr = `${address.slice(0, 6)}...${address.slice(-4)}`;
-  const priceStr  = dex?.priceUsd
-    ? `$${Number(dex.priceUsd).toFixed(dex.priceUsd < 0.001 ? 8 : 6)}`
+  const fmt = (n, d = 2) => Number(n).toLocaleString(undefined, { minimumFractionDigits: d, maximumFractionDigits: d });
+  const fmtUsd = (n) => `$${fmt(n, 0)}`;
+  const priceStr = dex?.priceUsd
+    ? `$${dex.priceUsd < 0.0001 ? dex.priceUsd.toFixed(10) : dex.priceUsd < 0.01 ? dex.priceUsd.toFixed(8) : dex.priceUsd.toFixed(6)}`
     : '—';
-  const changeStr = dex
-    ? (dex.priceChange24h >= 0 ? `+${dex.priceChange24h}` : `${dex.priceChange24h}`) + '%'
-    : '—';
-  const liqStr    = dex ? `$${Number(dex.liquidityUsd).toLocaleString()}` : '—';
-  const volStr    = dex ? `$${Number(dex.volume24h).toLocaleString()}`    : '—';
-  const fdvStr    = dex ? `$${Number(dex.fdv).toLocaleString()}`          : '—';
+  const fmtChange = (v) => v == null ? '—' : (v >= 0 ? `+${v}%` : `${v}%`);
+  const ageStr = dex?.pairCreatedAt
+    ? `${Math.floor((Date.now() - dex.pairCreatedAt) / 86400000)}d`
+    : '?';
 
+  // Build card
   let card = `🔍 *TOKEN ANALYSIS*\n`;
-  card    += `\`${shortAddr}\` · Base Mainnet\n`;
+  card    += `\`${shortAddr}\` · Base Network\n`;
   card    += `━━━━━━━━━━━━━━━━━━━━\n`;
 
   if (token?.name && token.name !== 'Unknown') {
     card += `*${token.name}* (${token.symbol})\n`;
-    card += `Supply: ${token.totalSupply} · Decimals: ${token.decimals}\n\n`;
+    card += `Supply: ${token.totalSupply} · Decimals: ${token.decimals}\n`;
   }
 
   if (dex) {
-    card += `*Price:* ${priceStr}  ${changeStr} 24h\n`;
-    card += `*Liquidity:* ${liqStr}\n`;
-    card += `*Volume 24h:* ${volStr}\n`;
-    card += `*Buys / Sells:* ${dex.buys24h} / ${dex.sells24h}\n`;
-    card += `*FDV:* ${fdvStr}\n`;
-    card += `*DEX:* ${dex.dexId} — ${dex.pairName}\n`;
-    if (dex.url) card += `[View Chart](${dex.url})\n`;
-    card += `\n`;
+    card += `\n*💵 Price:* ${priceStr}\n`;
+    card += `*📊 Change:* 1h ${fmtChange(dex.priceChange1h)} | 6h ${fmtChange(dex.priceChange6h)} | 24h ${fmtChange(dex.priceChange24h)}\n`;
+    card += `*💧 Liquidity:* ${fmtUsd(dex.liquidityUsd)}\n`;
+    card += `*📦 Volume:* 1h ${fmtUsd(dex.volume1h)} | 24h ${fmtUsd(dex.volume24h)}\n`;
+    card += `*🔄 Buys/Sells 24h:* ${dex.buys24h} / ${dex.sells24h} (ratio ${dex.buySellRatio})\n`;
+    card += `*📈 FDV:* ${fmtUsd(dex.fdv)}`;
+    if (dex.marketCap > 0) card += ` | *MCap:* ${fmtUsd(dex.marketCap)}`;
+    card += '\n';
+    if (dex.liqMcapRatio) {
+      const rugRisk = Number(dex.liqMcapRatio) < 3 ? '🔴 HIGH RUG RISK' : Number(dex.liqMcapRatio) < 8 ? '🟡 MODERATE' : '🟢 HEALTHY';
+      card += `*💦 Liq/MCap:* ${dex.liqMcapRatio}% ${rugRisk}\n`;
+    }
+    card += `*🏦 DEX:* ${dex.dexId} · ${dex.pairName} · Age: ${ageStr}\n`;
+    if (dex.url) card += `[📊 View Chart](${dex.url})\n`;
   } else {
-    card += `_⚠️ Not listed on any DEX_\n\n`;
+    card += `\n_⚠️ Not listed on any DEX — token may be very new or unlisted_\n`;
   }
 
-  // ── AI analysis ──
+  // AI deep analysis
   const key = ANTHROPIC_KEY();
   if (key) {
-    tg('sendChatAction', { chat_id: chatId, action: 'typing' }).catch(() => {});
+    typing(chatId);
+    const langInstruction = lang === 'id'
+      ? 'IMPORTANT: Reply entirely in Bahasa Indonesia.'
+      : 'Reply in English.';
+
     const ctx = [
-      token ? `Token: ${token.name} (${token.symbol}), Supply: ${token.totalSupply}` : '',
-      dex
-        ? `Price: ${priceStr}, Liq: ${liqStr}, Vol: ${volStr}, Buys/Sells: ${dex.buys24h}/${dex.sells24h}, FDV: ${fdvStr}`
-        : 'No DEX listing.',
-    ].filter(Boolean).join('\n');
+      token ? `Token: ${token.name} (${token.symbol}), Supply: ${token.totalSupply}` : 'Token info unavailable',
+      dex ? [
+        `Price: ${priceStr} | Change: 1h ${fmtChange(dex.priceChange1h)} / 6h ${fmtChange(dex.priceChange6h)} / 24h ${fmtChange(dex.priceChange24h)}`,
+        `Liquidity: ${fmtUsd(dex.liquidityUsd)} | Volume 24h: ${fmtUsd(dex.volume24h)}`,
+        `Buys/Sells 24h: ${dex.buys24h}/${dex.sells24h} (ratio: ${dex.buySellRatio})`,
+        `FDV: ${fmtUsd(dex.fdv)} | MCap: ${fmtUsd(dex.marketCap)}`,
+        dex.liqMcapRatio ? `Liq/MCap Ratio: ${dex.liqMcapRatio}%` : '',
+        `Pair age: ${ageStr} | DEX: ${dex.dexId}`,
+      ].filter(Boolean).join('\n') : 'No DEX listing.',
+    ].join('\n');
 
     try {
       const r = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01' },
         body: JSON.stringify({
-          model: 'claude-haiku-4-5-20251001',
-          max_tokens: 500,
-          system: 'You are a crypto security analyst. Use Telegram markdown: *bold* for headers, bullet points for lists. No ## headers. Be direct, 3–4 lines max per section.',
+          model: 'claude-sonnet-4-6',
+          max_tokens: 700,
+          system: `You are an expert crypto security analyst for Base network tokens with deep knowledge of rug pulls, honeypots, wash trading, and DeFi risks. ${langInstruction}
+Use Telegram markdown: *bold* for headers. Be concise but specific — cite actual numbers from the data.`,
           messages: [{
             role: 'user',
-            content: `Analyze this Base token. Reply in this exact format:\n\n*📊 Overview*\n[1 sentence]\n\n*🚩 Red Flags*\n• [each flag, or: None detected]\n\n*⚖️ Verdict: SAFE / CAUTION / HIGH RISK / SCAM LIKELY*\n[1 sentence reason]\n\nData:\n${ctx}`,
+            content: `Analyze this Base token. Use this exact format:\n\n*🚩 Red Flags*\n• [specific flags with data, or: None detected]\n\n*✅ Green Flags*\n• [specific positives with data, or: None detected]\n\n*📉 Risk Assessment*\n[liquidity risk, price manipulation risk, rug pull probability — cite Liq/MCap ratio and buy/sell data]\n\n*⚖️ Verdict: SAFE / CAUTION / HIGH RISK / SCAM LIKELY*\n[One sentence with the key reason]\n\nData:\n${ctx}`,
           }],
         }),
       });
       const d = await r.json();
       const verdict = d.content?.[0]?.text;
-      if (verdict) card += verdict;
-    } catch { card += `_AI analysis unavailable_`; }
+      if (verdict) card += '\n' + verdict;
+    } catch { card += `\n_AI analysis unavailable_`; }
   }
 
   await sendLong(chatId, card);
 }
 
-// ── Wallet Watcher command ────────────────────────────────────────────────────
+// ── Wallet Watcher ────────────────────────────────────────────────────────────
 
-async function cmdWatch(chatId, address) {
-  tg('sendChatAction', { chat_id: chatId, action: 'typing' }).catch(() => {});
+async function cmdWatch(chatId, address, lang = 'en') {
+  typing(chatId);
 
-  // ETH balance via RPC + recent txns via Blockscout (no API key needed)
-  const [balR, txR] = await Promise.allSettled([
+  const [balR, txR, tokenTxR] = await Promise.allSettled([
     baseRpc('eth_getBalance', [address, 'latest']),
     fetch(`https://base.blockscout.com/api/v2/addresses/${address}/transactions?limit=5`, {
+      headers: { Accept: 'application/json' },
+    }).then(r => r.json()),
+    fetch(`https://base.blockscout.com/api/v2/addresses/${address}/token-transfers?limit=5`, {
       headers: { Accept: 'application/json' },
     }).then(r => r.json()),
   ]);
 
   const ethBal = balR.status === 'fulfilled'
-    ? (Number(BigInt(balR.value)) / 1e18).toFixed(4)
-    : '?';
-
+    ? (Number(BigInt(balR.value)) / 1e18).toFixed(4) : '?';
   const txns = txR.status === 'fulfilled' ? (txR.value?.items || []) : [];
+  const tokenTxns = tokenTxR.status === 'fulfilled' ? (tokenTxR.value?.items || []) : [];
 
   const shortAddr = `${address.slice(0, 6)}...${address.slice(-4)}`;
+  const isID = lang === 'id';
 
-  let msg = `👁 *WALLET WATCHER*\n`;
-  msg    += `\`${shortAddr}\` · Base Mainnet\n`;
+  let msg = `👁 *${isID ? 'PELACAK DOMPET' : 'WALLET WATCHER'}*\n`;
+  msg    += `\`${shortAddr}\` · Base Network\n`;
   msg    += `━━━━━━━━━━━━━━━━━━━━\n`;
-  msg    += `*ETH Balance:* ${ethBal} ETH\n`;
+  msg    += `*${isID ? 'Saldo ETH' : 'ETH Balance'}:* ${ethBal} ETH\n`;
 
-  if (!txns.length) {
-    msg += `\n_No recent transactions found._`;
-  } else {
-    msg += `\n*Last ${txns.length} Transactions:*\n`;
+  if (txns.length) {
+    msg += `\n*${isID ? 'Transaksi Terakhir' : 'Recent Transactions'}:*\n`;
     for (const tx of txns) {
       const isIn   = tx.to?.hash?.toLowerCase() === address.toLowerCase();
       const dir    = isIn ? '📥' : '📤';
@@ -226,14 +264,109 @@ async function cmdWatch(chatId, address) {
       const val    = tx.value ? (Number(BigInt(tx.value)) / 1e18).toFixed(4) : '0.0000';
       const peer   = isIn ? tx.from?.hash : tx.to?.hash;
       const peerS  = peer ? `${peer.slice(0, 6)}...${peer.slice(-4)}` : '?';
-      msg += `${dir} ${status} *${val} ETH* ${isIn ? 'from' : 'to'} \`${peerS}\`\n`;
+      msg += `${dir} ${status} *${val} ETH* ${isIn ? (isID ? 'dari' : 'from') : (isID ? 'ke' : 'to')} \`${peerS}\`\n`;
     }
   }
 
-  msg += `\n[View on Basescan](https://basescan.org/address/${address})`;
-  msg += `\n\n_💡 For real-time wallet alerts, visit_ [orlixai.xyz/app](https://orlixai.xyz/app)`;
+  if (tokenTxns.length) {
+    msg += `\n*${isID ? 'Transfer Token Terakhir' : 'Recent Token Transfers'}:*\n`;
+    for (const tx of tokenTxns.slice(0, 4)) {
+      const isIn  = tx.to?.hash?.toLowerCase() === address.toLowerCase();
+      const sym   = tx.token?.symbol || '?';
+      const val   = tx.total?.value && tx.token?.decimals
+        ? (Number(tx.total.value) / Math.pow(10, tx.token.decimals)).toLocaleString(undefined, { maximumFractionDigits: 4 })
+        : '?';
+      msg += `${isIn ? '📥' : '📤'} *${val} ${sym}* ${isIn ? (isID ? 'masuk' : 'in') : (isID ? 'keluar' : 'out')}\n`;
+    }
+  }
+
+  if (!txns.length && !tokenTxns.length) {
+    msg += `\n_${isID ? 'Tidak ada transaksi ditemukan.' : 'No recent transactions found.'}_`;
+  }
+
+  msg += `\n[${isID ? '📊 Lihat di Basescan' : '📊 View on Basescan'}](https://basescan.org/address/${address})`;
+  msg += `\n\n_${isID ? '💡 Untuk notifikasi real-time, kunjungi' : '💡 For real-time alerts, visit'} [orlixai.xyz/app](https://orlixai.xyz/app)_`;
 
   await sendLong(chatId, msg);
+}
+
+// ── Quick Price Lookup ────────────────────────────────────────────────────────
+
+async function cmdPrice(chatId, address) {
+  typing(chatId);
+  const r = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${address}`, {
+    headers: { Accept: 'application/json' },
+  }).catch(() => null);
+  if (!r?.ok) {
+    return send(chatId, '⚠️ Could not fetch price. Check the address and try again.');
+  }
+  const data = await r.json();
+  const pairs = (data.pairs || []).filter(p => p.chainId === 'base');
+  const best  = (pairs.length ? pairs : (data.pairs || [])).sort((a, b) => (b.liquidity?.usd || 0) - (a.liquidity?.usd || 0))[0];
+  if (!best) return send(chatId, '⚠️ Token not listed on any DEX.');
+
+  const price   = best.priceUsd ? `$${Number(best.priceUsd).toFixed(8)}` : '—';
+  const ch24    = best.priceChange?.h24;
+  const chStr   = ch24 == null ? '—' : (ch24 >= 0 ? `🟢 +${ch24}%` : `🔴 ${ch24}%`);
+  const liq     = `$${Number(best.liquidity?.usd || 0).toLocaleString()}`;
+  const vol     = `$${Number(best.volume?.h24 || 0).toLocaleString()}`;
+  const sym     = best.baseToken?.symbol || '?';
+
+  let msg = `💵 *${sym} PRICE*\n`;
+  msg    += `*Price:* ${price}\n`;
+  msg    += `*24h Change:* ${chStr}\n`;
+  msg    += `*Liquidity:* ${liq}\n`;
+  msg    += `*Volume 24h:* ${vol}\n`;
+  if (best.url) msg += `[📊 Chart](${best.url})`;
+
+  await send(chatId, msg);
+}
+
+// ── AI chat ───────────────────────────────────────────────────────────────────
+
+async function cmdChat(chatId, text, lang) {
+  const key = ANTHROPIC_KEY();
+  if (!key) {
+    return send(chatId, '⚠️ Bot not fully configured.');
+  }
+
+  const isID = lang === 'id';
+
+  const r = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01' },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 2000,
+      system: `You are Orlix AI — a highly intelligent, versatile AI assistant running inside Telegram.
+
+${isID ? 'PENTING: Pengguna menulis dalam Bahasa Indonesia. Balas SELALU dalam Bahasa Indonesia yang baik dan natural.' : 'Reply in English.'}
+
+Your capabilities:
+- Answer ANY question on ANY topic: science, coding, math, history, writing, business, health, law, philosophy, creative writing, and more
+- Analyze crypto tokens, wallets, DeFi protocols, and onchain data
+- Write code in any programming language and explain it clearly
+- Help with research, analysis, calculations, and problem-solving
+- Translate between languages
+- Summarize documents, articles, or any text
+
+Guidelines:
+- Be accurate, thoughtful, and comprehensive
+- For complex topics, structure your answer clearly
+- Use Telegram markdown: *bold*, _italic_, \`code\`, \`\`\`code blocks\`\`\`
+- When relevant, mention /analyze 0x... for token analysis and /watch 0x... for wallets
+- Keep replies under 3000 characters when possible, but never sacrifice completeness for brevity
+- If asked about something you're not sure about, say so clearly`,
+      messages: [{ role: 'user', content: text }],
+    }),
+  });
+
+  if (!r.ok) {
+    const err = await r.json().catch(() => ({}));
+    throw new Error(err.error?.message || `HTTP ${r.status}`);
+  }
+  const data = await r.json();
+  await sendLong(chatId, data.content?.[0]?.text || (isID ? 'Tidak dapat menghasilkan respons.' : 'Could not generate a response.'));
 }
 
 // ── Main handler ──────────────────────────────────────────────────────────────
@@ -265,48 +398,65 @@ module.exports = async function handler(req, res) {
 
   if (!chatId) return res.status(200).json({ ok: true });
 
-  tg('sendChatAction', { chat_id: chatId, action: 'typing' }).catch(() => {});
+  typing(chatId);
 
-  // ── /start ────────────────────────────────────────────────────────────────
+  const lang = detectLang(text);
+  const isID = lang === 'id';
+
+  // ── /start ───────────────────────────────────────────────────────────────
   if (text === '/start' || text.startsWith('/start ')) {
     await send(chatId,
-      `👋 Welcome to *Orlix AI*, ${firstName}.\n\n` +
-      `Your AI-powered command layer — ask anything, analyze any token, or track any wallet on Base.\n\n` +
-      `*Commands*\n` +
-      `/analyze \`0x...\` — Token security analysis\n` +
-      `/watch \`0x...\` — Wallet activity on Base\n` +
-      `/help — Full command list\n` +
-      `/web — Open Orlix dashboard\n\n` +
+      `👋 ${isID ? `Selamat datang di *Orlix AI*, ${firstName}!` : `Welcome to *Orlix AI*, ${firstName}!`}\n\n` +
+      (isID
+        ? `Asisten AI pintar yang bisa menjawab *apa saja* — dari coding, sains, matematika, hingga analisa token kripto dan dompet Base.\n\n*Perintah:*\n`
+        : `Your intelligent AI assistant for *anything* — coding, science, math, crypto analysis, wallet tracking, and more.\n\n*Commands:*\n`) +
+      `/analyze \`0x...\` — ${isID ? 'Analisa keamanan token' : 'Token security analysis'}\n` +
+      `/watch \`0x...\` — ${isID ? 'Cek aktivitas dompet' : 'Wallet activity tracker'}\n` +
+      `/price \`0x...\` — ${isID ? 'Harga token cepat' : 'Quick token price'}\n` +
+      `/help — ${isID ? 'Daftar lengkap perintah' : 'Full command list'}\n` +
+      `/web — ${isID ? 'Buka dashboard Orlix' : 'Open Orlix dashboard'}\n\n` +
+      `_${isID ? 'Atau ketik apa saja — saya siap menjawab!' : 'Or just type anything — I\'m here to help!'}_\n\n` +
       `_Powered by Claude · orlixai.xyz_`
     );
     return res.status(200).json({ ok: true });
   }
 
-  // ── /help ─────────────────────────────────────────────────────────────────
+  // ── /help ────────────────────────────────────────────────────────────────
   if (text === '/help') {
     await send(chatId,
-      `*Orlix AI — Command Reference*\n\n` +
-      `*🤖 AI Assistant*\n` +
-      `Just type any message — I'll answer using Claude.\n\n` +
-      `*🪙 Token Analyzer*\n` +
+      `*Orlix AI — ${isID ? 'Panduan Lengkap' : 'Full Command Reference'}*\n\n` +
+      `*🤖 ${isID ? 'Asisten AI' : 'AI Assistant'}*\n` +
+      `${isID ? 'Ketik pesan apa saja — saya bisa menjawab pertanyaan tentang:' : 'Type any message — I can answer questions about:'}\n` +
+      `${isID ? '• Coding & pemrograman (Python, JS, Rust, dll)' : '• Coding & programming (Python, JS, Rust, etc.)'}\n` +
+      `${isID ? '• Sains, matematika, fisika, kimia' : '• Science, math, physics, chemistry'}\n` +
+      `${isID ? '• Bisnis, hukum, keuangan, investasi' : '• Business, law, finance, investing'}\n` +
+      `${isID ? '• Kripto, DeFi, blockchain, analisa pasar' : '• Crypto, DeFi, blockchain, market analysis'}\n` +
+      `${isID ? '• Penulisan, terjemahan, ringkasan' : '• Writing, translation, summarization'}\n` +
+      `${isID ? '• Dan masih banyak lagi!' : '• And much more!'}\n\n` +
+      `*🪙 ${isID ? 'Analisa Token' : 'Token Analyzer'}*\n` +
       `/analyze \`0x...\`\n` +
-      `Price, liquidity, volume, buy/sell pressure & AI security verdict.\n\n` +
-      `*👁 Wallet Watcher*\n` +
+      `${isID ? 'Harga, likuiditas, volume, rasio beli/jual, rasio Liq/MCap, analisa risiko AI mendalam.' : 'Price, liquidity, volume, buy/sell ratio, Liq/MCap ratio, deep AI risk analysis.'}\n\n` +
+      `*💵 ${isID ? 'Harga Cepat' : 'Quick Price'}*\n` +
+      `/price \`0x...\`\n` +
+      `${isID ? 'Cek harga token secara instan.' : 'Instant token price check.'}\n\n` +
+      `*👁 ${isID ? 'Pelacak Dompet' : 'Wallet Watcher'}*\n` +
       `/watch \`0x...\`\n` +
-      `ETH balance + last 5 transactions on Base.\n\n` +
-      `*Other*\n` +
-      `/web — Open full dashboard _(streaming, 19 models, web search)_\n` +
-      `/clear — Reset conversation\n\n` +
+      `${isID ? 'Saldo ETH + transaksi ETH & token terbaru.' : 'ETH balance + recent ETH & token transactions.'}\n\n` +
+      `*🌐 ${isID ? 'Lainnya' : 'Other'}*\n` +
+      `/web — ${isID ? 'Dashboard lengkap (19 model AI, streaming)' : 'Full dashboard (19 AI models, streaming)'}\n` +
+      `/clear — ${isID ? 'Reset percakapan' : 'Reset conversation'}\n\n` +
       `[orlixai.xyz](https://orlixai.xyz)`
     );
     return res.status(200).json({ ok: true });
   }
 
-  // ── /web ──────────────────────────────────────────────────────────────────
+  // ── /web ─────────────────────────────────────────────────────────────────
   if (text === '/web') {
     await tg('sendMessage', {
       chat_id: chatId,
-      text: '🌐 Open the Orlix AI dashboard for streaming, image upload, web search, and 19 AI models:',
+      text: isID
+        ? '🌐 Buka dashboard Orlix AI untuk streaming, upload gambar, dan 19 model AI:'
+        : '🌐 Open the Orlix AI dashboard for streaming, image upload, and 19 AI models:',
       reply_markup: {
         inline_keyboard: [[{ text: '🚀 Launch Orlix AI', url: 'https://orlixai.xyz/app' }]],
       },
@@ -314,57 +464,81 @@ module.exports = async function handler(req, res) {
     return res.status(200).json({ ok: true });
   }
 
-  // ── /clear ────────────────────────────────────────────────────────────────
+  // ── /clear ───────────────────────────────────────────────────────────────
   if (text === '/clear') {
-    await send(chatId, '🗑 Conversation cleared. Ready for a fresh start.');
+    await send(chatId, isID ? '🗑 Percakapan direset. Siap mulai dari awal!' : '🗑 Conversation cleared. Ready for a fresh start!');
     return res.status(200).json({ ok: true });
   }
 
-  // ── /analyze 0x... ────────────────────────────────────────────────────────
+  // ── /analyze 0x... ───────────────────────────────────────────────────────
   if (text.startsWith('/analyze')) {
-    const parts = text.split(/\s+/);
-    const addr  = (parts[1] || '').toLowerCase();
+    const addr = (text.split(/\s+/)[1] || '').toLowerCase();
     if (!addr || !/^0x[0-9a-f]{40}$/i.test(addr)) {
-      await send(chatId,
-        `⚠️ *Invalid address*\n\nUsage: /analyze \`0x...\`\n\nPaste the contract address (42 characters starting with 0x).`
+      await send(chatId, isID
+        ? `⚠️ *Alamat tidak valid*\n\nContoh: /analyze \`0x...\`\n\nPaste alamat kontrak (42 karakter dimulai dengan 0x).`
+        : `⚠️ *Invalid address*\n\nUsage: /analyze \`0x...\`\n\nPaste the contract address (42 chars starting with 0x).`
       );
       return res.status(200).json({ ok: true });
     }
-    await send(chatId, `🔍 Fetching on-chain data for \`${addr.slice(0, 6)}...${addr.slice(-4)}\`…`);
-    try { await cmdAnalyze(chatId, addr); }
-    catch (e) { await send(chatId, `⚠️ Analysis failed: ${e.message}`); }
+    await send(chatId, isID
+      ? `🔍 Mengambil data onchain untuk \`${addr.slice(0, 6)}...${addr.slice(-4)}\`…`
+      : `🔍 Fetching onchain data for \`${addr.slice(0, 6)}...${addr.slice(-4)}\`…`
+    );
+    try { await cmdAnalyze(chatId, addr, lang); }
+    catch (e) { await send(chatId, `⚠️ ${isID ? 'Analisa gagal' : 'Analysis failed'}: ${e.message}`); }
+    return res.status(200).json({ ok: true });
+  }
+
+  // ── /price 0x... ─────────────────────────────────────────────────────────
+  if (text.startsWith('/price')) {
+    const addr = (text.split(/\s+/)[1] || '').toLowerCase();
+    if (!addr || !/^0x[0-9a-f]{40}$/i.test(addr)) {
+      await send(chatId, isID
+        ? `⚠️ Contoh: /price \`0x...\``
+        : `⚠️ Usage: /price \`0x...\``
+      );
+      return res.status(200).json({ ok: true });
+    }
+    try { await cmdPrice(chatId, addr); }
+    catch (e) { await send(chatId, `⚠️ ${e.message}`); }
     return res.status(200).json({ ok: true });
   }
 
   // ── /watch 0x... ─────────────────────────────────────────────────────────
   if (text.startsWith('/watch')) {
-    const parts = text.split(/\s+/);
-    const addr  = (parts[1] || '').toLowerCase();
+    const addr = (text.split(/\s+/)[1] || '').toLowerCase();
     if (!addr || !/^0x[0-9a-f]{40}$/i.test(addr)) {
-      await send(chatId,
-        `⚠️ *Invalid address*\n\nUsage: /watch \`0x...\`\n\nPaste the wallet address (42 characters starting with 0x).`
+      await send(chatId, isID
+        ? `⚠️ Contoh: /watch \`0x...\``
+        : `⚠️ Usage: /watch \`0x...\``
       );
       return res.status(200).json({ ok: true });
     }
-    await send(chatId, `👁 Looking up wallet \`${addr.slice(0, 6)}...${addr.slice(-4)}\`…`);
-    try { await cmdWatch(chatId, addr); }
-    catch (e) { await send(chatId, `⚠️ Wallet lookup failed: ${e.message}`); }
+    await send(chatId, isID
+      ? `👁 Memeriksa dompet \`${addr.slice(0, 6)}...${addr.slice(-4)}\`…`
+      : `👁 Looking up wallet \`${addr.slice(0, 6)}...${addr.slice(-4)}\`…`
+    );
+    try { await cmdWatch(chatId, addr, lang); }
+    catch (e) { await send(chatId, `⚠️ ${isID ? 'Gagal' : 'Failed'}: ${e.message}`); }
     return res.status(200).json({ ok: true });
   }
 
-  // ── Photo (vision) ────────────────────────────────────────────────────────
+  // ── Photo / vision ────────────────────────────────────────────────────────
   if (message.photo) {
-    const caption = message.caption || 'Describe this image';
+    const caption = message.caption || (isID ? 'Jelaskan gambar ini' : 'Describe this image');
     const photo   = message.photo[message.photo.length - 1];
     const fileRes = await tg('getFile', { file_id: photo.file_id }).then(r => r?.json()).catch(() => null);
     if (!fileRes?.result?.file_path) {
-      await send(chatId, '📸 For full image analysis with drag-and-drop, visit [orlixai.xyz/app](https://orlixai.xyz/app).');
+      await send(chatId, isID
+        ? '📸 Untuk analisa gambar penuh, kunjungi [orlixai.xyz/app](https://orlixai.xyz/app).'
+        : '📸 For full image analysis, visit [orlixai.xyz/app](https://orlixai.xyz/app).'
+      );
       return res.status(200).json({ ok: true });
     }
     const fileUrl = `https://api.telegram.org/file/bot${token}/${fileRes.result.file_path}`;
     const imgBuf  = await fetch(fileUrl).then(r => r.arrayBuffer()).catch(() => null);
     if (!imgBuf) {
-      await send(chatId, '⚠️ Could not download image. Please try again.');
+      await send(chatId, '⚠️ ' + (isID ? 'Gagal mengunduh gambar.' : 'Could not download image.'));
       return res.status(200).json({ ok: true });
     }
     const b64  = Buffer.from(imgBuf).toString('base64');
@@ -376,8 +550,8 @@ module.exports = async function handler(req, res) {
         headers: { 'Content-Type': 'application/json', 'x-api-key': ANTHROPIC_KEY(), 'anthropic-version': '2023-06-01' },
         body: JSON.stringify({
           model: 'claude-sonnet-4-6',
-          max_tokens: 1024,
-          system: 'You are Orlix AI in a Telegram bot. Use Telegram markdown (*bold*, _italic_, `code`). Be concise and professional.',
+          max_tokens: 1500,
+          system: `You are Orlix AI. ${isID ? 'Balas dalam Bahasa Indonesia.' : 'Reply in English.'} Use Telegram markdown (*bold*, _italic_, \`code\`). Be detailed and thorough in your analysis.`,
           messages: [{
             role: 'user',
             content: [
@@ -388,45 +562,18 @@ module.exports = async function handler(req, res) {
         }),
       });
       const data = await r.json();
-      await sendLong(chatId, data.content?.[0]?.text || 'Could not analyze image.');
+      await sendLong(chatId, data.content?.[0]?.text || (isID ? 'Tidak dapat menganalisa gambar.' : 'Could not analyze image.'));
     } catch (e) {
       await send(chatId, `⚠️ Vision error: ${e.message}`);
     }
     return res.status(200).json({ ok: true });
   }
 
+  // ── Regular message → Claude (smart, versatile) ───────────────────────────
   if (!text) return res.status(200).json({ ok: true });
 
-  // ── Regular message → Claude ──────────────────────────────────────────────
-  const key = ANTHROPIC_KEY();
-  if (!key) {
-    await send(chatId, '⚠️ Bot not fully configured. ANTHROPIC_API_KEY is missing.');
-    return res.status(200).json({ ok: true });
-  }
-
   try {
-    const r = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 1500,
-        system:
-          'You are Orlix AI — an intelligent assistant inside Telegram. ' +
-          'Be accurate, concise, and professional. Use Telegram markdown (*bold*, _italic_, `code`). ' +
-          'Keep replies under 3000 characters when possible. ' +
-          'You have deep expertise in crypto, DeFi, and blockchain. ' +
-          'For token analysis use /analyze, for wallet tracking use /watch. ' +
-          'For more features (streaming, web search, image upload, 19 AI models) recommend orlixai.xyz/app.',
-        messages: [{ role: 'user', content: text }],
-      }),
-    });
-    if (!r.ok) {
-      const err = await r.json().catch(() => ({}));
-      throw new Error(err.error?.message || `HTTP ${r.status}`);
-    }
-    const data = await r.json();
-    await sendLong(chatId, data.content?.[0]?.text || 'I could not generate a response.');
+    await cmdChat(chatId, text, lang);
   } catch (e) {
     await send(chatId, `⚠️ Error: ${e.message}`);
   }

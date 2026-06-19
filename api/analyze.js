@@ -1,4 +1,4 @@
-// Token Analyzer — Base RPC + DexScreener + AI verdict
+// Token Analyzer — Base RPC + DexScreener + AI verdict (upgraded)
 const BASE_RPC = 'https://mainnet.base.org';
 
 async function rpc(method, params = []) {
@@ -54,26 +54,44 @@ async function getDex(address) {
   });
   if (!r.ok) return null;
   const data = await r.json();
-  // Prefer Base pairs, fallback to any chain
   const basePairs = (data.pairs || []).filter(p => p.chainId === 'base');
   const allPairs  = data.pairs || [];
   const pool      = basePairs.length ? basePairs : allPairs;
   if (!pool.length) return null;
   const best = pool.sort((a, b) => (b.liquidity?.usd || 0) - (a.liquidity?.usd || 0))[0];
   const priceRaw = best.priceUsd ? Number(best.priceUsd) : 0;
+
+  // Liquidity / MCap ratio (rug pull signal — low ratio = risky)
+  const liq = best.liquidity?.usd || 0;
+  const mcap = best.marketCap || best.fdv || 0;
+  const liqMcapRatio = mcap > 0 ? ((liq / mcap) * 100).toFixed(1) : null;
+
+  // Buy/sell ratio
+  const buys  = best.txns?.h24?.buys  || 0;
+  const sells = best.txns?.h24?.sells || 0;
+  const bsRatio = sells > 0 ? (buys / sells).toFixed(2) : buys > 0 ? '∞' : '0';
+
   return {
     priceUsd:        priceRaw > 0 ? best.priceUsd : null,
+    priceChange1h:   best.priceChange?.h1  ?? null,
+    priceChange6h:   best.priceChange?.h6  ?? null,
     priceChange24h:  best.priceChange?.h24 ?? 0,
-    liquidityUsd:    best.liquidity?.usd    || 0,
-    volume24h:       best.volume?.h24       || 0,
-    buys24h:         best.txns?.h24?.buys   || 0,
-    sells24h:        best.txns?.h24?.sells  || 0,
+    liquidityUsd:    liq,
+    volume1h:        best.volume?.h1  || 0,
+    volume6h:        best.volume?.h6  || 0,
+    volume24h:       best.volume?.h24 || 0,
+    buys24h:         buys,
+    sells24h:        sells,
+    buySellRatio:    bsRatio,
     dexId:           best.dexId             || 'unknown',
     pairName:        (best.baseToken?.symbol || '?') + '/' + (best.quoteToken?.symbol || '?'),
     fdv:             best.fdv               || 0,
+    marketCap:       best.marketCap         || 0,
+    liqMcapRatio,
     pairsCount:      pool.length,
     chainId:         best.chainId           || 'base',
     url:             best.url               || '',
+    pairCreatedAt:   best.pairCreatedAt     || null,
   };
 }
 
@@ -82,34 +100,42 @@ async function aiVerdict(address, token, dex) {
   if (!key) return '**AI analysis unavailable** — ANTHROPIC_API_KEY not set.';
 
   const priceStr = dex?.priceUsd
-    ? `$${Number(dex.priceUsd).toFixed(8)}`
+    ? `$${Number(dex.priceUsd).toFixed(Number(dex.priceUsd) < 0.0001 ? 10 : Number(dex.priceUsd) < 0.01 ? 8 : 6)}`
     : 'Not listed / no price data';
+
+  const ageStr = dex?.pairCreatedAt
+    ? `${Math.floor((Date.now() - dex.pairCreatedAt) / 86400000)} days old`
+    : 'Unknown';
 
   const ctx = [
     `Contract: ${address} (Base network)`,
-    `Name: ${token?.name} (${token?.symbol})`,
-    `Decimals: ${token?.decimals} | Total Supply: ${token?.totalSupply}`,
+    `Token: ${token?.name} (${token?.symbol}) | Decimals: ${token?.decimals} | Supply: ${token?.totalSupply}`,
     dex ? [
       `Price: ${priceStr}`,
-      `Price Change 24h: ${dex.priceChange24h}%`,
+      `Price Change: 1h ${dex.priceChange1h ?? 'N/A'}% | 6h ${dex.priceChange6h ?? 'N/A'}% | 24h ${dex.priceChange24h}%`,
       `Liquidity: $${Number(dex.liquidityUsd).toLocaleString()}`,
-      `Volume 24h: $${Number(dex.volume24h).toLocaleString()}`,
-      `Buys / Sells 24h: ${dex.buys24h} / ${dex.sells24h}`,
-      `FDV: $${Number(dex.fdv).toLocaleString()}`,
-      `DEX: ${dex.dexId} — Pair: ${dex.pairName} — Pairs found: ${dex.pairsCount}`,
-    ].join('\n') : 'No DEX listing found (token not traded or very new).',
+      `Volume: 1h $${Number(dex.volume1h).toLocaleString()} | 6h $${Number(dex.volume6h).toLocaleString()} | 24h $${Number(dex.volume24h).toLocaleString()}`,
+      `Transactions 24h: ${dex.buys24h} buys / ${dex.sells24h} sells (ratio: ${dex.buySellRatio})`,
+      `FDV: $${Number(dex.fdv).toLocaleString()} | Market Cap: $${Number(dex.marketCap).toLocaleString()}`,
+      dex.liqMcapRatio ? `Liquidity/MCap Ratio: ${dex.liqMcapRatio}% (below 5% = high rug risk)` : '',
+      `DEX: ${dex.dexId} | Pair: ${dex.pairName} | Total pairs: ${dex.pairsCount}`,
+      `Pair age: ${ageStr}`,
+    ].filter(Boolean).join('\n') : 'No DEX listing found (token not traded or very new).',
   ].join('\n');
 
   const r = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01' },
     body: JSON.stringify({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 800,
-      system: 'You are a crypto security analyst for tokens on Base network. Use **bold** for section headers. Do NOT use ## or ### markdown. Be direct and concise.',
+      model: 'claude-sonnet-4-6',
+      max_tokens: 1200,
+      system: `You are an expert crypto security analyst specializing in Base network tokens and DeFi.
+You have deep knowledge of: rug pulls, honeypots, pump & dumps, wash trading, liquidity traps, whale manipulation, and token contract exploits.
+Use **bold** for section headers. Do NOT use ## or ### markdown. Be direct, specific, and data-driven.
+When data suggests risk, be explicit. When data looks healthy, say so with reasoning.`,
       messages: [{
         role: 'user',
-        content: `Analyze this token. Use exactly this format (bold headers, bullet points):\n\n**📊 Overview**\n[what this token is, 1–2 sentences]\n\n**💧 Liquidity**\n[is it adequate? risk level?]\n\n**🚩 Red Flags**\n• [each flag on its own line, or write: None detected]\n\n**📈 Buy/Sell Pressure**\n[what the 24h transaction pattern suggests]\n\n**⚖️ Verdict: SAFE / CAUTION / HIGH RISK / SCAM LIKELY**\n[one sentence reason]\n\nData:\n${ctx}`,
+        content: `Analyze this Base network token thoroughly. Use exactly this format:\n\n**📊 Overview**\n[What this token is, key facts, age context — 2-3 sentences]\n\n**💧 Liquidity Analysis**\n[Depth adequacy, Liq/MCap ratio interpretation, concentration risk]\n\n**📈 Price & Volume Analysis**\n[Trend across 1h/6h/24h, volume consistency, wash trading signals]\n\n**🔄 Buy/Sell Pressure**\n[What the buy/sell ratio means, momentum interpretation]\n\n**🚩 Red Flags**\n• [Each flag on its own line — be specific with data. If none: "None detected"]\n\n**✅ Green Flags**\n• [Each positive signal with data. If none: "None detected"]\n\n**⚖️ Verdict: SAFE / CAUTION / HIGH RISK / SCAM LIKELY**\n[One clear sentence with the main reason]\n\nData:\n${ctx}`,
       }],
     }),
   });
