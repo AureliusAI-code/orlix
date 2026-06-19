@@ -3,523 +3,2883 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Orlix AI — Neural Command Layer</title>
-<meta name="description" content="Personal AI Operating System — streaming AI, token analysis, wallet monitoring, and 19 models in one interface.">
+<title>Orlix AI — Personal AI Operating System</title>
+<meta name="description" content="Personal AI Operating System — 19 AI models, Base network crypto tools, and Telegram bot in one seamless interface. Free beta.">
 <link rel="icon" type="image/x-icon" href="/favicon.ico">
 <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
 <link rel="manifest" href="/site.webmanifest">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://www.orlixai.xyz/">
-<meta property="og:title" content="Orlix AI">
-<meta property="og:description" content="Neural Command Layer — AI that acts, analyzes, and adapts in real time.">
+<meta property="og:title" content="Orlix AI — Personal AI Operating System">
+<meta property="og:description" content="19 AI models, Base network crypto tools, and a Telegram bot — your command layer for the digital age.">
 <meta property="og:image" content="https://www.orlixai.xyz/og-image.png">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Orlix AI">
-<meta name="twitter:description" content="Neural Command Layer — AI that acts, analyzes, and adapts in real time.">
+<meta name="twitter:title" content="Orlix AI — Personal AI Operating System">
+<meta name="twitter:description" content="19 AI models, Base network crypto tools, and a Telegram bot — your command layer for the digital age.">
 <meta name="twitter:image" content="https://www.orlixai.xyz/og-image.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700;900&family=Space+Mono&family=Anton&display=swap');
-
-:root{
-  --bg:#F2EFE8;--black:#111;--white:#fff;
-  --orange:#F07830;
-  --border:2.5px solid #111;
-  --shadow:4px 4px 0 #111;
-}
-*{margin:0;padding:0;box-sizing:border-box}
-html{scroll-behavior:smooth}
-body{background:var(--bg);color:var(--black);font-family:'Space Grotesk',sans-serif;overflow-x:hidden}
-
-/* NAV */
-nav{
-  background:var(--black);
-  display:flex;align-items:center;justify-content:space-between;
-  padding:0 40px;height:52px;
-  border-bottom:var(--border);
-  position:sticky;top:0;z-index:100;
-}
-.logo{
-  font-family:'Anton',sans-serif;
-  font-size:1.35rem;letter-spacing:.06em;color:var(--white);
-  display:flex;align-items:center;gap:10px;
-  text-decoration:none;
-}
-.nav-center{display:flex;gap:0}
-.nav-center a{
-  font-size:.68rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
-  color:rgba(255,255,255,.45);text-decoration:none;padding:6px 20px;
-  border-left:1px solid #2a2a2a;
-  transition:color .15s;
-}
-.nav-center a:hover{color:#fff}
-.nav-right{display:flex;align-items:center;gap:12px}
-.nav-ticker{
-  font-family:'Space Mono',monospace;font-size:.6rem;color:rgba(255,255,255,.35);
-  letter-spacing:.06em;
-}
-.nav-cta{
-  font-size:.68rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
-  background:var(--orange);color:#fff;
-  padding:8px 18px;text-decoration:none;
-  clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px);
-  transition:background .15s;
-}
-.nav-cta:hover{background:#e06820}
-
-/* HAMBURGER */
-.ham{
-  display:none;flex-direction:column;gap:5px;
-  cursor:pointer;background:none;border:none;padding:4px;
-}
-.ham span{display:block;width:20px;height:2px;background:#fff}
-.mob-nav{
-  display:none;position:fixed;top:52px;left:0;right:0;z-index:99;
-  background:var(--black);border-bottom:var(--border);
-  flex-direction:column;
-}
-.mob-nav.open{display:flex}
-.mob-nav a{
-  font-size:.75rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
-  color:rgba(255,255,255,.5);text-decoration:none;
-  padding:16px 28px;border-bottom:1px solid #222;
-  transition:color .15s;
-}
-.mob-nav a:hover{color:#fff}
-.mob-nav .nav-cta{
-  margin:16px 28px 20px;text-align:center;display:block;
-  clip-path:none;
+/* ================================================
+   ROOT & RESET
+   ================================================ */
+:root {
+  --bg:           #09090B;
+  --bg-2:         #111113;
+  --bg-3:         #1A1A1E;
+  --bg-4:         #222226;
+  --border:       rgba(255,255,255,0.06);
+  --border-hover: rgba(255,255,255,0.12);
+  --text-1:       #FAFAFA;
+  --text-2:       #A1A1AA;
+  --text-3:       #52525B;
+  --orange:       #F07830;
+  --orange-dim:   rgba(240,120,48,0.10);
+  --orange-glow:  rgba(240,120,48,0.18);
+  --purple:       #A78BFA;
+  --purple-dim:   rgba(167,139,250,0.08);
+  --green:        #4ADE80;
+  --green-dim:    rgba(74,222,128,0.09);
+  --red:          #F87171;
+  --blue:         #60A5FA;
+  --blue-dim:     rgba(96,165,250,0.09);
+  --radius:       16px;
+  --transition:   all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* HERO */
-.hero{
-  display:grid;grid-template-columns:3fr 2fr;
-  border-bottom:var(--border);
-  min-height:calc(100vh - 52px);
-}
-.hero-main{border-right:var(--border);display:flex;flex-direction:column}
-.hero-eyebrow{
-  padding:16px 40px;
-  border-bottom:var(--border);
-  display:flex;align-items:center;justify-content:space-between;
-  background:var(--black);
-}
-.eyebrow-left{
-  font-family:'Space Mono',monospace;
-  font-size:.62rem;color:rgba(255,255,255,.4);letter-spacing:.1em;
-  display:flex;align-items:center;gap:16px;
-}
-.eyebrow-live{
-  display:flex;align-items:center;gap:6px;
-  font-size:.58rem;color:var(--orange);letter-spacing:.1em;
-}
-.live-dot{
-  width:6px;height:6px;border-radius:50%;
-  background:var(--orange);animation:pulse 1s ease-in-out infinite alternate;
-}
-@keyframes pulse{from{opacity:.4}to{opacity:1}}
-.eyebrow-right{
-  font-family:'Space Mono',monospace;font-size:.6rem;color:rgba(255,255,255,.3);
-}
-.hero-content{
-  flex:1;padding:52px 40px 40px;
-  display:flex;flex-direction:column;justify-content:space-between;
-}
-h1{
-  font-family:'Anton',sans-serif;
-  font-size:clamp(4rem,9vw,8rem);
-  letter-spacing:.01em;line-height:.88;text-transform:uppercase;
-  margin-bottom:28px;
-}
-h1 .accent{
-  color:var(--white);background:var(--orange);
-  padding:4px 12px;display:inline-block;margin-top:6px;
-}
-h1 .outline{
-  display:block;color:transparent;
-  -webkit-text-stroke:2.5px var(--black);
-}
-.hero-body{
-  display:grid;grid-template-columns:1fr 1fr;
-  gap:24px;border-top:var(--border);padding-top:28px;
-}
-.hero-body p{font-size:.88rem;color:#444;line-height:1.7}
-.hero-body .cta-inline{display:flex;flex-direction:column;gap:10px}
-.btn-orange{
-  background:var(--orange);color:#fff;
-  font-weight:700;font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;
-  padding:14px 28px;border:var(--border);cursor:pointer;text-decoration:none;
-  display:inline-block;text-align:center;
-  box-shadow:var(--shadow);transition:box-shadow .1s,transform .1s;
-}
-.btn-orange:hover{box-shadow:none;transform:translate(4px,4px)}
-.btn-blk{
-  background:var(--black);color:#fff;
-  font-weight:700;font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;
-  padding:14px 28px;border:var(--border);cursor:pointer;text-decoration:none;
-  display:inline-block;text-align:center;
-  box-shadow:var(--shadow);transition:box-shadow .1s,transform .1s;
-}
-.btn-blk:hover{box-shadow:none;transform:translate(4px,4px)}
-
-/* SIDEBAR */
-.hero-sidebar{display:flex;flex-direction:column}
-.sidebar-block{
-  flex:1;padding:28px 24px;border-bottom:var(--border);
-  display:flex;flex-direction:column;justify-content:space-between;
-}
-.sidebar-block:last-child{border-bottom:none}
-.sb-tag{
-  font-family:'Space Mono',monospace;
-  font-size:.58rem;letter-spacing:.12em;text-transform:uppercase;
-  color:var(--orange);margin-bottom:12px;
-  display:flex;align-items:center;gap:6px;
-}
-.sb-tag::after{content:'';flex:1;height:1px;background:var(--orange);opacity:.3}
-.sidebar-block h3{
-  font-family:'Anton',sans-serif;
-  font-size:1.4rem;letter-spacing:.02em;text-transform:uppercase;
-  line-height:1.1;margin-bottom:10px;
-}
-.sidebar-block p{font-size:.75rem;color:#555;line-height:1.6}
-.sb-cmd{
-  margin-top:14px;font-family:'Space Mono',monospace;font-size:.68rem;
-  background:var(--black);color:#00FF88;
-  padding:8px 12px;display:inline-block;letter-spacing:.04em;
-}
-.sb-stat{display:flex;align-items:baseline;gap:6px;margin-top:12px}
-.sb-stat .n{font-family:'Anton',sans-serif;font-size:2.2rem;color:var(--black);line-height:1}
-.sb-stat .l{font-size:.65rem;color:#999;letter-spacing:.08em;text-transform:uppercase}
-
-/* SECTION HEAD */
-.section-head{
-  background:var(--black);color:var(--white);
-  padding:10px 40px;
-  display:flex;align-items:center;gap:16px;
-  border-bottom:var(--border);border-top:var(--border);
-}
-.section-head h2{font-family:'Anton',sans-serif;font-size:1rem;letter-spacing:.12em;text-transform:uppercase}
-.section-head .line{flex:1;height:1px;background:#333}
-.section-head .meta{font-family:'Space Mono',monospace;font-size:.58rem;color:rgba(255,255,255,.35);letter-spacing:.1em}
-
-/* FEATURES */
-.feat-row{display:grid;grid-template-columns:repeat(3,1fr);border-bottom:var(--border)}
-.feat{padding:32px 28px;border-right:var(--border);position:relative}
-.feat:last-child{border-right:none}
-.feat-label{
-  font-family:'Space Mono',monospace;font-size:.58rem;letter-spacing:.14em;text-transform:uppercase;
-  color:#999;margin-bottom:10px;border-bottom:1.5px solid #ddd;padding-bottom:8px;
-}
-.feat-num{
-  font-family:'Anton',sans-serif;font-size:5rem;color:rgba(0,0,0,.06);
-  position:absolute;top:12px;right:16px;line-height:1;letter-spacing:-.02em;user-select:none;
-}
-.feat h3{
-  font-family:'Anton',sans-serif;font-size:1.5rem;letter-spacing:.02em;text-transform:uppercase;
-  line-height:1.1;margin-bottom:10px;
-}
-.feat p{font-size:.78rem;color:#555;line-height:1.6;max-width:30ch}
-.feat-pill{
-  display:inline-block;margin-top:14px;
-  background:var(--black);color:var(--white);
-  font-family:'Space Mono',monospace;font-size:.58rem;letter-spacing:.1em;
-  padding:3px 10px;
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
-/* TICKER */
-.ticker-wrap{overflow:hidden;border-bottom:var(--border);border-top:var(--border);background:var(--orange);padding:8px 0}
-.ticker{display:flex;animation:tick 18s linear infinite;width:max-content}
-.ticker span{
-  font-family:'Anton',sans-serif;font-size:.8rem;letter-spacing:.1em;text-transform:uppercase;
-  color:#fff;padding:0 28px;border-right:1px solid rgba(255,255,255,.3);white-space:nowrap;
-}
-@keyframes tick{from{transform:translateX(0)}to{transform:translateX(-50%)}}
-
-/* BOTTOM SPLIT */
-.bottom-split{display:grid;grid-template-columns:1fr 1fr;border-bottom:var(--border)}
-.split-l{padding:56px 48px;border-right:var(--border)}
-.split-l h2{
-  font-family:'Anton',sans-serif;font-size:clamp(2.5rem,5vw,4rem);
-  letter-spacing:.02em;text-transform:uppercase;line-height:.92;margin-bottom:24px;
-}
-.split-l h2 span{display:inline-block;background:var(--orange);color:#fff;padding:2px 10px}
-.split-l p{font-size:.88rem;color:#555;line-height:1.7;max-width:38ch;margin-bottom:32px}
-.split-r{
-  background:var(--black);padding:48px 40px;
-  display:flex;flex-direction:column;justify-content:space-between;
-}
-.split-r h3{
-  font-family:'Anton',sans-serif;font-size:1rem;letter-spacing:.12em;text-transform:uppercase;
-  color:rgba(255,255,255,.35);margin-bottom:20px;
-}
-.model-list{display:flex;flex-direction:column;gap:0}
-.model-item{
-  display:flex;align-items:center;justify-content:space-between;
-  padding:10px 0;border-bottom:1px solid #1f1f1f;
-  transition:padding-left .12s;
-}
-.model-item:last-child{border-bottom:none}
-.model-item:hover{padding-left:5px}
-.model-name{font-size:.78rem;color:var(--white);font-weight:500}
-.model-tag{font-family:'Space Mono',monospace;font-size:.6rem;color:#555;letter-spacing:.08em}
-.model-live{width:6px;height:6px;border-radius:50%;background:#00FF88;box-shadow:0 0 6px #00FF88}
-
-/* FOOTER */
-footer{
-  background:var(--black);display:grid;grid-template-columns:2fr 1fr 1fr 1fr;
-  border-bottom:var(--border);
-}
-.f-col{padding:32px 28px;border-right:1px solid #1f1f1f}
-.f-col:last-child{border-right:none}
-.f-logo{
-  font-family:'Anton',sans-serif;font-size:1.2rem;letter-spacing:.06em;
-  color:var(--white);margin-bottom:12px;
-  display:flex;align-items:center;gap:10px;
-  text-decoration:none;
-}
-.f-col>p{font-size:.72rem;color:#555;line-height:1.7}
-.f-col h4{font-size:.58rem;letter-spacing:.16em;text-transform:uppercase;color:#444;margin-bottom:14px}
-.f-col a{display:block;font-size:.72rem;color:#555;text-decoration:none;padding:4px 0;transition:color .15s}
-.f-col a:hover{color:var(--orange)}
-.f-bar{
-  background:var(--black);padding:14px 28px;
-  display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;
-  font-family:'Space Mono',monospace;font-size:.6rem;color:#333;letter-spacing:.08em;
-  border-top:1px solid #1a1a1a;
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* RESPONSIVE */
-@media(max-width:1024px){
-  nav{padding:0 24px}
-  .nav-center{display:none}
-  .nav-ticker{display:none}
-  .ham{display:flex}
-  .hero{grid-template-columns:1fr;min-height:auto}
-  .hero-main{border-right:none;border-bottom:var(--border)}
-  .hero-eyebrow{padding:12px 24px}
-  .hero-content{padding:36px 24px 32px}
-  h1{font-size:clamp(3.5rem,10vw,6rem)}
-  .hero-sidebar{border-top:var(--border)}
-  .feat-row{grid-template-columns:1fr 1fr}
-  .feat:nth-child(2){border-right:none}
-  .feat:nth-child(3){border-top:var(--border);border-right:none;grid-column:span 2}
-  .bottom-split{grid-template-columns:1fr}
-  .split-l{border-right:none;border-bottom:var(--border);padding:40px 24px}
-  .split-r{padding:36px 24px}
-  footer{grid-template-columns:1fr 1fr}
-  .f-col:nth-child(1){grid-column:span 2;border-right:none;border-bottom:1px solid #1f1f1f}
-  .f-col:nth-child(2){border-bottom:1px solid #1f1f1f}
-  .f-col:nth-child(3){border-right:none;border-bottom:1px solid #1f1f1f}
-  .f-col:nth-child(4){border-right:none}
-  .section-head{padding:10px 24px}
+body {
+  background: var(--bg);
+  color: var(--text-1);
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  overflow-x: hidden;
+  line-height: 1.7;
 }
-@media(max-width:640px){
-  nav{padding:0 16px;height:48px}
-  .mob-nav{top:48px}
-  .nav-cta{padding:7px 14px;font-size:.62rem}
-  .hero-content{padding:28px 20px 24px}
-  h1{font-size:clamp(3rem,12vw,4.5rem)}
-  .hero-body{grid-template-columns:1fr}
-  .btn-orange,.btn-blk{text-align:center}
-  .feat-row{grid-template-columns:1fr}
-  .feat{border-right:none;border-bottom:var(--border)}
-  .feat:nth-child(3){grid-column:auto;border-bottom:none}
-  .bottom-split{grid-template-columns:1fr}
-  footer{grid-template-columns:1fr}
-  .f-col{border-right:none;border-bottom:1px solid #1f1f1f;padding:24px 20px}
-  .f-col:nth-child(1){grid-column:auto}
-  .f-col:last-child{border-bottom:none}
-  .f-bar{padding:12px 20px;flex-direction:column;gap:4px}
-  .split-r{padding:28px 20px}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+img {
+  max-width: 100%;
+  display: block;
+}
+
+/* ================================================
+   NAVIGATION
+   ================================================ */
+nav {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 40px;
+  background: rgba(9,9,11,0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+}
+
+.nav-logo {
+  font-size: 1.1rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--text-1);
+  flex-shrink: 0;
+}
+
+.nav-center {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.nav-center a {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-2);
+  padding: 6px 14px;
+  border-radius: 8px;
+  transition: var(--transition);
+}
+
+.nav-center a:hover {
+  color: var(--text-1);
+  background: rgba(255,255,255,0.05);
+}
+
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.badge-beta {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--orange);
+  background: var(--orange-dim);
+  border: 1px solid rgba(240,120,48,0.25);
+  padding: 3px 10px;
+  border-radius: 100px;
+}
+
+.nav-cta {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--bg);
+  background: var(--text-1);
+  padding: 8px 20px;
+  border-radius: 10px;
+  transition: var(--transition);
+  white-space: nowrap;
+}
+
+.nav-cta:hover {
+  background: var(--orange);
+  color: #fff;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 20px var(--orange-glow);
+}
+
+.ham {
+  display: none;
+  flex-direction: column;
+  gap: 5px;
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 4px;
+}
+
+.ham span {
+  display: block;
+  width: 22px;
+  height: 2px;
+  background: var(--text-1);
+  border-radius: 2px;
+  transition: var(--transition);
+}
+
+.mob-nav {
+  display: none;
+  position: fixed;
+  top: 64px;
+  left: 0;
+  right: 0;
+  z-index: 999;
+  background: var(--bg-2);
+  border-bottom: 1px solid var(--border);
+  flex-direction: column;
+  padding: 12px 0 20px;
+}
+
+.mob-nav.open {
+  display: flex;
+}
+
+.mob-nav a {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--text-2);
+  padding: 12px 24px;
+  transition: color 0.15s;
+}
+
+.mob-nav a:hover {
+  color: var(--text-1);
+}
+
+.mob-nav .mob-cta {
+  margin: 12px 24px 0;
+  display: block;
+  text-align: center;
+  background: var(--orange);
+  color: #fff;
+  padding: 12px;
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+/* ================================================
+   HERO SECTION
+   ================================================ */
+.hero {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 120px 24px 80px;
+  overflow: hidden;
+}
+
+/* Grid background */
+.hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+  background-size: 60px 60px;
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 40%, transparent 100%);
+}
+
+/* Orange orb */
+.hero::after {
+  content: '';
+  position: absolute;
+  top: -200px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 800px;
+  height: 600px;
+  background: radial-gradient(ellipse, rgba(240,120,48,0.15) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.hero-content {
+  position: relative;
+  z-index: 1;
+  max-width: 860px;
+}
+
+.hero-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin-bottom: 28px;
+}
+
+.hero-eyebrow::before,
+.hero-eyebrow::after {
+  content: '';
+  display: block;
+  width: 40px;
+  height: 1px;
+  background: var(--text-3);
+}
+
+.hero h1 {
+  font-size: clamp(3rem, 7vw, 5.5rem);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1.05;
+  color: var(--text-1);
+  margin-bottom: 24px;
+}
+
+.hero h1 .gradient-text {
+  background: linear-gradient(135deg, var(--orange) 0%, var(--purple) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.hero-sub {
+  font-size: 1.1rem;
+  color: var(--text-2);
+  max-width: 580px;
+  margin: 0 auto 40px;
+  line-height: 1.7;
+}
+
+.hero-ctas {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-bottom: 48px;
+  flex-wrap: wrap;
+}
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #fff;
+  background: var(--orange);
+  padding: 14px 28px;
+  border-radius: 12px;
+  transition: var(--transition);
+  border: 1px solid rgba(240,120,48,0.4);
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px var(--orange-glow);
+  background: #e86d28;
+}
+
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-2);
+  background: transparent;
+  padding: 14px 28px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  transition: var(--transition);
+}
+
+.btn-ghost:hover {
+  color: var(--text-1);
+  border-color: var(--border-hover);
+  background: rgba(255,255,255,0.04);
+  transform: translateY(-1px);
+}
+
+.hero-stats {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 0.8rem;
+  color: var(--text-3);
+  font-weight: 500;
+}
+
+.hero-stats .dot {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--text-3);
+}
+
+.hero-stats span {
+  color: var(--text-2);
+}
+
+/* Scroll indicator */
+.scroll-indicator {
+  position: absolute;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  opacity: 0.4;
+}
+
+.scroll-mouse {
+  width: 22px;
+  height: 36px;
+  border: 2px solid var(--text-3);
+  border-radius: 11px;
+  display: flex;
+  justify-content: center;
+  padding-top: 6px;
+}
+
+.scroll-dot {
+  width: 4px;
+  height: 8px;
+  background: var(--text-3);
+  border-radius: 2px;
+  animation: scrollDot 1.8s ease-in-out infinite;
+}
+
+@keyframes scrollDot {
+  0%, 100% { transform: translateY(0); opacity: 1; }
+  50% { transform: translateY(8px); opacity: 0.2; }
+}
+
+/* ================================================
+   MODEL MARQUEE
+   ================================================ */
+.marquee-section {
+  padding: 64px 0;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  overflow: hidden;
+  background: var(--bg-2);
+}
+
+.marquee-label {
+  text-align: center;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin-bottom: 28px;
+}
+
+.marquee-track-wrap {
+  position: relative;
+}
+
+.marquee-track-wrap::before,
+.marquee-track-wrap::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 200px;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.marquee-track-wrap::before {
+  left: 0;
+  background: linear-gradient(to right, var(--bg-2), transparent);
+}
+
+.marquee-track-wrap::after {
+  right: 0;
+  background: linear-gradient(to left, var(--bg-2), transparent);
+}
+
+.marquee-track {
+  display: flex;
+  gap: 12px;
+  animation: marqueeScroll 30s linear infinite;
+  width: max-content;
+}
+
+.marquee-track:hover {
+  animation-play-state: paused;
+}
+
+@keyframes marqueeScroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.model-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 18px;
+  border-radius: 100px;
+  border: 1px solid var(--border);
+  background: var(--bg-3);
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-2);
+  white-space: nowrap;
+  transition: var(--transition);
+}
+
+.model-chip:hover {
+  border-color: var(--border-hover);
+  color: var(--text-1);
+}
+
+.model-chip .chip-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+/* ================================================
+   SECTION COMMONS
+   ================================================ */
+.section {
+  padding: 120px 40px;
+}
+
+.section-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.section-header {
+  margin-bottom: 64px;
+}
+
+.section-header.center {
+  text-align: center;
+}
+
+.section-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--orange);
+  margin-bottom: 16px;
+}
+
+.section-eyebrow::before {
+  content: '';
+  display: block;
+  width: 16px;
+  height: 2px;
+  background: var(--orange);
+  border-radius: 2px;
+}
+
+.section-title {
+  font-size: clamp(2rem, 4vw, 3rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  color: var(--text-1);
+  margin-bottom: 16px;
+}
+
+.section-desc {
+  font-size: 1rem;
+  color: var(--text-2);
+  max-width: 520px;
+  line-height: 1.7;
+}
+
+.section-header.center .section-desc {
+  margin: 0 auto;
+}
+
+/* ================================================
+   BENTO GRID
+   ================================================ */
+.bento-section {
+  padding: 120px 40px;
+  background: var(--bg);
+}
+
+.bento-grid {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  grid-template-rows: auto;
+  gap: 12px;
+}
+
+/* Base card styles */
+.bento-card {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 28px;
+  overflow: hidden;
+  position: relative;
+  transition: var(--transition);
+}
+
+.bento-card:hover {
+  border-color: var(--border-hover);
+  box-shadow: 0 8px 40px rgba(0,0,0,0.4);
+  transform: translateY(-1px);
+}
+
+/* Card placements */
+.card-chat {
+  grid-column: 1 / 8;
+  grid-row: 1 / 3;
+}
+
+.card-models-count {
+  grid-column: 8 / 13;
+  grid-row: 1 / 2;
+}
+
+.card-speed {
+  grid-column: 8 / 11;
+  grid-row: 2 / 3;
+}
+
+.card-network {
+  grid-column: 11 / 13;
+  grid-row: 2 / 3;
+}
+
+.card-token {
+  grid-column: 1 / 5;
+  grid-row: 3 / 4;
+}
+
+.card-wallet {
+  grid-column: 5 / 9;
+  grid-row: 3 / 4;
+}
+
+.card-telegram {
+  grid-column: 9 / 13;
+  grid-row: 3 / 4;
+}
+
+/* Card: Chat */
+.card-chat:hover {
+  box-shadow: 0 8px 40px rgba(240,120,48,0.1);
+  border-color: rgba(240,120,48,0.2);
+}
+
+.card-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.card-label .label-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 6px var(--green);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.chat-messages {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 20px;
+  min-height: 200px;
+}
+
+.chat-msg {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.chat-msg.user {
+  flex-direction: row-reverse;
+}
+
+.chat-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.avatar-user {
+  background: var(--orange-dim);
+  color: var(--orange);
+  border: 1px solid rgba(240,120,48,0.2);
+}
+
+.avatar-ai {
+  background: var(--purple-dim);
+  color: var(--purple);
+  border: 1px solid rgba(167,139,250,0.2);
+}
+
+.chat-bubble {
+  max-width: 75%;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.bubble-user {
+  background: var(--bg-4);
+  color: var(--text-1);
+  border: 1px solid var(--border);
+  border-radius: 12px 4px 12px 12px;
+}
+
+.bubble-ai {
+  background: var(--bg-3);
+  color: var(--text-2);
+  border: 1px solid var(--border);
+  border-radius: 4px 12px 12px 12px;
+}
+
+.bubble-ai .highlight {
+  color: var(--green);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.8rem;
+}
+
+.chat-input-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--bg-3);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 14px;
+}
+
+.chat-input-bar span {
+  flex: 1;
+  font-size: 0.85rem;
+  color: var(--text-3);
+}
+
+.chat-send {
+  width: 28px;
+  height: 28px;
+  background: var(--orange);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+/* Card: Model Count */
+.models-count-big {
+  font-size: clamp(4rem, 8vw, 6rem);
+  font-weight: 800;
+  letter-spacing: -0.05em;
+  line-height: 1;
+  background: linear-gradient(135deg, var(--orange) 0%, var(--purple) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 8px;
+}
+
+.models-count-label {
+  font-size: 0.85rem;
+  color: var(--text-3);
+  margin-bottom: 20px;
+}
+
+.provider-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.provider-tag {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  color: var(--text-3);
+  background: var(--bg-3);
+}
+
+/* Card: Speed */
+.speed-big {
+  font-size: 2.8rem;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  color: var(--green);
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.speed-label {
+  font-size: 0.8rem;
+  color: var(--text-3);
+}
+
+.speed-bar-wrap {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.speed-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.72rem;
+  color: var(--text-3);
+}
+
+.speed-bar {
+  flex: 1;
+  height: 4px;
+  background: var(--bg-4);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.speed-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  background: var(--green);
+}
+
+/* Card: Network */
+.network-icon {
+  font-size: 1.8rem;
+  margin-bottom: 8px;
+}
+
+.network-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-1);
+  margin-bottom: 4px;
+}
+
+.network-desc {
+  font-size: 0.78rem;
+  color: var(--text-3);
+  line-height: 1.4;
+}
+
+.network-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--blue);
+  background: var(--blue-dim);
+  border: 1px solid rgba(96,165,250,0.2);
+  padding: 3px 8px;
+  border-radius: 6px;
+  margin-top: 12px;
+}
+
+/* Card: Token Analyzer */
+.token-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.token-name {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-1);
+}
+
+.token-ticker {
+  font-size: 0.75rem;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--text-3);
+  background: var(--bg-4);
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.token-price {
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--text-1);
+  margin-bottom: 4px;
+}
+
+.token-change-pos {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--green);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.token-stats-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 16px 0;
+}
+
+.token-stat {
+  padding: 8px 10px;
+  background: var(--bg-3);
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+
+.token-stat-label {
+  font-size: 0.68rem;
+  color: var(--text-3);
+  margin-bottom: 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.token-stat-val {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-1);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.ai-verdict {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--green-dim);
+  border: 1px solid rgba(74,222,128,0.15);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 0.78rem;
+  color: var(--green);
+  font-weight: 600;
+}
+
+.verdict-icon {
+  font-size: 1rem;
+}
+
+/* Card: Wallet Watcher */
+.wallet-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-1);
+  margin-bottom: 16px;
+}
+
+.wallet-addr {
+  font-size: 0.72rem;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--text-3);
+  background: var(--bg-3);
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  margin-bottom: 16px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tx-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.tx-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background: var(--bg-3);
+  border-radius: 10px;
+  border: 1px solid var(--border);
+}
+
+.tx-arrow {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  flex-shrink: 0;
+}
+
+.tx-in {
+  background: var(--green-dim);
+  color: var(--green);
+  border: 1px solid rgba(74,222,128,0.15);
+}
+
+.tx-out {
+  background: rgba(248,113,113,0.09);
+  color: var(--red);
+  border: 1px solid rgba(248,113,113,0.15);
+}
+
+.tx-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.tx-type {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-1);
+}
+
+.tx-hash {
+  font-size: 0.68rem;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--text-3);
+}
+
+.tx-meta {
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.tx-amount {
+  font-size: 0.82rem;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.tx-time {
+  font-size: 0.68rem;
+  color: var(--text-3);
+}
+
+/* Card: Telegram */
+.tg-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-1);
+  margin-bottom: 6px;
+}
+
+.tg-desc {
+  font-size: 0.8rem;
+  color: var(--text-3);
+  margin-bottom: 20px;
+}
+
+.cmd-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cmd-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 14px;
+  background: var(--bg-3);
+  border-radius: 10px;
+  border: 1px solid var(--border);
+}
+
+.cmd-code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.82rem;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 6px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.cmd-orange {
+  background: var(--orange-dim);
+  color: var(--orange);
+  border: 1px solid rgba(240,120,48,0.2);
+}
+
+.cmd-purple {
+  background: var(--purple-dim);
+  color: var(--purple);
+  border: 1px solid rgba(167,139,250,0.15);
+}
+
+.cmd-green {
+  background: var(--green-dim);
+  color: var(--green);
+  border: 1px solid rgba(74,222,128,0.15);
+}
+
+.cmd-desc {
+  font-size: 0.78rem;
+  color: var(--text-3);
+  padding-top: 2px;
+}
+
+/* ================================================
+   FEATURE HIGHLIGHTS (Alternating)
+   ================================================ */
+.features-section {
+  padding: 120px 40px;
+  background: var(--bg-2);
+}
+
+.features-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.feature-item {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 80px;
+  align-items: center;
+  padding: 80px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.feature-item:last-child {
+  border-bottom: none;
+}
+
+.feature-item.reverse .feature-text {
+  order: 2;
+}
+
+.feature-item.reverse .feature-visual {
+  order: 1;
+}
+
+.feature-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--orange);
+  margin-bottom: 16px;
+}
+
+.feature-eyebrow::before {
+  content: '';
+  display: block;
+  width: 12px;
+  height: 2px;
+  background: var(--orange);
+  border-radius: 1px;
+}
+
+.feature-title {
+  font-size: clamp(1.6rem, 3vw, 2.2rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  color: var(--text-1);
+  margin-bottom: 16px;
+}
+
+.feature-desc {
+  font-size: 1rem;
+  color: var(--text-2);
+  line-height: 1.7;
+  margin-bottom: 28px;
+}
+
+.feature-points {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.feature-points li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.9rem;
+  color: var(--text-2);
+}
+
+.feature-points li::before {
+  content: '';
+  display: block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--orange);
+  flex-shrink: 0;
+}
+
+/* Feature Visual: Terminal */
+.terminal-visual {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.terminal-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: var(--bg-3);
+  border-bottom: 1px solid var(--border);
+}
+
+.terminal-dots {
+  display: flex;
+  gap: 6px;
+}
+
+.terminal-dots span {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.tdot-r { background: #FF5F56; }
+.tdot-y { background: #FFBD2E; }
+.tdot-g { background: #27C93F; }
+
+.terminal-title {
+  font-size: 0.75rem;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--text-3);
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.terminal-body {
+  padding: 20px 24px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.82rem;
+  line-height: 1.8;
+}
+
+.t-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.t-prompt { color: var(--green); }
+.t-cmd { color: var(--text-1); }
+.t-comment { color: var(--text-3); }
+.t-model { color: var(--orange); }
+.t-output { color: var(--text-2); padding-left: 0; }
+.t-cursor {
+  display: inline-block;
+  width: 8px;
+  height: 14px;
+  background: var(--orange);
+  animation: blink 1s step-end infinite;
+  vertical-align: middle;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+/* Feature Visual: Wallet list */
+.wallet-visual {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.wallet-visual-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.wallet-visual-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-1);
+}
+
+.wv-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  color: var(--green);
+}
+
+.wv-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--green);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.wallet-tx-list {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.wv-tx {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--bg-2);
+  border-radius: 10px;
+  border: 1px solid var(--border);
+}
+
+.wv-tx-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+
+.wv-info {
+  flex: 1;
+}
+
+.wv-name {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-1);
+}
+
+.wv-sub {
+  font-size: 0.7rem;
+  color: var(--text-3);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.wv-val {
+  text-align: right;
+}
+
+.wv-amount {
+  font-size: 0.85rem;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.wv-usd {
+  font-size: 0.7rem;
+  color: var(--text-3);
+  text-align: right;
+}
+
+/* ================================================
+   MODELS GRID
+   ================================================ */
+.models-section {
+  padding: 120px 40px;
+  background: var(--bg);
+}
+
+.models-grid {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
+}
+
+.model-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  transition: var(--transition);
+}
+
+.model-card:hover {
+  border-color: var(--border-hover);
+  background: var(--bg-3);
+  transform: translateY(-1px);
+}
+
+.model-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.icon-anthropic { background: rgba(255,160,80,0.12); }
+.icon-openai    { background: rgba(255,255,255,0.07); }
+.icon-google    { background: rgba(66,133,244,0.12); }
+.icon-xai       { background: rgba(255,255,255,0.07); }
+.icon-meta      { background: rgba(0,132,255,0.12); }
+.icon-mistral   { background: rgba(255,165,0,0.12); }
+.icon-deepseek  { background: rgba(75,185,255,0.12); }
+.icon-alibaba   { background: rgba(255,100,0,0.12); }
+.icon-moonshot  { background: rgba(167,139,250,0.12); }
+.icon-amazon    { background: rgba(255,153,0,0.12); }
+
+.model-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.model-name {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-1);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.model-provider {
+  font-size: 0.72rem;
+  color: var(--text-3);
+  margin-top: 1px;
+}
+
+.model-tag {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.tag-fast {
+  color: var(--green);
+  background: var(--green-dim);
+  border: 1px solid rgba(74,222,128,0.2);
+}
+
+.tag-best {
+  color: var(--orange);
+  background: var(--orange-dim);
+  border: 1px solid rgba(240,120,48,0.25);
+}
+
+.tag-vision {
+  color: var(--purple);
+  background: var(--purple-dim);
+  border: 1px solid rgba(167,139,250,0.2);
+}
+
+.tag-new {
+  color: var(--blue);
+  background: var(--blue-dim);
+  border: 1px solid rgba(96,165,250,0.2);
+}
+
+/* ================================================
+   ROADMAP
+   ================================================ */
+.roadmap-section {
+  padding: 120px 40px;
+  background: var(--bg-2);
+}
+
+.roadmap-grid {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+.roadmap-card {
+  padding: 28px;
+  background: var(--bg-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  transition: var(--transition);
+  position: relative;
+  overflow: hidden;
+}
+
+.roadmap-card:hover {
+  border-color: var(--border-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.3);
+}
+
+.roadmap-card.active {
+  border-color: rgba(240,120,48,0.25);
+}
+
+.roadmap-card.done {
+  border-color: rgba(74,222,128,0.15);
+}
+
+.phase-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 6px;
+}
+
+.phase-done {
+  color: var(--green);
+  background: var(--green-dim);
+  border: 1px solid rgba(74,222,128,0.2);
+}
+
+.phase-active {
+  color: var(--orange);
+  background: var(--orange-dim);
+  border: 1px solid rgba(240,120,48,0.25);
+}
+
+.phase-upcoming {
+  color: var(--text-3);
+  background: var(--bg-4);
+  border: 1px solid var(--border);
+}
+
+.roadmap-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-1);
+  margin-bottom: 8px;
+  line-height: 1.2;
+}
+
+.roadmap-desc {
+  font-size: 0.82rem;
+  color: var(--text-3);
+  line-height: 1.5;
+  margin-bottom: 20px;
+}
+
+.progress-wrap {
+  margin-bottom: 20px;
+}
+
+.progress-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.72rem;
+  color: var(--text-3);
+  margin-bottom: 6px;
+}
+
+.progress-bar {
+  height: 4px;
+  background: var(--bg-4);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--orange), #e86d28);
+}
+
+.roadmap-items {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.roadmap-items li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+  color: var(--text-2);
+}
+
+.ri-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.ri-done { background: var(--green); }
+.ri-active { background: var(--orange); }
+.ri-pending { background: var(--text-3); }
+
+/* ================================================
+   CTA SECTION
+   ================================================ */
+.cta-section {
+  padding: 80px 40px;
+  background: var(--bg);
+}
+
+.cta-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.cta-card {
+  position: relative;
+  padding: 80px 60px;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  text-align: center;
+  overflow: hidden;
+}
+
+.cta-card::before {
+  content: '';
+  position: absolute;
+  top: -100px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 600px;
+  height: 400px;
+  background: radial-gradient(ellipse, rgba(240,120,48,0.12) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.cta-title {
+  position: relative;
+  font-size: clamp(2rem, 4vw, 3.2rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  color: var(--text-1);
+  margin-bottom: 16px;
+}
+
+.cta-sub {
+  position: relative;
+  font-size: 1.05rem;
+  color: var(--text-2);
+  max-width: 480px;
+  margin: 0 auto 36px;
+  line-height: 1.7;
+}
+
+.cta-buttons {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+/* ================================================
+   FOOTER
+   ================================================ */
+footer {
+  padding: 80px 40px 40px;
+  background: var(--bg-2);
+  border-top: 1px solid var(--border);
+}
+
+.footer-grid {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  gap: 60px;
+  margin-bottom: 60px;
+}
+
+.footer-brand .logo-text {
+  font-size: 1.1rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--text-1);
+  margin-bottom: 10px;
+}
+
+.footer-tagline {
+  font-size: 0.85rem;
+  color: var(--text-3);
+  line-height: 1.6;
+  margin-bottom: 20px;
+  max-width: 260px;
+}
+
+.social-row {
+  display: flex;
+  gap: 10px;
+}
+
+.social-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: var(--bg-3);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-3);
+  font-size: 0.85rem;
+  transition: var(--transition);
+  text-decoration: none;
+}
+
+.social-btn:hover {
+  border-color: var(--border-hover);
+  color: var(--text-1);
+  background: var(--bg-4);
+}
+
+.footer-col h4 {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-1);
+  margin-bottom: 16px;
+}
+
+.footer-col ul {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.footer-col ul li a {
+  font-size: 0.85rem;
+  color: var(--text-3);
+  transition: color 0.15s;
+  text-decoration: none;
+}
+
+.footer-col ul li a:hover {
+  color: var(--text-1);
+}
+
+.footer-bottom {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding-top: 28px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.footer-copy {
+  font-size: 0.78rem;
+  color: var(--text-3);
+}
+
+.systems-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.78rem;
+  color: var(--green);
+}
+
+.status-pulse {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 8px rgba(74,222,128,0.6);
+  animation: statusPulse 2s ease-in-out infinite;
+}
+
+@keyframes statusPulse {
+  0%, 100% { box-shadow: 0 0 4px rgba(74,222,128,0.4); }
+  50% { box-shadow: 0 0 12px rgba(74,222,128,0.8); }
+}
+
+/* ================================================
+   FADE-UP ANIMATION
+   ================================================ */
+.fade-up {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+              transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.fade-up.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.fade-up-d1 { transition-delay: 0.1s; }
+.fade-up-d2 { transition-delay: 0.2s; }
+.fade-up-d3 { transition-delay: 0.3s; }
+.fade-up-d4 { transition-delay: 0.4s; }
+
+/* ================================================
+   RESPONSIVE — TABLET (1024px)
+   ================================================ */
+@media (max-width: 1024px) {
+  nav {
+    padding: 0 24px;
+  }
+
+  .nav-center {
+    display: none;
+  }
+
+  .ham {
+    display: flex;
+  }
+
+  .bento-grid {
+    grid-template-columns: repeat(6, 1fr);
+  }
+
+  .card-chat {
+    grid-column: 1 / 7;
+    grid-row: 1 / 2;
+  }
+
+  .card-models-count {
+    grid-column: 1 / 4;
+    grid-row: 2 / 3;
+  }
+
+  .card-speed {
+    grid-column: 4 / 7;
+    grid-row: 2 / 3;
+  }
+
+  .card-network {
+    grid-column: 1 / 3;
+    grid-row: 3 / 4;
+  }
+
+  .card-token {
+    grid-column: 3 / 7;
+    grid-row: 3 / 4;
+  }
+
+  .card-wallet {
+    grid-column: 1 / 4;
+    grid-row: 4 / 5;
+  }
+
+  .card-telegram {
+    grid-column: 4 / 7;
+    grid-row: 4 / 5;
+  }
+
+  .feature-item {
+    grid-template-columns: 1fr;
+    gap: 40px;
+  }
+
+  .feature-item.reverse .feature-text {
+    order: 1;
+  }
+
+  .feature-item.reverse .feature-visual {
+    order: 2;
+  }
+
+  .roadmap-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .footer-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+  }
+
+  .section {
+    padding: 80px 24px;
+  }
+
+  .bento-section {
+    padding: 80px 24px;
+  }
+
+  .features-section {
+    padding: 80px 24px;
+  }
+
+  .models-section {
+    padding: 80px 24px;
+  }
+
+  .roadmap-section {
+    padding: 80px 24px;
+  }
+
+  .cta-section {
+    padding: 60px 24px;
+  }
+
+  footer {
+    padding: 60px 24px 32px;
+  }
+}
+
+/* ================================================
+   RESPONSIVE — MOBILE (768px)
+   ================================================ */
+@media (max-width: 768px) {
+  .bento-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .card-chat, .card-models-count, .card-speed, .card-network,
+  .card-token, .card-wallet, .card-telegram {
+    grid-column: 1;
+    grid-row: auto;
+  }
+
+  .roadmap-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .footer-grid {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+
+  .footer-bottom {
+    flex-direction: column;
+    gap: 12px;
+    text-align: center;
+  }
+
+  .hero {
+    padding: 100px 20px 80px;
+  }
+
+  .cta-card {
+    padding: 48px 24px;
+  }
+}
+
+/* ================================================
+   RESPONSIVE — MOBILE SMALL (480px)
+   ================================================ */
+@media (max-width: 480px) {
+  .hero-ctas {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .btn-primary, .btn-ghost {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .cta-buttons {
+    flex-direction: column;
+    width: 100%;
+    max-width: 320px;
+    margin: 0 auto;
+  }
+
+  .cta-buttons .btn-primary,
+  .cta-buttons .btn-ghost {
+    width: 100%;
+    justify-content: center;
+  }
+
+  nav {
+    padding: 0 16px;
+  }
 }
 </style>
 </head>
 <body>
 
-<!-- NAV -->
+<!-- ================================================
+     NAVIGATION
+     ================================================ -->
 <nav>
-  <a href="/" class="logo">ORLIX</a>
+  <a href="#" class="nav-logo">ORLIX</a>
+
   <div class="nav-center">
     <a href="#features">Features</a>
+    <a href="#models">Models</a>
     <a href="docs.html">Docs</a>
-    <a href="#roadmap">Roadmap</a>
     <a href="changelog.html">Changelog</a>
+    <a href="#roadmap">Roadmap</a>
   </div>
+
   <div class="nav-right">
-    <span class="nav-ticker">$ORLIX · BASE MAINNET</span>
-    <a href="app.html" class="nav-cta">Launch App</a>
-    <button class="ham" onclick="document.querySelector('.mob-nav').classList.toggle('open')" aria-label="Menu">
-      <span></span><span></span><span></span>
+    <span class="badge-beta">Beta</span>
+    <a href="app.html" class="nav-cta">Launch App →</a>
+    <button class="ham" id="ham" aria-label="Menu">
+      <span></span>
+      <span></span>
+      <span></span>
     </button>
   </div>
 </nav>
 
-<div class="mob-nav">
+<div class="mob-nav" id="mobNav">
   <a href="#features">Features</a>
+  <a href="#models">Models</a>
   <a href="docs.html">Docs</a>
-  <a href="#roadmap">Roadmap</a>
   <a href="changelog.html">Changelog</a>
-  <a href="app.html" class="nav-cta">Launch App</a>
+  <a href="#roadmap">Roadmap</a>
+  <a href="app.html" class="mob-cta">Launch App →</a>
 </div>
 
-<!-- HERO -->
+<!-- ================================================
+     HERO
+     ================================================ -->
 <section class="hero">
-  <div class="hero-main">
-    <div class="hero-eyebrow">
-      <div class="eyebrow-left">
-        <span>NEURAL COMMAND LAYER</span>
-        <div class="eyebrow-live"><span class="live-dot"></span>LIVE ON BASE</div>
-      </div>
-      <div class="eyebrow-right">orlixai.xyz · @orlixai_bot</div>
+  <div class="hero-content">
+    <div class="hero-eyebrow fade-up">Personal AI Operating System</div>
+
+    <h1 class="fade-up fade-up-d1">
+      The command layer<br>
+      for your <span class="gradient-text">digital life.</span>
+    </h1>
+
+    <p class="hero-sub fade-up fade-up-d2">
+      One interface to run 19 frontier AI models alongside onchain intelligence — token analysis, wallet monitoring, and a Telegram bot all in one place.
+    </p>
+
+    <div class="hero-ctas fade-up fade-up-d3">
+      <a href="app.html" class="btn-primary">Start for free →</a>
+      <a href="#features" class="btn-ghost">See how it works</a>
     </div>
-    <div class="hero-content">
-      <div>
-        <h1>
-          The AI<br>
-          <span class="accent">Command</span>
-          <span class="outline">Layer.</span>
-        </h1>
-      </div>
-      <div class="hero-body">
-        <p>Orlix is not a chatbot. It's a full AI operating layer — streaming responses, on-chain token analysis, real-time wallet monitoring, and web search. Built for operators.</p>
-        <div class="cta-inline">
-          <a href="app.html" class="btn-orange">Launch Orlix AI →</a>
-          <a href="https://t.me/orlixai_bot" class="btn-blk">@orlixai_bot on Telegram</a>
-        </div>
-      </div>
+
+    <div class="hero-stats fade-up fade-up-d4">
+      <span>19 models</span>
+      <div class="dot"></div>
+      <span>Base network</span>
+      <div class="dot"></div>
+      <span>0 setup</span>
+      <div class="dot"></div>
+      <span>Free beta</span>
     </div>
   </div>
 
-  <div class="hero-sidebar">
-    <div class="sidebar-block">
-      <div>
-        <div class="sb-tag">New · Token Analyzer</div>
-        <h3>Scan any Base token in seconds.</h3>
-        <p>Price, liquidity, volume, buy/sell pressure + AI security verdict. SAFE to SCAM LIKELY.</p>
-        <div class="sb-cmd">/analyze 0x...</div>
+  <div class="scroll-indicator">
+    <div class="scroll-mouse">
+      <div class="scroll-dot"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================================================
+     MODEL MARQUEE
+     ================================================ -->
+<section class="marquee-section">
+  <p class="marquee-label">19 AI models across all major providers</p>
+  <div class="marquee-track-wrap">
+    <div class="marquee-track" id="marqueeTrack">
+      <!-- Items duplicated for seamless loop via JS -->
+      <div class="model-chip"><span class="chip-dot" style="background:#FF8060"></span>Claude Opus 4.8</div>
+      <div class="model-chip"><span class="chip-dot" style="background:#FF8060"></span>Claude Sonnet 4.6</div>
+      <div class="model-chip"><span class="chip-dot" style="background:#FF8060"></span>Claude Haiku 4.5</div>
+      <div class="model-chip"><span class="chip-dot" style="background:#FF8060"></span>Claude Fable 5</div>
+      <div class="model-chip"><span class="chip-dot" style="background:#74AA9C"></span>GPT-4o</div>
+      <div class="model-chip"><span class="chip-dot" style="background:#74AA9C"></span>GPT-4o Mini</div>
+      <div class="model-chip"><span class="chip-dot" style="background:#74AA9C"></span>o3 Mini</div>
+      <div class="model-chip"><span class="chip-dot" style="background:#4285F4"></span>Gemini 2.5 Pro</div>
+      <div class="model-chip"><span class="chip-dot" style="background:#4285F4"></span>Gemini 2.5 Flash</div>
+      <div class="model-chip"><span class="chip-dot" style="background:#4285F4"></span>Gemini 2.0 Flash</div>
+      <div class="model-chip"><span class="chip-dot" style="background:#AAAAAA"></span>Grok 3</div>
+      <div class="model-chip"><span class="chip-dot" style="background:#AAAAAA"></span>Grok 3 Mini</div>
+      <div class="model-chip"><span class="chip-dot" style="background:#0065BD"></span>Llama 3.3 70B</div>
+      <div class="model-chip"><span class="chip-dot" style="background:#FF6A00"></span>Mistral Large</div>
+      <div class="model-chip"><span class="chip-dot" style="background:#4BC3FF"></span>Deepseek R1</div>
+      <div class="model-chip"><span class="chip-dot" style="background:#4BC3FF"></span>Deepseek V3</div>
+      <div class="model-chip"><span class="chip-dot" style="background:#FF6400"></span>Qwen QwQ 32B</div>
+      <div class="model-chip"><span class="chip-dot" style="background:#A78BFA"></span>Kimi K2</div>
+      <div class="model-chip"><span class="chip-dot" style="background:#FF9900"></span>Nova Micro</div>
+      <!-- Duplicate set for seamless loop -->
+      <div class="model-chip"><span class="chip-dot" style="background:#FF8060"></span>Claude Opus 4.8</div>
+      <div class="model-chip"><span class="chip-dot" style="background:#FF8060"></span>Claude Sonnet 4.6</div>
+      <div class="model-chip"><span class="chip-dot" style="background:#FF8060"></span>Claude Haiku 4.5</div>
+      <div class="model-chip"><span class="chip-dot" style="background:#FF8060"></span>Claude Fable 5</div>
+      <div class="model-chip"><span class="chip-dot" style="background:#74AA9C"></span>GPT-4o</div>
+      <div class="model-chip"><span class="chip-dot" style="background:#74AA9C"></span>GPT-4o Mini</div>
+      <div class="model-chip"><span class="chip-dot" style="background:#74AA9C"></span>o3 Mini</div>
+      <div class="model-chip"><span class="chip-dot" style="background:#4285F4"></span>Gemini 2.5 Pro</div>
+      <div class="model-chip"><span class="chip-dot" style="background:#4285F4"></span>Gemini 2.5 Flash</div>
+      <div class="model-chip"><span class="chip-dot" style="background:#4285F4"></span>Gemini 2.0 Flash</div>
+      <div class="model-chip"><span class="chip-dot" style="background:#AAAAAA"></span>Grok 3</div>
+      <div class="model-chip"><span class="chip-dot" style="background:#AAAAAA"></span>Grok 3 Mini</div>
+      <div class="model-chip"><span class="chip-dot" style="background:#0065BD"></span>Llama 3.3 70B</div>
+      <div class="model-chip"><span class="chip-dot" style="background:#FF6A00"></span>Mistral Large</div>
+      <div class="model-chip"><span class="chip-dot" style="background:#4BC3FF"></span>Deepseek R1</div>
+      <div class="model-chip"><span class="chip-dot" style="background:#4BC3FF"></span>Deepseek V3</div>
+      <div class="model-chip"><span class="chip-dot" style="background:#FF6400"></span>Qwen QwQ 32B</div>
+      <div class="model-chip"><span class="chip-dot" style="background:#A78BFA"></span>Kimi K2</div>
+      <div class="model-chip"><span class="chip-dot" style="background:#FF9900"></span>Nova Micro</div>
+    </div>
+  </div>
+</section>
+
+<!-- ================================================
+     BENTO GRID (Features)
+     ================================================ -->
+<section class="bento-section" id="features">
+  <div style="max-width:1200px;margin:0 auto 48px">
+    <div class="section-eyebrow fade-up">Everything you need</div>
+    <h2 class="section-title fade-up fade-up-d1">One OS. Infinite intelligence.</h2>
+    <p class="section-desc fade-up fade-up-d2">From frontier AI chat to real-time onchain data — Orlix brings every tool into a single, beautifully unified interface.</p>
+  </div>
+
+  <div class="bento-grid">
+
+    <!-- Card 1: AI Chat (large) -->
+    <div class="bento-card card-chat fade-up">
+      <div class="card-label">
+        <span class="label-dot"></span>
+        AI Chat · Live
       </div>
-      <div class="sb-stat">
-        <span class="n">∞</span>
-        <span class="l">Tokens supported</span>
+
+      <div class="chat-messages">
+        <div class="chat-msg user">
+          <div class="chat-avatar avatar-user">U</div>
+          <div class="chat-bubble bubble-user">
+            What's the current sentiment on $BRETT on Base? Compare with $DEGEN liquidity.
+          </div>
+        </div>
+
+        <div class="chat-msg">
+          <div class="chat-avatar avatar-ai">AI</div>
+          <div class="chat-bubble bubble-ai">
+            Analyzing Base network data for $BRETT and $DEGEN...<br><br>
+            <span class="highlight">$BRETT</span> — Price: $0.1847 · 24h: <span style="color:var(--green)">+12.4%</span> · Liq: $8.2M<br>
+            <span class="highlight">$DEGEN</span> — Price: $0.00831 · 24h: <span style="color:var(--red)">-3.1%</span> · Liq: $14.7M<br><br>
+            Sentiment on $BRETT is strongly bullish — on-chain accumulation patterns show whale addresses adding positions over the last 6 hours. $DEGEN shows higher liquidity but weaker momentum. My verdict: <span style="color:var(--green)">BRETT has the edge</span> short-term.
+          </div>
+        </div>
+      </div>
+
+      <div class="chat-input-bar">
+        <span>Ask anything about Base tokens, wallets, or any topic…</span>
+        <div class="chat-send">→</div>
       </div>
     </div>
-    <div class="sidebar-block">
-      <div>
-        <div class="sb-tag">New · Wallet Watcher</div>
-        <h3>Monitor any wallet. Live.</h3>
-        <p>Real-time ETH balance and transaction alerts every 12 seconds. Browser notifications.</p>
-        <div class="sb-cmd">/watch 0x...</div>
-      </div>
-      <div class="sb-stat">
-        <span class="n">12s</span>
-        <span class="l">Poll interval</span>
+
+    <!-- Card 2: 19 Models -->
+    <div class="bento-card card-models-count fade-up fade-up-d1">
+      <div class="card-label">Models available</div>
+      <div class="models-count-big">19</div>
+      <div class="models-count-label">frontier AI models</div>
+      <div class="provider-tags">
+        <span class="provider-tag">Anthropic</span>
+        <span class="provider-tag">OpenAI</span>
+        <span class="provider-tag">Google</span>
+        <span class="provider-tag">xAI</span>
+        <span class="provider-tag">Meta</span>
+        <span class="provider-tag">Mistral</span>
+        <span class="provider-tag">Deepseek</span>
+        <span class="provider-tag">Alibaba</span>
       </div>
     </div>
-    <div class="sidebar-block">
-      <div>
-        <div class="sb-tag">Models Available</div>
-        <h3>19 AI models across 7 providers.</h3>
-        <p>Claude, Gemini, GPT-4o, Groq, Mimo, DeepSeek — streaming and switching in one click.</p>
+
+    <!-- Card 3: Speed -->
+    <div class="bento-card card-speed fade-up fade-up-d2">
+      <div class="card-label">Response speed</div>
+      <div class="speed-big">&lt;1s</div>
+      <div class="speed-label">first token latency</div>
+      <div class="speed-bar-wrap">
+        <div class="speed-bar-row">
+          <span>Haiku</span>
+          <div class="speed-bar"><div class="speed-bar-fill" style="width:95%"></div></div>
+          <span>0.4s</span>
+        </div>
+        <div class="speed-bar-row">
+          <span>Sonnet</span>
+          <div class="speed-bar"><div class="speed-bar-fill" style="width:80%;background:var(--orange)"></div></div>
+          <span>0.7s</span>
+        </div>
+        <div class="speed-bar-row">
+          <span>Opus</span>
+          <div class="speed-bar"><div class="speed-bar-fill" style="width:65%;background:var(--purple)"></div></div>
+          <span>0.9s</span>
+        </div>
       </div>
-      <div class="sb-stat">
-        <span class="n">19</span>
-        <span class="l">Models available</span>
+    </div>
+
+    <!-- Card 4: Base Network -->
+    <div class="bento-card card-network fade-up fade-up-d3">
+      <div class="network-icon">🔷</div>
+      <div class="network-title">Base Network</div>
+      <div class="network-desc">Native onchain tools built for the Base ecosystem.</div>
+      <div class="network-badge">
+        <span style="width:5px;height:5px;border-radius:50%;background:var(--blue);display:inline-block"></span>
+        Layer 2
+      </div>
+    </div>
+
+    <!-- Card 5: Token Analyzer -->
+    <div class="bento-card card-token fade-up">
+      <div class="card-label">Token Analyzer</div>
+
+      <div class="token-header">
+        <div class="token-name">Brett</div>
+        <div class="token-ticker">$BRETT</div>
+      </div>
+
+      <div class="token-price">$0.1847</div>
+      <div class="token-change-pos">▲ +12.4% (24h)</div>
+
+      <div class="token-stats-row">
+        <div class="token-stat">
+          <div class="token-stat-label">Liquidity</div>
+          <div class="token-stat-val">$8.2M</div>
+        </div>
+        <div class="token-stat">
+          <div class="token-stat-label">Vol 24h</div>
+          <div class="token-stat-val">$1.4M</div>
+        </div>
+        <div class="token-stat">
+          <div class="token-stat-label">Holders</div>
+          <div class="token-stat-val">42.3K</div>
+        </div>
+        <div class="token-stat">
+          <div class="token-stat-label">Mkt Cap</div>
+          <div class="token-stat-val">$184M</div>
+        </div>
+      </div>
+
+      <div class="ai-verdict">
+        <span class="verdict-icon">✦</span>
+        AI Verdict: Strong accumulation signal detected
+      </div>
+    </div>
+
+    <!-- Card 6: Wallet Watcher -->
+    <div class="bento-card card-wallet fade-up fade-up-d1">
+      <div class="card-label">Wallet Watcher</div>
+      <div class="wallet-title">Watching: Vitalik.eth</div>
+      <div class="wallet-addr">0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045</div>
+
+      <div class="tx-list">
+        <div class="tx-item">
+          <div class="tx-arrow tx-in">↓</div>
+          <div class="tx-info">
+            <div class="tx-type">Received ETH</div>
+            <div class="tx-hash">0x4f2a…b91e</div>
+          </div>
+          <div class="tx-meta">
+            <div class="tx-amount" style="color:var(--green)">+2.41 ETH</div>
+            <div class="tx-time">3 min ago</div>
+          </div>
+        </div>
+
+        <div class="tx-item">
+          <div class="tx-arrow tx-out">↑</div>
+          <div class="tx-info">
+            <div class="tx-type">Sent USDC</div>
+            <div class="tx-hash">0xa12c…3f7d</div>
+          </div>
+          <div class="tx-meta">
+            <div class="tx-amount" style="color:var(--red)">-5,000 USDC</div>
+            <div class="tx-time">11 min ago</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 7: Telegram -->
+    <div class="bento-card card-telegram fade-up fade-up-d2">
+      <div class="tg-title">Telegram Bot</div>
+      <div class="tg-desc">Full Orlix power, straight in your chat.</div>
+
+      <div class="cmd-list">
+        <div class="cmd-item">
+          <span class="cmd-code cmd-orange">/analyze</span>
+          <span class="cmd-desc">Deep AI analysis on any Base token by address or ticker</span>
+        </div>
+        <div class="cmd-item">
+          <span class="cmd-code cmd-green">/watch</span>
+          <span class="cmd-desc">Track any wallet and get instant transaction alerts</span>
+        </div>
+        <div class="cmd-item">
+          <span class="cmd-code cmd-purple">/ask</span>
+          <span class="cmd-desc">Chat with Claude, GPT-4o, Gemini — all 19 models inline</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ================================================
+     FEATURE HIGHLIGHTS (Alternating)
+     ================================================ -->
+<section class="features-section">
+  <div class="features-inner">
+
+    <!-- Feature 1: Multi-model AI -->
+    <div class="feature-item fade-up">
+      <div class="feature-text">
+        <div class="feature-eyebrow">Multi-model AI</div>
+        <h3 class="feature-title">Switch models mid-conversation. Instantly.</h3>
+        <p class="feature-desc">
+          Orlix routes your queries to the best available model in real time. Need raw speed? Switch to Haiku. Tackling something complex? Drop into Opus or o3. One interface, total flexibility.
+        </p>
+        <ul class="feature-points">
+          <li>19 frontier models from 10 leading providers</li>
+          <li>Model switching without losing context</li>
+          <li>Streaming responses with sub-second first tokens</li>
+          <li>No API keys needed — just sign in and go</li>
+        </ul>
+      </div>
+      <div class="feature-visual">
+        <div class="terminal-visual">
+          <div class="terminal-bar">
+            <div class="terminal-dots">
+              <span class="tdot-r"></span>
+              <span class="tdot-y"></span>
+              <span class="tdot-g"></span>
+            </div>
+            <div class="terminal-title">orlix — model switcher</div>
+          </div>
+          <div class="terminal-body">
+            <div class="t-line"><span class="t-prompt">$</span><span class="t-cmd">&nbsp;orlix chat --model claude-opus</span></div>
+            <div class="t-line"><span class="t-output" style="color:var(--text-3)">▸ Connected to <span class="t-model">claude-opus-4.8</span></span></div>
+            <div class="t-line">&nbsp;</div>
+            <div class="t-line"><span class="t-prompt">$</span><span class="t-cmd">&nbsp;/switch gpt-4o</span></div>
+            <div class="t-line"><span class="t-output" style="color:var(--text-3)">▸ Switched to <span class="t-model">gpt-4o</span> · context preserved</span></div>
+            <div class="t-line">&nbsp;</div>
+            <div class="t-line"><span class="t-prompt">$</span><span class="t-cmd">&nbsp;/switch gemini-2.5-pro</span></div>
+            <div class="t-line"><span class="t-output" style="color:var(--text-3)">▸ Now using <span class="t-model">gemini-2.5-pro</span></span></div>
+            <div class="t-line">&nbsp;</div>
+            <div class="t-line"><span class="t-prompt">$</span><span class="t-cmd">&nbsp;What do you think about this codebase?</span></div>
+            <div class="t-line"><span class="t-output">▸ Analyzing… <span class="t-cursor"></span></span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Feature 2: Onchain Tools -->
+    <div class="feature-item reverse fade-up">
+      <div class="feature-text">
+        <div class="feature-eyebrow">Onchain Intelligence</div>
+        <h3 class="feature-title">Real-time Base network data, AI-interpreted.</h3>
+        <p class="feature-desc">
+          Orlix fuses live onchain data with frontier AI so you can ask natural language questions about wallets, tokens, and transactions — and get answers that actually make sense.
+        </p>
+        <ul class="feature-points">
+          <li>Token analyzer with AI-powered verdict system</li>
+          <li>Wallet watcher with real-time transaction alerts</li>
+          <li>Natural language onchain queries</li>
+          <li>Base network native — L2 speed, L1 security</li>
+        </ul>
+      </div>
+      <div class="feature-visual">
+        <div class="wallet-visual">
+          <div class="wallet-visual-header">
+            <div class="wallet-visual-title">Active Wallets</div>
+            <div class="wv-status">
+              <span class="wv-status-dot"></span>
+              Monitoring 3 wallets
+            </div>
+          </div>
+          <div class="wallet-tx-list">
+            <div class="wv-tx">
+              <div class="wv-tx-icon tx-in">↓</div>
+              <div class="wv-info">
+                <div class="wv-name">Received $BRETT</div>
+                <div class="wv-sub">0xd8dA…6045 · 2 min ago</div>
+              </div>
+              <div class="wv-val">
+                <div class="wv-amount" style="color:var(--green)">+84,200</div>
+                <div class="wv-usd">≈ $15,540</div>
+              </div>
+            </div>
+            <div class="wv-tx">
+              <div class="wv-tx-icon tx-out">↑</div>
+              <div class="wv-info">
+                <div class="wv-name">Swapped ETH → USDC</div>
+                <div class="wv-sub">0x742d…35Cc · 7 min ago</div>
+              </div>
+              <div class="wv-val">
+                <div class="wv-amount" style="color:var(--red)">-1.5 ETH</div>
+                <div class="wv-usd">≈ $5,715</div>
+              </div>
+            </div>
+            <div class="wv-tx">
+              <div class="wv-tx-icon" style="background:var(--purple-dim);color:var(--purple);border:1px solid rgba(167,139,250,0.15)">⟳</div>
+              <div class="wv-info">
+                <div class="wv-name">LP Position Added</div>
+                <div class="wv-sub">0x1a4b…9f12 · 14 min ago</div>
+              </div>
+              <div class="wv-val">
+                <div class="wv-amount" style="color:var(--purple)">+LP</div>
+                <div class="wv-usd">$3,200 range</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ================================================
+     MODELS GRID
+     ================================================ -->
+<section class="models-section" id="models">
+  <div style="max-width:1200px;margin:0 auto">
+    <div class="section-header center" style="margin-bottom:48px">
+      <div class="section-eyebrow" style="justify-content:center">
+        <span style="width:16px;height:2px;background:var(--orange);border-radius:2px;display:inline-block"></span>
+        Model library
+      </div>
+      <h2 class="section-title fade-up">19 frontier models. All in one place.</h2>
+      <p class="section-desc fade-up fade-up-d1">Every leading AI model — no juggling accounts, no separate subscriptions. Pick the right model for every task.</p>
+    </div>
+
+    <div class="models-grid">
+      <!-- Anthropic -->
+      <div class="model-card fade-up">
+        <div class="model-icon icon-anthropic">✦</div>
+        <div class="model-info">
+          <div class="model-name">Claude Opus 4.8</div>
+          <div class="model-provider">Anthropic</div>
+        </div>
+        <span class="model-tag tag-best">BEST</span>
+      </div>
+      <div class="model-card fade-up fade-up-d1">
+        <div class="model-icon icon-anthropic">✦</div>
+        <div class="model-info">
+          <div class="model-name">Claude Sonnet 4.6</div>
+          <div class="model-provider">Anthropic</div>
+        </div>
+        <span class="model-tag tag-fast">FAST</span>
+      </div>
+      <div class="model-card fade-up fade-up-d2">
+        <div class="model-icon icon-anthropic">✦</div>
+        <div class="model-info">
+          <div class="model-name">Claude Haiku 4.5</div>
+          <div class="model-provider">Anthropic</div>
+        </div>
+        <span class="model-tag tag-fast">FAST</span>
+      </div>
+      <div class="model-card fade-up fade-up-d3">
+        <div class="model-icon icon-anthropic">✦</div>
+        <div class="model-info">
+          <div class="model-name">Claude Fable 5</div>
+          <div class="model-provider">Anthropic</div>
+        </div>
+        <span class="model-tag tag-new">NEW</span>
+      </div>
+
+      <!-- OpenAI -->
+      <div class="model-card fade-up">
+        <div class="model-icon icon-openai" style="font-size:0.85rem;font-weight:700;color:var(--text-2)">GPT</div>
+        <div class="model-info">
+          <div class="model-name">GPT-4o</div>
+          <div class="model-provider">OpenAI</div>
+        </div>
+        <span class="model-tag tag-vision">VISION</span>
+      </div>
+      <div class="model-card fade-up fade-up-d1">
+        <div class="model-icon icon-openai" style="font-size:0.85rem;font-weight:700;color:var(--text-2)">GPT</div>
+        <div class="model-info">
+          <div class="model-name">GPT-4o Mini</div>
+          <div class="model-provider">OpenAI</div>
+        </div>
+        <span class="model-tag tag-fast">FAST</span>
+      </div>
+      <div class="model-card fade-up fade-up-d2">
+        <div class="model-icon icon-openai" style="font-size:0.85rem;font-weight:700;color:var(--text-2)">o3</div>
+        <div class="model-info">
+          <div class="model-name">o3 Mini</div>
+          <div class="model-provider">OpenAI</div>
+        </div>
+        <span class="model-tag tag-new">NEW</span>
+      </div>
+
+      <!-- Google -->
+      <div class="model-card fade-up fade-up-d3">
+        <div class="model-icon icon-google" style="font-size:0.85rem;font-weight:700;color:#4285F4">G</div>
+        <div class="model-info">
+          <div class="model-name">Gemini 2.5 Pro</div>
+          <div class="model-provider">Google</div>
+        </div>
+        <span class="model-tag tag-best">BEST</span>
+      </div>
+      <div class="model-card fade-up">
+        <div class="model-icon icon-google" style="font-size:0.85rem;font-weight:700;color:#4285F4">G</div>
+        <div class="model-info">
+          <div class="model-name">Gemini 2.5 Flash</div>
+          <div class="model-provider">Google</div>
+        </div>
+        <span class="model-tag tag-fast">FAST</span>
+      </div>
+      <div class="model-card fade-up fade-up-d1">
+        <div class="model-icon icon-google" style="font-size:0.85rem;font-weight:700;color:#4285F4">G</div>
+        <div class="model-info">
+          <div class="model-name">Gemini 2.0 Flash</div>
+          <div class="model-provider">Google</div>
+        </div>
+        <span class="model-tag tag-fast">FAST</span>
+      </div>
+
+      <!-- xAI -->
+      <div class="model-card fade-up fade-up-d2">
+        <div class="model-icon icon-xai" style="font-size:0.75rem;font-weight:700;color:var(--text-2)">xAI</div>
+        <div class="model-info">
+          <div class="model-name">Grok 3</div>
+          <div class="model-provider">xAI</div>
+        </div>
+        <span class="model-tag tag-best">BEST</span>
+      </div>
+      <div class="model-card fade-up fade-up-d3">
+        <div class="model-icon icon-xai" style="font-size:0.75rem;font-weight:700;color:var(--text-2)">xAI</div>
+        <div class="model-info">
+          <div class="model-name">Grok 3 Mini</div>
+          <div class="model-provider">xAI</div>
+        </div>
+        <span class="model-tag tag-fast">FAST</span>
+      </div>
+
+      <!-- Meta -->
+      <div class="model-card fade-up">
+        <div class="model-icon icon-meta" style="font-size:0.75rem;font-weight:700;color:#0065BD">Meta</div>
+        <div class="model-info">
+          <div class="model-name">Llama 3.3 70B</div>
+          <div class="model-provider">Meta</div>
+        </div>
+        <span class="model-tag tag-fast">FAST</span>
+      </div>
+
+      <!-- Mistral -->
+      <div class="model-card fade-up fade-up-d1">
+        <div class="model-icon icon-mistral" style="font-size:0.7rem;font-weight:700;color:#FF6A00">MST</div>
+        <div class="model-info">
+          <div class="model-name">Mistral Large</div>
+          <div class="model-provider">Mistral</div>
+        </div>
+        <span class="model-tag tag-best">BEST</span>
+      </div>
+
+      <!-- Deepseek -->
+      <div class="model-card fade-up fade-up-d2">
+        <div class="model-icon icon-deepseek" style="font-size:0.7rem;font-weight:700;color:#4BC3FF">DS</div>
+        <div class="model-info">
+          <div class="model-name">Deepseek R1</div>
+          <div class="model-provider">Deepseek</div>
+        </div>
+        <span class="model-tag tag-new">NEW</span>
+      </div>
+      <div class="model-card fade-up fade-up-d3">
+        <div class="model-icon icon-deepseek" style="font-size:0.7rem;font-weight:700;color:#4BC3FF">DS</div>
+        <div class="model-info">
+          <div class="model-name">Deepseek V3</div>
+          <div class="model-provider">Deepseek</div>
+        </div>
+        <span class="model-tag tag-fast">FAST</span>
+      </div>
+
+      <!-- Alibaba -->
+      <div class="model-card fade-up">
+        <div class="model-icon icon-alibaba" style="font-size:0.7rem;font-weight:700;color:#FF6400">ALI</div>
+        <div class="model-info">
+          <div class="model-name">Qwen QwQ 32B</div>
+          <div class="model-provider">Alibaba</div>
+        </div>
+        <span class="model-tag tag-new">NEW</span>
+      </div>
+
+      <!-- Moonshot -->
+      <div class="model-card fade-up fade-up-d1">
+        <div class="model-icon icon-moonshot" style="font-size:0.85rem">🌙</div>
+        <div class="model-info">
+          <div class="model-name">Kimi K2</div>
+          <div class="model-provider">Moonshot</div>
+        </div>
+        <span class="model-tag tag-new">NEW</span>
+      </div>
+
+      <!-- Amazon -->
+      <div class="model-card fade-up fade-up-d2">
+        <div class="model-icon icon-amazon" style="font-size:0.7rem;font-weight:700;color:#FF9900">AWS</div>
+        <div class="model-info">
+          <div class="model-name">Nova Micro</div>
+          <div class="model-provider">Amazon</div>
+        </div>
+        <span class="model-tag tag-fast">FAST</span>
       </div>
     </div>
   </div>
 </section>
 
-<!-- TICKER -->
-<div class="ticker-wrap">
-  <div class="ticker">
-    <span>Token Analyzer</span><span>Wallet Watcher</span><span>Streaming AI</span><span>Web Search</span><span>Vision Upload</span><span>Chat History</span><span>Telegram Bot</span><span>Base Network</span><span>19 AI Models</span>
-    <span>Token Analyzer</span><span>Wallet Watcher</span><span>Streaming AI</span><span>Web Search</span><span>Vision Upload</span><span>Chat History</span><span>Telegram Bot</span><span>Base Network</span><span>19 AI Models</span>
-  </div>
-</div>
-
-<!-- FEATURES -->
-<div class="section-head" id="features">
-  <h2>Core Features</h2>
-  <div class="line"></div>
-  <span class="meta">40+ UPDATES SHIPPED</span>
-</div>
-<div class="feat-row">
-  <div class="feat">
-    <div class="feat-num">01</div>
-    <div class="feat-label">Crypto Intelligence</div>
-    <h3>Token Analyzer</h3>
-    <p>Paste any Base contract. Get full market data and AI security analysis in seconds.</p>
-    <span class="feat-pill">DexScreener + Claude AI</span>
-  </div>
-  <div class="feat">
-    <div class="feat-num">02</div>
-    <div class="feat-label">On-Chain Monitoring</div>
-    <h3>Wallet Watcher</h3>
-    <p>Real-time balance and transaction alerts for any wallet on Base Mainnet.</p>
-    <span class="feat-pill">Live · Every 12s</span>
-  </div>
-  <div class="feat">
-    <div class="feat-num">03</div>
-    <div class="feat-label">Mobile Access</div>
-    <h3>Telegram Bot</h3>
-    <p>Full Orlix AI inside Telegram. /analyze and /watch — or ask anything powered by Claude.</p>
-    <span class="feat-pill">@orlixai_bot</span>
-  </div>
-</div>
-
-<!-- BOTTOM SPLIT -->
-<div class="bottom-split">
-  <div class="split-l">
-    <h2>One app.<br><span>Everything</span><br>you need.</h2>
-    <p>Stop switching between tools. Orlix combines AI chat, crypto analysis, wallet monitoring, and web search in a single interface. No signup. No API key required.</p>
-    <a href="app.html" class="btn-orange">Launch Orlix AI →</a>
-  </div>
-  <div class="split-r">
-    <h3>// Active Providers</h3>
-    <div class="model-list">
-      <div class="model-item"><span class="model-name">Claude Sonnet</span><span class="model-tag">Anthropic</span><div class="model-live"></div></div>
-      <div class="model-item"><span class="model-name">Mimo Hermes</span><span class="model-tag">Mimo</span><div class="model-live"></div></div>
-      <div class="model-item"><span class="model-name">GPT-4o</span><span class="model-tag">OpenAI</span><div class="model-live"></div></div>
-      <div class="model-item"><span class="model-name">Gemini 2.5 Flash</span><span class="model-tag">Google</span><div class="model-live"></div></div>
-      <div class="model-item"><span class="model-name">Llama 3.3 70B</span><span class="model-tag">Groq</span><div class="model-live"></div></div>
+<!-- ================================================
+     ROADMAP
+     ================================================ -->
+<section class="roadmap-section" id="roadmap">
+  <div style="max-width:1200px;margin:0 auto">
+    <div class="section-header center" style="margin-bottom:56px">
+      <div class="section-eyebrow" style="justify-content:center">
+        <span style="width:16px;height:2px;background:var(--orange);border-radius:2px;display:inline-block"></span>
+        Roadmap
+      </div>
+      <h2 class="section-title fade-up">Building the future of AI interfaces.</h2>
+      <p class="section-desc fade-up fade-up-d1">We're moving fast. Here's what we've shipped and what's coming next.</p>
     </div>
-    <span style="font-family:'Space Mono',monospace;font-size:.6rem;color:#333;letter-spacing:.08em">+ 14 MORE MODELS</span>
-  </div>
-</div>
 
-<!-- FOOTER -->
+    <div class="roadmap-grid">
+
+      <!-- Phase 01: Done -->
+      <div class="roadmap-card done fade-up">
+        <div class="phase-label phase-done">✓ Phase 01 — Complete</div>
+        <div class="roadmap-title">Core AI Platform</div>
+        <div class="roadmap-desc">Multi-model chat with streaming, Base network tools, and Telegram integration.</div>
+        <ul class="roadmap-items">
+          <li><span class="ri-dot ri-done"></span>19 AI model integrations</li>
+          <li><span class="ri-dot ri-done"></span>Base token analyzer</li>
+          <li><span class="ri-dot ri-done"></span>Wallet watcher alerts</li>
+          <li><span class="ri-dot ri-done"></span>Telegram bot launch</li>
+        </ul>
+      </div>
+
+      <!-- Phase 02: Active -->
+      <div class="roadmap-card active fade-up fade-up-d1">
+        <div class="phase-label phase-active">◉ Phase 02 — In Progress</div>
+        <div class="roadmap-title">Intelligence Layer</div>
+        <div class="roadmap-desc">Persistent memory, AI agents, and deeper onchain reasoning capabilities.</div>
+        <div class="progress-wrap">
+          <div class="progress-label">
+            <span>Progress</span>
+            <span>60%</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" style="width:60%"></div>
+          </div>
+        </div>
+        <ul class="roadmap-items">
+          <li><span class="ri-dot ri-done"></span>Conversation memory</li>
+          <li><span class="ri-dot ri-active"></span>Autonomous AI agents</li>
+          <li><span class="ri-dot ri-pending"></span>Cross-chain data</li>
+          <li><span class="ri-dot ri-pending"></span>Portfolio tracking</li>
+        </ul>
+      </div>
+
+      <!-- Phase 03: Upcoming -->
+      <div class="roadmap-card fade-up fade-up-d2">
+        <div class="phase-label phase-upcoming">○ Phase 03 — Upcoming</div>
+        <div class="roadmap-title">Social & Collaboration</div>
+        <div class="roadmap-desc">Shared workspaces, model leaderboards, and community-built AI workflows.</div>
+        <ul class="roadmap-items">
+          <li><span class="ri-dot ri-pending"></span>Team workspaces</li>
+          <li><span class="ri-dot ri-pending"></span>Shared prompt library</li>
+          <li><span class="ri-dot ri-pending"></span>Model leaderboard</li>
+          <li><span class="ri-dot ri-pending"></span>Workflow marketplace</li>
+        </ul>
+      </div>
+
+      <!-- Phase 04: Upcoming -->
+      <div class="roadmap-card fade-up fade-up-d3">
+        <div class="phase-label phase-upcoming">○ Phase 04 — Future</div>
+        <div class="roadmap-title">Orlix Protocol</div>
+        <div class="roadmap-desc">Open API, developer platform, and native token for AI resource allocation.</div>
+        <ul class="roadmap-items">
+          <li><span class="ri-dot ri-pending"></span>Public API</li>
+          <li><span class="ri-dot ri-pending"></span>Developer SDK</li>
+          <li><span class="ri-dot ri-pending"></span>Native token</span></li>
+          <li><span class="ri-dot ri-pending"></span>Decentralized compute</li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ================================================
+     CTA SECTION
+     ================================================ -->
+<section class="cta-section">
+  <div class="cta-inner">
+    <div class="cta-card fade-up">
+      <h2 class="cta-title">Ready to upgrade how<br>you use AI?</h2>
+      <p class="cta-sub">Join thousands of users who already run 19 models, track wallets, and analyze onchain data — all in one tab.</p>
+      <div class="cta-buttons">
+        <a href="app.html" class="btn-primary">Start for free →</a>
+        <a href="docs.html" class="btn-ghost">Read the docs</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================================================
+     FOOTER
+     ================================================ -->
 <footer>
-  <div class="f-col">
-    <a href="/" class="f-logo">ORLIX</a>
-    <p>Neural command layer for the onchain era. AI that acts, analyzes, and adapts in real time.</p>
+  <div class="footer-grid">
+    <div class="footer-brand">
+      <div class="logo-text">ORLIX</div>
+      <p class="footer-tagline">Personal AI Operating System — 19 frontier models and onchain intelligence in one unified interface.</p>
+      <div class="social-row">
+        <a href="#" class="social-btn" title="Twitter/X" aria-label="Twitter">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.74l7.73-8.835L1.254 2.25H8.08l4.261 5.635L18.244 2.25zm-1.161 17.52h1.833L7.084 4.126H5.117L17.083 19.77z"/></svg>
+        </a>
+        <a href="#" class="social-btn" title="Telegram" aria-label="Telegram">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.248l-1.97 9.289c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12l-6.871 4.326-2.962-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.833.932z"/></svg>
+        </a>
+        <a href="https://github.com" class="social-btn" title="GitHub" aria-label="GitHub">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+        </a>
+      </div>
+    </div>
+
+    <div class="footer-col">
+      <h4>Product</h4>
+      <ul>
+        <li><a href="app.html">Launch App</a></li>
+        <li><a href="#features">Features</a></li>
+        <li><a href="#models">Models</a></li>
+        <li><a href="docs.html">Documentation</a></li>
+        <li><a href="changelog.html">Changelog</a></li>
+      </ul>
+    </div>
+
+    <div class="footer-col">
+      <h4>Company</h4>
+      <ul>
+        <li><a href="#">About</a></li>
+        <li><a href="#roadmap">Roadmap</a></li>
+        <li><a href="#">Blog</a></li>
+        <li><a href="privacy.html">Privacy Policy</a></li>
+        <li><a href="terms.html">Terms of Service</a></li>
+      </ul>
+    </div>
+
+    <div class="footer-col">
+      <h4>Community</h4>
+      <ul>
+        <li><a href="#">Telegram</a></li>
+        <li><a href="#">Twitter / X</a></li>
+        <li><a href="#">GitHub</a></li>
+        <li><a href="#">Discord</a></li>
+        <li><a href="#">Feature Requests</a></li>
+      </ul>
+    </div>
   </div>
-  <div class="f-col">
-    <h4>Product</h4>
-    <a href="app.html">App Dashboard</a>
-    <a href="changelog.html">Changelog</a>
-    <a href="docs.html">Documentation</a>
-  </div>
-  <div class="f-col">
-    <h4>Community</h4>
-    <a href="https://x.com/orlixai">X / Twitter</a>
-    <a href="https://t.me/orlixai_bot">Telegram Bot</a>
-    <a href="#">$ORLIX Token</a>
-  </div>
-  <div class="f-col">
-    <h4>Legal</h4>
-    <a href="privacy.html">Privacy Policy</a>
-    <a href="terms.html">Terms of Service</a>
+
+  <div class="footer-bottom">
+    <span class="footer-copy">© 2026 Orlix AI · orlixai.xyz · All rights reserved</span>
+    <div class="systems-status">
+      <div class="status-pulse"></div>
+      All systems operational
+    </div>
   </div>
 </footer>
-<div class="f-bar">
-  <span>© 2025 ORLIX AI — ALL RIGHTS RESERVED</span>
-  <span>BASE MAINNET · $ORLIX</span>
-  <span>ORLIXAI.XYZ</span>
-</div>
 
+<!-- ================================================
+     JAVASCRIPT
+     ================================================ -->
 <script>
-document.querySelectorAll('.mob-nav a').forEach(a =>
-  a.addEventListener('click', () => document.querySelector('.mob-nav').classList.remove('open'))
-);
+// Hamburger nav toggle
+(function() {
+  var ham = document.getElementById('ham');
+  var mobNav = document.getElementById('mobNav');
+  if (ham && mobNav) {
+    ham.addEventListener('click', function() {
+      mobNav.classList.toggle('open');
+    });
+    // Close on link click
+    mobNav.querySelectorAll('a').forEach(function(link) {
+      link.addEventListener('click', function() {
+        mobNav.classList.remove('open');
+      });
+    });
+  }
+})();
+
+// Scroll-based fade-up
+(function() {
+  var els = document.querySelectorAll('.fade-up');
+  if (!('IntersectionObserver' in window)) {
+    els.forEach(function(el) { el.classList.add('visible'); });
+    return;
+  }
+  var observer = new IntersectionObserver(function(entries) {
+    entries.forEach(function(entry) {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+
+  els.forEach(function(el) { observer.observe(el); });
+})();
+
+// Marquee: ensure seamless loop by checking track width
+(function() {
+  var track = document.getElementById('marqueeTrack');
+  if (!track) return;
+  // The track already has items duplicated in HTML for seamless CSS animation
+  // Dynamic resize: recalculate animation duration for smooth speed
+  function calibrate() {
+    var chips = track.querySelectorAll('.model-chip');
+    if (chips.length === 0) return;
+    // Already set via CSS animation on .marquee-track
+  }
+  calibrate();
+})();
+
+// Smooth anchor scroll
+document.querySelectorAll('a[href^="#"]').forEach(function(anchor) {
+  anchor.addEventListener('click', function(e) {
+    var target = document.querySelector(this.getAttribute('href'));
+    if (target) {
+      e.preventDefault();
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  });
+});
+
+// Nav shrink on scroll
+(function() {
+  var nav = document.querySelector('nav');
+  if (!nav) return;
+  window.addEventListener('scroll', function() {
+    if (window.scrollY > 60) {
+      nav.style.height = '56px';
+    } else {
+      nav.style.height = '64px';
+    }
+  }, { passive: true });
+})();
 </script>
+
 </body>
 </html>
