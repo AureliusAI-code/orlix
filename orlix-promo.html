@@ -39,16 +39,16 @@ html,body{width:1280px;height:720px;overflow:hidden;background:#09090B;font-fami
 
 /* ── SCENE 1: HOOK ── */
 #s1 .line{overflow:hidden}
-#s1 .line span{display:inline-block;transform:translateY(100%);opacity:0}
+#s1 .line > span{display:inline-block;transform:translateY(100%);opacity:0}
 #s1 .cursor{display:inline-block;width:3px;height:.9em;background:#F07830;vertical-align:text-bottom;margin-left:4px;animation:blink .7s step-end infinite}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
 
 /* ── SCENE 2: CHAOS ── */
-#s2 .app-chaos{position:relative;width:700px;height:380px}
-.app-tab{position:absolute;background:#111113;border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:10px 16px;font-size:13px;font-weight:600;color:#A1A1AA;display:flex;align-items:center;gap:8px;white-space:nowrap;opacity:0;transform:scale(.7) rotate(0deg)}
+.app-grid{display:flex;flex-wrap:wrap;justify-content:center;gap:10px 12px;max-width:620px}
+.app-tab{background:#111113;border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:10px 16px;font-size:13px;font-weight:600;color:#A1A1AA;display:flex;align-items:center;gap:8px;white-space:nowrap;opacity:0;transform:scale(.85) translateY(8px)}
 .tab-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
-.chaos-label{font-size:48px;font-weight:900;color:#FAFAFA;text-align:center;margin-top:24px;opacity:0}
-.chaos-sub{font-size:20px;color:#71717A;text-align:center;margin-top:10px;opacity:0}
+.chaos-label{font-size:52px;font-weight:900;color:#FAFAFA;text-align:center;opacity:0}
+.chaos-sub{font-size:20px;color:#71717A;text-align:center;opacity:0}
 
 /* ── SCENE 3: INTRO ── */
 #s3 .orlix-ring{width:180px;height:180px;border-radius:50%;border:1.5px solid rgba(240,120,48,.3);position:absolute;animation:ring-spin 8s linear infinite}
@@ -162,19 +162,19 @@ html,body{width:1280px;height:720px;overflow:hidden;background:#09090B;font-fami
 
 <!-- ═══ SCENE 2: CHAOS ═══ -->
 <div class="scene bg-dark" id="s2">
-  <div style="display:flex;flex-direction:column;align-items:center">
-    <div class="app-chaos" id="chaosWrap">
-      <div class="app-tab" id="t1" style="top:20px;left:60px;transform:rotate(-4deg)"><span class="tab-dot" style="background:#10a37f"></span>ChatGPT</div>
-      <div class="app-tab" id="t2" style="top:20px;left:280px;transform:rotate(2deg)"><span class="tab-dot" style="background:#b9a4ff"></span>Claude</div>
-      <div class="app-tab" id="t3" style="top:20px;left:460px;transform:rotate(-2deg)"><span class="tab-dot" style="background:#ff9a52"></span>Grok</div>
-      <div class="app-tab" id="t4" style="top:110px;left:30px;transform:rotate(3deg)"><span class="tab-dot" style="background:#4285f4"></span>Gemini</div>
-      <div class="app-tab" id="t5" style="top:110px;left:230px;transform:rotate(-3deg)"><span class="tab-dot" style="background:#4a9eff"></span>DeepSeek</div>
-      <div class="app-tab" id="t6" style="top:110px;left:430px;transform:rotate(2deg)"><span class="tab-dot" style="background:#f97316"></span>Perplexity</div>
-      <div class="app-tab" id="t7" style="top:200px;left:80px;transform:rotate(-2deg)"><span class="tab-dot" style="background:#f07830"></span>DexScreener</div>
-      <div class="app-tab" id="t8" style="top:200px;left:300px;transform:rotate(3deg)"><span class="tab-dot" style="background:#2AABEE"></span>Telegram</div>
-      <div class="app-tab" id="t9" style="top:200px;left:480px;transform:rotate(-1deg)"><span class="tab-dot" style="background:#4ADE80"></span>Basescan</div>
-      <div class="app-tab" id="t10" style="top:295px;left:150px;transform:rotate(2deg)"><span class="tab-dot" style="background:#F87171"></span>Another app...</div>
-      <div class="app-tab" id="t11" style="top:295px;left:380px;transform:rotate(-3deg)"><span class="tab-dot" style="background:#71717A"></span>And another...</div>
+  <div style="display:flex;flex-direction:column;align-items:center;gap:32px">
+    <div class="app-grid" id="chaosWrap">
+      <div class="app-tab" id="t1"><span class="tab-dot" style="background:#10a37f"></span>ChatGPT</div>
+      <div class="app-tab" id="t2"><span class="tab-dot" style="background:#b9a4ff"></span>Claude</div>
+      <div class="app-tab" id="t3"><span class="tab-dot" style="background:#ff9a52"></span>Grok</div>
+      <div class="app-tab" id="t4"><span class="tab-dot" style="background:#4285f4"></span>Gemini</div>
+      <div class="app-tab" id="t5"><span class="tab-dot" style="background:#4a9eff"></span>DeepSeek</div>
+      <div class="app-tab" id="t6"><span class="tab-dot" style="background:#f97316"></span>Perplexity</div>
+      <div class="app-tab" id="t7"><span class="tab-dot" style="background:#f07830"></span>DexScreener</div>
+      <div class="app-tab" id="t8"><span class="tab-dot" style="background:#2AABEE"></span>Telegram</div>
+      <div class="app-tab" id="t9"><span class="tab-dot" style="background:#4ADE80"></span>Basescan</div>
+      <div class="app-tab" id="t10"><span class="tab-dot" style="background:#F87171"></span>Another app...</div>
+      <div class="app-tab" id="t11"><span class="tab-dot" style="background:#71717A"></span>And another...</div>
     </div>
     <div class="chaos-label" id="chaosLabel">Too many apps.</div>
     <div class="chaos-sub" id="chaosSub">Too much switching.</div>
@@ -439,13 +439,13 @@ function animScene2() {
   tabs.forEach((n,i)=>{
     const el = document.getElementById('t'+n);
     if(el) setTimeout(()=>{
-      el.style.transition='all .4s cubic-bezier(.16,1,.3,1)';
+      el.style.transition='all .45s cubic-bezier(.16,1,.3,1)';
       el.style.opacity='1';
-      el.style.transform = el.style.transform.replace('scale(0.7)','scale(1)');
-    }, i*120);
+      el.style.transform='scale(1) translateY(0)';
+    }, i*100);
   });
-  anim(document.getElementById('chaosLabel'),{opacity:'1'},1500,600,'ease');
-  anim(document.getElementById('chaosSub'),{opacity:'1'},2000,600,'ease');
+  anim(document.getElementById('chaosLabel'),{opacity:'1'},1400,600,'ease');
+  anim(document.getElementById('chaosSub'),{opacity:'1'},1900,600,'ease');
 }
 
 function animScene3() {
