@@ -466,6 +466,58 @@ body::before{
 .search-toggle{background:none;border:1px solid var(--line);color:var(--dim);cursor:pointer;padding:3px 8px;font-size:.7rem;border-radius:4px;transition:all .15s;display:flex;align-items:center;gap:4px;font-family:var(--mono)}
 .search-toggle.active{border-color:var(--amber);color:var(--amber);background:rgba(255,154,82,.08)}
 .search-badge{background:var(--amber);color:#000;border-radius:3px;padding:0 3px;font-size:.6rem;font-weight:700}
+
+/* Token Analyzer */
+.analyzer-input-row{display:flex;gap:8px;margin-bottom:16px}
+.analyzer-input-row input{flex:1;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:9px 12px;font-size:.8rem;font-family:monospace}
+.analyzer-input-row input:focus{outline:none;border-color:var(--amber)}
+.analyze-btn{background:var(--amber);color:#000;border:none;border-radius:6px;padding:9px 18px;font-size:.78rem;font-family:monospace;font-weight:700;cursor:pointer;white-space:nowrap}
+.analyze-btn:hover{opacity:.85}
+.analyze-btn:disabled{opacity:.4;cursor:not-allowed}
+.token-result{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;display:flex;flex-direction:column;gap:12px}
+.token-header{display:flex;align-items:center;gap:12px}
+.token-symbol-badge{background:rgba(255,154,82,.12);border:1px solid rgba(255,154,82,.3);color:var(--amber);border-radius:6px;padding:4px 10px;font-size:.9rem;font-weight:700;font-family:monospace}
+.token-name{font-size:.95rem;font-weight:600;color:var(--text)}
+.token-address-small{font-size:.65rem;color:var(--dim);font-family:monospace;word-break:break-all}
+.token-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px}
+.stat-box{background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px 10px}
+.stat-label{font-size:.62rem;color:var(--dim);letter-spacing:.5px;text-transform:uppercase}
+.stat-value{font-size:.88rem;font-weight:600;color:var(--text);font-family:monospace;margin-top:2px}
+.stat-value.positive{color:var(--green)}
+.stat-value.negative{color:var(--red)}
+.verdict-box{border-radius:6px;padding:10px 14px;font-size:.78rem;font-weight:700;letter-spacing:.5px;text-align:center}
+.verdict-safe{background:rgba(126,224,168,.1);border:1px solid rgba(126,224,168,.3);color:var(--green)}
+.verdict-caution{background:rgba(255,154,82,.1);border:1px solid rgba(255,154,82,.3);color:var(--amber)}
+.verdict-risk{background:rgba(255,107,107,.1);border:1px solid rgba(255,107,107,.3);color:var(--red)}
+.ai-analysis-box{background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:12px;font-size:.77rem;color:var(--text);line-height:1.6;white-space:pre-wrap}
+.analyzing-spinner{display:flex;align-items:center;gap:8px;color:var(--dim);font-size:.78rem;padding:20px 0}
+
+/* Wallet Watcher */
+.watcher-input-row{display:flex;gap:8px;margin-bottom:8px}
+.watcher-input-row input{flex:1;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:9px 12px;font-size:.8rem;font-family:monospace}
+.watcher-input-row input:focus{outline:none;border-color:var(--amber)}
+.watch-btn{background:none;border:1px solid var(--amber);color:var(--amber);border-radius:6px;padding:9px 16px;font-size:.76rem;font-family:monospace;font-weight:700;cursor:pointer;white-space:nowrap;transition:all .15s}
+.watch-btn:hover,.watch-btn.active{background:var(--amber);color:#000}
+.watch-btn.stop{border-color:var(--red);color:var(--red)}
+.watch-btn.stop:hover{background:var(--red);color:#fff}
+.watcher-status{display:flex;align-items:center;gap:6px;font-size:.72rem;padding:4px 0;margin-bottom:12px}
+.watcher-dot{width:7px;height:7px;border-radius:50%;background:var(--dim)}
+.watcher-dot.active{background:var(--green);box-shadow:0 0 6px var(--green);animation:pulse-dot 1.5s ease-in-out infinite}
+@keyframes pulse-dot{0%,100%{opacity:1}50%{opacity:.4}}
+.tx-feed{display:flex;flex-direction:column;gap:8px;max-height:420px;overflow-y:auto}
+.tx-card-w{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 12px}
+.tx-card-w.new{border-color:var(--amber);animation:flash-border .8s ease}
+@keyframes flash-border{0%{border-color:var(--amber);box-shadow:0 0 12px rgba(255,154,82,.3)}100%{border-color:var(--border);box-shadow:none}}
+.tx-type-badge{display:inline-block;padding:2px 7px;border-radius:4px;font-size:.62rem;font-weight:700;letter-spacing:.5px;margin-bottom:6px}
+.tx-type-in{background:rgba(126,224,168,.12);color:var(--green)}
+.tx-type-out{background:rgba(255,107,107,.12);color:var(--red)}
+.tx-type-contract{background:rgba(74,158,255,.12);color:#4a9eff}
+.tx-hash-link{font-size:.65rem;color:var(--dim);font-family:monospace;text-decoration:none}
+.tx-hash-link:hover{color:var(--amber)}
+.tx-ai-explain{font-size:.74rem;color:var(--dim);margin-top:6px;line-height:1.5;font-style:italic}
+.tx-meta{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.tx-value{font-size:.82rem;font-weight:600;font-family:monospace}
+.tx-time{font-size:.62rem;color:var(--dim)}
 </style>
 </head>
 <body>
@@ -521,6 +573,11 @@ body::before{
     <div class="sb-sect">
       <span class="sb-label">config</span>
       <div class="sb-item" data-view="settings"><span class="ic">S</span>settings</div>
+    </div>
+    <div class="sb-sect">
+      <span class="sb-label">crypto tools</span>
+      <div class="sb-item" data-view="token-analyzer"><span class="ic">🪙</span>token analyzer</div>
+      <div class="sb-item" data-view="wallet-watcher"><span class="ic">🔔</span>wallet watcher</div>
     </div>
     <div class="sb-footer">
       <div class="sb-ver"><span class="sb-status"></span>Mimo engine active<br>orlix v0.6.0 · local-first</div>
@@ -975,6 +1032,38 @@ body::before{
       <div class="panel">
         <div class="panel-hd"><span class="ttl">⭐ highest quality scores</span></div>
         <div class="panel-body" id="lb-quality"></div>
+      </div>
+    </div>
+
+    <div class="view" id="view-token-analyzer">
+      <div class="page-hd">
+        <div class="file">$ orlix analyze --token</div>
+        <h1>🪙 token analyzer</h1>
+        <div class="sub">Paste any contract address for instant AI analysis</div>
+      </div>
+      <div class="analyzer-input-row">
+        <input type="text" id="analyzerInput" placeholder="0x... contract address (Base network)" spellcheck="false">
+        <button class="analyze-btn" id="analyzeBtn" onclick="runAnalysis()">Analyze →</button>
+      </div>
+      <div id="analyzerResult"></div>
+    </div>
+
+    <div class="view" id="view-wallet-watcher">
+      <div class="page-hd">
+        <div class="file">$ orlix watch --wallet</div>
+        <h1>🔔 wallet watcher</h1>
+        <div class="sub">Monitor any Base wallet in real-time</div>
+      </div>
+      <div class="watcher-input-row">
+        <input type="text" id="watcherInput" placeholder="0x... wallet address" spellcheck="false">
+        <button class="watch-btn" id="watchBtn" onclick="toggleWatcher()">▶ Watch</button>
+      </div>
+      <div class="watcher-status">
+        <div class="watcher-dot" id="watcherDot"></div>
+        <span id="watcherStatusText">Not watching</span>
+      </div>
+      <div class="tx-feed" id="txFeed">
+        <div style="color:var(--dim-2);font-size:.75rem;text-align:center;padding:20px 0">Enter a wallet address above and click Watch to start monitoring</div>
       </div>
     </div>
 
@@ -2525,6 +2614,269 @@ value field must be in wei (ETH×10^18). data field for contract calls (0x for p
 4. After the transaction block, explain in 1-2 sentences what will happen.
 NEVER make up addresses. If you don't have the recipient address, ask for it.`;
 
+// ── TOKEN ANALYZER ─────────
+async function runAnalysis() {
+  const input = document.getElementById('analyzerInput');
+  const result = document.getElementById('analyzerResult');
+  const btn = document.getElementById('analyzeBtn');
+  const address = input.value.trim().toLowerCase();
+
+  if (!/^0x[0-9a-f]{40}$/i.test(address)) {
+    result.innerHTML = '<div style="color:var(--red);font-size:.78rem;padding:8px 0">⚠ Invalid address. Must be 0x followed by 40 hex characters.</div>';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Analyzing...';
+  result.innerHTML = '<div class="analyzing-spinner"><span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span><span style="margin-left:6px">Fetching on-chain data + AI analysis…</span></div>';
+
+  try {
+    const r = await fetch('/api/analyze?address=' + address);
+    const data = await r.json();
+    if (data.error) throw new Error(data.error);
+    result.innerHTML = renderAnalysisResult(data);
+  } catch (e) {
+    result.innerHTML = `<div style="color:var(--red);font-size:.78rem;padding:8px 0">⚠ Error: ${esc(e.message)}</div>`;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Analyze →';
+  }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  const analyzerInputEl = document.getElementById('analyzerInput');
+  if (analyzerInputEl) {
+    analyzerInputEl.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') runAnalysis();
+    });
+  }
+});
+
+function renderAnalysisResult(data) {
+  const t = data.tokenInfo || {};
+  const d = data.dexInfo;
+  const analysis = data.analysis || '';
+
+  // Extract verdict from AI analysis text
+  let verdictClass = 'verdict-caution';
+  let verdictText = '⚠ ANALYSIS COMPLETE';
+  const upper = analysis.toUpperCase();
+  if (upper.includes('SCAM LIKELY') || upper.includes('HIGH RISK')) {
+    verdictClass = 'verdict-risk'; verdictText = '🔴 HIGH RISK / SCAM LIKELY';
+  } else if (upper.includes('CAUTION')) {
+    verdictClass = 'verdict-caution'; verdictText = '🟡 CAUTION';
+  } else if (upper.includes('SAFE') && !upper.includes('NOT SAFE')) {
+    verdictClass = 'verdict-safe'; verdictText = '🟢 SAFE';
+  }
+
+  const fmt = n => n ? '$' + Number(n).toLocaleString(undefined, {maximumFractionDigits: 2}) : 'N/A';
+  const pct = n => n !== undefined ? (n > 0 ? '+' : '') + Number(n).toFixed(2) + '%' : 'N/A';
+  const priceChangeClass = d?.priceChange24h > 0 ? 'positive' : d?.priceChange24h < 0 ? 'negative' : '';
+
+  return `<div class="token-result">
+    <div class="token-header">
+      <div class="token-symbol-badge">${esc(t.symbol || '?')}</div>
+      <div>
+        <div class="token-name">${esc(t.name || 'Unknown Token')}</div>
+        <div class="token-address-small">${esc(data.address)}</div>
+      </div>
+    </div>
+    <div class="token-stats">
+      <div class="stat-box"><div class="stat-label">Price</div><div class="stat-value">${d ? fmt(d.priceUsd) : 'Not listed'}</div></div>
+      <div class="stat-box"><div class="stat-label">24h Change</div><div class="stat-value ${priceChangeClass}">${d ? pct(d.priceChange24h) : 'N/A'}</div></div>
+      <div class="stat-box"><div class="stat-label">Liquidity</div><div class="stat-value">${d ? fmt(d.liquidityUsd) : 'N/A'}</div></div>
+      <div class="stat-box"><div class="stat-label">Volume 24h</div><div class="stat-value">${d ? fmt(d.volume24h) : 'N/A'}</div></div>
+      <div class="stat-box"><div class="stat-label">Buys / Sells</div><div class="stat-value">${d ? d.buys24h + ' / ' + d.sells24h : 'N/A'}</div></div>
+      <div class="stat-box"><div class="stat-label">Total Supply</div><div class="stat-value" style="font-size:.72rem">${esc(t.totalSupply || 'N/A')}</div></div>
+      <div class="stat-box"><div class="stat-label">FDV</div><div class="stat-value">${d ? fmt(d.fdv) : 'N/A'}</div></div>
+      <div class="stat-box"><div class="stat-label">DEX</div><div class="stat-value">${d ? esc(d.dexId) : 'None'}</div></div>
+    </div>
+    <div class="verdict-box ${verdictClass}">${verdictText}</div>
+    <div>
+      <div style="font-size:.68rem;color:var(--dim);letter-spacing:.5px;margin-bottom:6px">AI ANALYSIS</div>
+      <div class="ai-analysis-box">${esc2(analysis).replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>')}</div>
+    </div>
+    <div style="font-size:.62rem;color:var(--dim-2);text-align:right">Analysis: ${new Date(data.timestamp).toLocaleTimeString()} · Network: Base Mainnet</div>
+  </div>`;
+}
+
+// ── WALLET WATCHER ─────────
+let watcherInterval = null;
+let watcherAddress = '';
+let watcherLastBlock = 0;
+let watcherActive = false;
+
+async function rpcBrowser(method, params = []) {
+  const r = await fetch('https://mainnet.base.org', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
+  });
+  const d = await r.json();
+  if (d.error) throw new Error(d.error.message);
+  return d.result;
+}
+
+function toggleWatcher() {
+  if (watcherActive) {
+    stopWatcher();
+  } else {
+    startWatcher();
+  }
+}
+
+async function startWatcher() {
+  const input = document.getElementById('watcherInput');
+  const addr = input.value.trim().toLowerCase();
+  if (!/^0x[0-9a-f]{40}$/i.test(addr)) {
+    document.getElementById('watcherStatusText').textContent = '⚠ Invalid address';
+    return;
+  }
+
+  // Request notification permission
+  if ('Notification' in window && Notification.permission === 'default') {
+    await Notification.requestPermission();
+  }
+
+  watcherAddress = addr;
+  watcherActive = true;
+
+  // Get current block as baseline
+  const blockHex = await rpcBrowser('eth_blockNumber').catch(() => '0x0');
+  watcherLastBlock = parseInt(blockHex, 16);
+
+  const btn = document.getElementById('watchBtn');
+  btn.textContent = '■ Stop';
+  btn.classList.add('stop');
+  document.getElementById('watcherDot').classList.add('active');
+  document.getElementById('watcherStatusText').textContent = `Watching ${addr.slice(0,6)}...${addr.slice(-4)} · Block #${watcherLastBlock}`;
+
+  // Add "watching" card to feed
+  const feed = document.getElementById('txFeed');
+  feed.innerHTML = `<div style="color:var(--dim);font-size:.74rem;text-align:center;padding:12px 0">
+    🟢 Monitoring started. New transactions will appear here.<br>
+    <span style="font-size:.65rem;color:var(--dim-2)">Checking every 12 seconds</span>
+  </div>`;
+
+  // Start polling
+  watcherInterval = setInterval(watcherPoll, 12000);
+}
+
+function stopWatcher() {
+  watcherActive = false;
+  if (watcherInterval) { clearInterval(watcherInterval); watcherInterval = null; }
+  const btn = document.getElementById('watchBtn');
+  btn.textContent = '▶ Watch';
+  btn.classList.remove('stop');
+  document.getElementById('watcherDot').classList.remove('active');
+  document.getElementById('watcherStatusText').textContent = 'Stopped';
+}
+
+async function watcherPoll() {
+  if (!watcherActive) return;
+  try {
+    const blockHex = await rpcBrowser('eth_blockNumber');
+    const currentBlock = parseInt(blockHex, 16);
+    if (currentBlock <= watcherLastBlock) return;
+
+    document.getElementById('watcherStatusText').textContent =
+      `Watching ${watcherAddress.slice(0,6)}...${watcherAddress.slice(-4)} · Block #${currentBlock}`;
+
+    // Check blocks from lastBlock+1 to currentBlock (max 5 blocks to avoid spam)
+    const from = Math.max(watcherLastBlock + 1, currentBlock - 4);
+    for (let b = from; b <= currentBlock; b++) {
+      const block = await rpcBrowser('eth_getBlockByNumber', ['0x' + b.toString(16), true]);
+      if (!block?.transactions) continue;
+      const myTxs = block.transactions.filter(tx =>
+        tx.from?.toLowerCase() === watcherAddress ||
+        tx.to?.toLowerCase() === watcherAddress
+      );
+      for (const tx of myTxs) {
+        await addWatcherTx(tx, block);
+      }
+    }
+    watcherLastBlock = currentBlock;
+  } catch (e) {
+    console.warn('Watcher poll error:', e.message);
+  }
+}
+
+async function addWatcherTx(tx, block) {
+  const feed = document.getElementById('txFeed');
+  const isIn  = tx.to?.toLowerCase() === watcherAddress;
+  const isOut = tx.from?.toLowerCase() === watcherAddress;
+  const isContract = !tx.to;
+
+  const ethVal = tx.value ? (parseInt(tx.value, 16) / 1e18).toFixed(6) : '0';
+  const typeLabel = isContract ? 'CONTRACT DEPLOY' : isIn ? 'RECEIVED' : 'SENT';
+  const typeClass = isContract ? 'tx-type-contract' : isIn ? 'tx-type-in' : 'tx-type-out';
+  const timestamp = block.timestamp ? new Date(parseInt(block.timestamp, 16) * 1000).toLocaleTimeString() : 'now';
+
+  const card = document.createElement('div');
+  card.className = 'tx-card-w new';
+  card.innerHTML = `
+    <div class="tx-meta">
+      <span class="tx-type-badge ${typeClass}">${typeLabel}</span>
+      <span class="tx-time">${timestamp}</span>
+    </div>
+    <div class="tx-value">${ethVal} ETH</div>
+    <div style="font-size:.65rem;color:var(--dim);margin-top:4px">
+      ${isIn ? 'From: ' + esc(tx.from?.slice(0,10) + '...' + tx.from?.slice(-6)) : ''}
+      ${isOut ? 'To: ' + esc((tx.to || 'Contract')?.slice(0,10) + '...' + (tx.to || '')?.slice(-6)) : ''}
+    </div>
+    <a class="tx-hash-link" href="https://basescan.org/tx/${tx.hash}" target="_blank" rel="noopener">
+      ${tx.hash?.slice(0,16)}... ↗
+    </a>
+    <div class="tx-ai-explain" id="explain-${tx.hash?.slice(2,10)}">Generating AI explanation…</div>
+  `;
+
+  // Remove empty state message
+  const empty = feed.querySelector('[style*="text-align:center"]');
+  if (empty) empty.remove();
+
+  feed.insertBefore(card, feed.firstChild);
+
+  // Browser notification
+  if ('Notification' in window && Notification.permission === 'granted') {
+    new Notification('Orlix Wallet Watcher 🔔', {
+      body: `${typeLabel}: ${ethVal} ETH\n${tx.hash?.slice(0,20)}...`,
+      icon: '/favicon.ico'
+    });
+  }
+
+  // AI explanation (async, non-blocking)
+  getAITxExplanation(tx, ethVal, typeLabel, isIn, isOut).then(explanation => {
+    const el = document.getElementById('explain-' + tx.hash?.slice(2,10));
+    if (el) el.textContent = explanation;
+  });
+}
+
+async function getAITxExplanation(tx, ethVal, typeLabel, isIn, isOut) {
+  try {
+    const prompt = `In one sentence, explain this Base network transaction in plain English:
+- Type: ${typeLabel}
+- Value: ${ethVal} ETH
+- From: ${tx.from}
+- To: ${tx.to || 'Contract creation'}
+- Data: ${tx.input && tx.input !== '0x' ? 'Has contract call data (' + ((tx.input.length - 2) / 2) + ' bytes)' : 'Simple ETH transfer'}`;
+
+    const r = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        messages: [{ role: 'user', content: prompt }],
+        max_tokens: 150,
+      }),
+    });
+    const data = await r.json();
+    // Handle Anthropic response format
+    const text = data.content?.[0]?.text || data.choices?.[0]?.message?.content || '';
+    return text.trim() || 'Transaction detected.';
+  } catch {
+    return 'Transaction detected on Base network.';
+  }
+}
 
 </script>
 
