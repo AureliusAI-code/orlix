@@ -2,172 +2,211 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Orlix AI — Architecture Diagram</title>
+<meta name="viewport" content="width=1200">
+<title>How Orlix Works</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { background: #080808; display: flex; align-items: center; justify-content: center; min-height: 100vh; font-family: 'JetBrains Mono', 'Courier New', monospace; }
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:1200px;height:700px;overflow:hidden;background:#09090B;font-family:'Plus Jakarta Sans',sans-serif;-webkit-font-smoothing:antialiased}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);background-size:48px 48px;pointer-events:none}
+
+.wrap{width:1200px;height:700px;position:relative;display:flex;flex-direction:column;padding:32px 40px 28px}
+
+/* HEADER */
+.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:32px;flex-shrink:0}
+.logo{font-size:18px;font-weight:900;letter-spacing:.12em;color:#FAFAFA}
+.logo span{color:#F07830}
+.title-block{text-align:center}
+.title{font-size:15px;font-weight:700;color:#FAFAFA;letter-spacing:.04em}
+.sub{font-size:10px;color:#52525B;letter-spacing:.14em;text-transform:uppercase;margin-top:3px;font-family:'JetBrains Mono',monospace}
+.url{font-size:11px;color:#52525B;font-family:'JetBrains Mono',monospace}
+
+/* MAIN */
+.main{display:grid;grid-template-columns:185px 44px 1fr 44px 310px;align-items:center;gap:0;flex:1}
+
+/* USER */
+.user-col{display:flex;flex-direction:column;gap:7px}
+.user-label{font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#52525B;font-family:'JetBrains Mono',monospace;margin-bottom:3px}
+.query{background:#111113;border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:9px 12px}
+.ql{font-size:9px;color:#52525B;font-family:'JetBrains Mono',monospace;margin-bottom:3px;text-transform:uppercase;letter-spacing:.08em}
+.qt{color:#FAFAFA;font-size:11.5px;font-weight:600;line-height:1.4}
+.qt .o{color:#F07830}
+.qt .p{color:#A78BFA}
+
+/* ARROW */
+.arrow-col{display:flex;align-items:center;justify-content:center}
+.arr{display:flex;align-items:center;position:relative;width:44px}
+.arr-line{flex:1;height:1.5px;background:linear-gradient(90deg,rgba(240,120,48,.25),rgba(240,120,48,.7))}
+.arr-head{width:0;height:0;border-top:4px solid transparent;border-bottom:4px solid transparent;border-left:6px solid rgba(240,120,48,.8)}
+
+/* CORE */
+.core-col{height:100%;padding:2px 0}
+.core-box{height:100%;border:1.5px solid rgba(240,120,48,.3);border-radius:16px;background:linear-gradient(145deg,rgba(240,120,48,.05) 0%,rgba(9,9,11,.9) 55%);box-shadow:0 0 80px rgba(240,120,48,.07),inset 0 1px 0 rgba(255,255,255,.04);padding:18px;display:flex;flex-direction:column;gap:10px;position:relative;overflow:hidden}
+.core-box::before{content:'';position:absolute;top:-60px;left:50%;transform:translateX(-50%);width:240px;height:240px;border-radius:50%;background:radial-gradient(circle,rgba(240,120,48,.1) 0%,transparent 70%);pointer-events:none}
+.core-top{text-align:center;margin-bottom:2px;position:relative;z-index:1}
+.core-name{font-size:20px;font-weight:900;letter-spacing:.1em;color:#FAFAFA}
+.core-name span{color:#F07830}
+.core-tag{font-size:9px;color:#52525B;letter-spacing:.16em;text-transform:uppercase;font-family:'JetBrains Mono',monospace;margin-top:2px}
+
+.layer{border:1px solid rgba(255,255,255,.07);border-radius:9px;padding:10px 13px;position:relative;z-index:1}
+.layer-t{font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;font-family:'JetBrains Mono',monospace;margin-bottom:4px}
+.layer-n{font-size:12.5px;font-weight:700;color:#FAFAFA;margin-bottom:2px}
+.layer-d{font-size:10.5px;color:#71717A;line-height:1.55}
+
+.nl{border-color:rgba(167,139,250,.18);background:rgba(167,139,250,.04)}
+.nl .layer-t{color:#A78BFA}
+.rt{border-color:rgba(240,120,48,.18);background:rgba(240,120,48,.04)}
+.rt .layer-t{color:#F07830}
+.dl{border-color:rgba(74,222,128,.18);background:rgba(74,222,128,.04)}
+.dl .layer-t{color:#4ADE80}
+
+/* SERVICES */
+.svc-col{display:flex;flex-direction:column;gap:8px;height:100%;padding:2px 0}
+.svc{border-radius:11px;padding:11px 13px;border:1px solid;flex:1;display:flex;flex-direction:column;justify-content:center}
+.svc-t{font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;font-family:'JetBrains Mono',monospace;margin-bottom:3px}
+.svc-n{font-size:12px;font-weight:700;color:#FAFAFA;margin-bottom:5px}
+.chips{display:flex;flex-wrap:wrap;gap:4px}
+.chip{font-size:9.5px;font-weight:600;padding:2px 7px;border-radius:5px;font-family:'JetBrains Mono',monospace}
+
+.ai{background:rgba(167,139,250,.05);border-color:rgba(167,139,250,.2)}
+.ai .svc-t{color:#A78BFA}
+.ai .chip{background:rgba(167,139,250,.1);color:#A78BFA;border:1px solid rgba(167,139,250,.18)}
+
+.tk{background:rgba(240,120,48,.05);border-color:rgba(240,120,48,.2)}
+.tk .svc-t{color:#F07830}
+.tk .chip{background:rgba(240,120,48,.1);color:#F07830;border:1px solid rgba(240,120,48,.18)}
+
+.tr{background:rgba(74,222,128,.05);border-color:rgba(74,222,128,.2)}
+.tr .svc-t{color:#4ADE80}
+.tr .chip{background:rgba(74,222,128,.1);color:#4ADE80;border:1px solid rgba(74,222,128,.18)}
+
+.tg{background:rgba(42,171,238,.05);border-color:rgba(42,171,238,.2)}
+.tg .svc-t{color:#2AABEE}
+.tg .chip{background:rgba(42,171,238,.1);color:#2AABEE;border:1px solid rgba(42,171,238,.18)}
+
+/* FOOTER */
+.footer{flex-shrink:0;text-align:center;margin-top:14px}
+.footer-t{font-size:10px;color:#3F3F46;font-family:'JetBrains Mono',monospace;letter-spacing:.07em}
 </style>
 </head>
 <body>
-<svg viewBox="0 0 1080 420" width="1080" height="420" xmlns="http://www.w3.org/2000/svg">
-  <defs>
-    <filter id="glow-amber">
-      <feGaussianBlur stdDeviation="3" result="blur"/>
-      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-    </filter>
-    <filter id="glow-green">
-      <feGaussianBlur stdDeviation="2.5" result="blur"/>
-      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-    </filter>
-    <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
-      <path d="M0,0 L0,6 L8,3 z" fill="rgba(255,255,255,0.35)"/>
-    </marker>
-    <marker id="arrow-amber" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
-      <path d="M0,0 L0,6 L8,3 z" fill="#ff9a52"/>
-    </marker>
-    <marker id="arrow-green" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
-      <path d="M0,0 L0,6 L8,3 z" fill="#7ee0a8"/>
-    </marker>
-    <marker id="arrow-violet" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
-      <path d="M0,0 L0,6 L8,3 z" fill="#b9a4ff"/>
-    </marker>
-    <marker id="arrow-red" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
-      <path d="M0,0 L0,6 L8,3 z" fill="#e05050"/>
-    </marker>
-  </defs>
+<div class="wrap">
 
-  <!-- Background -->
-  <rect width="1080" height="420" fill="#080808"/>
+  <div class="header">
+    <div class="logo">ORL<span>I</span>X</div>
+    <div class="title-block">
+      <div class="title">How Orlix Works</div>
+      <div class="sub">Architecture Overview</div>
+    </div>
+    <div class="url">orlixai.xyz</div>
+  </div>
 
-  <!-- Subtle grid -->
-  <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-    <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(255,255,255,0.025)" stroke-width="1"/>
-  </pattern>
-  <rect width="1080" height="420" fill="url(#grid)"/>
+  <div class="main">
 
-  <!-- ── LEFT LABEL ── -->
-  <text x="38" y="58" fill="#ff9a52" font-size="36" font-weight="700" letter-spacing="2" font-family="'JetBrains Mono', monospace">ORLIX</text>
-  <text x="38" y="80" fill="#ff9a52" font-size="11" letter-spacing="6" font-family="'JetBrains Mono', monospace">AI OPERATING SYSTEM</text>
-  <line x1="38" y1="88" x2="185" y2="88" stroke="#ff9a52" stroke-width="1.5" opacity="0.6"/>
-  <text x="38" y="110" fill="rgba(255,255,255,0.3)" font-size="10" letter-spacing="1" font-family="'JetBrains Mono', monospace">INTELLIGENCE LAYER</text>
-  <text x="38" y="126" fill="rgba(255,255,255,0.3)" font-size="10" letter-spacing="1" font-family="'JetBrains Mono', monospace">FOR EVERY PROMPT</text>
+    <!-- USER INPUT -->
+    <div class="user-col">
+      <div class="user-label">User Input</div>
+      <div class="query">
+        <div class="ql">AI Chat</div>
+        <div class="qt">"Best model for coding?"</div>
+      </div>
+      <div class="query">
+        <div class="ql">Token Analysis</div>
+        <div class="qt">"Analyze <span class="o">0x799c...cBA3</span>"</div>
+      </div>
+      <div class="query">
+        <div class="ql">NL Trade</div>
+        <div class="qt">"Buy <span class="o">$50</span> of <span class="p">$ORLIX</span>"</div>
+      </div>
+      <div class="query">
+        <div class="ql">Telegram</div>
+        <div class="qt">"/analyze [contract]"</div>
+      </div>
+    </div>
 
-  <!-- ── BOX 1: USER PROMPT ── -->
-  <rect x="38" y="168" width="138" height="86" rx="6" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.2)" stroke-width="1.2"/>
-  <!-- terminal icon -->
-  <rect x="58" y="183" width="22" height="16" rx="3" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1.2"/>
-  <text x="62" y="195" fill="rgba(255,255,255,0.5)" font-size="9" font-family="monospace">›_</text>
-  <text x="54" y="219" fill="#f0ebe3" font-size="11" font-weight="700" letter-spacing="1" font-family="'JetBrains Mono', monospace">USER PROMPT</text>
-  <text x="54" y="234" fill="rgba(255,255,255,0.4)" font-size="9" font-family="'JetBrains Mono', monospace">typed message</text>
-  <text x="54" y="246" fill="rgba(255,255,255,0.4)" font-size="9" font-family="'JetBrains Mono', monospace">from user</text>
+    <!-- ARROW → -->
+    <div class="arrow-col">
+      <div class="arr"><div class="arr-line"></div><div class="arr-head"></div></div>
+    </div>
 
-  <!-- Arrow: USER PROMPT → ORLIX CORE -->
-  <line x1="176" y1="211" x2="232" y2="211" stroke="rgba(255,255,255,0.35)" stroke-width="1.5" marker-end="url(#arrow)"/>
+    <!-- ORLIX CORE -->
+    <div class="core-col">
+      <div class="core-box">
+        <div class="core-top">
+          <div class="core-name">ORL<span>I</span>X</div>
+          <div class="core-tag">Intelligence Layer</div>
+        </div>
+        <div class="layer nl">
+          <div class="layer-t">① NL Parser</div>
+          <div class="layer-n">Intent Understanding</div>
+          <div class="layer-d">Powered by Claude — reads the message, detects intent type, extracts key params (token address, amount, model preference)</div>
+        </div>
+        <div class="layer rt">
+          <div class="layer-t">② Router</div>
+          <div class="layer-n">Model & Tool Selector</div>
+          <div class="layer-d">Routes to the right destination — AI model, token analyzer, trade execution, or Telegram handler</div>
+        </div>
+        <div class="layer dl">
+          <div class="layer-t">③ Data Layer</div>
+          <div class="layer-n">Real-Time Onchain Data</div>
+          <div class="layer-d">DexScreener API · Base RPC · Liquidity · Buy/sell pressure · Token supply — all live, no cache</div>
+        </div>
+      </div>
+    </div>
 
-  <!-- ── BOX 2: ORLIX CORE (dashed border) ── -->
-  <rect x="238" y="100" width="394" height="230" rx="8" fill="rgba(255,154,82,0.03)" stroke="#ff9a52" stroke-width="1.4" stroke-dasharray="7,4" opacity="0.85"/>
+    <!-- ARROW → -->
+    <div class="arrow-col">
+      <div class="arr"><div class="arr-line"></div><div class="arr-head"></div></div>
+    </div>
 
-  <!-- ORLIX CORE label -->
-  <rect x="318" y="91" width="228" height="20" rx="3" fill="#080808"/>
-  <text x="342" y="105" fill="#ff9a52" font-size="11" font-weight="700" letter-spacing="2" font-family="'JetBrains Mono', monospace">ORLIX CORE</text>
-  <text x="342" y="119" fill="rgba(255,154,82,0.6)" font-size="9" letter-spacing="2" font-family="'JetBrains Mono', monospace">INTELLIGENCE BEFORE RESPONSE</text>
-  <rect x="318" y="110" width="228" height="10" rx="0" fill="#080808"/>
+    <!-- SERVICES -->
+    <div class="svc-col">
+      <div class="svc ai">
+        <div class="svc-t">AI Models — 19 total</div>
+        <div class="svc-n">Multi-Model Playground</div>
+        <div class="chips">
+          <span class="chip">Claude</span>
+          <span class="chip">GPT-4o</span>
+          <span class="chip">Grok</span>
+          <span class="chip">Gemini</span>
+          <span class="chip">DeepSeek</span>
+          <span class="chip">+14 more</span>
+        </div>
+      </div>
+      <div class="svc tk">
+        <div class="svc-t">Token Analyzer</div>
+        <div class="svc-n">AI-Powered Risk Analysis</div>
+        <div class="chips">
+          <span class="chip">DexScreener</span>
+          <span class="chip">Base RPC</span>
+          <span class="chip">AI Verdict</span>
+        </div>
+      </div>
+      <div class="svc tr">
+        <div class="svc-t">Trade Execution</div>
+        <div class="svc-n">Natural Language Swap</div>
+        <div class="chips">
+          <span class="chip">Uniswap</span>
+          <span class="chip">Base Network</span>
+          <span class="chip">0x API</span>
+        </div>
+      </div>
+      <div class="svc tg">
+        <div class="svc-t">Telegram Bot</div>
+        <div class="svc-n">@orlixai_bot</div>
+        <div class="chips">
+          <span class="chip">Full parity</span>
+          <span class="chip">$ORLIX gated</span>
+        </div>
+      </div>
+    </div>
 
-  <!-- Step 1: ROUTE -->
-  <rect x="262" y="132" width="352" height="54" rx="5" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
-  <!-- route icon -->
-  <circle cx="292" cy="159" r="10" fill="none" stroke="rgba(255,154,82,0.7)" stroke-width="1.3"/>
-  <line x1="288" y1="155" x2="296" y2="163" stroke="rgba(255,154,82,0.7)" stroke-width="1.3"/>
-  <line x1="296" y1="155" x2="288" y2="163" stroke="rgba(255,154,82,0.7)" stroke-width="1.3"/>
-  <text x="312" y="152" fill="#f0ebe3" font-size="11" font-weight="700" letter-spacing="1.5" font-family="'JetBrains Mono', monospace">ROUTE</text>
-  <text x="312" y="167" fill="rgba(255,255,255,0.45)" font-size="9.5" font-family="'JetBrains Mono', monospace">select model · inject memory · apply skills</text>
+  </div>
 
-  <!-- Step 2: EXECUTE -->
-  <rect x="262" y="196" width="352" height="54" rx="5" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
-  <!-- execute icon: lightning -->
-  <polygon points="295,207 285,222 292,222 289,235 301,218 294,218" fill="none" stroke="rgba(255,154,82,0.7)" stroke-width="1.3" stroke-linejoin="round"/>
-  <text x="312" y="216" fill="#f0ebe3" font-size="11" font-weight="700" letter-spacing="1.5" font-family="'JetBrains Mono', monospace">EXECUTE</text>
-  <text x="312" y="231" fill="rgba(255,255,255,0.45)" font-size="9.5" font-family="'JetBrains Mono', monospace">tools · Base RPC · web search · fetch URL</text>
+  <div class="footer">
+    <div class="footer-t">© 2026 Orlix AI &nbsp;·&nbsp; Personal AI Operating System on Base &nbsp;·&nbsp; orlixai.xyz</div>
+  </div>
 
-  <!-- Step 3: RECORD -->
-  <rect x="262" y="260" width="352" height="54" rx="5" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
-  <!-- record icon: document -->
-  <rect x="282" y="272" width="18" height="22" rx="2" fill="none" stroke="rgba(255,154,82,0.7)" stroke-width="1.3"/>
-  <line x1="286" y1="279" x2="296" y2="279" stroke="rgba(255,154,82,0.7)" stroke-width="1"/>
-  <line x1="286" y1="284" x2="296" y2="284" stroke="rgba(255,154,82,0.7)" stroke-width="1"/>
-  <line x1="286" y1="289" x2="292" y2="289" stroke="rgba(255,154,82,0.7)" stroke-width="1"/>
-  <text x="312" y="280" fill="#f0ebe3" font-size="11" font-weight="700" letter-spacing="1.5" font-family="'JetBrains Mono', monospace">RECORD</text>
-  <text x="312" y="295" fill="rgba(255,255,255,0.45)" font-size="9.5" font-family="'JetBrains Mono', monospace">create audit log · timestamp · actor</text>
-
-  <!-- Arrows: ORLIX CORE → outcomes -->
-  <!-- Top arrow → RESPOND -->
-  <line x1="632" y1="159" x2="700" y2="159" stroke="#7ee0a8" stroke-width="1.4" marker-end="url(#arrow-green)"/>
-  <!-- Middle arrow → TOOL RESULT -->
-  <line x1="632" y1="223" x2="700" y2="252" stroke="#ff9a52" stroke-width="1.4" marker-end="url(#arrow-amber)"/>
-  <!-- Bottom arrow → MEMORY -->
-  <line x1="632" y1="287" x2="700" y2="323" stroke="#b9a4ff" stroke-width="1.4" marker-end="url(#arrow-violet)"/>
-
-  <!-- ── OUTCOMES ── -->
-
-  <!-- RESPOND -->
-  <rect x="700" y="136" width="148" height="46" rx="5" fill="rgba(126,224,168,0.1)" stroke="rgba(126,224,168,0.5)" stroke-width="1.3"/>
-  <text x="722" y="156" fill="#7ee0a8" font-size="14" font-family="'JetBrains Mono', monospace" filter="url(#glow-green)">✓</text>
-  <text x="742" y="155" fill="#7ee0a8" font-size="11" font-weight="700" letter-spacing="1" font-family="'JetBrains Mono', monospace">RESPOND</text>
-  <text x="742" y="170" fill="rgba(126,224,168,0.6)" font-size="9" font-family="'JetBrains Mono', monospace">answer rendered</text>
-
-  <!-- TOOL RESULT -->
-  <rect x="700" y="229" width="148" height="46" rx="5" fill="rgba(255,154,82,0.1)" stroke="rgba(255,154,82,0.5)" stroke-width="1.3"/>
-  <text x="718" y="249" fill="#ff9a52" font-size="12" font-family="'JetBrains Mono', monospace" filter="url(#glow-amber)">⚡</text>
-  <text x="738" y="249" fill="#ff9a52" font-size="11" font-weight="700" letter-spacing="1" font-family="'JetBrains Mono', monospace">TOOL DATA</text>
-  <text x="738" y="264" fill="rgba(255,154,82,0.6)" font-size="9" font-family="'JetBrains Mono', monospace">Base · search · fetch</text>
-
-  <!-- MEMORY -->
-  <rect x="700" y="300" width="148" height="46" rx="5" fill="rgba(185,164,255,0.1)" stroke="rgba(185,164,255,0.5)" stroke-width="1.3"/>
-  <text x="718" y="320" fill="#b9a4ff" font-size="12" font-family="'JetBrains Mono', monospace">◉</text>
-  <text x="738" y="320" fill="#b9a4ff" font-size="11" font-weight="700" letter-spacing="1" font-family="'JetBrains Mono', monospace">MEMORY</text>
-  <text x="738" y="335" fill="rgba(185,164,255,0.6)" font-size="9" font-family="'JetBrains Mono', monospace">stored for future</text>
-
-  <!-- Arrows: outcomes → AUDIT LOG -->
-  <line x1="848" y1="159" x2="914" y2="220" stroke="rgba(255,255,255,0.25)" stroke-width="1.2" marker-end="url(#arrow)"/>
-  <line x1="848" y1="252" x2="914" y2="235" stroke="rgba(255,255,255,0.25)" stroke-width="1.2" marker-end="url(#arrow)"/>
-  <line x1="848" y1="323" x2="914" y2="258" stroke="rgba(255,255,255,0.25)" stroke-width="1.2" marker-end="url(#arrow)"/>
-
-  <!-- ── AUDIT LOG ── -->
-  <rect x="914" y="188" width="138" height="100" rx="6" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.2)" stroke-width="1.2"/>
-  <!-- doc icon -->
-  <rect x="930" y="202" width="18" height="22" rx="2" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="1.2"/>
-  <line x1="934" y1="209" x2="944" y2="209" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>
-  <line x1="934" y1="214" x2="944" y2="214" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>
-  <line x1="934" y1="219" x2="940" y2="219" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>
-  <text x="956" y="210" fill="#f0ebe3" font-size="11" font-weight="700" letter-spacing="1" font-family="'JetBrains Mono', monospace">AUDIT LOG</text>
-  <text x="930" y="244" fill="rgba(255,255,255,0.4)" font-size="9" font-family="'JetBrains Mono', monospace">local session</text>
-  <text x="930" y="257" fill="rgba(255,255,255,0.4)" font-size="9" font-family="'JetBrains Mono', monospace">record · timestamp</text>
-  <text x="930" y="270" fill="rgba(255,255,255,0.4)" font-size="9" font-family="'JetBrains Mono', monospace">actor · action</text>
-
-  <!-- ── BOTTOM MODEL BADGES ── -->
-  <text x="268" y="360" fill="rgba(255,255,255,0.2)" font-size="9" letter-spacing="1" font-family="'JetBrains Mono', monospace">MODELS :</text>
-  <!-- Mimo -->
-  <rect x="330" y="348" width="52" height="18" rx="3" fill="rgba(126,224,168,0.08)" stroke="rgba(126,224,168,0.3)" stroke-width="1"/>
-  <text x="342" y="361" fill="#7ee0a8" font-size="9" font-family="'JetBrains Mono', monospace">MIMO</text>
-  <!-- Claude -->
-  <rect x="390" y="348" width="62" height="18" rx="3" fill="rgba(185,164,255,0.08)" stroke="rgba(185,164,255,0.3)" stroke-width="1"/>
-  <text x="400" y="361" fill="#b9a4ff" font-size="9" font-family="'JetBrains Mono', monospace">CLAUDE</text>
-  <!-- Grok -->
-  <rect x="460" y="348" width="52" height="18" rx="3" fill="rgba(255,154,82,0.08)" stroke="rgba(255,154,82,0.3)" stroke-width="1"/>
-  <text x="472" y="361" fill="#ff9a52" font-size="9" font-family="'JetBrains Mono', monospace">GROK</text>
-  <!-- Groq -->
-  <rect x="520" y="348" width="52" height="18" rx="3" fill="rgba(249,115,22,0.08)" stroke="rgba(249,115,22,0.3)" stroke-width="1"/>
-  <text x="532" y="361" fill="#f97316" font-size="9" font-family="'JetBrains Mono', monospace">GROQ</text>
-  <!-- DeepSeek -->
-  <rect x="580" y="348" width="76" height="18" rx="3" fill="rgba(74,158,255,0.08)" stroke="rgba(74,158,255,0.3)" stroke-width="1"/>
-  <text x="592" y="361" fill="#4a9eff" font-size="9" font-family="'JetBrains Mono', monospace">DEEPSEEK</text>
-  <!-- Gemini -->
-  <rect x="664" y="348" width="68" height="18" rx="3" fill="rgba(66,133,244,0.08)" stroke="rgba(66,133,244,0.3)" stroke-width="1"/>
-  <text x="676" y="361" fill="#4285f4" font-size="9" font-family="'JetBrains Mono', monospace">GEMINI</text>
-
-  <!-- corner watermark -->
-  <text x="1050" y="410" fill="rgba(255,255,255,0.1)" font-size="9" text-anchor="end" font-family="'JetBrains Mono', monospace">orlixai.xyz</text>
-</svg>
+</div>
 </body>
 </html>
