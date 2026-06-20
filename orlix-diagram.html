@@ -3,208 +3,238 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=1200">
-<title>How Orlix Works</title>
+<title>Orlix — Architecture</title>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-html,body{width:1200px;height:700px;overflow:hidden;background:#09090B;font-family:'Plus Jakarta Sans',sans-serif;-webkit-font-smoothing:antialiased}
-body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);background-size:48px 48px;pointer-events:none}
+html,body{width:1200px;height:675px;overflow:hidden;background:#09090B;font-family:'Plus Jakarta Sans',sans-serif;-webkit-font-smoothing:antialiased}
 
-.wrap{width:1200px;height:700px;position:relative;display:flex;flex-direction:column;padding:32px 40px 28px}
+/* Subtle dot grid */
+body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(circle,rgba(255,255,255,.06) 1px,transparent 1px);background-size:32px 32px;pointer-events:none}
 
-/* HEADER */
-.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:32px;flex-shrink:0}
-.logo{font-size:18px;font-weight:900;letter-spacing:.12em;color:#FAFAFA}
-.logo span{color:#F07830}
-.title-block{text-align:center}
-.title{font-size:15px;font-weight:700;color:#FAFAFA;letter-spacing:.04em}
-.sub{font-size:10px;color:#52525B;letter-spacing:.14em;text-transform:uppercase;margin-top:3px;font-family:'JetBrains Mono',monospace}
-.url{font-size:11px;color:#52525B;font-family:'JetBrains Mono',monospace}
+/* Orange center glow */
+body::after{content:'';position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:500px;height:500px;border-radius:50%;background:radial-gradient(circle,rgba(240,120,48,.08) 0%,transparent 65%);pointer-events:none}
 
-/* MAIN */
-.main{display:grid;grid-template-columns:185px 44px 1fr 44px 310px;align-items:center;gap:0;flex:1}
+.canvas{width:1200px;height:675px;position:relative;display:flex;flex-direction:column;padding:36px 48px 28px}
 
-/* USER */
-.user-col{display:flex;flex-direction:column;gap:7px}
-.user-label{font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#52525B;font-family:'JetBrains Mono',monospace;margin-bottom:3px}
-.query{background:#111113;border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:9px 12px}
-.ql{font-size:9px;color:#52525B;font-family:'JetBrains Mono',monospace;margin-bottom:3px;text-transform:uppercase;letter-spacing:.08em}
-.qt{color:#FAFAFA;font-size:11.5px;font-weight:600;line-height:1.4}
-.qt .o{color:#F07830}
-.qt .p{color:#A78BFA}
+/* ── HEADER ── */
+.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:34px;flex-shrink:0}
+.brand{display:flex;align-items:center;gap:10px}
+.brand-dot{width:8px;height:8px;border-radius:50%;background:#F07830;box-shadow:0 0 8px rgba(240,120,48,.6)}
+.brand-name{font-size:15px;font-weight:900;letter-spacing:.12em;color:#FAFAFA}
+.header-title{text-align:center}
+.ht{font-size:17px;font-weight:800;color:#FAFAFA;letter-spacing:-.02em}
+.hs{font-size:10px;color:#52525B;letter-spacing:.18em;text-transform:uppercase;margin-top:4px;font-family:'JetBrains Mono',monospace}
+.header-url{font-size:11px;color:#3F3F46;font-family:'JetBrains Mono',monospace}
 
-/* ARROW */
-.arrow-col{display:flex;align-items:center;justify-content:center}
-.arr{display:flex;align-items:center;position:relative;width:44px}
-.arr-line{flex:1;height:1.5px;background:linear-gradient(90deg,rgba(240,120,48,.25),rgba(240,120,48,.7))}
-.arr-head{width:0;height:0;border-top:4px solid transparent;border-bottom:4px solid transparent;border-left:6px solid rgba(240,120,48,.8)}
+/* ── MAIN GRID ── */
+.main{display:grid;grid-template-columns:190px 60px 1fr 60px 330px;align-items:center;flex:1;gap:0}
 
-/* CORE */
-.core-col{height:100%;padding:2px 0}
-.core-box{height:100%;border:1.5px solid rgba(240,120,48,.3);border-radius:16px;background:linear-gradient(145deg,rgba(240,120,48,.05) 0%,rgba(9,9,11,.9) 55%);box-shadow:0 0 80px rgba(240,120,48,.07),inset 0 1px 0 rgba(255,255,255,.04);padding:18px;display:flex;flex-direction:column;gap:10px;position:relative;overflow:hidden}
-.core-box::before{content:'';position:absolute;top:-60px;left:50%;transform:translateX(-50%);width:240px;height:240px;border-radius:50%;background:radial-gradient(circle,rgba(240,120,48,.1) 0%,transparent 70%);pointer-events:none}
-.core-top{text-align:center;margin-bottom:2px;position:relative;z-index:1}
-.core-name{font-size:20px;font-weight:900;letter-spacing:.1em;color:#FAFAFA}
-.core-name span{color:#F07830}
-.core-tag{font-size:9px;color:#52525B;letter-spacing:.16em;text-transform:uppercase;font-family:'JetBrains Mono',monospace;margin-top:2px}
+/* ── LEFT: INPUTS ── */
+.inputs{display:flex;flex-direction:column;gap:8px}
+.inputs-lbl{font-size:9px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#3F3F46;font-family:'JetBrains Mono',monospace;margin-bottom:2px}
+.inp{background:#0E0E10;border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:10px 13px;transition:.2s}
+.inp-tag{font-size:9px;color:#52525B;font-family:'JetBrains Mono',monospace;letter-spacing:.08em;text-transform:uppercase;margin-bottom:3px}
+.inp-txt{font-size:12px;font-weight:600;color:#FAFAFA;line-height:1.4}
+.inp-txt .o{color:#F07830}
+.inp-txt .p{color:#A78BFA}
 
-.layer{border:1px solid rgba(255,255,255,.07);border-radius:9px;padding:10px 13px;position:relative;z-index:1}
-.layer-t{font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;font-family:'JetBrains Mono',monospace;margin-bottom:4px}
-.layer-n{font-size:12.5px;font-weight:700;color:#FAFAFA;margin-bottom:2px}
-.layer-d{font-size:10.5px;color:#71717A;line-height:1.55}
+/* ── ARROW ── */
+.arr-col{display:flex;align-items:center;justify-content:center}
+.arr{display:flex;align-items:center;width:60px}
+.arr-line{flex:1;height:1px;background:linear-gradient(90deg,rgba(240,120,48,.2),rgba(240,120,48,.6))}
+.arr-tip{width:0;height:0;border-top:4px solid transparent;border-bottom:4px solid transparent;border-left:6px solid rgba(240,120,48,.6)}
 
-.nl{border-color:rgba(167,139,250,.18);background:rgba(167,139,250,.04)}
-.nl .layer-t{color:#A78BFA}
-.rt{border-color:rgba(240,120,48,.18);background:rgba(240,120,48,.04)}
-.rt .layer-t{color:#F07830}
-.dl{border-color:rgba(74,222,128,.18);background:rgba(74,222,128,.04)}
-.dl .layer-t{color:#4ADE80}
+/* ── CENTER: CORE ── */
+.core-wrap{height:100%;padding:2px 0}
+.core{height:100%;border:1.5px solid rgba(240,120,48,.28);border-radius:18px;background:#0A0A0C;box-shadow:0 0 0 1px rgba(240,120,48,.05),0 24px 80px rgba(0,0,0,.5);padding:22px 22px;display:flex;flex-direction:column;gap:0;position:relative;overflow:hidden}
 
-/* SERVICES */
-.svc-col{display:flex;flex-direction:column;gap:8px;height:100%;padding:2px 0}
-.svc{border-radius:11px;padding:11px 13px;border:1px solid;flex:1;display:flex;flex-direction:column;justify-content:center}
-.svc-t{font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;font-family:'JetBrains Mono',monospace;margin-bottom:3px}
-.svc-n{font-size:12px;font-weight:700;color:#FAFAFA;margin-bottom:5px}
-.chips{display:flex;flex-wrap:wrap;gap:4px}
-.chip{font-size:9.5px;font-weight:600;padding:2px 7px;border-radius:5px;font-family:'JetBrains Mono',monospace}
+/* Top glow inside core */
+.core::before{content:'';position:absolute;top:-80px;left:50%;transform:translateX(-50%);width:260px;height:260px;border-radius:50%;background:radial-gradient(circle,rgba(240,120,48,.12) 0%,transparent 70%);pointer-events:none}
 
-.ai{background:rgba(167,139,250,.05);border-color:rgba(167,139,250,.2)}
-.ai .svc-t{color:#A78BFA}
-.ai .chip{background:rgba(167,139,250,.1);color:#A78BFA;border:1px solid rgba(167,139,250,.18)}
+.core-head{text-align:center;margin-bottom:18px;position:relative;z-index:1}
+.core-logo{font-size:26px;font-weight:900;letter-spacing:.1em;color:#FAFAFA}
+.core-logo span{color:#F07830}
+.core-badge{display:inline-block;margin-top:6px;padding:3px 12px;border-radius:999px;background:rgba(240,120,48,.1);border:1px solid rgba(240,120,48,.25);font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#F07830;font-family:'JetBrains Mono',monospace}
 
-.tk{background:rgba(240,120,48,.05);border-color:rgba(240,120,48,.2)}
-.tk .svc-t{color:#F07830}
-.tk .chip{background:rgba(240,120,48,.1);color:#F07830;border:1px solid rgba(240,120,48,.18)}
+.layers{display:flex;flex-direction:column;gap:9px;flex:1;position:relative;z-index:1}
+.lyr{border-radius:10px;padding:11px 14px;border:1px solid}
+.lyr-num{font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;font-family:'JetBrains Mono',monospace;margin-bottom:4px}
+.lyr-name{font-size:13px;font-weight:700;color:#FAFAFA;margin-bottom:3px}
+.lyr-desc{font-size:10.5px;color:#71717A;line-height:1.55}
 
-.tr{background:rgba(74,222,128,.05);border-color:rgba(74,222,128,.2)}
-.tr .svc-t{color:#4ADE80}
-.tr .chip{background:rgba(74,222,128,.1);color:#4ADE80;border:1px solid rgba(74,222,128,.18)}
+.lyr-a{background:rgba(167,139,250,.04);border-color:rgba(167,139,250,.16)}
+.lyr-a .lyr-num{color:#A78BFA}
+.lyr-b{background:rgba(240,120,48,.04);border-color:rgba(240,120,48,.16)}
+.lyr-b .lyr-num{color:#F07830}
+.lyr-c{background:rgba(74,222,128,.04);border-color:rgba(74,222,128,.16)}
+.lyr-c .lyr-num{color:#4ADE80}
 
-.tg{background:rgba(42,171,238,.05);border-color:rgba(42,171,238,.2)}
-.tg .svc-t{color:#2AABEE}
-.tg .chip{background:rgba(42,171,238,.1);color:#2AABEE;border:1px solid rgba(42,171,238,.18)}
+/* ── RIGHT: SERVICES ── */
+.svcs{display:flex;flex-direction:column;gap:10px;height:100%;padding:2px 0}
+.svc{border-radius:12px;padding:14px 16px;border:1px solid;flex:1;display:flex;flex-direction:column;justify-content:space-between}
+.svc-top{}
+.svc-tag{font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;font-family:'JetBrains Mono',monospace;margin-bottom:4px}
+.svc-name{font-size:14px;font-weight:800;color:#FAFAFA;letter-spacing:-.01em;margin-bottom:3px}
+.svc-desc{font-size:10.5px;color:#71717A;line-height:1.5}
+.chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:10px}
+.chip{font-size:9.5px;font-weight:600;padding:3px 8px;border-radius:5px;font-family:'JetBrains Mono',monospace}
 
-/* FOOTER */
-.footer{flex-shrink:0;text-align:center;margin-top:14px}
-.footer-t{font-size:10px;color:#3F3F46;font-family:'JetBrains Mono',monospace;letter-spacing:.07em}
+/* AI */
+.svc-ai{background:rgba(167,139,250,.05);border-color:rgba(167,139,250,.2)}
+.svc-ai .svc-tag{color:#A78BFA}
+.svc-ai .chip{background:rgba(167,139,250,.1);color:#A78BFA;border:1px solid rgba(167,139,250,.2)}
+
+/* Token */
+.svc-tk{background:rgba(240,120,48,.05);border-color:rgba(240,120,48,.2)}
+.svc-tk .svc-tag{color:#F07830}
+.svc-tk .chip{background:rgba(240,120,48,.1);color:#F07830;border:1px solid rgba(240,120,48,.2)}
+
+/* Telegram */
+.svc-tg{background:rgba(42,171,238,.05);border-color:rgba(42,171,238,.2)}
+.svc-tg .svc-tag{color:#2AABEE}
+.svc-tg .chip{background:rgba(42,171,238,.1);color:#2AABEE;border:1px solid rgba(42,171,238,.2)}
+
+/* ── FOOTER ── */
+.footer{flex-shrink:0;display:flex;align-items:center;justify-content:center;margin-top:18px;gap:16px}
+.footer-line{height:1px;flex:1;background:rgba(255,255,255,.05)}
+.footer-txt{font-size:10px;color:#3F3F46;font-family:'JetBrains Mono',monospace;letter-spacing:.06em;white-space:nowrap}
 </style>
 </head>
 <body>
-<div class="wrap">
+<div class="canvas">
 
+  <!-- HEADER -->
   <div class="header">
-    <div class="logo">ORL<span>I</span>X</div>
-    <div class="title-block">
-      <div class="title">How Orlix Works</div>
-      <div class="sub">Architecture Overview</div>
+    <div class="brand">
+      <div class="brand-dot"></div>
+      <div class="brand-name">ORLIX</div>
     </div>
-    <div class="url">orlixai.xyz</div>
+    <div class="header-title">
+      <div class="ht">How Orlix Works</div>
+      <div class="hs">Current Architecture</div>
+    </div>
+    <div class="header-url">orlixai.xyz</div>
   </div>
 
+  <!-- DIAGRAM -->
   <div class="main">
 
-    <!-- USER INPUT -->
-    <div class="user-col">
-      <div class="user-label">User Input</div>
-      <div class="query">
-        <div class="ql">AI Chat</div>
-        <div class="qt">"Best model for coding?"</div>
+    <!-- INPUTS -->
+    <div class="inputs">
+      <div class="inputs-lbl">User Input</div>
+
+      <div class="inp">
+        <div class="inp-tag">AI Chat</div>
+        <div class="inp-txt">"Best model for coding?"</div>
       </div>
-      <div class="query">
-        <div class="ql">Token Analysis</div>
-        <div class="qt">"Analyze <span class="o">0x799c...cBA3</span>"</div>
+
+      <div class="inp">
+        <div class="inp-tag">Token Analysis</div>
+        <div class="inp-txt">"Analyze <span class="o">0x799c…cBA3</span>"</div>
       </div>
-      <div class="query">
-        <div class="ql">NL Trade</div>
-        <div class="qt">"Buy <span class="o">$50</span> of <span class="p">$ORLIX</span>"</div>
+
+      <div class="inp">
+        <div class="inp-tag">App Builder</div>
+        <div class="inp-txt">"Build me a <span class="p">price tracker</span>"</div>
       </div>
-      <div class="query">
-        <div class="ql">Telegram</div>
-        <div class="qt">"/analyze [contract]"</div>
+
+      <div class="inp">
+        <div class="inp-tag">Telegram Bot</div>
+        <div class="inp-txt">"/analyze <span class="o">[contract]</span>"</div>
       </div>
     </div>
 
-    <!-- ARROW → -->
-    <div class="arrow-col">
-      <div class="arr"><div class="arr-line"></div><div class="arr-head"></div></div>
+    <!-- → -->
+    <div class="arr-col">
+      <div class="arr"><div class="arr-line"></div><div class="arr-tip"></div></div>
     </div>
 
-    <!-- ORLIX CORE -->
-    <div class="core-col">
-      <div class="core-box">
-        <div class="core-top">
-          <div class="core-name">ORL<span>I</span>X</div>
-          <div class="core-tag">Intelligence Layer</div>
+    <!-- CORE -->
+    <div class="core-wrap">
+      <div class="core">
+        <div class="core-head">
+          <div class="core-logo">ORL<span>I</span>X</div>
+          <div class="core-badge">Intelligence Layer</div>
         </div>
-        <div class="layer nl">
-          <div class="layer-t">① NL Parser</div>
-          <div class="layer-n">Intent Understanding</div>
-          <div class="layer-d">Powered by Claude — reads the message, detects intent type, extracts key params (token address, amount, model preference)</div>
-        </div>
-        <div class="layer rt">
-          <div class="layer-t">② Router</div>
-          <div class="layer-n">Model & Tool Selector</div>
-          <div class="layer-d">Routes to the right destination — AI model, token analyzer, trade execution, or Telegram handler</div>
-        </div>
-        <div class="layer dl">
-          <div class="layer-t">③ Data Layer</div>
-          <div class="layer-n">Real-Time Onchain Data</div>
-          <div class="layer-d">DexScreener API · Base RPC · Liquidity · Buy/sell pressure · Token supply — all live, no cache</div>
+        <div class="layers">
+          <div class="lyr lyr-a">
+            <div class="lyr-num">① NL Parser</div>
+            <div class="lyr-name">Intent Understanding</div>
+            <div class="lyr-desc">Claude reads the message, detects intent type, extracts params — token address, model preference, task type</div>
+          </div>
+          <div class="lyr lyr-b">
+            <div class="lyr-num">② Router</div>
+            <div class="lyr-name">Model & Tool Selector</div>
+            <div class="lyr-desc">Routes to the right destination — AI model, token analyzer, app builder, or Telegram handler — based on intent</div>
+          </div>
+          <div class="lyr lyr-c">
+            <div class="lyr-num">③ Data Layer</div>
+            <div class="lyr-name">Real-Time Onchain Data</div>
+            <div class="lyr-desc">DexScreener API · Base RPC · Liquidity · Buy/sell pressure · Token supply — live, no cache</div>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- ARROW → -->
-    <div class="arrow-col">
-      <div class="arr"><div class="arr-line"></div><div class="arr-head"></div></div>
+    <!-- → -->
+    <div class="arr-col">
+      <div class="arr"><div class="arr-line"></div><div class="arr-tip"></div></div>
     </div>
 
     <!-- SERVICES -->
-    <div class="svc-col">
-      <div class="svc ai">
-        <div class="svc-t">AI Models — 19 total</div>
-        <div class="svc-n">Multi-Model Playground</div>
+    <div class="svcs">
+
+      <div class="svc svc-ai">
+        <div class="svc-top">
+          <div class="svc-tag">AI Models — 19 total</div>
+          <div class="svc-name">Multi-Model Playground</div>
+          <div class="svc-desc">Switch between any model in one chat. No context loss.</div>
+        </div>
         <div class="chips">
           <span class="chip">Claude</span>
           <span class="chip">GPT-4o</span>
           <span class="chip">Grok</span>
           <span class="chip">Gemini</span>
           <span class="chip">DeepSeek</span>
-          <span class="chip">+14 more</span>
+          <span class="chip">+14</span>
         </div>
       </div>
-      <div class="svc tk">
-        <div class="svc-t">Token Analyzer</div>
-        <div class="svc-n">AI-Powered Risk Analysis</div>
+
+      <div class="svc svc-tk">
+        <div class="svc-top">
+          <div class="svc-tag">Token Analyzer</div>
+          <div class="svc-name">AI Risk Analysis</div>
+          <div class="svc-desc">Real-time verdict, liquidity bars, buy/sell pressure — on any Base token.</div>
+        </div>
         <div class="chips">
           <span class="chip">DexScreener</span>
           <span class="chip">Base RPC</span>
           <span class="chip">AI Verdict</span>
         </div>
       </div>
-      <div class="svc tr">
-        <div class="svc-t">Trade Execution</div>
-        <div class="svc-n">Natural Language Swap</div>
+
+      <div class="svc svc-tg">
+        <div class="svc-top">
+          <div class="svc-tag">Telegram Bot</div>
+          <div class="svc-name">@orlixai_bot</div>
+          <div class="svc-desc">Full Orlix power inside Telegram. No app needed.</div>
+        </div>
         <div class="chips">
-          <span class="chip">Uniswap</span>
-          <span class="chip">Base Network</span>
-          <span class="chip">0x API</span>
+          <span class="chip">All 19 models</span>
+          <span class="chip">Token analysis</span>
         </div>
       </div>
-      <div class="svc tg">
-        <div class="svc-t">Telegram Bot</div>
-        <div class="svc-n">@orlixai_bot</div>
-        <div class="chips">
-          <span class="chip">Full parity</span>
-          <span class="chip">$ORLIX gated</span>
-        </div>
-      </div>
+
     </div>
 
   </div>
 
+  <!-- FOOTER -->
   <div class="footer">
-    <div class="footer-t">© 2026 Orlix AI &nbsp;·&nbsp; Personal AI Operating System on Base &nbsp;·&nbsp; orlixai.xyz</div>
+    <div class="footer-line"></div>
+    <div class="footer-txt">© 2026 Orlix AI &nbsp;·&nbsp; Personal AI Operating System on Base &nbsp;·&nbsp; orlixai.xyz</div>
+    <div class="footer-line"></div>
   </div>
 
 </div>
