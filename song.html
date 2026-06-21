@@ -265,30 +265,6 @@ html,body{background:var(--bg);color:var(--t2);font-family:var(--font);min-heigh
 }
 #player-time-txt{font-family:var(--mono);font-size:.65rem;color:var(--t3)}
 
-/* ── VOICE ── */
-#voice-section{padding:0 22px 16px;display:none}
-#voice-section.show{display:block}
-.voice-inner{
-  border:1px solid var(--b1);border-radius:12px;
-  padding:14px 16px;background:var(--s2);
-}
-#voice-btn{
-  display:flex;align-items:center;justify-content:center;gap:7px;width:100%;
-  padding:10px 16px;border-radius:9px;
-  border:1px solid var(--accent-g);background:var(--accent-d);
-  color:var(--accent);font-size:.78rem;font-weight:700;
-  cursor:pointer;font-family:var(--font);transition:all .2s;letter-spacing:.02em;
-}
-#voice-btn:hover:not(:disabled){opacity:.8}
-#voice-btn:disabled{opacity:.5;cursor:default}
-#voice-player-wrap{margin-top:12px;display:none}
-#voice-label{font-size:.68rem;font-weight:700;color:var(--t3);letter-spacing:.1em;text-transform:uppercase;display:block;margin-bottom:6px}
-#voice-audio{
-  width:100%;height:36px;border-radius:8px;outline:none;
-  accent-color:var(--accent);background:var(--s3);
-}
-#voice-err{font-size:.73rem;color:var(--red);margin-top:8px;display:none;font-family:var(--mono)}
-
 /* player loading dots */
 .gen-dots span{display:inline-block;animation:dotBounce .8s ease-in-out infinite;margin-right:1px}
 .gen-dots span:nth-child(2){animation-delay:.15s}
@@ -451,21 +427,6 @@ html,body{background:var(--bg);color:var(--t2);font-family:var(--font);min-heigh
 
     <!-- lyrics body -->
     <div id="lyrics-body-wrap"></div>
-
-    <!-- voice -->
-    <div id="voice-section">
-      <div class="voice-inner">
-        <button id="voice-btn" onclick="generateVoice()">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a3 3 0 0 1 3 3v7a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
-          Generate AI Voice
-        </button>
-        <div id="voice-player-wrap">
-          <span id="voice-label">AI Voice — <span id="voice-genre-label"></span></span>
-          <audio id="voice-audio" controls></audio>
-        </div>
-        <div id="voice-err"></div>
-      </div>
-    </div>
 
     <!-- actions -->
     <div id="out-actions">
@@ -1046,45 +1007,6 @@ function buildBeat(genre, token) {
   return bpm;
 }
 
-// ── AI VOICE ──────────────────────────────────────────────────────────────────
-async function generateVoice() {
-  if (!currentLyrics) return;
-  const btn     = document.getElementById('voice-btn');
-  const wrap    = document.getElementById('voice-player-wrap');
-  const audio   = document.getElementById('voice-audio');
-  const errEl   = document.getElementById('voice-err');
-
-  btn.disabled = true;
-  btn.innerHTML = '<span class="gen-dots"><span>.</span><span>.</span><span>.</span></span> Generating voice…';
-  errEl.style.display = 'none';
-
-  try {
-    const res = await fetch('/api/voice', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ lyrics: currentLyrics, genre: selectedGenre }),
-    });
-
-    if (!res.ok) {
-      const ct = res.headers.get('content-type') || '';
-      const err = ct.includes('json') ? (await res.json()).error : await res.text();
-      throw new Error(err || `HTTP ${res.status}`);
-    }
-
-    const blob = await res.blob();
-    if (audio.src) URL.revokeObjectURL(audio.src);
-    audio.src = URL.createObjectURL(blob);
-    audio.load();
-    wrap.style.display = 'block';
-    btn.style.display = 'none';
-  } catch (e) {
-    btn.disabled = false;
-    btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a3 3 0 0 1 3 3v7a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg> Retry AI Voice';
-    errEl.textContent = '⚠ ' + String(e.message).slice(0, 100);
-    errEl.style.display = 'block';
-  }
-}
-
 // ── GENERATE ──────────────────────────────────────────────────────────────────
 async function generate() {
   const query = document.getElementById('token-inp').value.trim();
@@ -1112,11 +1034,6 @@ async function generate() {
 
   document.getElementById('player').classList.remove('show');
   document.getElementById('out-actions').classList.remove('show');
-  document.getElementById('voice-section').classList.remove('show');
-  document.getElementById('voice-player-wrap').style.display = 'none';
-  document.getElementById('voice-err').style.display = 'none';
-  document.getElementById('voice-btn').disabled = false;
-  document.getElementById('voice-btn').innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a3 3 0 0 1 3 3v7a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg> Generate AI Voice';
   document.getElementById('price-row').innerHTML = '';
   document.getElementById('out-token-name').textContent = '';
 
@@ -1145,8 +1062,6 @@ async function generate() {
     renderTokenHeader(data.token, selectedGenre);
     renderLyrics(data.lyrics);
     document.getElementById('out-actions').classList.add('show');
-    document.getElementById('voice-section').classList.add('show');
-    document.getElementById('voice-genre-label').textContent = selectedGenre.toUpperCase();
 
     generateMusic(sym, selectedGenre, data.token); // intentionally no await
 
