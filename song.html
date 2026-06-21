@@ -11,6 +11,7 @@
 <meta property="og:image" content="https://www.orlixai.xyz/og-image.png"/>
 <meta name="twitter:card" content="summary_large_image"/>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+<script src="https://unpkg.com/tone@14.9.6/build/Tone.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -456,86 +457,221 @@ function showLoading(query) {
   return () => clearInterval(interval);
 }
 
-// ── MUSIC PLAYER ─────────────────────────────────────────────────────────────
-let audioEl = null;
-let isPlaying = false;
-let progressTimer = null;
+// ── TONE.JS BEAT ENGINE ───────────────────────────────────────────────────────
+let toneReady  = false;
+let beatActive = false;
+let beatPlaying = false;
+let beatDisposeAll = null;
+let beatProgressTimer = null;
+let beatElapsed = 0;
+const BEAT_SECS = 30;
 
-function initPlayer() {
-  audioEl = document.getElementById('audio-el');
-  audioEl.addEventListener('timeupdate', updateProgress);
-  audioEl.addEventListener('ended', () => { isPlaying = false; document.getElementById('play-btn').textContent = '▶'; });
+function disposeCurrentBeat() {
+  if (beatDisposeAll) { try { beatDisposeAll(); } catch {} beatDisposeAll = null; }
+  try { Tone.getTransport().stop(); Tone.getTransport().cancel(); } catch {}
+  if (beatProgressTimer) { clearInterval(beatProgressTimer); beatProgressTimer = null; }
+  beatPlaying = false; beatActive = false; beatElapsed = 0;
 }
 
-function updateProgress() {
-  if (!audioEl || !audioEl.duration) return;
-  const pct = (audioEl.currentTime / audioEl.duration * 100).toFixed(1);
+function updateBeatUI() {
   const prog = document.getElementById('player-progress');
-  if (prog) prog.style.width = pct + '%';
+  if (prog) prog.style.width = (beatElapsed / BEAT_SECS * 100).toFixed(1) + '%';
   const time = document.getElementById('player-time-txt');
-  const fmt = s => `${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,'0')}`;
-  if (time) time.textContent = `${fmt(audioEl.currentTime)} / ${fmt(audioEl.duration)}`;
+  if (time) {
+    const fmt = s => `${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,'0')}`;
+    time.textContent = `${fmt(beatElapsed)} / ${fmt(BEAT_SECS)}`;
+  }
+}
+
+function startBeatTimer() {
+  if (beatProgressTimer) clearInterval(beatProgressTimer);
+  const t0 = Date.now() - beatElapsed * 1000;
+  beatProgressTimer = setInterval(() => {
+    beatElapsed = (Date.now() - t0) / 1000;
+    if (beatElapsed >= BEAT_SECS) {
+      try { Tone.getTransport().stop(); } catch {}
+      beatElapsed = 0; beatPlaying = false;
+      clearInterval(beatProgressTimer); beatProgressTimer = null;
+      const pb = document.getElementById('play-btn');
+      if (pb) pb.textContent = '▶';
+      updateBeatUI();
+    } else { updateBeatUI(); }
+  }, 100);
 }
 
 function togglePlay() {
-  if (!audioEl || !audioEl.src) return;
-  if (isPlaying) { audioEl.pause(); isPlaying = false; document.getElementById('play-btn').textContent = '▶'; }
-  else { audioEl.play(); isPlaying = true; document.getElementById('play-btn').textContent = '⏸'; }
-}
-
-function setAudioReady(url, sym, genre) {
-  if (!audioEl) return;
-  audioEl.src = url;
-  const playBtn = document.getElementById('play-btn');
-  playBtn.disabled = false;
-  const [gbg, gclr] = GENRE_COLORS[genre] || GENRE_COLORS.trap;
-  document.getElementById('player-info').innerHTML = `
-    <div class="player-title" style="color:${gclr}">🎵 $${sym} — ${genre.toUpperCase()} Beat</div>
-    <div class="player-bar" onclick="seekAudio(event)">
-      <div class="player-progress" id="player-progress"></div>
-    </div>
-    <div class="player-time" id="player-time-txt">0:00 / 0:30</div>`;
-  // Auto-play
-  audioEl.play().then(() => { isPlaying = true; playBtn.textContent = '⏸'; }).catch(() => {});
+  if (!beatActive) return;
+  if (beatPlaying) {
+    try { Tone.getTransport().pause(); } catch {}
+    beatPlaying = false;
+    document.getElementById('play-btn').textContent = '▶';
+    if (beatProgressTimer) { clearInterval(beatProgressTimer); beatProgressTimer = null; }
+  } else {
+    try { Tone.getTransport().start(); } catch {}
+    beatPlaying = true;
+    document.getElementById('play-btn').textContent = '⏸';
+    startBeatTimer();
+  }
 }
 
 function seekAudio(e) {
-  if (!audioEl || !audioEl.duration) return;
-  const bar = e.currentTarget;
-  const pct = e.offsetX / bar.offsetWidth;
-  audioEl.currentTime = pct * audioEl.duration;
+  if (!beatActive) return;
+  const pct = Math.max(0, Math.min(1, e.offsetX / e.currentTarget.offsetWidth));
+  beatElapsed = pct * BEAT_SECS;
+  try { Tone.getTransport().seconds = beatElapsed; } catch {}
+  updateBeatUI();
 }
 
 function showMusicLoading(sym) {
   document.getElementById('music-player').style.display = 'flex';
   document.getElementById('player-info').innerHTML = `
     <div class="player-loading">
-      <span>Generating ${selectedGenre} beat for $${sym}</span>
+      <span>Building ${selectedGenre} beat for $${sym}</span>
       <span class="gen-dots"><span>.</span><span>.</span><span>.</span></span>
     </div>
-    <div style="font-size:9px;color:var(--t3);margin-top:4px;font-family:var(--mono)">~30 seconds via Replicate MusicGen</div>`;
+    <div style="font-size:9px;color:var(--t3);margin-top:4px;font-family:var(--mono)">Powered by Tone.js — instant, no API</div>`;
   document.getElementById('play-btn').disabled = true;
   document.getElementById('play-btn').textContent = '♪';
 }
 
 async function generateMusic(sym, genre) {
+  showMusicLoading(sym);
+  disposeCurrentBeat();
   try {
-    const res = await fetch('/api/music', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ genre, symbol: sym }),
-    });
-    if (!res.ok) throw new Error((await res.json().catch(()=>({}))).error || `HTTP ${res.status}`);
-    const data = await res.json();
-    if (data.audioUrl) setAudioReady(data.audioUrl, sym, genre);
-    else throw new Error('No audio returned');
+    if (!toneReady) { await Tone.start(); toneReady = true; }
+    buildBeat(genre);
+    beatActive = true;
+    const playBtn = document.getElementById('play-btn');
+    playBtn.disabled = false;
+    const [gbg, gclr] = GENRE_COLORS[genre] || GENRE_COLORS.trap;
+    document.getElementById('player-info').innerHTML = `
+      <div class="player-title" style="color:${gclr}">🎵 $${sym} — ${genre.toUpperCase()} Beat</div>
+      <div class="player-bar" onclick="seekAudio(event)">
+        <div class="player-progress" id="player-progress"></div>
+      </div>
+      <div class="player-time" id="player-time-txt">0:00 / 0:30</div>`;
+    Tone.getTransport().start();
+    beatPlaying = true;
+    playBtn.textContent = '⏸';
+    startBeatTimer();
   } catch (e) {
     const info = document.getElementById('player-info');
-    const msg = e.message || String(e);
-    const isNoKey = msg.includes('not configured');
-    if (info) info.innerHTML = `<div style="font-size:.75rem;color:var(--t3)">${isNoKey ? '⚙ Add REPLICATE_API_KEY in Vercel to enable music' : '⚠ ' + msg.slice(0, 120)}</div>`;
+    if (info) info.innerHTML = `<div style="font-size:.75rem;color:var(--t3)">⚠ ${String(e.message||e).slice(0,120)}</div>`;
   }
 }
+
+// ── BEAT BUILDERS ─────────────────────────────────────────────────────────────
+function buildBeat(genre) {
+  const synths = [], seqs = [];
+  beatDisposeAll = () => {
+    seqs.forEach(s   => { try { s.stop(); s.dispose(); } catch {} });
+    synths.forEach(s => { try { s.dispose(); } catch {} });
+  };
+
+  Tone.getTransport().bpm.value = {trap:140,phonk:130,pop:120,drill:138,hype:155,ballad:72}[genre] || 140;
+
+  const seq = (cb, steps) => {
+    const s = new Tone.Sequence(cb, steps, '16n');
+    seqs.push(s); s.start(0);
+  };
+
+  if (genre === 'trap') {
+    const kick  = new Tone.MembraneSynth({pitchDecay:.06,octaves:8,envelope:{attack:.001,decay:.35,sustain:0,release:.1}}).toDestination();
+    const snare = new Tone.NoiseSynth({noise:{type:'white'},envelope:{attack:.001,decay:.12,sustain:0,release:.05}}).toDestination();
+    const hh    = new Tone.MetalSynth({frequency:500,envelope:{attack:.001,decay:.04,release:.01},harmonicity:5.1,modulationIndex:32,resonance:3000,octaves:1}).toDestination();
+    const bass  = new Tone.Synth({oscillator:{type:'sine'},envelope:{attack:.01,decay:1.2,sustain:0,release:.3}}).toDestination();
+    snare.volume.value=-8; hh.volume.value=-18; bass.volume.value=-3;
+    synths.push(kick,snare,hh,bass);
+    seq((t,v)=>{ if(v) kick.triggerAttackRelease('C1','8n',t); },
+      [1,0,0,0, 0,0,0,0, 1,0,0,0, 0,0,1,0]);
+    seq((t,v)=>{ if(v) snare.triggerAttackRelease('16n',t); },
+      [0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,0,0]);
+    seq((t,v)=>{ if(v>0) hh.triggerAttackRelease('32n',t,v); },
+      [.9,.3,.6,.3, .8,.3,.5,1, .9,.3,.7,.3, .9,1,.5,.3]);
+    seq((t,n)=>{ if(n) bass.triggerAttackRelease(n,'4n',t); },
+      ['C2',null,null,null, null,null,null,null, 'A1',null,null,null, 'G1',null,null,null]);
+
+  } else if (genre === 'phonk') {
+    const kick = new Tone.MembraneSynth({pitchDecay:.08,octaves:10,envelope:{attack:.001,decay:.5,sustain:0,release:.1}}).toDestination();
+    const cow  = new Tone.MetalSynth({frequency:562,envelope:{attack:.001,decay:.25,release:.1},harmonicity:5.1,modulationIndex:16,resonance:4000,octaves:1.5}).toDestination();
+    const dist = new Tone.Distortion(0.4).toDestination();
+    const bass = new Tone.Synth({oscillator:{type:'sawtooth'},envelope:{attack:.01,decay:.9,sustain:.1,release:.3}}).connect(dist);
+    kick.volume.value=-1; cow.volume.value=-10; bass.volume.value=-3;
+    synths.push(kick,cow,dist,bass);
+    seq((t,v)=>{ if(v) kick.triggerAttackRelease('C1','8n',t); },
+      [1,0,0,0, 0,0,1,0, 0,0,0,0, 1,0,0,0]);
+    seq((t,v)=>{ if(v) cow.triggerAttackRelease('16n',t,v); },
+      [.8,0,.5,0, .8,0,.5,.3, .8,0,.5,0, .8,.3,.5,.3]);
+    seq((t,n)=>{ if(n) bass.triggerAttackRelease(n,'8n',t); },
+      ['C2',null,'A1',null, 'G1',null,null,null, 'C2',null,'Bb1',null, 'G1',null,null,null]);
+
+  } else if (genre === 'pop') {
+    const kick  = new Tone.MembraneSynth({pitchDecay:.04,octaves:6,envelope:{attack:.001,decay:.25,sustain:0,release:.1}}).toDestination();
+    const clap  = new Tone.NoiseSynth({noise:{type:'pink'},envelope:{attack:.001,decay:.08,sustain:0,release:.03}}).toDestination();
+    const arp   = new Tone.Synth({oscillator:{type:'triangle'},envelope:{attack:.02,decay:.2,sustain:.3,release:.4}}).toDestination();
+    const bass  = new Tone.Synth({oscillator:{type:'sine'},envelope:{attack:.02,decay:.4,sustain:.2,release:.3}}).toDestination();
+    kick.volume.value=-2; clap.volume.value=-10; arp.volume.value=-8; bass.volume.value=-5;
+    synths.push(kick,clap,arp,bass);
+    seq((t,v)=>{ if(v) kick.triggerAttackRelease('C1','8n',t); },
+      [1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,0]);
+    seq((t,v)=>{ if(v) clap.triggerAttackRelease('8n',t); },
+      [0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,0,0]);
+    seq((t,n)=>{ if(n) arp.triggerAttackRelease(n,'8n',t); },
+      ['C4','E4','G4','B4', 'C5','B4','G4','E4', 'A3','C4','E4','G4', 'F4','A4','C5','E5']);
+    seq((t,n)=>{ if(n) bass.triggerAttackRelease(n,'4n',t); },
+      ['C2',null,null,null, null,null,null,null, 'A1',null,null,null, 'F1',null,null,null]);
+
+  } else if (genre === 'drill') {
+    const kick  = new Tone.MembraneSynth({pitchDecay:.07,octaves:9,envelope:{attack:.001,decay:.4,sustain:0,release:.1}}).toDestination();
+    const hh    = new Tone.MetalSynth({frequency:400,envelope:{attack:.001,decay:.03,release:.01},harmonicity:5.1,modulationIndex:32,resonance:4000,octaves:1}).toDestination();
+    const piano = new Tone.PolySynth(Tone.Synth,{oscillator:{type:'triangle'},envelope:{attack:.02,decay:.4,sustain:.3,release:.8}}).toDestination();
+    const bass  = new Tone.Synth({oscillator:{type:'sine'},envelope:{attack:.01,decay:.8,sustain:.1,release:.3}}).toDestination();
+    kick.volume.value=-2; hh.volume.value=-20; piano.volume.value=-8; bass.volume.value=-4;
+    synths.push(kick,hh,piano,bass);
+    seq((t,v)=>{ if(v) kick.triggerAttackRelease('C1','8n',t); },
+      [1,0,0,0, 0,0,1,0, 0,0,0,0, 1,0,0,0]);
+    seq((t,v)=>{ if(v>0) hh.triggerAttackRelease('32n',t,v); },
+      [.9,.5,.8,.5, .9,.5,.8,1, .9,.5,.8,.5, .9,1,.8,.5]);
+    seq((t,n)=>{ if(n) piano.triggerAttackRelease(n,'8n',t); },
+      [['C3','Eb3','G3'],null,null,null, null,null,['Ab2','Cb3','Eb3'],null,
+       null,null,null,null, ['Bb2','Db3','F3'],null,null,null]);
+    seq((t,n)=>{ if(n) bass.triggerAttackRelease(n,'4n',t); },
+      ['C2',null,null,null, null,null,null,null, 'Ab1',null,null,null, 'Bb1',null,null,null]);
+
+  } else if (genre === 'hype') {
+    const kick  = new Tone.MembraneSynth({pitchDecay:.05,octaves:8,envelope:{attack:.001,decay:.25,sustain:0,release:.05}}).toDestination();
+    const snare = new Tone.NoiseSynth({noise:{type:'white'},envelope:{attack:.001,decay:.1,sustain:0,release:.04}}).toDestination();
+    const hh    = new Tone.MetalSynth({frequency:600,envelope:{attack:.001,decay:.03,release:.01},harmonicity:5.1,modulationIndex:32,resonance:4000,octaves:1}).toDestination();
+    const bass  = new Tone.Synth({oscillator:{type:'sawtooth'},envelope:{attack:.02,decay:.3,sustain:.4,release:.2}}).toDestination();
+    snare.volume.value=-6; hh.volume.value=-16; bass.volume.value=-5;
+    synths.push(kick,snare,hh,bass);
+    seq((t,v)=>{ if(v) kick.triggerAttackRelease('C1','8n',t); },
+      [1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,1,0]);
+    seq((t,v)=>{ if(v) snare.triggerAttackRelease('8n',t); },
+      [0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,0,0]);
+    seq((t,v)=>{ if(v>0) hh.triggerAttackRelease('32n',t,v); },
+      [1,.5,1,.5, 1,.5,1,.5, 1,.5,1,.5, 1,.5,1,.5]);
+    seq((t,n)=>{ if(n) bass.triggerAttackRelease(n,'8n',t); },
+      ['C2',null,'C2',null, 'G1',null,null,null, 'C2',null,'C2',null, 'F1',null,null,null]);
+
+  } else { // ballad
+    const piano = new Tone.PolySynth(Tone.Synth,{oscillator:{type:'triangle'},envelope:{attack:.04,decay:.5,sustain:.5,release:1.2}}).toDestination();
+    const pad   = new Tone.PolySynth(Tone.Synth,{oscillator:{type:'sine'},envelope:{attack:.3,decay:.4,sustain:.6,release:2}}).toDestination();
+    const kick  = new Tone.MembraneSynth({pitchDecay:.04,octaves:5,envelope:{attack:.001,decay:.3,sustain:0,release:.1}}).toDestination();
+    piano.volume.value=-4; pad.volume.value=-14; kick.volume.value=-10;
+    synths.push(piano,pad,kick);
+    seq((t,n)=>{ if(n) piano.triggerAttackRelease(n,'2n',t); },
+      [['C3','E3','G3'],null,null,null, null,null,null,null,
+       ['A2','C3','E3'],null,null,null, null,null,null,null]);
+    seq((t,n)=>{ if(n) pad.triggerAttackRelease(n,'1n',t); },
+      [['C4','E4','G4'],null,null,null, null,null,null,null,
+       ['A3','C4','E4'],null,null,null, null,null,null,null]);
+    seq((t,v)=>{ if(v) kick.triggerAttackRelease('C1','8n',t); },
+      [1,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0]);
+  }
+}
+
+function initPlayer() {} // replaced by Tone.js
 
 // ── GENERATE SONG ─────────────────────────────────────────────────────────────
 async function generate() {
