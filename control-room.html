@@ -467,10 +467,11 @@ function normalizeBankrToken(t){
     address:addr,
     priceUsd:t.price!=null?String(t.price):null,
     priceChange1h:null,priceChange6h:null,priceChange24h:null,
-    volume1h:t.volume_1h||null,
-    volume24h:null,
-    liquidity:t.liquidity||null,
-    marketCap:t.usd_market_cap||null,
+    volume1h:t.volume_1h||0,
+    volume6h:0,
+    volume24h:t.volume_24h||0,
+    liquidity:t.liquidity||0,
+    marketCap:t.usd_market_cap||0,
     buys1h:swaps?Math.round(swaps*.55):0,
     sells1h:swaps?Math.round(swaps*.45):0,
     pairUrl:`https://dexscreener.com/base/${addr}`,
@@ -478,7 +479,10 @@ function normalizeBankrToken(t){
     _logo:t.logo||null,
     _smart:t.smart_degen_count||0,
     _kol:t.renowned_count||0,
-    _rug:typeof t.rug_ratio==='number'?t.rug_ratio:parseFloat(t.rug_ratio||1),
+    _rug:typeof t.rug_ratio==='number'?t.rug_ratio:parseFloat(t.rug_ratio??1),
+    _holders:t.holder_count||0,
+    _swaps:swaps,
+    _bankr:true,
   };
 }
 
@@ -669,12 +673,30 @@ function buildCard(t, isNew){
     </div>
   </div>
 
+  ${t._bankr ? `
+  <div class="card-stats">
+    <div class="cs"><div class="cs-l">Vol 1h</div><div class="cs-v">${t.volume1h>0?fmtUsd(t.volume1h):(t.volume24h>0?fmtUsd(t.volume24h):'—')}</div></div>
+    <div class="cs"><div class="cs-l">MCap</div><div class="cs-v">${fmtUsd(t.marketCap)||'—'}</div></div>
+    <div class="cs"><div class="cs-l">Holders</div><div class="cs-v">${t._holders?t._holders.toLocaleString():'—'}</div></div>
+  </div>
+  <div class="card-foot">
+    <div style="display:flex;gap:4px;flex-wrap:wrap">
+      ${t._rug<0.1?`<span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;background:rgba(34,197,94,.1);color:var(--green)">✓ Safe</span>`
+        :t._rug<0.3?`<span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;background:rgba(234,179,8,.1);color:var(--yellow)">⚠ Watch</span>`
+        :`<span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;background:rgba(239,68,68,.1);color:var(--red)">✕ Risk</span>`}
+      ${t._smart>0?`<span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;background:rgba(167,139,250,.1);color:#a78bfa">🧠${t._smart}</span>`:''}
+      ${t._kol>0?`<span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;background:rgba(234,179,8,.1);color:var(--yellow)">⭐${t._kol}</span>`:''}
+      ${t._swaps>0?`<span style="font-size:9px;color:var(--t3);font-family:var(--mono)">${t._swaps} swaps</span>`:''}
+    </div>
+    <div class="card-links" onclick="event.stopPropagation()">
+      <a class="tc-link primary" href="${esc(t.pairUrl||'#')}" target="_blank" rel="noopener">DEX</a>
+    </div>
+  </div>` : `
   <div class="card-stats">
     <div class="cs"><div class="cs-l">${t.volume1h>0?'Vol 1h':t.volume6h>0?'Vol 6h':'Vol 24h'}</div><div class="cs-v">${fmtUsd(t.volume1h||t.volume6h||t.volume24h)}</div></div>
     <div class="cs"><div class="cs-l">MCap</div><div class="cs-v">${fmtUsd(t.marketCap)}</div></div>
     <div class="cs"><div class="cs-l">Liq</div><div class="cs-v">${fmtUsd(t.liquidity)}</div></div>
   </div>
-
   <div class="card-foot">
     ${total>0?`<div class="bs-mini">
       <span class="bs-num" style="color:var(--green)">B${buys}</span>
@@ -685,7 +707,7 @@ function buildCard(t, isNew){
       <a class="tc-link primary" href="${esc(t.pairUrl||'#')}" target="_blank" rel="noopener">DEX</a>
       <a class="tc-link" href="https://basescan.org/token/${esc(t.address||'')}" target="_blank" rel="noopener">Scan</a>
     </div>
-  </div>
+  </div>`}
 </div>`;
 }
 

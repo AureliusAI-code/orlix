@@ -12,18 +12,11 @@ const EXCLUDE_SYMBOLS = new Set([
   'RETH','STETH','WSTETH','ETH',
 ]);
 
-// Known high-volume Base-native tokens to always include
-const BASE_ANCHORS = [
-  '0x4ed4e862860bed51a9570b96d89af5e1b0efefed', // DEGEN
-  '0x532f27101965dd16442e59d40670faf5ebb142e4', // BRETT
-  '0x0d97f261b1e88845184f678e2d1e7a98d9fd38de', // TOSHI
-  '0xd418db5d367da0a41c09e39a99cde820e0d7b6f', // VIRTUAL
-  '0x20dd04c17afad9b0af40038f89ade4534895bfef', // MOCHI
-  '0x0578d8a44db98b23bf096a382e016e29a5ce0ffe', // HIGHER
-  '0xaaee1a9723aadb7afa2810263653a34ba2c21c7a', // MOG
-  '0xcde172dc5ffc46d228838446c57c1227e0b82049', // WELL
-  '0xcbb7c0000ab88b473b1f5afd9ef808440eed33bf', // CBBTC
-  '0x6921b130d297cc43754afba22e5eac0fbf8db75b', // OGN/other
+// Focused searches for high-volume Base-native tokens
+const BASE_SEARCHES = [
+  'BRETT','VIRTUAL','AERO','DEGEN','TOSHI','HIGHER',
+  'MOG','WELL','NORMIE','BASED','MOCHI','TURBO',
+  'ODOS','CBBTC','ZORA','ENJOY','MFER','PRIME',
 ];
 
 let dataCache = { data: null, ts: 0 };
@@ -83,16 +76,29 @@ function mapPair(p) {
 }
 
 async function fetchAllPairs() {
-  // Pull trending Base tokens from DexScreener's own featured/boost feeds
-  // + a few anchor addresses that are always high-volume on Base
-  const [profilesRes, boostsTopRes, boostsLatestRes] = await Promise.all([
+  // 1. DexScreener featured/boost feeds (what trending on their site)
+  // 2. Focused searches for the main Base-native tokens
+  const tasks = [
     dget('https://api.dexscreener.com/token-profiles/latest/v1').catch(() => null),
     dget('https://api.dexscreener.com/token-boosts/top/v1').catch(() => null),
     dget('https://api.dexscreener.com/token-boosts/latest/v1').catch(() => null),
-  ]);
+    ...BASE_SEARCHES.map(q =>
+      dget(`https://api.dexscreener.com/latest/dex/search?q=${q}`).catch(() => null)
+    ),
+  ];
 
-  // Collect Base token addresses from profiles + boosts
-  const addrSet = new Set(BASE_ANCHORS.map(a => a.toLowerCase()));
+  const results = await Promise.all(tasks);
+  const [profilesRes, boostsTopRes, boostsLatestRes, ...searchResults] = results;
+
+  const rawPairs = [];
+
+  // Collect pairs from keyword searches (already have full pair data)
+  for (const r of searchResults) {
+    if (r?.pairs) rawPairs.push(...r.pairs);
+  }
+
+  // Collect Base addresses from profiles + boosts, then batch-fetch
+  const addrSet = new Set();
   if (Array.isArray(profilesRes)) {
     for (const t of profilesRes) {
       if (t.chainId === 'base' && t.tokenAddress) addrSet.add(t.tokenAddress.toLowerCase());
@@ -106,12 +112,9 @@ async function fetchAllPairs() {
     }
   }
 
-  // Batch-fetch pair data in chunks of 30
-  const addrList = [...addrSet].slice(0, 150);
+  const addrList = [...addrSet].slice(0, 90);
   const chunks = [];
   for (let i = 0; i < addrList.length; i += 30) chunks.push(addrList.slice(i, i + 30).join(','));
-
-  const rawPairs = [];
   const batchResults = await Promise.all(
     chunks.map(c => dget(`https://api.dexscreener.com/latest/dex/tokens/${c}`).catch(() => null))
   );
