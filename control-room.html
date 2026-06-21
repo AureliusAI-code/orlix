@@ -413,7 +413,26 @@ html,body{height:100%;background:var(--bg);color:var(--t1);font-family:var(--san
 // ── utils ────────────────────────────────────────────────────────────────────
 function esc(s){if(typeof s!=='string')return'';return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 function fmtUsd(n){if(n==null||isNaN(n)||n===0)return'—';if(n>=1e9)return'$'+(n/1e9).toFixed(1)+'B';if(n>=1e6)return'$'+(n/1e6).toFixed(1)+'M';if(n>=1e3)return'$'+(n/1e3).toFixed(0)+'K';return'$'+n.toFixed(0)}
-function fmtPrice(s){if(!s)return'—';const n=parseFloat(s);if(isNaN(n))return s;if(n<0.000001)return'$'+n.toExponential(2);if(n<0.001)return'$'+n.toFixed(7);if(n<1)return'$'+n.toFixed(5);if(n<100)return'$'+n.toFixed(3);return'$'+n.toFixed(2)}
+const SUB='₀₁₂₃₄₅₆₇₈₉';
+function subNum(n){return String(n).split('').map(d=>SUB[+d]).join('')}
+function fmtPrice(s){
+  if(!s)return'—';
+  const n=parseFloat(s);
+  if(isNaN(n)||n===0)return'$0';
+  if(n>=1e6) return'$'+(n/1e6).toFixed(2)+'M';
+  if(n>=1e3) return'$'+n.toLocaleString('en',{maximumFractionDigits:2});
+  if(n>=1)   return'$'+n.toFixed(4).replace(/\.?0+$/,'');
+  if(n>=0.1) return'$'+n.toFixed(5).replace(/0+$/,'');
+  // subscript zero notation for tiny memecoins (DexScreener style)
+  const str=n.toFixed(20);
+  const m=str.match(/^0\.(0+)([1-9]\d{0,3})/);
+  if(m){
+    const zeros=m[1].length;
+    if(zeros>=4) return`$0.0${subNum(zeros)}${m[2]}`;
+    return'$'+n.toFixed(zeros+4).replace(/0+$/,'');
+  }
+  return'$'+n.toPrecision(4);
+}
 function fmtChg(n){if(n==null||isNaN(n))return'—';return(n>=0?'+':'')+n.toFixed(1)+'%'}
 function cc(n){return n==null||isNaN(n)?'neu':n>0?'pos':'neg'}
 function fmtAgo(ts){if(!ts)return'';const s=Math.floor((Date.now()-ts)/1000);if(s<60)return s+'s';if(s<3600)return Math.floor(s/60)+'m';return Math.floor(s/3600)+'h'}
