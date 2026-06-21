@@ -465,7 +465,7 @@ function normalizeBankrToken(t){
     symbol:t.symbol||'?',
     name:t.name||t.symbol||'?',
     address:addr,
-    priceUsd:t.price||null,
+    priceUsd:t.price!=null?String(t.price):null,
     priceChange1h:null,priceChange6h:null,priceChange24h:null,
     volume1h:t.volume_1h||null,
     volume24h:null,
@@ -676,7 +676,7 @@ function buildCard(t, isNew){
   </div>
 
   <div class="card-stats">
-    <div class="cs"><div class="cs-l">Vol 1h</div><div class="cs-v">${fmtUsd(t.volume1h)}</div></div>
+    <div class="cs"><div class="cs-l">${t.volume1h>0?'Vol 1h':t.volume6h>0?'Vol 6h':'Vol 24h'}</div><div class="cs-v">${fmtUsd(t.volume1h||t.volume6h||t.volume24h)}</div></div>
     <div class="cs"><div class="cs-l">MCap</div><div class="cs-v">${fmtUsd(t.marketCap)}</div></div>
     <div class="cs"><div class="cs-l">Liq</div><div class="cs-v">${fmtUsd(t.liquidity)}</div></div>
   </div>

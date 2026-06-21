@@ -126,13 +126,18 @@ async function fetchAllPairs() {
     if (r?.pairs) rawPairs.push(...r.pairs);
   }
 
-  // Deduplicate by token address — keep pair with highest liquidity
+  // Deduplicate by token address — prefer pairs with priceUsd, then highest liquidity
   const tokenMap = {};
   for (const p of rawPairs) {
     if (!isValidPair(p)) continue;
     const key = p.baseToken.address.toLowerCase();
-    const liq = p.liquidity?.usd || 0;
-    if (!tokenMap[key] || liq > (tokenMap[key].liquidity?.usd || 0)) {
+    const cur = tokenMap[key];
+    if (!cur) { tokenMap[key] = p; continue; }
+    const newLiq = p.liquidity?.usd || 0;
+    const curLiq = cur.liquidity?.usd || 0;
+    const newHasPrice = !!p.priceUsd;
+    const curHasPrice = !!cur.priceUsd;
+    if ((!curHasPrice && newHasPrice) || (newHasPrice && newLiq > curLiq)) {
       tokenMap[key] = p;
     }
   }
