@@ -12,6 +12,11 @@ const EXCLUDE_SYMBOLS = new Set([
   'RETH','STETH','WSTETH','ETH','USDPLUS','USD+','WSTETH',
 ]);
 
+// Token addresses that are always included regardless of liquidity filter
+const PINNED_ADDRESSES = [
+  '0x22aF33FE49fD1Fa80c7149773dDe5890D3c76F3b', // BNKR
+];
+
 // 80+ well-known Base ecosystem tokens — no random promoted tokens
 const BASE_SEARCHES = [
   // Tier 1 — core Base native (always top 20)
@@ -148,14 +153,22 @@ async function fetchTop100() {
     }
   }
 
-  // Force-include BNKR regardless of liquidity threshold
-  if (!symMap['BNKR']) {
-    const bnkrRes = await dget('https://api.dexscreener.com/latest/dex/search?q=BNKR').catch(() => null);
-    if (bnkrRes?.pairs) {
-      const bnkrPair = bnkrRes.pairs
-        .filter(p => p.chainId === 'base' && p.baseToken?.symbol?.toUpperCase() === 'BNKR' && !EXCLUDE_SYMBOLS.has('BNKR'))
-        .sort((a, b) => (b.volume?.h24 || 0) - (a.volume?.h24 || 0))[0];
-      if (bnkrPair) symMap['BNKR'] = bnkrPair;
+  // Fetch pinned addresses by exact address — always included
+  const pinnedRes = await dget(
+    `https://api.dexscreener.com/latest/dex/tokens/${PINNED_ADDRESSES.join(',')}`
+  ).catch(() => null);
+  if (pinnedRes?.pairs) {
+    for (const p of pinnedRes.pairs) {
+      if (p.chainId !== 'base' || !p.baseToken?.address) continue;
+      const addrKey = p.baseToken.address.toLowerCase();
+      const isPinned = PINNED_ADDRESSES.some(a => a.toLowerCase() === addrKey);
+      if (!isPinned) continue;
+      const sym = (p.baseToken.symbol || '').toUpperCase();
+      // Add to symMap if not already present, or replace if this pair has higher liquidity
+      const cur = symMap[sym];
+      if (!cur || (p.liquidity?.usd || 0) > (cur.liquidity?.usd || 0)) {
+        symMap[sym] = p;
+      }
     }
   }
 
