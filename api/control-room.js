@@ -117,8 +117,8 @@ function deriveTrending(pairs) {
   return pairs
     .filter(p => (p.volume?.h24 || 0) > 100)
     .sort((a, b) => (b.volume?.h24 || 0) - (a.volume?.h24 || 0))
-    .slice(0, 15)
-    .map(mapPair);
+    .slice(0, 20)
+    .map(mapPair); // mapPair already includes volume1h, buys1h, sells1h
 }
 
 function deriveWhales(pairs) {
