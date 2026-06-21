@@ -9,7 +9,8 @@
     "api/gallery.js": { "memory": 128, "maxDuration": 10 },
     "api/auth.js":    { "memory": 128, "maxDuration": 10 },
     "api/analyze.js":       { "memory": 256, "maxDuration": 60 },
-    "api/control-room.js":  { "memory": 128, "maxDuration": 30 }
+    "api/control-room.js":  { "memory": 128, "maxDuration": 30 },
+    "api/token-search.js": { "memory": 128, "maxDuration": 15 }
   },
   "redirects": [
     { "source": "/app.html",       "destination": "/app",       "permanent": true },

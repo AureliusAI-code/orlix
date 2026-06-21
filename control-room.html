@@ -235,7 +235,8 @@ html,body{height:100%;background:var(--bg);color:var(--t1);font-family:var(--san
   <!-- SIDEBAR -->
   <aside class="sidebar">
     <div class="sb-search">
-      <input class="sb-input" id="search-inp" placeholder="Search token…" oninput="onSearch()" />
+      <input class="sb-input" id="search-inp" placeholder="Search any token…" oninput="onSearch(this.value)" />
+      <div id="search-status" style="font-size:10px;color:var(--t3);margin-top:5px;padding:0 2px;min-height:14px"></div>
     </div>
 
     <div class="sb-section">
@@ -350,7 +351,52 @@ function setFilter(f, el){
   document.querySelectorAll('.sb-item[data-f]').forEach(e=>e.classList.toggle('active',e.dataset.f===f));
   renderTable(allTokens, false);
 }
-function onSearch(){searchQ=document.getElementById('search-inp').value.trim().toLowerCase();renderTable(allTokens,false)}
+
+let searchTimer=null;
+function onSearch(val){
+  clearTimeout(searchTimer);
+  const q=(val||'').trim();
+  if(!q){
+    searchQ='';
+    document.getElementById('search-status').textContent='';
+    renderTable(allTokens,false);
+    return;
+  }
+  // Local instant filter first
+  searchQ=q.toLowerCase();
+  renderTable(allTokens,false);
+  // Then live DexScreener search after 400ms debounce
+  searchTimer=setTimeout(()=>liveSearch(q), 400);
+}
+
+async function liveSearch(q){
+  const status=document.getElementById('search-status');
+  status.textContent='Searching DexScreener…';
+  try{
+    const r=await fetch(`/api/token-search?q=${encodeURIComponent(q)}`);
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const data=await r.json();
+    if(document.getElementById('search-inp').value.trim()!==q) return; // stale
+    if(data.tokens&&data.tokens.length>0){
+      status.textContent=`${data.tokens.length} result${data.tokens.length!==1?'s':''} from DexScreener`;
+      // merge into display — search results override local filter
+      renderSearchResults(data.tokens);
+    } else {
+      status.textContent='No results on Base';
+    }
+  }catch(e){
+    status.textContent='Search failed';
+  }
+}
+
+function renderSearchResults(tokens){
+  const body=document.getElementById('tbl-body');
+  if(!tokens.length){
+    body.innerHTML='<div class="empty"><div class="empty-ico">◌</div><div class="empty-msg">No tokens found</div></div>';
+    return;
+  }
+  body.innerHTML=tokens.map(t=>buildRow(t,false)).join('');
+}
 
 function sortBy(key){
   if(sortKey===key) sortDir*=-1; else{sortKey=key;sortDir=-1;}
@@ -363,8 +409,8 @@ function sortBy(key){
 
 function applyAll(tokens){
   let t=[...tokens];
-  // search
-  if(searchQ) t=t.filter(x=>(x.symbol||'').toLowerCase().includes(searchQ)||(x.name||'').toLowerCase().includes(searchQ));
+  // local search (fast pre-filter before DexScreener results arrive)
+  if(searchQ) t=t.filter(x=>(x.symbol||'').toLowerCase().includes(searchQ)||(x.name||'').toLowerCase().includes(searchQ)||(x.address||'').toLowerCase().includes(searchQ));
   // filter
   if(activeFilter==='safe') t=t.filter(x=>(x.liquidity||0)>=50000);
   else if(activeFilter==='hot') t=t.filter(x=>(x.volume1h||0)>=5000);
