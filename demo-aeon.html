@@ -33,13 +33,12 @@
   #s2{background:#000}
   #s2 .logo-row{display:flex;align-items:center;gap:clamp(16px,4vw,52px)}
   #s2 .orlix-logo{
-    width:clamp(64px,11vw,110px);height:clamp(64px,11vw,110px);
-    background:#fff;border-radius:50%;
-    display:flex;align-items:center;justify-content:center;flex-shrink:0
+    width:clamp(80px,13vw,130px);height:clamp(80px,13vw,130px);
+    border-radius:50%;flex-shrink:0;object-fit:cover;
+    filter:drop-shadow(0 0 12px rgba(255,107,0,0.3))
   }
-  #s2 .orlix-logo span{color:#000;font-weight:900;font-size:clamp(18px,3.5vw,36px);font-family:'Courier New',monospace}
   #s2 .times{font-size:clamp(24px,4.5vw,52px);color:#333;padding:0 4px}
-  #s2 .aeon-logo{width:clamp(64px,11vw,110px);height:clamp(64px,11vw,110px);flex-shrink:0;filter:drop-shadow(0 0 16px rgba(255,255,255,0.4))}
+  #s2 .aeon-logo{width:clamp(80px,13vw,130px);height:clamp(80px,13vw,130px);flex-shrink:0;object-fit:cover;filter:drop-shadow(0 0 16px rgba(255,255,255,0.3))}
   #s2 .collab-text{margin-top:28px;font-size:clamp(14px,2.6vw,26px);letter-spacing:5px;text-align:center;color:#ccc;text-transform:uppercase}
   #s2 .collab-text strong{color:#ff6b00}
   #s2 .tagline{margin-top:10px;font-size:clamp(10px,1.6vw,14px);color:#444;letter-spacing:3px;text-transform:uppercase}
@@ -170,19 +169,9 @@
   <!-- S2: Logos -->
   <div class="scene" id="s2">
     <div class="logo-row">
-      <div class="orlix-logo"><span>&gt;_</span></div>
+      <img class="orlix-logo" src="/orlix-logo.jpeg" alt="Orlix AI">
       <div class="times">×</div>
-      <svg class="aeon-logo" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <filter id="g2">
-            <feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/>
-            <feDisplacementMap in="SourceGraphic" scale="3" xChannelSelector="R" yChannelSelector="G"/>
-          </filter>
-        </defs>
-        <polygon points="60,8 73,43 110,43 81,65 92,100 60,78 28,100 39,65 10,43 47,43" fill="white" filter="url(#g2)" opacity="0.95"/>
-        <circle cx="60" cy="60" r="6" fill="#000" opacity="0.5"/>
-        <circle cx="60" cy="60" r="2.5" fill="white"/>
-      </svg>
+      <img class="aeon-logo" src="/aeon-logo.jpeg" alt="Aeon">
     </div>
     <div class="collab-text"><strong>Orlix AI</strong> × Aeon Framework</div>
     <div class="tagline">The agentic playground for Base</div>
@@ -301,14 +290,9 @@
   <div class="scene" id="s7">
     <div class="outro-content">
       <div class="outro-logos">
-        <div style="width:clamp(48px,7.5vw,76px);height:clamp(48px,7.5vw,76px);background:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-          <span style="color:#000;font-weight:900;font-size:clamp(14px,2.8vw,28px);font-family:'Courier New',monospace">&gt;_</span>
-        </div>
+        <img src="/orlix-logo.jpeg" alt="Orlix AI" style="width:clamp(52px,8vw,80px);height:clamp(52px,8vw,80px);border-radius:50%;object-fit:cover;filter:drop-shadow(0 0 10px rgba(255,107,0,0.3))">
         <span style="font-size:clamp(18px,3.5vw,36px);color:#222">×</span>
-        <svg width="clamp(48px,7.5vw,76px)" height="clamp(48px,7.5vw,76px)" viewBox="0 0 120 120" fill="none">
-          <defs><filter id="g3"><feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/><feDisplacementMap in="SourceGraphic" scale="3" xChannelSelector="R" yChannelSelector="G"/></filter></defs>
-          <polygon points="60,8 73,43 110,43 81,65 92,100 60,78 28,100 39,65 10,43 47,43" fill="white" filter="url(#g3)"/>
-        </svg>
+        <img src="/aeon-logo.jpeg" alt="Aeon" style="width:clamp(52px,8vw,80px);height:clamp(52px,8vw,80px);object-fit:cover;filter:drop-shadow(0 0 10px rgba(255,255,255,0.2))">
       </div>
       <div class="outro-title">
         <div class="or">Orlix AI</div>
