@@ -15,6 +15,22 @@ const GENRE_PROMPTS = {
   ballad: 'emotional piano ballad, orchestral strings, melancholic melody, slow tempo, cinematic, heartfelt R&B',
 };
 
+let cachedVersion = null;
+
+async function getLatestVersion(apiKey) {
+  if (cachedVersion) return cachedVersion;
+  const r = await fetch('https://api.replicate.com/v1/models/meta/musicgen', {
+    headers: { 'Authorization': `Bearer ${apiKey}` },
+    signal: AbortSignal.timeout(8000),
+  });
+  if (!r.ok) throw new Error(`Could not fetch model info: ${r.status}`);
+  const data = await r.json();
+  const version = data.latest_version?.id;
+  if (!version) throw new Error('No latest version found for meta/musicgen');
+  cachedVersion = version;
+  return version;
+}
+
 module.exports = async (req, res) => {
   if (req.method === 'OPTIONS') { res.writeHead(204, CORS); return res.end(); }
   if (req.method !== 'POST') { res.writeHead(405, CORS); return res.end(JSON.stringify({ error: 'POST only' })); }
@@ -37,15 +53,18 @@ module.exports = async (req, res) => {
   const prompt = (GENRE_PROMPTS[genre] || GENRE_PROMPTS.trap) + (symbol ? `, inspired by ${symbol}` : '');
 
   try {
-    // Use the official model endpoint (no hardcoded version hash)
-    const startRes = await fetch('https://api.replicate.com/v1/models/meta/musicgen/predictions', {
+    // Get latest musicgen version dynamically
+    const version = await getLatestVersion(apiKey);
+
+    // Start prediction
+    const startRes = await fetch('https://api.replicate.com/v1/predictions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
-        'Prefer': 'wait=5',
       },
       body: JSON.stringify({
+        version,
         input: {
           prompt,
           duration: 28,
@@ -63,7 +82,7 @@ module.exports = async (req, res) => {
 
     const prediction = await startRes.json();
 
-    // If already done (Prefer: wait worked)
+    // Already done?
     if (prediction.status === 'succeeded') {
       const audioUrl = Array.isArray(prediction.output) ? prediction.output[0] : prediction.output;
       res.writeHead(200, CORS);
@@ -71,10 +90,10 @@ module.exports = async (req, res) => {
     }
 
     const predictionId = prediction.id;
-    if (!predictionId) throw new Error('No prediction ID returned');
+    if (!predictionId) throw new Error('No prediction ID returned from Replicate');
 
-    // Poll until done (max 42s)
-    const deadline = Date.now() + 42000;
+    // Poll until done (max 45s)
+    const deadline = Date.now() + 45000;
     while (Date.now() < deadline) {
       await new Promise(r => setTimeout(r, 3000));
 
@@ -88,17 +107,17 @@ module.exports = async (req, res) => {
 
       if (poll.status === 'succeeded') {
         const audioUrl = Array.isArray(poll.output) ? poll.output[0] : poll.output;
-        if (!audioUrl) throw new Error('Empty audio output');
+        if (!audioUrl) throw new Error('Empty audio output from Replicate');
         res.writeHead(200, CORS);
         return res.end(JSON.stringify({ audioUrl, genre }));
       }
 
       if (poll.status === 'failed' || poll.status === 'canceled') {
-        throw new Error(`Prediction ${poll.status}: ${poll.error || 'unknown error'}`);
+        throw new Error(`Prediction ${poll.status}: ${poll.error || 'unknown'}`);
       }
     }
 
-    throw new Error('Timed out after 45s — Replicate is busy, try again');
+    throw new Error('Timed out — Replicate is busy, please try again');
   } catch (e) {
     res.writeHead(502, CORS);
     res.end(JSON.stringify({ error: e.message }));
