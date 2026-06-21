@@ -63,61 +63,74 @@ function formatNumber(n) {
   return n.toFixed(0);
 }
 
+const GENRE_STYLES = {
+  trap: {
+    vibe: 'aggressive trap/hip-hop',
+    ref: 'Travis Scott, Future, Gunna energy on Base chain',
+    guide: 'Hard punchy bars, internal rhyme schemes, triplet flow. Use crypto slang organically: ape in, cook, bag, gm, on chain, liquidity, rug. Reference Base network, Coinbase L2. Brag about gains, threaten competitors.',
+  },
+  phonk: {
+    vibe: 'dark hypnotic phonk / Memphis drift rap',
+    ref: 'underground phonk, Russian drift culture energy',
+    guide: 'Short punchy lines, slow-burn menace, dark imagery, repetitive hypnotic hook. Reference the drift: price drifting, chart drifting. Unsettling and cool.',
+  },
+  pop: {
+    vibe: 'massive feel-good pop anthem',
+    ref: 'The Chainsmokers meets crypto Twitter optimism',
+    guide: 'Big singalong chorus that sticks in your head. Diamond hands narrative, community love, builders on Base. Uplifting even when charts are down. Makes people want to buy.',
+  },
+  drill: {
+    vibe: 'cold UK/Chicago drill',
+    ref: 'Central Cee, Fivio Foreign — dark and unflinching',
+    guide: 'Cold delivery, no emotion, gritty market survival. Never sold, still holding, watching competitors get rugged. Street mentality in DeFi. Minimal words, maximum threat.',
+  },
+  hype: {
+    vibe: 'stadium hype anthem / battle cry',
+    ref: 'Eminem Lose Yourself meets FIFA crowd chant',
+    guide: 'Explosive energy. Short lines that hit like punches. ALL CAPS on key moments. Crowd chant breaks. Makes you want to run through a wall.',
+  },
+  ballad: {
+    vibe: 'emotional slow ballad',
+    ref: 'Sam Smith meets a degenerate checking charts at 3am',
+    guide: 'Raw emotion: longing for ATH, pain of watching a bag bleed, hope that never dies. Bittersweet love letter to a volatile token. Melancholic but beautiful.',
+  },
+};
+
 function buildPrompt(token, genre) {
-  const price = token.priceUsd ? `$${token.priceUsd < 0.001 ? token.priceUsd.toExponential(2) : token.priceUsd.toFixed(token.priceUsd < 1 ? 4 : 2)}` : 'unknown price';
-  const chg24 = token.priceChange24h != null ? `${token.priceChange24h >= 0 ? '+' : ''}${token.priceChange24h.toFixed(1)}%` : 'unknown';
-  const vol = formatNumber(token.volume24h);
-  const liq = formatNumber(token.liquidity);
-  const mc = formatNumber(token.marketCap);
-  const pressure = token.buys24h + token.sells24h > 0
-    ? `${Math.round(token.buys24h / (token.buys24h + token.sells24h) * 100)}% buy pressure`
-    : '';
+  const s = GENRE_STYLES[genre] || GENRE_STYLES.trap;
+  const price = token.priceUsd ? `$${token.priceUsd < 0.001 ? token.priceUsd.toExponential(2) : token.priceUsd.toFixed(token.priceUsd < 1 ? 4 : 2)}` : null;
+  const chg24 = token.priceChange24h != null ? `${token.priceChange24h >= 0 ? '+' : ''}${token.priceChange24h.toFixed(1)}%` : null;
+  const vol = token.volume24h ? formatNumber(token.volume24h) : null;
+  const mc = token.marketCap ? formatNumber(token.marketCap) : null;
+  const buySide = token.buys24h + token.sells24h > 0
+    ? Math.round(token.buys24h / (token.buys24h + token.sells24h) * 100)
+    : null;
 
-  const genreInstructions = {
-    trap: 'aggressive trap/hip-hop lyrics with hard bars, money references, flexing. Use slang: "on chain", "ape in", "moon", "bag", "gm". Flow should be punchy with internal rhymes.',
-    phonk: 'dark phonk/drift rap lyrics. Mysterious, hypnotic, aggressive. Russian drift culture meets crypto. Dark imagery. Short punchy lines.',
-    pop: 'catchy pop song with a big chorus that sticks. Uplifting, hopeful, melodic feel. Think anthemic. References to "to the moon", diamond hands, community.',
-    drill: 'UK/Chicago drill style. Dark, menacing bars about the streets of crypto. Talk about rugging competitors, holding bags, not selling. Gritty.',
-    hype: 'insane hype/energy song like a sports anthem. CAPS for emphasis. Battle cry energy. Crowd chant moments. Pure adrenaline.',
-    ballad: 'emotional ballad about the journey of holding a volatile crypto token. Bittersweet. Joy of pumps, pain of dips. Longing for ATH.',
-  };
+  const stats = [
+    price && `Current price: ${price}${chg24 ? ` — moved ${chg24} today` : ''}`,
+    token.priceChange1h != null && `Last hour: ${token.priceChange1h >= 0 ? '+' : ''}${token.priceChange1h.toFixed(1)}%`,
+    vol && `24h trading volume: $${vol}`,
+    mc && `Market cap: $${mc}`,
+    buySide && `${buySide}% of trades are buys right now`,
+  ].filter(Boolean).join('\n');
 
-  return `You are a creative songwriter. Write original song lyrics for a cryptocurrency token called $${token.symbol} (${token.name}) on Base network.
+  return `Write ${s.vibe} song lyrics for $${token.symbol} (${token.name}), a token on Base network.
 
-Token stats (use these naturally in lyrics, don't just list them):
-- Price: ${price} (24h change: ${chg24})
-- 24h volume: $${vol}
-- Liquidity: $${liq}
-- Market cap: $${mc}
-${pressure ? `- ${pressure}` : ''}
-${token.priceChange1h != null ? `- 1h change: ${token.priceChange1h >= 0 ? '+' : ''}${token.priceChange1h.toFixed(1)}%` : ''}
+${stats ? `Live market data — use this as RAW MATERIAL for storytelling, not a report to recite:\n${stats}` : ''}
 
-Style: ${genreInstructions[genre] || genreInstructions.trap}
+Energy: ${s.ref}
+Direction: ${s.guide}
 
-Structure the song with:
-[Verse 1]
-(4-8 lines)
+Deliver: [Verse 1] → [Chorus] → [Verse 2] → [Chorus] → [Outro]
 
-[Chorus]
-(4-6 lines — catchy, repeatable)
-
-[Verse 2]
-(4-8 lines — reference the actual price/volume stats)
-
-[Chorus]
-(repeat)
-
-[Bridge or Outro]
-(2-4 lines — strong finish)
-
-Rules:
-- Write ONLY in English
-- Make it genuinely creative and funny/hype
-- Weave in the REAL stats naturally (the price, the % change, the volume)
-- Include the token symbol $${token.symbol} multiple times
-- Reference Base network or "on Base"
-- NO generic filler — make every line count
-- Do NOT add any commentary before or after the lyrics, just output the song`;
+Non-negotiable:
+- English only
+- This must sound like a REAL song from a real artist, not an AI summary
+- $${token.symbol} appears naturally multiple times
+- At least one reference to Base network
+- Stats show up as IMAGERY and METAPHOR, not bullet points
+- Every line must earn its place — cut anything generic
+- Output the lyrics only, no commentary`;
 }
 
 module.exports = async (req, res) => {
@@ -161,8 +174,8 @@ module.exports = async (req, res) => {
       },
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: 1024,
-        system: 'You are a creative, witty songwriter who specializes in crypto culture music. You ALWAYS write in English only. You write genuinely funny, hype, and creative lyrics that reference real token stats.',
+        max_tokens: 1500,
+        system: 'You are a world-class songwriter fluent in trap, phonk, pop, drill, hype, and ballad. You write in English only. Your lyrics feel authentic — real artists, real flow, real emotion. You treat token data as creative inspiration, not content to recite. You never pad with generic filler.',
         messages: [{ role: 'user', content: prompt }],
       }),
       signal: AbortSignal.timeout(30000),
