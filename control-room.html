@@ -642,7 +642,8 @@ function buildCard(t, isNew){
   const buys=t.buys1h||0, sells=t.sells1h||0, total=buys+sells;
   const buyPct=total>0?Math.round(buys/total*100):50;
   const [clr,bg]=logoColor(sym);
-  const logoUrl=t._logo||`https://dd.dexscreener.com/ds-data/tokens/base/${(t.address||'').toLowerCase()}.png`;
+  const addr=(t.address||'').toLowerCase();
+  const logoUrl=t._logo||`https://dd.dexscreener.com/ds-data/tokens/base/${addr}.png`;
   const age=t.pairCreatedAt?fmtAgo(t.pairCreatedAt):'';
   const bsColor=buyPct>=50?'bs-g':'bs-r';
 

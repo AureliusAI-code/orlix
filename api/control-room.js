@@ -1,4 +1,4 @@
-// Orlix Control Room — Base top-100 trending tokens from DexScreener
+// Orlix Control Room — Base top-100 via GeckoTerminal trending
 const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, OPTIONS',
@@ -9,10 +9,10 @@ const CORS = {
 const EXCLUDE_SYMBOLS = new Set([
   'USDT','USDC','DAI','WETH','WBTC','CBETH','USDBC','USDB',
   'EURC','CRVUSD','LUSD','FRAX','SUSD','BUSD','GUSD','TUSD',
-  'RETH','STETH','WSTETH','ETH',
+  'RETH','STETH','WSTETH','ETH','USDPLUS','USD+',
 ]);
 
-// Fallback: well-known Base tokens in case screener endpoint is blocked
+// DexScreener fallback keyword list
 const BASE_SEARCHES = [
   'BRETT','VIRTUAL','AERO','DEGEN','TOSHI','HIGHER',
   'MOG','WELL','NORMIE','BASED','MOCHI','TURBO',
@@ -21,7 +21,6 @@ const BASE_SEARCHES = [
   'ANON','MOON','WEN','BCT','SEAM','FRENPET',
   'MOXIE','BUILD','CLANKER','TALENT','SMOL',
   'SNX','AAVE','SUSHI','GMX','RDNT','COMP',
-  'TAROT','GNS','PERP','YFI','BSWAP',
   'PEPE','BONK','FLOKI','APE','SHIB',
   'BLUR','ENS','LDO','RPL','WAIFU','KNINE',
 ];
@@ -31,15 +30,6 @@ let commentaryCache = { text: '', ts: 0 };
 const DATA_TTL = 30_000;
 const COMMENTARY_TTL = 300_000;
 
-// Browser-like headers to avoid DexScreener bot blocks
-const BROWSER_HEADERS = {
-  'Accept': 'application/json, text/plain, */*',
-  'Accept-Language': 'en-US,en;q=0.9',
-  'Origin': 'https://dexscreener.com',
-  'Referer': 'https://dexscreener.com/',
-  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
-};
-
 function fmtUsd(n) {
   if (!n && n !== 0) return null;
   if (n >= 1e9) return `$${(n / 1e9).toFixed(2)}B`;
@@ -48,16 +38,100 @@ function fmtUsd(n) {
   return `$${n.toFixed(0)}`;
 }
 
-async function dget(url, headers = {}) {
+async function dget(url, extraHeaders = {}) {
   const r = await fetch(url, {
-    headers: { ...BROWSER_HEADERS, ...headers },
+    headers: {
+      'Accept': 'application/json',
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/125.0 Safari/537.36',
+      ...extraHeaders,
+    },
     signal: AbortSignal.timeout(10000),
   });
   if (!r.ok) throw new Error(`HTTP ${r.status}`);
   return r.json();
 }
 
-function isValidPair(p) {
+// ── GeckoTerminal (primary) ──────────────────────────────────────────────────
+// Public API by CoinGecko — real trending pools on Base, no key required
+
+function mapGeckoPool(pool, tokenMap, rank) {
+  const attrs = pool.attributes || {};
+  const baseTokenId = pool.relationships?.base_token?.data?.id;
+  const baseToken = tokenMap[baseTokenId];
+  const bta = baseToken?.attributes || {};
+
+  const sym = (bta.symbol || '').toUpperCase();
+  if (EXCLUDE_SYMBOLS.has(sym)) return null;
+  if (!bta.address) return null;
+  const liq = parseFloat(attrs.reserve_in_usd || 0);
+  if (liq < 10000) return null;
+
+  return {
+    rank,
+    address: bta.address.toLowerCase(),
+    name: bta.name || 'Unknown',
+    symbol: bta.symbol || '???',
+    priceUsd: attrs.base_token_price_usd || null,
+    priceChange5m: parseFloat(attrs.price_change_percentage?.m5) || null,
+    priceChange1h: parseFloat(attrs.price_change_percentage?.h1) || null,
+    priceChange6h: parseFloat(attrs.price_change_percentage?.h6) || null,
+    priceChange24h: parseFloat(attrs.price_change_percentage?.h24) || null,
+    volume1h: parseFloat(attrs.volume_usd?.h1 || 0),
+    volume6h: parseFloat(attrs.volume_usd?.h6 || 0),
+    volume24h: parseFloat(attrs.volume_usd?.h24 || 0),
+    liquidity: liq,
+    marketCap: parseFloat(attrs.market_cap_usd || attrs.fdv_usd || 0),
+    fdv: parseFloat(attrs.fdv_usd || 0),
+    buys1h: attrs.transactions?.h1?.buys || 0,
+    sells1h: attrs.transactions?.h1?.sells || 0,
+    buys24h: attrs.transactions?.h24?.buys || 0,
+    sells24h: attrs.transactions?.h24?.sells || 0,
+    pairAddress: attrs.address || null,
+    pairCreatedAt: attrs.pool_created_at ? new Date(attrs.pool_created_at).getTime() : null,
+    pairUrl: `https://dexscreener.com/base/${bta.address}`,
+    dexId: pool.relationships?.dex?.data?.id || 'unknown',
+    pairName: attrs.name || `${bta.symbol}/WETH`,
+    _logo: bta.image_url || null,
+  };
+}
+
+async function fetchGeckoTerminal() {
+  // trending_pools: what's actually trending on Base right now (similar to DexScreener /base page)
+  // new_pools: freshly launched tokens
+  // Each page = 20 pools; fetch 5 pages trending + 2 pages top-volume to fill 100
+  const GT = 'https://api.geckoterminal.com/api/v2/networks/base';
+  const inc = 'include=base_token,quote_token';
+
+  const tasks = [
+    dget(`${GT}/trending_pools?${inc}&page=1`).catch(() => null),
+    dget(`${GT}/trending_pools?${inc}&page=2`).catch(() => null),
+    dget(`${GT}/trending_pools?${inc}&page=3`).catch(() => null),
+    dget(`${GT}/trending_pools?${inc}&page=4`).catch(() => null),
+    dget(`${GT}/trending_pools?${inc}&page=5`).catch(() => null),
+    // Also grab top-volume pools to supplement
+    dget(`${GT}/pools?${inc}&sort=h24_volume_usd_desc&page=1`).catch(() => null),
+    dget(`${GT}/pools?${inc}&sort=h24_volume_usd_desc&page=2`).catch(() => null),
+    dget(`${GT}/pools?${inc}&sort=h24_volume_usd_desc&page=3`).catch(() => null),
+  ];
+
+  const results = await Promise.all(tasks);
+
+  const pools = [];
+  const tokenMap = {};
+
+  for (const r of results) {
+    if (r?.data?.length) pools.push(...r.data);
+    if (r?.included?.length) {
+      for (const t of r.included) tokenMap[t.id] = t;
+    }
+  }
+
+  return { pools, tokenMap };
+}
+
+// ── DexScreener fallback ─────────────────────────────────────────────────────
+
+function isValidDexPair(p) {
   if (p.chainId !== 'base') return false;
   if (!p.baseToken?.address) return false;
   const sym = (p.baseToken.symbol || '').toUpperCase();
@@ -66,10 +140,10 @@ function isValidPair(p) {
   return true;
 }
 
-function mapPair(p, rank) {
+function mapDexPair(p, rank) {
   return {
-    rank: rank ?? null,
-    address: p.baseToken.address,
+    rank,
+    address: p.baseToken.address.toLowerCase(),
     name: p.baseToken.name || 'Unknown',
     symbol: p.baseToken.symbol || '???',
     priceUsd: p.priceUsd || null,
@@ -92,29 +166,11 @@ function mapPair(p, rank) {
     pairUrl: p.url || `https://dexscreener.com/base/${p.baseToken.address}`,
     dexId: p.dexId || 'unknown',
     pairName: `${p.baseToken.symbol}/${p.quoteToken?.symbol || '?'}`,
+    _logo: null,
   };
 }
 
-// Strategy 1: DexScreener's internal screener — the same API powering dexscreener.com/base
-// Pages 1-4 × ~30 results each = up to 120 Base tokens in their exact trending order
-async function fetchViaScreener() {
-  const pages = await Promise.all(
-    [1, 2, 3, 4].map(page =>
-      dget(
-        `https://io.dexscreener.com/dex/screener/pairs/h24/base${page}?rankBy=volume24hUsd&order=desc`,
-        { 'Sec-Fetch-Site': 'same-site', 'Sec-Fetch-Mode': 'cors' }
-      ).catch(() => null)
-    )
-  );
-  const pairs = [];
-  for (const r of pages) {
-    if (r?.pairs?.length) pairs.push(...r.pairs);
-  }
-  return pairs;
-}
-
-// Strategy 2: keyword searches + profiles/boosts (fallback if screener is blocked)
-async function fetchViaKeywords() {
+async function fetchDexScreenerFallback() {
   const tasks = [
     dget('https://api.dexscreener.com/token-profiles/latest/v1').catch(() => null),
     dget('https://api.dexscreener.com/token-boosts/top/v1').catch(() => null),
@@ -123,7 +179,6 @@ async function fetchViaKeywords() {
       dget(`https://api.dexscreener.com/latest/dex/search?q=${q}`).catch(() => null)
     ),
   ];
-
   const results = await Promise.all(tasks);
   const [profilesRes, boostsTopRes, boostsLatestRes, ...searchResults] = results;
 
@@ -156,13 +211,10 @@ async function fetchViaKeywords() {
     if (r?.pairs) rawPairs.push(...r.pairs);
   }
 
-  return rawPairs;
-}
-
-function deduplicatePairs(rawPairs) {
+  // Dedup by address — prefer highest liquidity with priceUsd
   const tokenMap = {};
   for (const p of rawPairs) {
-    if (!isValidPair(p)) continue;
+    if (!isValidDexPair(p)) continue;
     const key = p.baseToken.address.toLowerCase();
     const cur = tokenMap[key];
     if (!cur) { tokenMap[key] = p; continue; }
@@ -174,37 +226,48 @@ function deduplicatePairs(rawPairs) {
       tokenMap[key] = p;
     }
   }
-  return Object.values(tokenMap);
+
+  return Object.values(tokenMap).sort((a, b) => (b.volume?.h24 || 0) - (a.volume?.h24 || 0));
 }
+
+// ── Main fetch ───────────────────────────────────────────────────────────────
 
 async function fetchTop100() {
-  // Try the real DexScreener screener first
-  const screenerPairs = await fetchViaScreener();
+  const { pools, tokenMap } = await fetchGeckoTerminal();
 
-  let uniquePairs;
-  let source;
+  if (pools.length >= 30) {
+    // Dedup by token address — keep first (highest-ranked) pool per token
+    const seen = new Set();
+    const tokens = [];
+    let rank = 1;
 
-  if (screenerPairs.length >= 50) {
-    // Got real DexScreener ranking — preserve their order (already sorted by volume24h)
-    uniquePairs = deduplicatePairs(screenerPairs);
-    source = 'screener';
-  } else {
-    // Screener blocked — fall back to keyword approach
-    const fallbackPairs = await fetchViaKeywords();
-    uniquePairs = deduplicatePairs(fallbackPairs);
-    uniquePairs.sort((a, b) => (b.volume?.h24 || 0) - (a.volume?.h24 || 0));
-    source = 'fallback';
+    for (const pool of pools) {
+      const baseTokenId = pool.relationships?.base_token?.data?.id;
+      const baseToken = tokenMap[baseTokenId];
+      const addr = baseToken?.attributes?.address?.toLowerCase();
+      if (!addr || seen.has(addr)) continue;
+
+      const mapped = mapGeckoPool(pool, tokenMap, rank);
+      if (!mapped) continue;
+
+      seen.add(addr);
+      tokens.push(mapped);
+      rank++;
+      if (rank > 100) break;
+    }
+
+    if (tokens.length >= 20) {
+      return { tokens: tokens.slice(0, 100), source: 'geckoterminal' };
+    }
   }
 
-  // Sort by 24h volume and take top 100
-  uniquePairs.sort((a, b) => {
-    const bv = b.volume?.h24 || b.volume24h || 0;
-    const av = a.volume?.h24 || a.volume24h || 0;
-    return bv - av;
-  });
-
-  return { pairs: uniquePairs.slice(0, 100), source };
+  // Fallback to DexScreener keyword search
+  const pairs = await fetchDexScreenerFallback();
+  const tokens = pairs.slice(0, 100).map((p, i) => mapDexPair(p, i + 1));
+  return { tokens, source: 'dexscreener-fallback' };
 }
+
+// ── Commentary ───────────────────────────────────────────────────────────────
 
 async function generateCommentary(tokens, apiKey) {
   if (!apiKey) return '';
@@ -212,13 +275,11 @@ async function generateCommentary(tokens, apiKey) {
   if (commentaryCache.text && now - commentaryCache.ts < COMMENTARY_TTL) {
     return commentaryCache.text;
   }
-
   const top = tokens.filter(t => (t.volume1h || 0) > 0).slice(0, 3);
   const totalVol = tokens.reduce((s, t) => s + (t.volume1h || 0), 0);
   const prompt = `${tokens.length} active tokens on Base. Total 1h volume: ${fmtUsd(totalVol)}. ` +
     (top.length ? `Top: ${top.map(t => `$${t.symbol} (${t.priceChange1h != null ? (t.priceChange1h >= 0 ? '+' : '') + t.priceChange1h.toFixed(1) + '%' : '?'} 1h)`).join(', ')}.` : '') +
     ' Give a 1-2 sentence live market commentary on Base. Be specific. No emojis. No markdown.';
-
   try {
     const r = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -238,6 +299,8 @@ async function generateCommentary(tokens, apiKey) {
   } catch { return commentaryCache.text || ''; }
 }
 
+// ── Handler ──────────────────────────────────────────────────────────────────
+
 module.exports = async (req, res) => {
   if (req.method === 'OPTIONS') { res.writeHead(204, CORS); return res.end(); }
   if (req.method !== 'GET') { res.writeHead(405, CORS); return res.end(JSON.stringify({ error: 'Method not allowed' })); }
@@ -248,25 +311,14 @@ module.exports = async (req, res) => {
     return res.end(JSON.stringify(dataCache.data));
   }
 
-  const { pairs: rawTop100, source } = await fetchTop100();
-
-  // Map with rank numbers (1-based)
-  const allTokens = rawTop100.map((p, i) => mapPair(p, i + 1));
+  const { tokens: allTokens, source } = await fetchTop100();
 
   const totalVol1h = allTokens.reduce((s, t) => s + (t.volume1h || 0), 0);
   const safeCount = allTokens.filter(t => (t.liquidity || 0) >= 50000).length;
 
-  const stats = {
-    total: allTokens.length,
-    safeCount,
-    totalVol1h,
-    source,
-    ts: now,
-  };
-
+  const stats = { total: allTokens.length, safeCount, totalVol1h, source, ts: now };
   const liveActivity = allTokens;
   const trending = allTokens.slice(0, 15);
-
   const commentary = await generateCommentary(allTokens, process.env.ANTHROPIC_API_KEY);
 
   const data = { liveActivity, trending, stats, commentary };
