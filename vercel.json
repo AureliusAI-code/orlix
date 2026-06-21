@@ -8,7 +8,8 @@
     "api/ping.js":    { "memory": 128, "maxDuration": 10 },
     "api/gallery.js": { "memory": 128, "maxDuration": 10 },
     "api/auth.js":    { "memory": 128, "maxDuration": 10 },
-    "api/analyze.js": { "memory": 256, "maxDuration": 60 }
+    "api/analyze.js":       { "memory": 256, "maxDuration": 60 },
+    "api/control-room.js":  { "memory": 128, "maxDuration": 30 }
   },
   "redirects": [
     { "source": "/app.html",       "destination": "/app",       "permanent": true },
@@ -18,7 +19,8 @@
     { "source": "/terms.html",     "destination": "/terms",     "permanent": true },
     { "source": "/gallery.html",   "destination": "/gallery",   "permanent": true },
     { "source": "/login.html",     "destination": "/login",     "permanent": true },
-    { "source": "/token.html",     "destination": "/token",     "permanent": true }
+    { "source": "/token.html",        "destination": "/token",        "permanent": true },
+    { "source": "/control-room.html", "destination": "/control-room", "permanent": true }
   ],
   "rewrites": [
     { "source": "/app",       "destination": "/app.html" },
@@ -28,6 +30,7 @@
     { "source": "/terms",     "destination": "/terms.html" },
     { "source": "/gallery",   "destination": "/gallery.html" },
     { "source": "/login",     "destination": "/login.html" },
-    { "source": "/token",     "destination": "/token.html" }
+    { "source": "/token",        "destination": "/token.html" },
+    { "source": "/control-room", "destination": "/control-room.html" }
   ]
 }
