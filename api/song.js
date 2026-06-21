@@ -173,7 +173,7 @@ module.exports = async (req, res) => {
         'content-type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
+        model: 'claude-sonnet-4-6',
         max_tokens: 1500,
         system: 'You are a world-class songwriter fluent in trap, phonk, pop, drill, hype, and ballad. You write in English only. Your lyrics feel authentic — real artists, real flow, real emotion. You treat token data as creative inspiration, not content to recite. You never pad with generic filler.',
         messages: [{ role: 'user', content: prompt }],
