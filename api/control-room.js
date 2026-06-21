@@ -12,23 +12,25 @@ const EXCLUDE_SYMBOLS = new Set([
   'RETH','STETH','WSTETH','ETH',
 ]);
 
-// Broad set of Base-native tokens — ensures 100+ unique results after dedup
+// Known high-liquidity Base tokens — only tokens with real trading volume
 const BASE_SEARCHES = [
-  // Tier-1 Base native
+  // Tier-1 established Base native
   'BRETT','VIRTUAL','AERO','DEGEN','TOSHI','HIGHER',
   'MOG','WELL','NORMIE','BASED','MOCHI','TURBO',
   'ODOS','CBBTC','ZORA','ENJOY','MFER','PRIME',
-  // Popular Base memes
+  // Proven Base memes
   'MIGGLES','KEYCAT','BALD','TYBG','HAM','ANDY',
   'ANON','MOON','WEN','BCT','SEAM','FRENPET',
   'MOXIE','BUILD','CLANKER','TALENT','SMOL',
-  // DeFi active on Base
+  // DeFi protocols active on Base
   'SNX','AAVE','SUSHI','GMX','RDNT','COMP',
-  // Cross-chain memes with Base liquidity
+  'TAROT','GNS','PERP','BSWAP','YFI',
+  // Cross-chain tokens with significant Base liquidity
   'PEPE','BONK','FLOKI','APE','SHIB',
+  'BLUR','ENS','LDO','RPL',
   // Additional Base ecosystem
-  'WAIFU','KEYBOARD','TOSHICAT','DEGEN','KNINE',
-  'MIGGLES','DMAIL','EXTRA','YFI','GNS',
+  'WAIFU','KNINE','DEGEN','KEYBOARD',
+  'TOSHICAT','MEME','LUNA','DOGE',
 ];
 
 let dataCache = { data: null, ts: 0 };
@@ -58,6 +60,8 @@ function isValidPair(p) {
   if (!p.baseToken?.address) return false;
   const sym = (p.baseToken.symbol || '').toUpperCase();
   if (EXCLUDE_SYMBOLS.has(sym)) return false;
+  // Require real liquidity — filters out boosted/paid promo scam tokens
+  if ((p.liquidity?.usd || 0) < 10000) return false;
   return true;
 }
 
