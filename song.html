@@ -531,7 +531,9 @@ async function generateMusic(sym, genre) {
     else throw new Error('No audio returned');
   } catch (e) {
     const info = document.getElementById('player-info');
-    if (info) info.innerHTML = `<div style="font-size:.75rem;color:var(--t3)">Music unavailable — add REPLICATE_API_KEY to enable</div>`;
+    const msg = e.message || String(e);
+    const isNoKey = msg.includes('not configured');
+    if (info) info.innerHTML = `<div style="font-size:.75rem;color:var(--t3)">${isNoKey ? '⚙ Add REPLICATE_API_KEY in Vercel to enable music' : '⚠ ' + msg.slice(0, 120)}</div>`;
   }
 }
 

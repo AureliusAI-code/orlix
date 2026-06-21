@@ -15,8 +15,6 @@ const GENRE_PROMPTS = {
   ballad: 'emotional piano ballad, orchestral strings, melancholic melody, slow tempo, cinematic, heartfelt R&B',
 };
 
-const REPLICATE_MODEL = 'meta/musicgen:671ac645ce5e552cc63a54a2bbff63fcf798043055d2dac5fc9e36a837eedcfb';
-
 module.exports = async (req, res) => {
   if (req.method === 'OPTIONS') { res.writeHead(204, CORS); return res.end(); }
   if (req.method !== 'POST') { res.writeHead(405, CORS); return res.end(JSON.stringify({ error: 'POST only' })); }
@@ -36,70 +34,71 @@ module.exports = async (req, res) => {
   }
 
   genre = (genre || 'trap').toLowerCase();
-  const prompt = (GENRE_PROMPTS[genre] || GENRE_PROMPTS.trap) + (symbol ? `, theme: ${symbol} token` : '');
+  const prompt = (GENRE_PROMPTS[genre] || GENRE_PROMPTS.trap) + (symbol ? `, inspired by ${symbol}` : '');
 
   try {
-    // Start prediction
-    const startRes = await fetch('https://api.replicate.com/v1/predictions', {
+    // Use the official model endpoint (no hardcoded version hash)
+    const startRes = await fetch('https://api.replicate.com/v1/models/meta/musicgen/predictions', {
       method: 'POST',
       headers: {
-        'Authorization': `Token ${apiKey}`,
+        'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
+        'Prefer': 'wait=5',
       },
       body: JSON.stringify({
-        version: REPLICATE_MODEL,
         input: {
           prompt,
-          model_version: 'stereo-large',
+          duration: 28,
           output_format: 'mp3',
-          duration: 30,
-          temperature: 1,
-          top_k: 250,
-          top_p: 0,
-          classifier_free_guidance: 3,
-          continuation: false,
-          multi_band_diffusion: false,
           normalization_strategy: 'peak',
         },
       }),
-      signal: AbortSignal.timeout(15000),
+      signal: AbortSignal.timeout(12000),
     });
 
     if (!startRes.ok) {
-      const err = await startRes.text();
-      throw new Error(`Replicate start failed: ${startRes.status} — ${err.slice(0, 200)}`);
+      const errText = await startRes.text().catch(() => startRes.status);
+      throw new Error(`Replicate ${startRes.status}: ${String(errText).slice(0, 300)}`);
     }
 
     const prediction = await startRes.json();
-    const predictionId = prediction.id;
 
-    // Poll for completion (max ~38s)
-    const deadline = Date.now() + 38000;
+    // If already done (Prefer: wait worked)
+    if (prediction.status === 'succeeded') {
+      const audioUrl = Array.isArray(prediction.output) ? prediction.output[0] : prediction.output;
+      res.writeHead(200, CORS);
+      return res.end(JSON.stringify({ audioUrl, genre }));
+    }
+
+    const predictionId = prediction.id;
+    if (!predictionId) throw new Error('No prediction ID returned');
+
+    // Poll until done (max 42s)
+    const deadline = Date.now() + 42000;
     while (Date.now() < deadline) {
-      await new Promise(r => setTimeout(r, 2500));
+      await new Promise(r => setTimeout(r, 3000));
 
       const pollRes = await fetch(`https://api.replicate.com/v1/predictions/${predictionId}`, {
-        headers: { 'Authorization': `Token ${apiKey}` },
+        headers: { 'Authorization': `Bearer ${apiKey}` },
         signal: AbortSignal.timeout(8000),
       });
 
       if (!pollRes.ok) continue;
-
       const poll = await pollRes.json();
 
       if (poll.status === 'succeeded') {
         const audioUrl = Array.isArray(poll.output) ? poll.output[0] : poll.output;
+        if (!audioUrl) throw new Error('Empty audio output');
         res.writeHead(200, CORS);
-        return res.end(JSON.stringify({ audioUrl, genre, predictionId }));
+        return res.end(JSON.stringify({ audioUrl, genre }));
       }
 
       if (poll.status === 'failed' || poll.status === 'canceled') {
-        throw new Error(`Prediction ${poll.status}: ${poll.error || 'unknown'}`);
+        throw new Error(`Prediction ${poll.status}: ${poll.error || 'unknown error'}`);
       }
-      // still 'starting' or 'processing' — keep polling
     }
 
-    throw new Error('Music generation timed out — try again');
+    throw new Error('Timed out after 45s — Replicate is busy, try again');
   } catch (e) {
     res.writeHead(502, CORS);
     res.end(JSON.stringify({ error: e.message }));
