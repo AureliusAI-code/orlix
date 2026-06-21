@@ -148,6 +148,17 @@ async function fetchTop100() {
     }
   }
 
+  // Force-include BNKR regardless of liquidity threshold
+  if (!symMap['BNKR']) {
+    const bnkrRes = await dget('https://api.dexscreener.com/latest/dex/search?q=BNKR').catch(() => null);
+    if (bnkrRes?.pairs) {
+      const bnkrPair = bnkrRes.pairs
+        .filter(p => p.chainId === 'base' && p.baseToken?.symbol?.toUpperCase() === 'BNKR' && !EXCLUDE_SYMBOLS.has('BNKR'))
+        .sort((a, b) => (b.volume?.h24 || 0) - (a.volume?.h24 || 0))[0];
+      if (bnkrPair) symMap['BNKR'] = bnkrPair;
+    }
+  }
+
   // Sort by 24h volume — closest public proxy to DexScreener trending rank
   const sorted = Object.values(symMap)
     .sort((a, b) => (b.volume?.h24 || 0) - (a.volume?.h24 || 0));
