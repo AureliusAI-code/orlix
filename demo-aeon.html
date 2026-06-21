@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Orlix AI × Aeon — Agentic Demo</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{width:100%;height:100%;background:#000;overflow:hidden;font-family:'Courier New',monospace;color:#fff}
+  #stage{position:fixed;inset:0;background:#000}
+
+  .scene{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity 0.8s ease}
+  .scene.active{opacity:1;pointer-events:auto}
+
+  /* S0: Cold open */
+  #s0{background:#000}
+  #s0 .cursor{font-size:clamp(40px,8vw,80px);color:#ff6b00;animation:blink 0.8s step-end infinite}
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+
+  /* S1: Impact */
+  #s1{background:#000}
+  #s1 .bolt{font-size:clamp(48px,10vw,120px);text-align:center;line-height:1.05;letter-spacing:-1px;text-transform:uppercase}
+  #s1 .bolt span{color:#fff}
+  #s1 .bolt .word-agentic{
+    background:linear-gradient(90deg,#ff6b00,#ff9a00,#ffcc00);
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+    display:block;font-size:clamp(60px,14vw,160px)
+  }
+  #s1 .sub{font-size:clamp(12px,2.2vw,20px);color:#555;margin-top:20px;letter-spacing:4px;text-transform:uppercase}
+  #s1 .flash{position:absolute;inset:0;background:#ff6b00;opacity:0;pointer-events:none}
+
+  /* S2: Logos */
+  #s2{background:#000}
+  #s2 .logo-row{display:flex;align-items:center;gap:clamp(16px,4vw,52px)}
+  #s2 .orlix-logo{
+    width:clamp(64px,11vw,110px);height:clamp(64px,11vw,110px);
+    background:#fff;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;flex-shrink:0
+  }
+  #s2 .orlix-logo span{color:#000;font-weight:900;font-size:clamp(18px,3.5vw,36px);font-family:'Courier New',monospace}
+  #s2 .times{font-size:clamp(24px,4.5vw,52px);color:#333;padding:0 4px}
+  #s2 .aeon-logo{width:clamp(64px,11vw,110px);height:clamp(64px,11vw,110px);flex-shrink:0;filter:drop-shadow(0 0 16px rgba(255,255,255,0.4))}
+  #s2 .collab-text{margin-top:28px;font-size:clamp(14px,2.6vw,26px);letter-spacing:5px;text-align:center;color:#ccc;text-transform:uppercase}
+  #s2 .collab-text strong{color:#ff6b00}
+  #s2 .tagline{margin-top:10px;font-size:clamp(10px,1.6vw,14px);color:#444;letter-spacing:3px;text-transform:uppercase}
+
+  /* S3: Capabilities */
+  #s3{background:#050505}
+  #s3 .cap-title{font-size:clamp(11px,1.8vw,16px);color:#ff6b00;letter-spacing:4px;text-transform:uppercase;margin-bottom:28px}
+  #s3 .cap-grid{display:flex;flex-direction:column;gap:12px;width:min(580px,90vw)}
+  .cap-item{
+    display:flex;align-items:center;gap:14px;
+    padding:14px 20px;border:1px solid #1a1a1a;border-radius:3px;background:#0a0a0a;
+    opacity:0;transform:translateX(-24px);transition:opacity 0.4s ease,transform 0.4s ease
+  }
+  .cap-item.show{opacity:1;transform:translateX(0)}
+  .cap-icon{font-size:clamp(18px,2.8vw,26px);flex-shrink:0;width:36px;text-align:center}
+  .cap-label{font-size:clamp(12px,1.7vw,15px);color:#fff;font-weight:bold}
+  .cap-desc{font-size:clamp(9px,1.3vw,11px);color:#444;margin-top:2px}
+  .cap-badge{font-size:9px;color:#ff6b00;border:1px solid #ff6b00;padding:2px 5px;border-radius:2px;letter-spacing:1px;white-space:nowrap;flex-shrink:0}
+
+  /* S4: Shortcuts */
+  #s4{background:#000}
+  #s4 .sh-title{font-size:clamp(11px,1.8vw,16px);color:#ff6b00;letter-spacing:4px;text-transform:uppercase;margin-bottom:24px}
+  #s4 .sh-wrap{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:min(740px,92vw)}
+  .sh-pill{
+    padding:7px 14px;border:1px solid #1e1e1e;border-radius:2px;
+    font-size:clamp(10px,1.4vw,13px);color:#888;background:#080808;
+    opacity:0;transform:scale(0.82);transition:opacity 0.25s ease,transform 0.25s ease
+  }
+  .sh-pill.show{opacity:1;transform:scale(1)}
+  .sh-pill span{color:#ff6b00;margin-right:3px}
+
+  /* S5: Playground */
+  #s5{background:#000}
+  #s5 .screen{
+    width:min(760px,92vw);background:#0a0a0a;
+    border:1px solid #1a1a1a;border-radius:5px;overflow:hidden;
+    box-shadow:0 0 50px rgba(255,107,0,0.06)
+  }
+  #s5 .screen-bar{
+    background:#0f0f0f;padding:9px 14px;
+    display:flex;align-items:center;gap:8px;border-bottom:1px solid #1a1a1a
+  }
+  #s5 .dot{width:9px;height:9px;border-radius:50%}
+  #s5 .dot.r{background:#ff5f57}.dot.y{background:#ffbd2e}.dot.g{background:#28c840}
+  #s5 .screen-url{margin-left:8px;font-size:10px;color:#333;letter-spacing:1px}
+  #s5 .screen-body{padding:22px;min-height:220px}
+  #s5 .prompt-line{display:flex;align-items:flex-start;gap:10px;margin-bottom:14px}
+  #s5 .prompt-you{color:#666;font-size:11px;padding-top:2px;flex-shrink:0;width:28px}
+  #s5 .prompt-text{font-size:clamp(12px,1.7vw,14px);color:#fff;flex:1;line-height:1.5}
+  .tool-call{
+    display:flex;align-items:center;gap:8px;padding:7px 11px;margin:5px 0;
+    background:#0f0f0f;border-left:2px solid #ff6b00;
+    font-size:clamp(9px,1.3vw,11px);color:#ff6b00
+  }
+  .tool-call .spinner{
+    width:9px;height:9px;border:1px solid #ff6b00;border-top-color:transparent;
+    border-radius:50%;animation:spin 0.6s linear infinite;flex-shrink:0
+  }
+  .tool-call.done{border-left-color:#2ecc71;color:#2ecc71}
+  .tool-call.done .spinner{border-color:#2ecc71;animation:none}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  #s5 .ai-response{font-size:clamp(11px,1.5vw,13px);color:#bbb;line-height:1.65;margin-top:10px;padding:11px;background:#050505;border-radius:2px}
+  #s5 .cursor-inline{display:inline-block;width:2px;height:13px;background:#ff6b00;vertical-align:middle;animation:blink 0.8s step-end infinite}
+  #s5 .chain-count{text-align:right;font-size:10px;color:#2a2a2a;margin-top:6px;letter-spacing:1px}
+  #s5 .chain-count span{color:#ff6b00}
+
+  /* S6: Control Room */
+  #s6{background:#000}
+  #s6 .cr-label{font-size:clamp(10px,1.6vw,13px);color:#ff6b00;letter-spacing:4px;text-transform:uppercase;margin-bottom:18px}
+  #s6 .cr-grid{display:flex;gap:9px;flex-wrap:wrap;justify-content:center;max-width:min(780px,94vw)}
+  .cr-card{
+    background:#080808;border:1px solid #151515;border-radius:3px;
+    padding:13px 15px;width:clamp(110px,16vw,165px);
+    opacity:0;transform:translateY(16px);transition:opacity 0.3s ease,transform 0.3s ease
+  }
+  .cr-card.show{opacity:1;transform:translateY(0)}
+  .cr-card .rank{font-size:9px;color:#2a2a2a;margin-bottom:5px;letter-spacing:1px}
+  .cr-card .sym{font-size:clamp(15px,2.3vw,20px);font-weight:bold;color:#fff}
+  .cr-card .price{font-size:clamp(9px,1.3vw,11px);color:#666;margin-top:3px}
+  .cr-card .chg{font-size:clamp(10px,1.4vw,12px);font-weight:bold;margin-top:5px}
+  .cr-card .chg.up{color:#2ecc71}.cr-card .chg.dn{color:#e74c3c}
+  #s6 .cr-link{margin-top:18px;font-size:clamp(10px,1.5vw,13px);color:#333;letter-spacing:2px;display:flex;align-items:center;gap:7px}
+  #s6 .cr-link span{color:#ff6b00}
+
+  /* S7: Outro */
+  #s7{background:#000}
+  #s7 .outro-content{text-align:center}
+  #s7 .outro-logos{display:flex;align-items:center;justify-content:center;gap:clamp(14px,3.5vw,44px);margin-bottom:32px}
+  #s7 .outro-title{font-size:clamp(22px,4.5vw,52px);font-weight:900;text-transform:uppercase;line-height:1.1}
+  #s7 .outro-title .or{color:#fff}
+  #s7 .outro-title .ax{color:#ff6b00}
+  #s7 .outro-sub{font-size:clamp(10px,1.8vw,16px);color:#444;letter-spacing:3px;margin-top:10px;text-transform:uppercase}
+  #s7 .outro-cta{
+    display:inline-block;margin-top:28px;
+    font-size:clamp(13px,2.2vw,20px);letter-spacing:4px;text-transform:uppercase;
+    color:#ff6b00;border:1px solid #ff6b00;padding:12px 32px;
+    animation:pulse-border 2s ease-in-out infinite
+  }
+  @keyframes pulse-border{0%,100%{box-shadow:0 0 0 0 rgba(255,107,0,0.4)}50%{box-shadow:0 0 0 10px rgba(255,107,0,0)}}
+  #s7 .outro-url{margin-top:12px;font-size:clamp(10px,1.5vw,13px);color:#2a2a2a;letter-spacing:2px}
+
+  /* Overlay */
+  #scanline{position:fixed;inset:0;pointer-events:none;z-index:100;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.04) 2px,rgba(0,0,0,0.04) 4px);opacity:0.35}
+  #progress{position:fixed;bottom:0;left:0;height:2px;background:#ff6b00;width:0%;transition:width 0.3s linear;z-index:200;box-shadow:0 0 6px #ff6b00}
+  #hint{position:fixed;bottom:14px;right:18px;font-size:10px;color:#1a1a1a;letter-spacing:1px;z-index:201;cursor:pointer;transition:color 0.3s}
+  #hint:hover{color:#ff6b00}
+</style>
+</head>
+<body>
+
+<div id="stage">
+
+  <!-- S0: Cold open -->
+  <div class="scene" id="s0">
+    <div class="cursor">_</div>
+  </div>
+
+  <!-- S1: Impact headline -->
+  <div class="scene" id="s1">
+    <div class="flash" id="flash1"></div>
+    <div class="bolt">
+      <span>Orlix AI</span>
+      <span class="word-agentic">Agentic</span>
+    </div>
+    <div class="sub">Powered by Aeon Framework</div>
+  </div>
+
+  <!-- S2: Logos -->
+  <div class="scene" id="s2">
+    <div class="logo-row">
+      <div class="orlix-logo"><span>&gt;_</span></div>
+      <div class="times">×</div>
+      <svg class="aeon-logo" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <filter id="g2">
+            <feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/>
+            <feDisplacementMap in="SourceGraphic" scale="3" xChannelSelector="R" yChannelSelector="G"/>
+          </filter>
+        </defs>
+        <polygon points="60,8 73,43 110,43 81,65 92,100 60,78 28,100 39,65 10,43 47,43" fill="white" filter="url(#g2)" opacity="0.95"/>
+        <circle cx="60" cy="60" r="6" fill="#000" opacity="0.5"/>
+        <circle cx="60" cy="60" r="2.5" fill="white"/>
+      </svg>
+    </div>
+    <div class="collab-text"><strong>Orlix AI</strong> × Aeon Framework</div>
+    <div class="tagline">The agentic playground for Base</div>
+  </div>
+
+  <!-- S3: Capabilities -->
+  <div class="scene" id="s3">
+    <div class="cap-title">Claude can now</div>
+    <div class="cap-grid">
+      <div class="cap-item" id="cap0">
+        <div class="cap-icon">🌐</div>
+        <div style="flex:1">
+          <div class="cap-label">Search the Web in Real-Time</div>
+          <div class="cap-desc">Live results from any query — no stale context</div>
+        </div>
+        <div class="cap-badge">LIVE</div>
+      </div>
+      <div class="cap-item" id="cap1">
+        <div class="cap-icon">🔗</div>
+        <div style="flex:1">
+          <div class="cap-label">Fetch &amp; Read Any URL</div>
+          <div class="cap-desc">Docs, articles, protocols — ingested instantly</div>
+        </div>
+        <div class="cap-badge">FETCH</div>
+      </div>
+      <div class="cap-item" id="cap2">
+        <div class="cap-icon">⬡</div>
+        <div style="flex:1">
+          <div class="cap-label">Analyze GitHub Repos</div>
+          <div class="cap-desc">Code review, architecture reads, diff analysis</div>
+        </div>
+        <div class="cap-badge">REPO</div>
+      </div>
+      <div class="cap-item" id="cap3">
+        <div class="cap-icon">⛓</div>
+        <div style="flex:1">
+          <div class="cap-label">Query Base Blockchain Live</div>
+          <div class="cap-desc">Prices, txns, wallets — on-chain data direct</div>
+        </div>
+        <div class="cap-badge">BASE</div>
+      </div>
+      <div class="cap-item" id="cap4">
+        <div class="cap-icon">⚡</div>
+        <div style="flex:1">
+          <div class="cap-label">Chain Up to 5 Tool Calls Autonomously</div>
+          <div class="cap-desc">Multi-step reasoning without interruption</div>
+        </div>
+        <div class="cap-badge">AUTO</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- S4: 16 shortcuts -->
+  <div class="scene" id="s4">
+    <div class="sh-title">16 Aeon-Inspired Skill Shortcuts</div>
+    <div class="sh-wrap">
+      <div class="sh-pill"><span>/</span>search</div>
+      <div class="sh-pill"><span>/</span>fetch</div>
+      <div class="sh-pill"><span>/</span>github</div>
+      <div class="sh-pill"><span>/</span>base</div>
+      <div class="sh-pill"><span>/</span>price</div>
+      <div class="sh-pill"><span>/</span>wallet</div>
+      <div class="sh-pill"><span>/</span>txn</div>
+      <div class="sh-pill"><span>/</span>chart</div>
+      <div class="sh-pill"><span>/</span>audit</div>
+      <div class="sh-pill"><span>/</span>summarize</div>
+      <div class="sh-pill"><span>/</span>explain</div>
+      <div class="sh-pill"><span>/</span>compare</div>
+      <div class="sh-pill"><span>/</span>deploy</div>
+      <div class="sh-pill"><span>/</span>analyze</div>
+      <div class="sh-pill"><span>/</span>trending</div>
+      <div class="sh-pill"><span>/</span>alpha</div>
+    </div>
+  </div>
+
+  <!-- S5: Playground live demo -->
+  <div class="scene" id="s5">
+    <div class="screen">
+      <div class="screen-bar">
+        <div class="dot r"></div><div class="dot y"></div><div class="dot g"></div>
+        <div class="screen-url">orlixai.xyz/app</div>
+      </div>
+      <div class="screen-body">
+        <div class="prompt-line">
+          <div class="prompt-you">you</div>
+          <div class="prompt-text">/base What's the top mover on Base today and why?</div>
+        </div>
+        <div id="tc0" class="tool-call"><div class="spinner"></div> Querying Base blockchain…</div>
+        <div id="tc1" class="tool-call" style="display:none"><div class="spinner"></div> Searching web for context…</div>
+        <div id="tc2" class="tool-call" style="display:none"><div class="spinner"></div> Fetching DexScreener data…</div>
+        <div id="ai-resp" class="ai-response" style="display:none">
+          <span id="ai-text"></span><span class="cursor-inline" id="ai-cursor"></span>
+        </div>
+        <div id="chain-count" class="chain-count" style="display:none">tool calls: <span>3</span> / 5</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- S6: Control Room -->
+  <div class="scene" id="s6">
+    <div class="cr-label">Orlix Control Room — Live Base Top 100</div>
+    <div class="cr-grid">
+      <div class="cr-card" id="c0"><div class="rank">#1</div><div class="sym">BRETT</div><div class="price">$0.1847</div><div class="chg up">+12.4%</div></div>
+      <div class="cr-card" id="c1"><div class="rank">#2</div><div class="sym">VIRTUAL</div><div class="price">$1.2340</div><div class="chg up">+8.7%</div></div>
+      <div class="cr-card" id="c2"><div class="rank">#3</div><div class="sym">AERO</div><div class="price">$0.9120</div><div class="chg dn">-2.1%</div></div>
+      <div class="cr-card" id="c3"><div class="rank">#4</div><div class="sym">DEGEN</div><div class="price">$0.0221</div><div class="chg up">+5.3%</div></div>
+      <div class="cr-card" id="c4"><div class="rank">#5</div><div class="sym">AIXBT</div><div class="price">$0.3047</div><div class="chg up">+19.8%</div></div>
+      <div class="cr-card" id="c5"><div class="rank">#6</div><div class="sym">BNKR</div><div class="price">$0.0084</div><div class="chg up">+6.1%</div></div>
+      <div class="cr-card" id="c6"><div class="rank">#7</div><div class="sym">MOG</div><div class="price">$0.0000091</div><div class="chg dn">-1.4%</div></div>
+      <div class="cr-card" id="c7"><div class="rank">#8</div><div class="sym">HIGHER</div><div class="price">$0.0412</div><div class="chg up">+3.9%</div></div>
+    </div>
+    <div class="cr-link">live at <span>orlixai.xyz/control-room</span></div>
+  </div>
+
+  <!-- S7: Outro -->
+  <div class="scene" id="s7">
+    <div class="outro-content">
+      <div class="outro-logos">
+        <div style="width:clamp(48px,7.5vw,76px);height:clamp(48px,7.5vw,76px);background:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <span style="color:#000;font-weight:900;font-size:clamp(14px,2.8vw,28px);font-family:'Courier New',monospace">&gt;_</span>
+        </div>
+        <span style="font-size:clamp(18px,3.5vw,36px);color:#222">×</span>
+        <svg width="clamp(48px,7.5vw,76px)" height="clamp(48px,7.5vw,76px)" viewBox="0 0 120 120" fill="none">
+          <defs><filter id="g3"><feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/><feDisplacementMap in="SourceGraphic" scale="3" xChannelSelector="R" yChannelSelector="G"/></filter></defs>
+          <polygon points="60,8 73,43 110,43 81,65 92,100 60,78 28,100 39,65 10,43 47,43" fill="white" filter="url(#g3)"/>
+        </svg>
+      </div>
+      <div class="outro-title">
+        <div class="or">Orlix AI</div>
+        <div class="ax">Just Got Agentic</div>
+      </div>
+      <div class="outro-sub">Integrated Aeon · 16 Skills · 5-Step Tool Chains</div>
+      <div class="outro-cta">Try It Now</div>
+      <div class="outro-url">orlixai.xyz/app</div>
+    </div>
+  </div>
+
+</div>
+
+<div id="scanline"></div>
+<div id="progress"></div>
+<div id="hint" onclick="restart()">↺ replay</div>
+
+<script>
+const TOTAL = 52000;
+const AI_TEXT = 'BRETT leads today up +12.4% on 3× normal volume. A whale wallet moved 4.2M BRETT to Aerodrome LP 6 hours ago, triggering a cascade of copy trades. On-chain data shows 847 buys vs 203 sells in the last hour — momentum remains bullish.';
+
+let startTime=null, raf=null, aiTimer=null, activeScene=null;
+
+function show(id){
+  document.querySelectorAll('.scene').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function enterS1(){
+  show('s1');
+  const fl=document.getElementById('flash1');
+  fl.style.transition='none'; fl.style.opacity='1';
+  setTimeout(()=>{ fl.style.transition='opacity 0.5s ease'; fl.style.opacity='0'; },80);
+}
+
+function enterS3(){
+  show('s3');
+  const caps=document.querySelectorAll('.cap-item');
+  caps.forEach(c=>c.classList.remove('show'));
+  caps.forEach((c,i)=>setTimeout(()=>c.classList.add('show'),300+i*380));
+}
+
+function enterS4(){
+  show('s4');
+  const pills=document.querySelectorAll('.sh-pill');
+  pills.forEach(p=>p.classList.remove('show'));
+  pills.forEach((p,i)=>setTimeout(()=>p.classList.add('show'),80+i*90));
+}
+
+function resetPlayground(){
+  clearTimeout(aiTimer);
+  ['tc0','tc1','tc2'].forEach(id=>{
+    const el=document.getElementById(id);
+    el.style.display='none';
+    el.className='tool-call';
+    el.innerHTML='<div class="spinner"></div>';
+  });
+  document.getElementById('ai-resp').style.display='none';
+  document.getElementById('ai-text').textContent='';
+  document.getElementById('ai-cursor').style.display='inline-block';
+  document.getElementById('chain-count').style.display='none';
+}
+
+function done(id,label){
+  const el=document.getElementById(id);
+  el.className='tool-call done';
+  el.innerHTML='<div class="spinner"></div> ✓ '+label;
+}
+
+function enterS5(){
+  show('s5');
+  resetPlayground();
+  document.getElementById('tc0').style.display='flex';
+  document.getElementById('tc0').querySelector('.spinner').className='spinner';
+  document.getElementById('tc0').innerHTML='<div class="spinner"></div> Querying Base blockchain…';
+
+  setTimeout(()=>{
+    done('tc0','Base blockchain queried');
+    document.getElementById('tc1').style.display='flex';
+    document.getElementById('tc1').innerHTML='<div class="spinner"></div> Searching web for context…';
+  },1500);
+
+  setTimeout(()=>{
+    done('tc1','Web context retrieved');
+    document.getElementById('tc2').style.display='flex';
+    document.getElementById('tc2').innerHTML='<div class="spinner"></div> Fetching DexScreener data…';
+  },3200);
+
+  setTimeout(()=>{
+    done('tc2','DexScreener data loaded');
+    document.getElementById('ai-resp').style.display='block';
+    document.getElementById('chain-count').style.display='block';
+    typeAI(0);
+  },5000);
+}
+
+function typeAI(i){
+  const el=document.getElementById('ai-text');
+  const cur=document.getElementById('ai-cursor');
+  if(i>=AI_TEXT.length){ cur.style.display='none'; return; }
+  el.textContent=AI_TEXT.slice(0,i+1);
+  const ch=AI_TEXT[i];
+  const delay=ch==='.'?160:ch===','?100:26;
+  aiTimer=setTimeout(()=>typeAI(i+1),delay);
+}
+
+function enterS6(){
+  show('s6');
+  const cards=document.querySelectorAll('.cr-card');
+  cards.forEach(c=>c.classList.remove('show'));
+  cards.forEach((c,i)=>setTimeout(()=>c.classList.add('show'),120+i*140));
+}
+
+const scenes=[
+  {s:0,    e:1800,  id:'s0', enter:()=>show('s0')},
+  {s:1800, e:5500,  id:'s1', enter:enterS1},
+  {s:5500, e:10000, id:'s2', enter:()=>show('s2')},
+  {s:10000,e:17500, id:'s3', enter:enterS3},
+  {s:17500,e:23500, id:'s4', enter:enterS4},
+  {s:23500,e:33500, id:'s5', enter:enterS5},
+  {s:33500,e:41000, id:'s6', enter:enterS6},
+  {s:41000,e:52000, id:'s7', enter:()=>show('s7')},
+];
+
+function tick(ts){
+  if(!startTime) startTime=ts;
+  const elapsed=ts-startTime;
+  document.getElementById('progress').style.width=Math.min(elapsed/TOTAL*100,100)+'%';
+  for(const sc of scenes){
+    if(elapsed>=sc.s && elapsed<sc.e){
+      if(activeScene!==sc.id){ activeScene=sc.id; sc.enter(); }
+      break;
+    }
+  }
+  if(elapsed<TOTAL) raf=requestAnimationFrame(tick);
+  else{ show('s7'); document.getElementById('progress').style.width='100%'; }
+}
+
+function restart(){
+  clearTimeout(aiTimer);
+  cancelAnimationFrame(raf);
+  startTime=null; activeScene=null;
+  document.getElementById('progress').style.width='0%';
+  document.querySelectorAll('.scene').forEach(s=>s.classList.remove('active'));
+  raf=requestAnimationFrame(tick);
+}
+
+document.addEventListener('click',restart);
+raf=requestAnimationFrame(tick);
+</script>
+</body>
+</html>
