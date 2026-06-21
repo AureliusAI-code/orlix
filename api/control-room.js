@@ -16,7 +16,7 @@ const CORS = {
 
 let dataCache = { data: null, ts: 0 };
 let commentaryCache = { text: '', ts: 0 };
-const DATA_TTL = 30_000;
+const DATA_TTL = 20_000;
 const COMMENTARY_TTL = 300_000;
 
 function shortenAddr(a) {
@@ -40,30 +40,67 @@ async function dget(url) {
   return r.json();
 }
 
-// Fetch a large pool of Base pairs via multiple searches
-async function fetchBasePairPool() {
-  const queries = ['USDC', 'ETH', 'WETH', 'DAI', 'USDT'];
-  const results = await Promise.allSettled(
-    queries.map(q =>
-      dget(`https://api.dexscreener.com/latest/dex/search?q=${q}&chainIds=base`)
-    )
-  );
+// Well-known active Base token addresses (always fetched directly)
+const BASE_TOKENS = [
+  '0x940181a94A35A4569E4529A3CDfB74e38FD98631', // AERO
+  '0x532f27101965dd16442E59d40670FaF5eBB142E',  // BRETT
+  '0x4ed4E862860beD51a9570b96d89aF5E1B0Efefed', // DEGEN
+  '0x0b3e328455c4059EEb9e3f84b5543F74E24e7E1b', // VIRTUAL
+  '0xAC1Bd2486aAf3B5C0fc3Fd868558b082a531B2B3',  // TOSHI
+  '0x0578d8A44db98B23BF096A382e016e29a5Ce0ffe',  // HIGHER
+  '0xF6e932Ca12afa26665dC4dDE7e27be02A6C1284e',  // MOCHI
+  '0x799c28BAC95B3E0B26534D1e9A586511895EcBA3',  // ORLIX
+];
 
+// Fetch a large pool of Base pairs
+async function fetchBasePairPool() {
+  // Run in parallel: known token addresses + Base-native token name searches
+  const [knownRes, s1, s2, s3, s4, s5, boostsRes] = await Promise.allSettled([
+    dget(`https://api.dexscreener.com/latest/dex/tokens/${BASE_TOKENS.join(',')}`),
+    dget('https://api.dexscreener.com/latest/dex/search?q=AERO'),
+    dget('https://api.dexscreener.com/latest/dex/search?q=BRETT'),
+    dget('https://api.dexscreener.com/latest/dex/search?q=DEGEN'),
+    dget('https://api.dexscreener.com/latest/dex/search?q=VIRTUAL'),
+    dget('https://api.dexscreener.com/latest/dex/search?q=TOSHI'),
+    dget('https://api.dexscreener.com/token-boosts/top/v1'),
+  ]);
+
+  // Collect all pairs from search results
+  const rawPairs = [];
+  for (const r of [s1, s2, s3, s4, s5]) {
+    if (r.status === 'fulfilled') rawPairs.push(...(r.value.pairs || []));
+  }
+  if (knownRes.status === 'fulfilled') rawPairs.push(...(knownRes.value.pairs || []));
+
+  // For boosts: batch-fetch their pair data
+  if (boostsRes.status === 'fulfilled') {
+    const boostAddrs = (Array.isArray(boostsRes.value) ? boostsRes.value : [])
+      .filter(t => t.chainId === 'base')
+      .slice(0, 20)
+      .map(t => t.tokenAddress)
+      .filter(Boolean)
+      .join(',');
+    if (boostAddrs) {
+      try {
+        const bd = await dget(`https://api.dexscreener.com/latest/dex/tokens/${boostAddrs}`);
+        rawPairs.push(...(bd.pairs || []));
+      } catch { /* ignore */ }
+    }
+  }
+
+  // Deduplicate, filter for Base, exclude stablecoins
   const seen = new Set();
   const pairs = [];
-  for (const r of results) {
-    if (r.status !== 'fulfilled') continue;
-    for (const p of r.value.pairs || []) {
-      const sym = (p.baseToken?.symbol || '').toUpperCase();
-      if (
-        p.chainId === 'base' &&
-        p.baseToken?.address &&
-        !seen.has(p.pairAddress) &&
-        !EXCLUDE_SYMBOLS.has(sym)
-      ) {
-        seen.add(p.pairAddress);
-        pairs.push(p);
-      }
+  for (const p of rawPairs) {
+    const sym = (p.baseToken?.symbol || '').toUpperCase();
+    if (
+      p.chainId === 'base' &&
+      p.baseToken?.address &&
+      !seen.has(p.pairAddress) &&
+      !EXCLUDE_SYMBOLS.has(sym)
+    ) {
+      seen.add(p.pairAddress);
+      pairs.push(p);
     }
   }
   return pairs;
