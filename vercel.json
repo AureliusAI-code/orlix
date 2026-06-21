@@ -11,7 +11,8 @@
     "api/analyze.js":       { "memory": 256, "maxDuration": 60 },
     "api/control-room.js":  { "memory": 128, "maxDuration": 30 },
     "api/token-search.js": { "memory": 128, "maxDuration": 15 },
-    "api/song.js":         { "memory": 256, "maxDuration": 45 }
+    "api/song.js":         { "memory": 256, "maxDuration": 45 },
+    "api/music.js":        { "memory": 256, "maxDuration": 60 }
   },
   "redirects": [
     { "source": "/app.html",       "destination": "/app",       "permanent": true },
