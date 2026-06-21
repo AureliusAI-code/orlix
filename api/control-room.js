@@ -235,36 +235,34 @@ async function fetchDexScreenerFallback() {
 async function fetchTop100() {
   const { pools, tokenMap } = await fetchGeckoTerminal();
 
-  if (pools.length >= 30) {
-    // Dedup by token address — keep first (highest-ranked) pool per token
-    const seen = new Set();
-    const tokens = [];
-    let rank = 1;
+  // Dedup by token address — keep first (highest-ranked) pool per token
+  const seen = new Set();
+  const geckoTokens = [];
+  let rank = 1;
 
-    for (const pool of pools) {
-      const baseTokenId = pool.relationships?.base_token?.data?.id;
-      const baseToken = tokenMap[baseTokenId];
-      const addr = baseToken?.attributes?.address?.toLowerCase();
-      if (!addr || seen.has(addr)) continue;
+  for (const pool of pools) {
+    const baseTokenId = pool.relationships?.base_token?.data?.id;
+    const baseToken = tokenMap[baseTokenId];
+    const addr = baseToken?.attributes?.address?.toLowerCase();
+    if (!addr || seen.has(addr)) continue;
 
-      const mapped = mapGeckoPool(pool, tokenMap, rank);
-      if (!mapped) continue;
+    const mapped = mapGeckoPool(pool, tokenMap, rank);
+    if (!mapped) continue;
 
-      seen.add(addr);
-      tokens.push(mapped);
-      rank++;
-      if (rank > 100) break;
-    }
+    seen.add(addr);
+    geckoTokens.push(mapped);
+    rank++;
+    if (rank > 100) break;
+  }
 
-    if (tokens.length >= 20) {
-      return { tokens: tokens.slice(0, 100), source: 'geckoterminal' };
-    }
+  if (geckoTokens.length >= 10) {
+    return { tokens: geckoTokens.slice(0, 100), source: 'geckoterminal', _debug: { rawPools: pools.length, mapped: geckoTokens.length } };
   }
 
   // Fallback to DexScreener keyword search
   const pairs = await fetchDexScreenerFallback();
   const tokens = pairs.slice(0, 100).map((p, i) => mapDexPair(p, i + 1));
-  return { tokens, source: 'dexscreener-fallback' };
+  return { tokens, source: 'dexscreener-fallback', _debug: { rawPools: pools.length, geckMapped: geckoTokens.length } };
 }
 
 // ── Commentary ───────────────────────────────────────────────────────────────
@@ -311,12 +309,14 @@ module.exports = async (req, res) => {
     return res.end(JSON.stringify(dataCache.data));
   }
 
-  const { tokens: allTokens, source } = await fetchTop100();
+  const result = await fetchTop100();
+  const allTokens = result.tokens;
+  const source = result.source;
 
   const totalVol1h = allTokens.reduce((s, t) => s + (t.volume1h || 0), 0);
   const safeCount = allTokens.filter(t => (t.liquidity || 0) >= 50000).length;
 
-  const stats = { total: allTokens.length, safeCount, totalVol1h, source, ts: now };
+  const stats = { total: allTokens.length, safeCount, totalVol1h, source, _debug: result._debug, ts: now };
   const liveActivity = allTokens;
   const trending = allTokens.slice(0, 15);
   const commentary = await generateCommentary(allTokens, process.env.ANTHROPIC_API_KEY);
