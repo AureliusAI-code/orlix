@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Orlix Control Room — Demo</title>
+<link rel="icon" href="/favicon.ico"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#07070A;--s1:#0C0C10;--s2:#101015;--s3:#141419;--s4:#1A1A21;
+  --b1:rgba(255,255,255,.06);--b2:rgba(255,255,255,.09);
+  --orange:#F07830;--green:#22C55E;--red:#EF4444;--yellow:#EAB308;
+  --purple:#A78BFA;--blue:#3B82F6;
+  --t1:#F1F1F3;--t2:#9CA3AF;--t3:#52525B;
+  --mono:'JetBrains Mono',monospace;--sans:'Plus Jakarta Sans',sans-serif;
+}
+html,body{height:100%;background:var(--bg);color:var(--t1);font-family:var(--sans);font-size:13px;overflow:hidden}
+
+/* ── TOPBAR ── */
+.topbar{height:48px;display:flex;align-items:center;gap:12px;padding:0 16px;border-bottom:1px solid var(--b1);background:var(--s1);position:fixed;top:0;left:0;right:0;z-index:300}
+.logo-name{font-weight:800;font-size:13px;letter-spacing:.04em;color:var(--t1)}
+.logo-sep{color:var(--b2);margin:0 2px}
+.logo-cr{font-size:10px;font-weight:700;color:var(--orange);letter-spacing:.14em}
+.live-dot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.top-stats{display:flex;gap:16px;margin-left:4px}
+.ts{display:flex;flex-direction:column;align-items:center;line-height:1.2}
+.ts-v{font-family:var(--mono);font-size:11px;color:var(--t1)}
+.ts-l{font-size:9px;color:var(--t3);letter-spacing:.06em;text-transform:uppercase}
+.top-div{width:1px;height:18px;background:var(--b1)}
+.top-right{display:flex;align-items:center;gap:8px;margin-left:auto}
+.status-txt{font-family:var(--mono);font-size:10px;color:var(--t3)}
+.tbtn{padding:5px 12px;border-radius:7px;font-size:11px;font-weight:600;border:none;cursor:pointer;font-family:var(--sans);text-decoration:none;display:inline-block}
+.tbtn-ghost{background:var(--s4);color:var(--t2)}
+.tbtn-orange{background:var(--orange);color:#fff}
+
+/* ── LAYOUT ── */
+.app{display:flex;height:100vh;padding-top:48px}
+
+/* ── SIDEBAR ── */
+.sidebar{width:180px;flex-shrink:0;border-right:1px solid var(--b1);background:var(--s1);display:flex;flex-direction:column;padding:12px 0}
+.sb-label{display:block;font-size:9px;font-weight:700;color:var(--t3);letter-spacing:.12em;text-transform:uppercase;padding:6px 14px 4px}
+.sb-item{display:flex;align-items:center;gap:8px;padding:7px 14px;font-size:12px;font-weight:500;color:var(--t2);border-left:2px solid transparent;transition:all .2s;user-select:none;cursor:pointer}
+.sb-item:hover,.sb-item.active{color:var(--orange);border-left-color:var(--orange);background:rgba(240,120,48,.07)}
+.sb-ico{width:14px;text-align:center;font-size:12px}
+.sb-badge{margin-left:auto;font-family:var(--mono);font-size:9px;background:var(--s4);color:var(--t3);padding:1px 6px;border-radius:4px}
+.sb-item.active .sb-badge{background:rgba(240,120,48,.15);color:var(--orange)}
+.sb-search{padding:8px 12px}
+.sb-input{width:100%;background:var(--s2);border:1px solid var(--b1);border-radius:7px;padding:6px 10px;font-size:11px;color:var(--t1);font-family:var(--sans);outline:none}
+.sb-input.focus{border-color:rgba(240,120,48,.5);box-shadow:0 0 0 3px rgba(240,120,48,.08)}
+.sb-commentary{margin-top:auto;padding:10px 12px;border-top:1px solid var(--b1)}
+.sb-ai-tag{font-size:9px;font-weight:700;color:var(--purple);letter-spacing:.08em;display:block;margin-bottom:4px}
+.sb-ai-txt{font-size:10px;color:var(--t2);line-height:1.5}
+
+/* ── TABLE ── */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+:root{--cols:200px 90px 60px 60px 60px 80px 80px 75px 75px 100px}
+.tbl-header{display:grid;grid-template-columns:var(--cols);padding:0 12px;height:32px;align-items:center;border-bottom:1px solid var(--b1);background:var(--s1);font-size:10px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.06em}
+.th{display:flex;align-items:center;gap:3px;white-space:nowrap}
+.th-right{justify-content:flex-end}
+.th.sorted{color:var(--orange)}
+.th.sorted.desc::after{content:'↓';color:var(--orange)}
+.th.sorted.asc::after{content:'↑';color:var(--orange)}
+.tbl-body{flex:1;overflow-y:auto}
+.tbl-body::-webkit-scrollbar{width:4px}
+.tbl-body::-webkit-scrollbar-thumb{background:var(--s4);border-radius:2px}
+.trow{display:grid;grid-template-columns:var(--cols);padding:0 12px;height:38px;align-items:center;border-bottom:1px solid rgba(255,255,255,.03);transition:background .1s}
+.trow:hover,.trow.highlight{background:rgba(255,255,255,.05)}
+.trow.highlight{background:rgba(240,120,48,.06);border-left:2px solid rgba(240,120,48,.4)}
+.trow.new-in{animation:rowIn .5s ease forwards}
+@keyframes rowIn{from{opacity:0;background:rgba(34,197,94,.15)}to{opacity:1;background:transparent}}
+.tc-token{display:flex;align-items:center;gap:8px;min-width:0;overflow:hidden}
+.tok-wrap{position:relative;width:26px;height:26px;flex-shrink:0}
+.tok-logo{width:26px;height:26px;border-radius:50%;object-fit:cover;display:block}
+.tok-ini{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800}
+.tc-info{display:flex;flex-direction:column;min-width:0;overflow:hidden}
+.tc-sym{font-weight:700;font-size:12px;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tc-name{font-size:10px;color:var(--t3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+.tc-num{font-family:var(--mono);font-size:11px;text-align:right;white-space:nowrap}
+.pos{color:var(--green)}.neg{color:var(--red)}.neu{color:var(--t3)}
+.tc-links{display:flex;gap:4px;justify-content:flex-end;align-items:center;flex-direction:column}
+.tc-link{font-size:9px;color:var(--t3);text-decoration:none;padding:2px 5px;border-radius:3px;background:var(--s4)}
+.bs-mini{display:flex;align-items:center;gap:3px}
+.bs-bar{height:3px;border-radius:2px;background:var(--s4);overflow:hidden;width:40px}
+.bs-fill{height:100%;border-radius:2px}
+.bs-g{background:var(--green)}.bs-r{background:var(--red)}
+.bs-num{font-family:var(--mono);font-size:9px;color:var(--t3)}
+
+/* ── MODAL ── */
+.overlay{display:none;position:fixed;inset:0;background:rgba(7,7,10,.88);backdrop-filter:blur(6px);z-index:500;align-items:center;justify-content:center}
+.overlay.open{display:flex}
+.modal{background:var(--s1);border:1px solid var(--b2);border-radius:14px;width:520px;max-width:calc(100vw - 24px);max-height:calc(100vh - 48px);display:flex;flex-direction:column;overflow:hidden;animation:mIn .18s ease}
+@keyframes mIn{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:none}}
+.m-hd{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;border-bottom:1px solid var(--b1)}
+.m-ttl{font-size:14px;font-weight:700}
+.m-x{background:none;border:none;color:var(--t3);cursor:pointer;font-size:17px;padding:4px;line-height:1}
+.m-body{padding:14px;overflow-y:auto;flex:1}
+.m-foot{padding:10px 16px;border-top:1px solid var(--b1);display:flex;gap:8px}
+.mbtn{padding:6px 13px;border-radius:7px;font-size:11px;font-weight:600;border:none;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center}
+.mbtn-g{background:var(--s4);color:var(--t2)}
+.verdict{display:flex;align-items:center;justify-content:center;padding:10px;border-radius:8px;font-size:15px;font-weight:800;letter-spacing:.06em;margin-bottom:12px}
+.v-safe{background:rgba(34,197,94,.08);color:var(--green);border:1px solid rgba(34,197,94,.2)}
+.v-caution{background:rgba(234,179,8,.08);color:var(--yellow);border:1px solid rgba(234,179,8,.2)}
+.ag{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:12px}
+.astat{background:var(--bg);border:1px solid var(--b1);border-radius:7px;padding:9px 11px}
+.al{font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px}
+.av{font-family:var(--mono);font-size:13px;font-weight:500}
+.atext{font-size:11px;color:var(--t2);line-height:1.65;white-space:pre-wrap;background:var(--bg);border:1px solid var(--b1);border-radius:7px;padding:11px;max-height:220px;overflow-y:auto}
+
+/* ── CURSOR ── */
+.fake-cursor{
+  position:fixed;pointer-events:none;z-index:9999;
+  width:18px;height:18px;
+  background:rgba(240,120,48,.9);
+  border-radius:50%;
+  border:2px solid rgba(255,255,255,.6);
+  transform:translate(-50%,-50%);
+  transition:left .4s cubic-bezier(.25,.46,.45,.94),top .4s cubic-bezier(.25,.46,.45,.94);
+  box-shadow:0 0 0 3px rgba(240,120,48,.25),0 2px 8px rgba(0,0,0,.4);
+}
+.fake-cursor.click{animation:cursorClick .25s ease}
+@keyframes cursorClick{0%{transform:translate(-50%,-50%) scale(1)}50%{transform:translate(-50%,-50%) scale(.65)}100%{transform:translate(-50%,-50%) scale(1)}}
+
+/* ── CAPTION ── */
+.caption{
+  position:fixed;bottom:28px;left:50%;transform:translateX(-50%);
+  background:rgba(12,12,16,.92);border:1px solid var(--b2);
+  backdrop-filter:blur(12px);border-radius:12px;
+  padding:10px 22px;font-size:13px;color:var(--t1);
+  white-space:nowrap;z-index:9998;
+  opacity:0;transition:opacity .3s;
+  font-weight:500;letter-spacing:.01em;
+}
+.caption.show{opacity:1}
+
+/* ── SPIN ── */
+.spin{width:20px;height:20px;border:2px solid var(--s4);border-top-color:var(--orange);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<header class="topbar">
+  <span class="logo-name">ORLIX</span>
+  <span class="logo-sep">/</span>
+  <span class="logo-cr">CONTROL ROOM</span>
+  <div class="live-dot"></div>
+  <div class="top-div"></div>
+  <div class="top-stats">
+    <div class="ts"><span class="ts-v" id="s-count">247</span><span class="ts-l">Tokens</span></div>
+    <div class="ts"><span class="ts-v" id="s-vol">$4.2M</span><span class="ts-l">Vol 1h</span></div>
+    <div class="ts"><span class="ts-v" id="s-safe">89</span><span class="ts-l">Safe</span></div>
+  </div>
+  <div class="top-right">
+    <span class="status-txt" id="status-txt">Updated 14:32:07</span>
+    <a href="/" class="tbtn tbtn-ghost">← Home</a>
+    <a href="/app" class="tbtn tbtn-orange">App →</a>
+  </div>
+</header>
+
+<div class="app">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sb-search">
+      <input class="sb-input" id="search-inp" placeholder="Search any token…" readonly/>
+    </div>
+    <span class="sb-label">View</span>
+    <div class="sb-item active" id="f-all"><span class="sb-ico">◈</span>All Tokens<span class="sb-badge" id="badge-all">247</span></div>
+    <div class="sb-item" id="f-hot"><span class="sb-ico" style="color:#EAB308">🔥</span>Trending</div>
+    <div class="sb-item" id="f-safe"><span class="sb-ico" style="color:var(--green)">✓</span>Safe Only<span class="sb-badge" id="badge-safe">89</span></div>
+    <div class="sb-item" id="f-new"><span class="sb-ico" style="color:var(--blue)">◎</span>New Pairs</div>
+    <div class="sb-item" id="f-gainers"><span class="sb-ico" style="color:var(--green)">↑</span>Top Gainers</div>
+    <div class="sb-item" id="f-losers"><span class="sb-ico" style="color:var(--red)">↓</span>Top Losers</div>
+    <span class="sb-label" style="margin-top:8px">Network</span>
+    <div class="sb-item active" style="pointer-events:none"><span class="sb-ico">🔵</span>Base<span class="sb-badge" style="background:rgba(59,130,246,.12);color:var(--blue)">LIVE</span></div>
+    <div class="sb-commentary">
+      <span class="sb-ai-tag">✦ ORLIX AI</span>
+      <span class="sb-ai-txt" id="commentary-txt">Base network showing strong momentum — $BRETT and $DEGEN leading 1h volume with buy pressure above 65%. New pairs emerging in meme sector.</span>
+    </div>
+  </aside>
+
+  <!-- TABLE -->
+  <main class="main">
+    <div class="tbl-header">
+      <div class="th" id="th-token">Token</div>
+      <div class="th th-right" id="th-price">Price</div>
+      <div class="th th-right" id="th-1h">1h %</div>
+      <div class="th th-right" id="th-6h">6h %</div>
+      <div class="th th-right" id="th-24h">24h %</div>
+      <div class="th th-right" id="th-vol1h">Vol 1h</div>
+      <div class="th th-right" id="th-vol24h">Vol 24h</div>
+      <div class="th th-right" id="th-liq">Liquidity</div>
+      <div class="th th-right" id="th-mcap">MCap</div>
+      <div class="th th-right">Txns / Links</div>
+    </div>
+    <div class="tbl-body" id="tbl-body"></div>
+  </main>
+</div>
+
+<!-- MODAL -->
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <div class="m-hd">
+      <span class="m-ttl" id="m-ttl">Token Analysis</span>
+      <button class="m-x" onclick="closeModal()">✕</button>
+    </div>
+    <div class="m-body" id="m-body"></div>
+    <div class="m-foot">
+      <a href="#" class="mbtn mbtn-g">DexScreener ↗</a>
+      <a href="#" class="mbtn mbtn-g">Basescan ↗</a>
+    </div>
+  </div>
+</div>
+
+<!-- FAKE CURSOR -->
+<div class="fake-cursor" id="cursor"></div>
+<div class="caption" id="caption"></div>
+
+<script>
+// ── DEMO DATA ─────────────────────────────────────────────────────────────────
+const TOKENS = [
+  {sym:'BRETT',name:'Brett',price:'$0.1423',c1:'+8.4',c6:'+12.1',c24:'+24.7',v1:'$892K',v24:'$6.2M',liq:'$4.1M',mc:'$142M',buys:312,sells:89,bg:'#1a1007',clr:'#F07830',age:'4mo'},
+  {sym:'DEGEN',name:'Degen',price:'$0.00821',c1:'+5.2',c6:'+9.3',c24:'+18.4',v1:'$541K',v24:'$3.8M',liq:'$2.9M',mc:'$89M',buys:224,sells:76,bg:'#0d0a1a',clr:'#A78BFA',age:'6mo'},
+  {sym:'AERO',name:'Aerodrome Finance',price:'$1.284',c1:'+3.1',c6:'+6.2',c24:'+11.3',v1:'$421K',v24:'$3.1M',liq:'$18M',mc:'$620M',buys:187,sells:93,bg:'#07100a',clr:'#22C55E',age:'1yr'},
+  {sym:'VIRTUAL',name:'Virtual Protocol',price:'$2.341',c1:'+4.7',c6:'+7.8',c24:'+15.2',v1:'$387K',v24:'$2.7M',liq:'$5.4M',mc:'$234M',buys:198,sells:67,bg:'#070d1a',clr:'#3B82F6',age:'8mo'},
+  {sym:'TOSHI',name:'Toshi',price:'$0.000124',c1:'+11.2',c6:'+18.4',c24:'+32.1',v1:'$298K',v24:'$2.1M',liq:'$1.8M',mc:'$62M',buys:276,sells:44,bg:'#1a0d07',clr:'#FB923C',age:'5mo'},
+  {sym:'HIGHER',name:'Higher',price:'$0.0342',c1:'+6.8',c6:'+9.1',c24:'+14.3',v1:'$241K',v24:'$1.9M',liq:'$1.2M',mc:'$34M',buys:189,sells:82,bg:'#071a13',clr:'#14B8A6',age:'7mo'},
+  {sym:'MOG',name:'Mog Coin',price:'$0.00000187',c1:'+14.3',c6:'+21.7',c24:'+41.2',v1:'$187K',v24:'$1.4M',liq:'$980K',mc:'$187M',buys:301,sells:34,bg:'#1a0707',clr:'#EF4444',age:'9mo'},
+  {sym:'NORMIE',name:'Normie',price:'$0.00421',c1:'+2.3',c6:'-1.4',c24:'+8.7',v1:'$142K',v24:'$1.1M',liq:'$720K',mc:'$42M',buys:134,sells:98,bg:'#1a170a',clr:'#EAB308',age:'3mo'},
+  {sym:'MOCHI',name:'Mochi',price:'$0.00000934',c1:'+19.4',c6:'+28.1',c24:'+67.3',v1:'$134K',v24:'$890K',liq:'$430K',mc:'$9.3M',buys:321,sells:12,bg:'#0d0a1a',clr:'#C084FC',age:'2mo'},
+  {sym:'WELL',name:'Moonwell',price:'$0.0821',c1:'+1.8',c6:'+3.2',c24:'+7.4',v1:'$98K',v24:'$780K',liq:'$3.2M',mc:'$82M',buys:112,sells:87,bg:'#07100a',clr:'#34D399',age:'1yr'},
+  {sym:'TURBO',name:'Turbo',price:'$0.00512',c1:'+9.1',c6:'+13.4',c24:'+22.8',v1:'$87K',v24:'$640K',liq:'$380K',mc:'$51M',buys:187,sells:43,bg:'#1a0e07',clr:'#F97316',age:'4mo'},
+  {sym:'ENJOY',name:'Enjoy',price:'$0.00000421',c1:'+7.3',c6:'+11.2',c24:'+19.4',v1:'$76K',v24:'$520K',liq:'$280K',mc:'$4.2M',buys:156,sells:67,bg:'#1a0d07',clr:'#F07830',age:'6mo'},
+  {sym:'MFER',name:'mfer',price:'$0.00842',c1:'-3.2',c6:'-5.1',c24:'-8.4',v1:'$54K',v24:'$380K',liq:'$210K',mc:'$8.4M',buys:67,sells:143,bg:'#1a0707',clr:'#EF4444',age:'8mo'},
+  {sym:'ZORA',name:'Zora',price:'$0.1821',c1:'+2.7',c6:'+4.8',c24:'+9.2',v1:'$48K',v24:'$340K',liq:'$890K',mc:'$182M',buys:98,sells:72,bg:'#070d1a',clr:'#60A5FA',age:'5mo'},
+  {sym:'BASED',name:'Based',price:'$0.000421',c1:'+22.4',c6:'+34.7',c24:'+89.1',v1:'$41K',v24:'$290K',liq:'$180K',mc:'$4.2M',buys:234,sells:18,bg:'#07100a',clr:'#22C55E',age:'1mo'},
+];
+
+const GAINERS = [...TOKENS].sort((a,b)=>parseFloat(b.c24)-parseFloat(a.c24));
+const LOSERS  = [...TOKENS].sort((a,b)=>parseFloat(a.c24)-parseFloat(b.c24));
+const SAFE    = TOKENS.filter(t=>['BRETT','DEGEN','AERO','VIRTUAL','WELL','ZORA'].includes(t.sym));
+const HOT     = [...TOKENS].sort((a,b)=>parseFloat(b.v1)-parseFloat(a.v1)).slice(0,8);
+
+function clrClass(v){return parseFloat(v)>0?'pos':parseFloat(v)<0?'neg':'neu'}
+
+function buildRow(t, extra=''){
+  const buyPct=Math.round(t.buys/(t.buys+t.sells)*100);
+  const bsColor=buyPct>=50?'bs-g':'bs-r';
+  return `<div class="trow${extra}" data-sym="${t.sym}">
+    <div class="tc-token">
+      <div class="tok-wrap">
+        <img class="tok-logo" src="https://dd.dexscreener.com/ds-data/tokens/base/0x0000${t.sym.toLowerCase()}.png" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"/>
+        <div class="tok-ini" style="display:none;background:${t.bg};color:${t.clr}">${t.sym.slice(0,3)}</div>
+      </div>
+      <div class="tc-info">
+        <div class="tc-sym">$${t.sym}</div>
+        <div class="tc-name">${t.name}</div>
+      </div>
+    </div>
+    <div class="tc-num">${t.price}</div>
+    <div class="tc-num ${clrClass(t.c1)}">${t.c1}%</div>
+    <div class="tc-num ${clrClass(t.c6)}">${t.c6}%</div>
+    <div class="tc-num ${clrClass(t.c24)}">${t.c24}%</div>
+    <div class="tc-num">${t.v1}</div>
+    <div class="tc-num">${t.v24}</div>
+    <div class="tc-num">${t.liq}</div>
+    <div class="tc-num">${t.mc}</div>
+    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px">
+      <div class="bs-mini">
+        <span class="bs-num" style="color:var(--green)">B${t.buys}</span>
+        <div class="bs-bar"><div class="bs-fill ${bsColor}" style="width:${buyPct}%"></div></div>
+        <span class="bs-num" style="color:var(--red)">S${t.sells}</span>
+      </div>
+      <div class="tc-links">
+        <span style="font-family:var(--mono);font-size:9px;color:var(--t3)">${t.age}</span>
+        <a class="tc-link" href="#">DEX</a>
+        <a class="tc-link" href="#">Scan</a>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderTokens(list, extra=''){
+  document.getElementById('tbl-body').innerHTML = list.map(t=>buildRow(t,extra)).join('');
+}
+
+function setActiveFilter(id){
+  ['f-all','f-hot','f-safe','f-new','f-gainers','f-losers'].forEach(f=>{
+    document.getElementById(f).classList.toggle('active', f===id);
+  });
+}
+
+function setSortedCol(id, dir){
+  ['th-token','th-price','th-1h','th-6h','th-24h','th-vol1h','th-vol24h','th-liq','th-mcap'].forEach(th=>{
+    const el=document.getElementById(th);
+    el.classList.remove('sorted','asc','desc');
+  });
+  const el=document.getElementById(id);
+  el.classList.add('sorted', dir);
+}
+
+function showCaption(txt){
+  const el=document.getElementById('caption');
+  el.textContent=txt;
+  el.classList.add('show');
+}
+function hideCaption(){document.getElementById('caption').classList.remove('show')}
+
+function openModal(sym){
+  const t=TOKENS.find(x=>x.sym===sym)||TOKENS[0];
+  document.getElementById('m-ttl').textContent = `$${t.sym} — ${t.name}`;
+  document.getElementById('m-body').innerHTML = `<div style="padding:24px;text-align:center"><div class="spin"></div><div style="margin-top:12px;font-size:11px;color:var(--t3)">Analyzing on Base…</div></div>`;
+  document.getElementById('overlay').classList.add('open');
+  setTimeout(()=>{
+    const isGood = parseFloat(t.c24)>5;
+    document.getElementById('m-body').innerHTML = `
+      <div class="verdict ${isGood?'v-safe':'v-caution'}">${isGood?'✓ SAFE':'⚠ CAUTION'}</div>
+      <div class="ag">
+        <div class="astat"><div class="al">Symbol</div><div class="av">$${t.sym}</div></div>
+        <div class="astat"><div class="al">Price</div><div class="av">${t.price}</div></div>
+        <div class="astat"><div class="al">Liquidity</div><div class="av">${t.liq}</div></div>
+        <div class="astat"><div class="al">Market Cap</div><div class="av">${t.mc}</div></div>
+        <div class="astat"><div class="al">Vol 24h</div><div class="av">${t.v24}</div></div>
+        <div class="astat"><div class="al">Buy Pressure</div><div class="av" class="pos">${Math.round(t.buys/(t.buys+t.sells)*100)}%</div></div>
+      </div>
+      <div class="atext">Liquidity is healthy at ${t.liq} with a buy-to-sell ratio of ${t.buys}:${t.sells} in the last hour. 24h price action of ${t.c24}% suggests ${isGood?'strong momentum — confidence level HIGH. No honeypot patterns detected. Smart money inflow confirmed.':'mixed signals — monitor closely. Liquidity appears stable but volume consistency needs verification.'}</div>`;
+  }, 1400);
+}
+function closeModal(){document.getElementById('overlay').classList.remove('open')}
+
+// ── CURSOR ANIMATION ──────────────────────────────────────────────────────────
+const cursor = document.getElementById('cursor');
+let cx=200, cy=300;
+
+function moveCursor(x, y, duration=400){
+  return new Promise(resolve=>{
+    cursor.style.transition=`left ${duration}ms cubic-bezier(.25,.46,.45,.94), top ${duration}ms cubic-bezier(.25,.46,.45,.94)`;
+    cursor.style.left=x+'px';
+    cursor.style.top=y+'px';
+    cx=x; cy=y;
+    setTimeout(resolve, duration+40);
+  });
+}
+
+function click(){
+  return new Promise(resolve=>{
+    cursor.classList.add('click');
+    setTimeout(()=>{cursor.classList.remove('click');resolve()}, 300);
+  });
+}
+
+function wait(ms){return new Promise(r=>setTimeout(r,ms))}
+
+// Type into search box
+async function typeInto(text){
+  const inp=document.getElementById('search-inp');
+  inp.classList.add('focus');
+  inp.value='';
+  for(const ch of text){
+    inp.value+=ch;
+    await wait(90+Math.random()*60);
+  }
+}
+async function clearSearch(){
+  const inp=document.getElementById('search-inp');
+  while(inp.value.length>0){
+    inp.value=inp.value.slice(0,-1);
+    await wait(40);
+  }
+  inp.classList.remove('focus');
+  inp.value='';
+}
+
+// Get element center
+function center(el){
+  const r=el.getBoundingClientRect();
+  return{x:r.left+r.width/2, y:r.top+r.height/2};
+}
+
+// ── DEMO SEQUENCE ─────────────────────────────────────────────────────────────
+async function runDemo(){
+  // Init
+  renderTokens(TOKENS, ' new-in');
+  cursor.style.left='200px';
+  cursor.style.top='300px';
+
+  await wait(1200);
+
+  // --- Scene 1: Overview ---
+  showCaption('Orlix Control Room — live tracker semua token di Base network');
+  await moveCursor(window.innerWidth/2, 100, 800);
+  await wait(2000);
+  hideCaption();
+
+  // --- Scene 2: Sort by 1h% ---
+  await wait(400);
+  showCaption('Sort by 1h% — lihat token yang paling naik sekarang');
+  const th1h = document.getElementById('th-1h');
+  const p1h = center(th1h);
+  await moveCursor(p1h.x, p1h.y, 600);
+  await wait(400);
+  await click();
+  setSortedCol('th-1h','desc');
+  renderTokens(GAINERS.map(t=>({...t,c1:t.c1})));
+  await wait(300);
+  // highlight top row
+  document.querySelector('.trow').classList.add('highlight');
+  await wait(2200);
+  hideCaption();
+  document.querySelector('.trow')?.classList.remove('highlight');
+
+  // --- Scene 3: Click 24h% ---
+  await wait(300);
+  showCaption('Sortable: Price, Volume, Liquidity, Market Cap — semua kolom');
+  const th24 = document.getElementById('th-24h');
+  const p24 = center(th24);
+  await moveCursor(p24.x, p24.y, 500);
+  await wait(300);
+  await click();
+  setSortedCol('th-24h','desc');
+  renderTokens(GAINERS);
+  await wait(1800);
+  hideCaption();
+
+  // --- Scene 4: Filter Trending ---
+  await wait(300);
+  showCaption('Filter: Trending — token paling aktif 1 jam terakhir');
+  const fHot = document.getElementById('f-hot');
+  const pHot = center(fHot);
+  await moveCursor(pHot.x, pHot.y, 700);
+  await wait(400);
+  await click();
+  setActiveFilter('f-hot');
+  renderTokens(HOT);
+  await wait(2000);
+  hideCaption();
+
+  // --- Scene 5: Filter Safe ---
+  await wait(300);
+  showCaption('Safe Only — token dengan liquidity $50K+, aman dari rug');
+  const fSafe = document.getElementById('f-safe');
+  const pSafe = center(fSafe);
+  await moveCursor(pSafe.x, pSafe.y, 600);
+  await wait(300);
+  await click();
+  setActiveFilter('f-safe');
+  renderTokens(SAFE);
+  await wait(2000);
+  hideCaption();
+
+  // --- Scene 6: Top Gainers ---
+  await wait(300);
+  showCaption('Top Gainers — siapa yang paling pump hari ini');
+  const fG = document.getElementById('f-gainers');
+  const pG = center(fG);
+  await moveCursor(pG.x, pG.y, 600);
+  await wait(300);
+  await click();
+  setActiveFilter('f-gainers');
+  renderTokens(GAINERS);
+  await wait(1800);
+  hideCaption();
+
+  // --- Scene 7: Back to All ---
+  await wait(200);
+  const fAll = document.getElementById('f-all');
+  const pAll = center(fAll);
+  await moveCursor(pAll.x, pAll.y, 500);
+  await wait(200);
+  await click();
+  setActiveFilter('f-all');
+  setSortedCol('th-vol1h','desc');
+  renderTokens(TOKENS);
+  await wait(600);
+
+  // --- Scene 8: Live Search ---
+  showCaption('Search token apapun — live dari DexScreener');
+  const inp = document.getElementById('search-inp');
+  const pInp = center(inp);
+  await moveCursor(pInp.x, pInp.y, 700);
+  await wait(400);
+  await click();
+  await typeInto('BRETT');
+  // filter locally
+  const brett = TOKENS.filter(t=>t.sym==='BRETT');
+  renderTokens(brett);
+  await wait(800);
+  // simulate result coming
+  document.getElementById('tbl-body').innerHTML += `<div style="font-size:10px;color:var(--t3);padding:8px 14px;font-family:var(--mono)">1 result from DexScreener</div>`;
+  await wait(2000);
+  hideCaption();
+  await clearSearch();
+  renderTokens(TOKENS);
+
+  // --- Scene 9: Open AI Modal ---
+  await wait(400);
+  showCaption('Klik token manapun → AI analisis: risk verdict, liquidity, buy pressure');
+  // move to first row
+  const firstRow = document.querySelector('.trow');
+  if(firstRow){
+    const pRow = center(firstRow);
+    await moveCursor(pRow.x, pRow.y, 700);
+    await wait(400);
+    firstRow.classList.add('highlight');
+    await wait(300);
+    await click();
+    firstRow.classList.remove('highlight');
+    openModal('BRETT');
+    await wait(3800);
+    hideCaption();
+    await wait(800);
+    // Show verdict
+    showCaption('AI verdict: SAFE — liquidity ratio, txn pattern, smart money flow');
+    await wait(2500);
+    hideCaption();
+
+    // close modal
+    await wait(300);
+    showCaption('');
+    const mx = document.querySelector('.m-x');
+    if(mx){
+      const pm = center(mx);
+      await moveCursor(pm.x, pm.y, 600);
+      await wait(300);
+      await click();
+      closeModal();
+    }
+  }
+
+  // --- Scene 10: Auto-refresh flash ---
+  await wait(600);
+  showCaption('Auto-refresh setiap 10 detik — data selalu live');
+  // simulate new token flash
+  const body = document.getElementById('tbl-body');
+  const newRow = document.createElement('div');
+  newRow.innerHTML = buildRow({sym:'NEWTOKEN',name:'New Token Just Listed',price:'$0.00041',c1:'+142.3',c6:'+142.3',c24:'+142.3',v1:'$12K',v24:'$12K',liq:'$48K',mc:'$410K',buys:89,sells:4,bg:'#07100a',clr:'#22C55E',age:'2m'},' new-in');
+  body.insertBefore(newRow.firstChild, body.firstChild);
+  document.getElementById('status-txt').textContent = 'Updated '+new Date().toLocaleTimeString();
+  await wait(2500);
+  hideCaption();
+
+  // --- Scene 11: Closing ---
+  await wait(400);
+  showCaption('orlixai.xyz/control-room — gratis, live, Base network 🔵');
+  await moveCursor(window.innerWidth/2, window.innerHeight/2, 800);
+  await wait(3000);
+  hideCaption();
+
+  // Loop
+  await wait(1500);
+  runDemo();
+}
+
+// Start
+window.addEventListener('load', ()=>{
+  cursor.style.left='200px';
+  cursor.style.top='300px';
+  setTimeout(runDemo, 800);
+});
+</script>
+</body>
+</html>
