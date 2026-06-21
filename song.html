@@ -570,18 +570,21 @@ function renderTokenHeader(token, genre) {
 
 // ── RENDER LYRICS ─────────────────────────────────────────────────────────────
 function renderLyrics(text) {
-  const lines = text.split('\n');
-  let html = '';
-  let delay = 0;
-  let inStanza = false;
+  const lines = text
+    .replace(/\*\*([^*]+)\*\*/g, '$1')
+    .replace(/^---+$/gm, '')
+    .split('\n');
+  let html = '', delay = 0, inStanza = false, headerSkipped = false;
 
   for (const line of lines) {
     const trimmed = line.trim();
+    if (!headerSkipped && /^\$?[A-Z0-9]{2,12}$/.test(trimmed)) { headerSkipped = true; continue; }
+    headerSkipped = true;
+
     if (/^\[.+\]$/.test(trimmed)) {
       if (inStanza) html += '</div>';
       html += `<div class="stanza"><div class="stanza-label">${escHtml(trimmed.slice(1,-1))}</div>`;
-      inStanza = true;
-      delay = 0;
+      inStanza = true; delay = 0;
     } else if (!trimmed) {
       if (inStanza) { html += '</div>'; inStanza = false; }
     } else {
@@ -591,7 +594,6 @@ function renderLyrics(text) {
     }
   }
   if (inStanza) html += '</div>';
-
   document.getElementById('lyrics-body-wrap').innerHTML = `<div class="lyrics-body">${html}</div>`;
 }
 
@@ -705,12 +707,12 @@ function showMusicLoading(sym) {
   document.getElementById('waveform').classList.add('paused');
 }
 
-async function generateMusic(sym, genre) {
+async function generateMusic(sym, genre, token) {
   showMusicLoading(sym);
   disposeCurrentBeat();
   try {
     if (!toneReady) { await Tone.start(); toneReady = true; }
-    buildBeat(genre);
+    buildBeat(genre, token);
     beatActive = true;
     const playBtn = document.getElementById('play-btn');
     playBtn.disabled = false;
@@ -729,113 +731,191 @@ async function generateMusic(sym, genre) {
 }
 
 // ── BEAT BUILDERS ─────────────────────────────────────────────────────────────
-function buildBeat(genre) {
+function tokenSeed(str) {
+  let h = 0;
+  for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) >>> 0;
+  return h / 4294967295;
+}
+
+function shiftNote(noteStr, semi) {
+  if (!noteStr) return null;
+  const N = ['C','C#','D','Eb','E','F','F#','G','Ab','A','Bb','B'];
+  const m = noteStr.match(/^([A-G][b#]?)(\d)$/);
+  if (!m) return noteStr;
+  const ni = N.indexOf(m[1]);
+  if (ni === -1) return noteStr;
+  const tot = ni + semi;
+  return N[((tot % 12) + 12) % 12] + (parseInt(m[2]) + Math.floor(tot / 12));
+}
+
+function buildBeat(genre, token) {
+  const sym  = token?.symbol || '';
+  const s1   = tokenSeed(sym);
+  const s2   = tokenSeed(sym + '~');
+  const semi = Math.floor(s1 * 12);                    // key: 0-11 semitones
+  const chg  = token?.priceChange24h || 0;
+  const buys = token?.buys24h || 0, sells = token?.sells24h || 0;
+  const buyPct = buys + sells > 0 ? buys / (buys + sells) : 0.5;
+
+  const BASE_BPM = {trap:140,phonk:130,pop:120,drill:138,hype:155,ballad:72};
+  const BPM_RNG  = {trap:22, phonk:18, pop:16, drill:14, hype:22, ballad:14};
+  const bpm = Math.round(
+    (BASE_BPM[genre] || 140) +
+    (s1 - 0.5) * BPM_RNG[genre] +
+    (chg > 20 ? 6 : chg < -20 ? -5 : 0) +
+    (buyPct > 0.7 ? 3 : 0)
+  );
+
   const synths = [], seqs = [];
   beatDisposeAll = () => {
-    seqs.forEach(s   => { try { s.stop(); s.dispose(); } catch {} });
-    synths.forEach(s => { try { s.dispose(); } catch {} });
+    seqs.forEach(q => { try { q.stop(); q.dispose(); } catch {} });
+    synths.forEach(q => { try { q.dispose(); } catch {} });
   };
+  Tone.getTransport().bpm.value = bpm;
 
-  Tone.getTransport().bpm.value = {trap:140,phonk:130,pop:120,drill:138,hype:155,ballad:72}[genre] || 140;
+  const seq = (cb, steps) => { const q = new Tone.Sequence(cb, steps, '16n'); seqs.push(q); q.start(0); };
 
-  const seq = (cb, steps) => {
-    const s = new Tone.Sequence(cb, steps, '16n');
-    seqs.push(s); s.start(0);
-  };
+  // Transpose melodic note or array of notes
+  const tn = n => n ? shiftNote(n, semi) : null;
+  const ta = arr => arr.map(n => Array.isArray(n) ? n.map(x => tn(x)) : tn(n));
+
+  const pi  = Math.floor(s1 * 3);   // pattern index 0-2
+  const bi  = Math.floor(s2 * 3);   // bass index 0-2
 
   if (genre === 'trap') {
-    const kick  = new Tone.MembraneSynth({pitchDecay:.06,octaves:8,envelope:{attack:.001,decay:.35,sustain:0,release:.1}}).toDestination();
+    const kickPats = [
+      [1,0,0,0, 0,0,0,0, 1,0,0,0, 0,0,1,0],
+      [1,0,0,0, 0,0,1,0, 0,0,0,0, 1,0,0,0],
+      [1,0,1,0, 0,0,0,0, 1,0,0,0, 0,1,0,0],
+    ];
+    const hhPats = [
+      [.9,.3,.6,.3, .8,.3,.5,1, .9,.3,.7,.3, .9,1,.5,.3],
+      [.9,.3,.6,0,  .8,.3,.5,1, .9,0,.7,.3,  .9,1,.5,.3],
+      [.9,0,.6,.3,  .8,0,.5,1,  .9,.3,.7,0,  .9,1,.5,0 ],
+    ];
+    const bassProgs = [
+      ['C2',null,null,null, null,null,null,null, 'A1',null,null,null, 'G1',null,null,null],
+      ['C2',null,null,null, 'Bb1',null,null,null,'G1',null,null,null, 'Ab1',null,null,null],
+      ['C2',null,null,null, null,null,null,null, 'F1',null,null,null, 'G1',null,null,null],
+    ];
+    const kick  = new Tone.MembraneSynth({pitchDecay:.05+s1*.04,octaves:8,envelope:{attack:.001,decay:.3+s2*.1,sustain:0,release:.1}}).toDestination();
     const snare = new Tone.NoiseSynth({noise:{type:'white'},envelope:{attack:.001,decay:.12,sustain:0,release:.05}}).toDestination();
-    const hh    = new Tone.MetalSynth({frequency:500,envelope:{attack:.001,decay:.04,release:.01},harmonicity:5.1,modulationIndex:32,resonance:3000,octaves:1}).toDestination();
-    const bass  = new Tone.Synth({oscillator:{type:'sine'},envelope:{attack:.01,decay:1.2,sustain:0,release:.3}}).toDestination();
+    const hh    = new Tone.MetalSynth({frequency:480+s1*180,envelope:{attack:.001,decay:.04,release:.01},harmonicity:5.1,modulationIndex:32,resonance:3000,octaves:1}).toDestination();
+    const bass  = new Tone.Synth({oscillator:{type:'sine'},envelope:{attack:.01,decay:1.0+s2*.4,sustain:0,release:.3}}).toDestination();
     snare.volume.value=-8; hh.volume.value=-18; bass.volume.value=-3;
     synths.push(kick,snare,hh,bass);
-    seq((t,v)=>{ if(v) kick.triggerAttackRelease('C1','8n',t); },
-      [1,0,0,0, 0,0,0,0, 1,0,0,0, 0,0,1,0]);
-    seq((t,v)=>{ if(v) snare.triggerAttackRelease('16n',t); },
-      [0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,0,0]);
-    seq((t,v)=>{ if(v>0) hh.triggerAttackRelease('32n',t,v); },
-      [.9,.3,.6,.3, .8,.3,.5,1, .9,.3,.7,.3, .9,1,.5,.3]);
-    seq((t,n)=>{ if(n) bass.triggerAttackRelease(n,'4n',t); },
-      ['C2',null,null,null, null,null,null,null, 'A1',null,null,null, 'G1',null,null,null]);
+    seq((t,v)=>{ if(v) kick.triggerAttackRelease('C1','8n',t); }, kickPats[pi]);
+    seq((t,v)=>{ if(v) snare.triggerAttackRelease('16n',t); }, [0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0]);
+    seq((t,v)=>{ if(v>0) hh.triggerAttackRelease('32n',t,v); }, hhPats[pi]);
+    seq((t,n)=>{ if(n) bass.triggerAttackRelease(n,'4n',t); }, ta(bassProgs[bi]));
 
   } else if (genre === 'phonk') {
-    const kick = new Tone.MembraneSynth({pitchDecay:.08,octaves:10,envelope:{attack:.001,decay:.5,sustain:0,release:.1}}).toDestination();
-    const cow  = new Tone.MetalSynth({frequency:562,envelope:{attack:.001,decay:.25,release:.1},harmonicity:5.1,modulationIndex:16,resonance:4000,octaves:1.5}).toDestination();
-    const dist = new Tone.Distortion(0.4).toDestination();
+    const kickPats = [
+      [1,0,0,0, 0,0,1,0, 0,0,0,0, 1,0,0,0],
+      [1,0,0,0, 0,1,0,0, 1,0,0,0, 0,0,1,0],
+      [1,0,0,0, 0,0,0,0, 1,0,0,1, 0,0,0,0],
+    ];
+    const bassProgs = [
+      ['C2',null,'A1',null, 'G1',null,null,null, 'C2',null,'Bb1',null, 'G1',null,null,null],
+      ['C2',null,'G1',null, 'F1',null,null,null, 'Eb2',null,'C2',null, 'Bb1',null,null,null],
+      ['C2',null,'C2',null, 'Ab1',null,'Bb1',null,'C2',null,'G1',null, 'F1',null,null,null],
+    ];
+    const distAmt = 0.3 + s1 * 0.35;
+    const kick = new Tone.MembraneSynth({pitchDecay:.07+s1*.04,octaves:10,envelope:{attack:.001,decay:.5,sustain:0,release:.1}}).toDestination();
+    const cow  = new Tone.MetalSynth({frequency:500+s1*180,envelope:{attack:.001,decay:.25,release:.1},harmonicity:5.1,modulationIndex:16,resonance:4000,octaves:1.5}).toDestination();
+    const dist = new Tone.Distortion(distAmt).toDestination();
     const bass = new Tone.Synth({oscillator:{type:'sawtooth'},envelope:{attack:.01,decay:.9,sustain:.1,release:.3}}).connect(dist);
     kick.volume.value=-1; cow.volume.value=-10; bass.volume.value=-3;
     synths.push(kick,cow,dist,bass);
-    seq((t,v)=>{ if(v) kick.triggerAttackRelease('C1','8n',t); },
-      [1,0,0,0, 0,0,1,0, 0,0,0,0, 1,0,0,0]);
-    seq((t,v)=>{ if(v) cow.triggerAttackRelease('16n',t,v); },
-      [.8,0,.5,0, .8,0,.5,.3, .8,0,.5,0, .8,.3,.5,.3]);
-    seq((t,n)=>{ if(n) bass.triggerAttackRelease(n,'8n',t); },
-      ['C2',null,'A1',null, 'G1',null,null,null, 'C2',null,'Bb1',null, 'G1',null,null,null]);
+    seq((t,v)=>{ if(v) kick.triggerAttackRelease('C1','8n',t); }, kickPats[pi]);
+    seq((t,v)=>{ if(v) cow.triggerAttackRelease('16n',t,v); }, [.8,0,.5,0,.8,0,.5,.3,.8,0,.5,0,.8,.3,.5,.3]);
+    seq((t,n)=>{ if(n) bass.triggerAttackRelease(n,'8n',t); }, ta(bassProgs[bi]));
 
   } else if (genre === 'pop') {
+    const arpProgs = [
+      ['C4','E4','G4','B4', 'C5','B4','G4','E4', 'A3','C4','E4','G4', 'F4','A4','C5','E5'],
+      ['C4','E4','G4','A4', 'B4','A4','G4','E4', 'F4','A4','C5','E5', 'G4','E4','D4','C4'],
+      ['C4','D4','E4','G4', 'A4','G4','E4','D4', 'F4','G4','A4','C5', 'B4','A4','G4','E4'],
+    ];
+    const bassProgs = [
+      ['C2',null,null,null, null,null,null,null, 'A1',null,null,null, 'F1',null,null,null],
+      ['C2',null,null,null, 'G1',null,null,null, 'A1',null,null,null, 'F1',null,null,null],
+      ['C2',null,null,null, null,null,null,null, 'F1',null,null,null, 'G1',null,null,null],
+    ];
     const kick  = new Tone.MembraneSynth({pitchDecay:.04,octaves:6,envelope:{attack:.001,decay:.25,sustain:0,release:.1}}).toDestination();
-    const clap  = new Tone.NoiseSynth({noise:{type:'pink'},envelope:{attack:.001,decay:.08,sustain:0,release:.03}}).toDestination();
-    const arp   = new Tone.Synth({oscillator:{type:'triangle'},envelope:{attack:.02,decay:.2,sustain:.3,release:.4}}).toDestination();
+    const clap  = new Tone.NoiseSynth({noise:{type:'pink'},envelope:{attack:.001,decay:.08+s1*.04,sustain:0,release:.03}}).toDestination();
+    const arp   = new Tone.Synth({oscillator:{type:'triangle'},envelope:{attack:.02,decay:.2+s2*.1,sustain:.3,release:.4}}).toDestination();
     const bass  = new Tone.Synth({oscillator:{type:'sine'},envelope:{attack:.02,decay:.4,sustain:.2,release:.3}}).toDestination();
     kick.volume.value=-2; clap.volume.value=-10; arp.volume.value=-8; bass.volume.value=-5;
     synths.push(kick,clap,arp,bass);
-    seq((t,v)=>{ if(v) kick.triggerAttackRelease('C1','8n',t); },
-      [1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,0]);
-    seq((t,v)=>{ if(v) clap.triggerAttackRelease('8n',t); },
-      [0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,0,0]);
-    seq((t,n)=>{ if(n) arp.triggerAttackRelease(n,'8n',t); },
-      ['C4','E4','G4','B4', 'C5','B4','G4','E4', 'A3','C4','E4','G4', 'F4','A4','C5','E5']);
-    seq((t,n)=>{ if(n) bass.triggerAttackRelease(n,'4n',t); },
-      ['C2',null,null,null, null,null,null,null, 'A1',null,null,null, 'F1',null,null,null]);
+    seq((t,v)=>{ if(v) kick.triggerAttackRelease('C1','8n',t); }, [1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0]);
+    seq((t,v)=>{ if(v) clap.triggerAttackRelease('8n',t); }, [0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0]);
+    seq((t,n)=>{ if(n) arp.triggerAttackRelease(n,'8n',t); }, ta(arpProgs[pi]));
+    seq((t,n)=>{ if(n) bass.triggerAttackRelease(n,'4n',t); }, ta(bassProgs[bi]));
 
   } else if (genre === 'drill') {
-    const kick  = new Tone.MembraneSynth({pitchDecay:.07,octaves:9,envelope:{attack:.001,decay:.4,sustain:0,release:.1}}).toDestination();
-    const hh    = new Tone.MetalSynth({frequency:400,envelope:{attack:.001,decay:.03,release:.01},harmonicity:5.1,modulationIndex:32,resonance:4000,octaves:1}).toDestination();
-    const piano = new Tone.PolySynth(Tone.Synth,{oscillator:{type:'triangle'},envelope:{attack:.02,decay:.4,sustain:.3,release:.8}}).toDestination();
+    const chordProgs = [
+      [['C3','Eb3','G3'],null,null,null, null,null,['Ab2','Cb3','Eb3'],null, null,null,null,null, ['Bb2','Db3','F3'],null,null,null],
+      [['C3','Eb3','G3'],null,null,null, ['Bb2','Db3','F3'],null,null,null, ['Ab2','Cb3','Eb3'],null,null,null, ['G2','Bb2','D3'],null,null,null],
+      [['C3','Eb3','Gb3'],null,null,null,null,null,null,null, ['F2','Ab2','C3'],null,null,null, ['G2','Bb2','Eb3'],null,null,null],
+    ];
+    const bassProgs = [
+      ['C2',null,null,null, null,null,null,null, 'Ab1',null,null,null, 'Bb1',null,null,null],
+      ['C2',null,null,null, 'Bb1',null,null,null,'Ab1',null,null,null, 'G1',null,null,null],
+      ['C2',null,'Bb1',null,null,null,'Ab1',null, null,null,null,null, 'G1',null,'F1',null],
+    ];
+    const kick  = new Tone.MembraneSynth({pitchDecay:.07,octaves:9+s1*2,envelope:{attack:.001,decay:.4,sustain:0,release:.1}}).toDestination();
+    const hh    = new Tone.MetalSynth({frequency:400+s1*150,envelope:{attack:.001,decay:.03,release:.01},harmonicity:5.1,modulationIndex:32,resonance:4000,octaves:1}).toDestination();
+    const piano = new Tone.PolySynth(Tone.Synth,{oscillator:{type:'triangle'},envelope:{attack:.02,decay:.4+s2*.2,sustain:.3,release:.8}}).toDestination();
     const bass  = new Tone.Synth({oscillator:{type:'sine'},envelope:{attack:.01,decay:.8,sustain:.1,release:.3}}).toDestination();
     kick.volume.value=-2; hh.volume.value=-20; piano.volume.value=-8; bass.volume.value=-4;
     synths.push(kick,hh,piano,bass);
-    seq((t,v)=>{ if(v) kick.triggerAttackRelease('C1','8n',t); },
-      [1,0,0,0, 0,0,1,0, 0,0,0,0, 1,0,0,0]);
-    seq((t,v)=>{ if(v>0) hh.triggerAttackRelease('32n',t,v); },
-      [.9,.5,.8,.5, .9,.5,.8,1, .9,.5,.8,.5, .9,1,.8,.5]);
-    seq((t,n)=>{ if(n) piano.triggerAttackRelease(n,'8n',t); },
-      [['C3','Eb3','G3'],null,null,null, null,null,['Ab2','Cb3','Eb3'],null,
-       null,null,null,null, ['Bb2','Db3','F3'],null,null,null]);
-    seq((t,n)=>{ if(n) bass.triggerAttackRelease(n,'4n',t); },
-      ['C2',null,null,null, null,null,null,null, 'Ab1',null,null,null, 'Bb1',null,null,null]);
+    seq((t,v)=>{ if(v) kick.triggerAttackRelease('C1','8n',t); }, [1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0]);
+    seq((t,v)=>{ if(v>0) hh.triggerAttackRelease('32n',t,v); }, [.9,.5,.8,.5,.9,.5,.8,1,.9,.5,.8,.5,.9,1,.8,.5]);
+    seq((t,n)=>{ if(n) piano.triggerAttackRelease(n,'8n',t); }, ta(chordProgs[pi]));
+    seq((t,n)=>{ if(n) bass.triggerAttackRelease(n,'4n',t); }, ta(bassProgs[bi]));
 
   } else if (genre === 'hype') {
+    const kickPats = [
+      [1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,1,0],
+      [1,0,1,0, 0,0,1,0, 1,0,0,0, 1,0,0,0],
+      [1,0,0,0, 1,0,1,0, 0,0,1,0, 1,0,0,0],
+    ];
+    const bassProgs = [
+      ['C2',null,'C2',null, 'G1',null,null,null, 'C2',null,'C2',null, 'F1',null,null,null],
+      ['C2',null,null,null, 'G1',null,'Ab1',null, 'Bb1',null,null,null,'C2',null,null,null],
+      ['C2','C2',null,null, 'F1',null,null,'F1',  'G1',null,null,null, 'Ab1',null,'Bb1',null],
+    ];
     const kick  = new Tone.MembraneSynth({pitchDecay:.05,octaves:8,envelope:{attack:.001,decay:.25,sustain:0,release:.05}}).toDestination();
     const snare = new Tone.NoiseSynth({noise:{type:'white'},envelope:{attack:.001,decay:.1,sustain:0,release:.04}}).toDestination();
-    const hh    = new Tone.MetalSynth({frequency:600,envelope:{attack:.001,decay:.03,release:.01},harmonicity:5.1,modulationIndex:32,resonance:4000,octaves:1}).toDestination();
+    const hh    = new Tone.MetalSynth({frequency:580+s1*100,envelope:{attack:.001,decay:.03,release:.01},harmonicity:5.1,modulationIndex:32,resonance:4000,octaves:1}).toDestination();
     const bass  = new Tone.Synth({oscillator:{type:'sawtooth'},envelope:{attack:.02,decay:.3,sustain:.4,release:.2}}).toDestination();
     snare.volume.value=-6; hh.volume.value=-16; bass.volume.value=-5;
     synths.push(kick,snare,hh,bass);
-    seq((t,v)=>{ if(v) kick.triggerAttackRelease('C1','8n',t); },
-      [1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,1,0]);
-    seq((t,v)=>{ if(v) snare.triggerAttackRelease('8n',t); },
-      [0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,0,0]);
-    seq((t,v)=>{ if(v>0) hh.triggerAttackRelease('32n',t,v); },
-      [1,.5,1,.5, 1,.5,1,.5, 1,.5,1,.5, 1,.5,1,.5]);
-    seq((t,n)=>{ if(n) bass.triggerAttackRelease(n,'8n',t); },
-      ['C2',null,'C2',null, 'G1',null,null,null, 'C2',null,'C2',null, 'F1',null,null,null]);
+    seq((t,v)=>{ if(v) kick.triggerAttackRelease('C1','8n',t); }, kickPats[pi]);
+    seq((t,v)=>{ if(v) snare.triggerAttackRelease('8n',t); }, [0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0]);
+    seq((t,v)=>{ if(v>0) hh.triggerAttackRelease('32n',t,v); }, [1,.5,1,.5,1,.5,1,.5,1,.5,1,.5,1,.5,1,.5]);
+    seq((t,n)=>{ if(n) bass.triggerAttackRelease(n,'8n',t); }, ta(bassProgs[bi]));
 
   } else { // ballad
+    const chordProgs = [
+      [['C3','E3','G3'],null,null,null,null,null,null,null,['A2','C3','E3'],null,null,null,null,null,null,null],
+      [['C3','E3','G3'],null,null,null,null,null,null,null,['F2','A2','C3'],null,null,null,null,null,null,null],
+      [['C3','Eb3','G3'],null,null,null,null,null,null,null,['Ab2','C3','Eb3'],null,null,null,null,null,null,null],
+    ];
+    const padProgs = [
+      [['C4','E4','G4'],null,null,null,null,null,null,null,['A3','C4','E4'],null,null,null,null,null,null,null],
+      [['C4','E4','G4'],null,null,null,null,null,null,null,['F3','A3','C4'],null,null,null,null,null,null,null],
+      [['C4','Eb4','G4'],null,null,null,null,null,null,null,['Ab3','C4','Eb4'],null,null,null,null,null,null,null],
+    ];
     const piano = new Tone.PolySynth(Tone.Synth,{oscillator:{type:'triangle'},envelope:{attack:.04,decay:.5,sustain:.5,release:1.2}}).toDestination();
-    const pad   = new Tone.PolySynth(Tone.Synth,{oscillator:{type:'sine'},envelope:{attack:.3,decay:.4,sustain:.6,release:2}}).toDestination();
+    const pad   = new Tone.PolySynth(Tone.Synth,{oscillator:{type:'sine'},envelope:{attack:.3+s1*.2,decay:.4,sustain:.6,release:2}}).toDestination();
     const kick  = new Tone.MembraneSynth({pitchDecay:.04,octaves:5,envelope:{attack:.001,decay:.3,sustain:0,release:.1}}).toDestination();
     piano.volume.value=-4; pad.volume.value=-14; kick.volume.value=-10;
     synths.push(piano,pad,kick);
-    seq((t,n)=>{ if(n) piano.triggerAttackRelease(n,'2n',t); },
-      [['C3','E3','G3'],null,null,null, null,null,null,null,
-       ['A2','C3','E3'],null,null,null, null,null,null,null]);
-    seq((t,n)=>{ if(n) pad.triggerAttackRelease(n,'1n',t); },
-      [['C4','E4','G4'],null,null,null, null,null,null,null,
-       ['A3','C4','E4'],null,null,null, null,null,null,null]);
-    seq((t,v)=>{ if(v) kick.triggerAttackRelease('C1','8n',t); },
-      [1,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0]);
+    seq((t,n)=>{ if(n) piano.triggerAttackRelease(n,'2n',t); }, ta(chordProgs[pi]));
+    seq((t,n)=>{ if(n) pad.triggerAttackRelease(n,'1n',t); }, ta(padProgs[pi]));
+    seq((t,v)=>{ if(v) kick.triggerAttackRelease('C1','8n',t); }, [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]);
   }
 }
 
@@ -895,7 +975,7 @@ async function generate() {
     renderLyrics(data.lyrics);
     document.getElementById('out-actions').classList.add('show');
 
-    generateMusic(sym, selectedGenre); // intentionally no await
+    generateMusic(sym, selectedGenre, data.token); // intentionally no await
 
   } catch (e) {
     stopLoading();
