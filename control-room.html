@@ -521,6 +521,15 @@ function renderBankr(){
     body.innerHTML='<div class="empty"><div class="empty-ico">◌</div><div class="empty-msg">No Bankr tokens found</div></div>';
 }
 
+function mergeBankrIntoAll(){
+  if(bankrState!=='done') return;
+  const allBankr=[...bankrRaw.new_creation,...bankrRaw.pump,...bankrRaw.completed];
+  const highMcap=allBankr.filter(t=>(t.usd_market_cap||0)>=100000).map(normalizeBankrToken);
+  const existingAddrs=new Set(allTokens.map(t=>(t.address||'').toLowerCase()));
+  const toAdd=highMcap.filter(t=>t.address&&!existingAddrs.has(t.address));
+  if(toAdd.length) allTokens=[...allTokens,...toAdd];
+}
+
 async function loadBankr(){
   if(bankrState==='loading') return;
   bankrState='loading';
@@ -538,7 +547,8 @@ async function loadBankr(){
     const total=bankrRaw.new_creation.length+bankrRaw.pump.length+bankrRaw.completed.length;
     document.getElementById('badge-bankr').textContent=total||'0';
     bankrState='done';
-    if(activeFilter==='bankr') renderBankr();
+    mergeBankrIntoAll();
+    if(activeFilter==='bankr') renderBankr(); else if(activeFilter!=='bankr') renderTable(allTokens,false);
     document.getElementById('status-txt').textContent='Bankr updated '+new Date().toLocaleTimeString();
   }catch(e){
     bankrState='error';
@@ -656,7 +666,7 @@ function buildCard(t, isNew){
   return `<div class="tok-card${isNew?' new-flash':''}" onclick="openModal('${esc(t.address||'')}','$${esc(sym)}','${esc(t.pairUrl||'')}')">
   <div class="card-head">
     <div class="card-logo-wrap">
-      <img class="card-logo" src="${esc(logoUrl)}" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
+      <img class="card-logo" src="${esc(logoUrl)}" alt="" onerror="${t._bankr ? "this.style.display='none';this.nextElementSibling.style.display='flex'" : "this.closest('.tok-card').remove()"}" />
       <div class="card-ini" style="background:${bg};color:${clr}">${esc(sym.slice(0,3))}</div>
     </div>
     <div class="card-id">
@@ -778,6 +788,7 @@ async function fetchData(){
     if(!r.ok) throw new Error('HTTP '+r.status);
     const data=await r.json();
     allTokens=data.liveActivity||[];
+    mergeBankrIntoAll();
 
     const vol1h=allTokens.reduce((s,t)=>s+(t.volume1h||0),0);
     const safe=allTokens.filter(t=>(t.liquidity||0)>=50000).length;
