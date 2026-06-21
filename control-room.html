@@ -494,37 +494,27 @@ function renderBankr(){
   const all=[...nc,...pu,...co];
 
   const topMcap=[...all].filter(t=>t.marketCap).sort((a,b)=>(b.marketCap||0)-(a.marketCap||0)).slice(0,8);
-  const topVol=[...all].filter(t=>t.volume1h).sort((a,b)=>(b.volume1h||0)-(a.volume1h||0)).slice(0,8);
+  const topVol=[...all].filter(t=>t.volume1h||t.volume6h||t.volume24h).sort((a,b)=>((b.volume1h||b.volume6h||b.volume24h||0))-((a.volume1h||a.volume6h||a.volume24h||0))).slice(0,8);
   const smart=[...all].filter(t=>t._smart>0||t._kol>0).sort((a,b)=>(b._smart+b._kol)-(a._smart+a._kol)).slice(0,8);
 
-  function section(ico,title,tokens,count){
-    if(!tokens.length) return '';
-    return `<div class="sec-hd"><span class="sec-ico">${ico}</span><span class="sec-title">${title}</span><span class="sec-count">${count!=null?count:tokens.length}</span></div>`
-      + tokens.map(t=>buildCard(t,false)).join('');
-  }
-
-  body.innerHTML=
-    section('🆕','New',''+nc.length,nc.slice(0,12))+
-    section('⏳','Near Graduation',''+pu.length,pu.slice(0,8))+
-    section('✅','Graduated',''+co.length,co.slice(0,8))+
-    (topMcap.length?section('💰','Top MCap','',topMcap):'')+
-    (topVol.length?section('🔥','Top Volume','',topVol):'')+
-    (smart.length?section('🧠','Smart Money','',smart):'');
-
-  // fix: section() params were wrong — rewrite inline
   body.innerHTML='';
+
   function addSection(ico,title,badge,tokens){
     if(!tokens.length) return;
     body.insertAdjacentHTML('beforeend',
       `<div class="sec-hd"><span class="sec-ico">${ico}</span><span class="sec-title">${title}</span><span class="sec-count">${badge}</span></div>`
-      +tokens.map(t=>buildCard(t,false)).join(''));
+      + tokens.map(t=>buildCard(t,false)).join(''));
   }
+
   addSection('🆕','New',nc.length,nc.slice(0,12));
   addSection('⏳','Near Graduation',pu.length,pu.slice(0,8));
   addSection('✅','Graduated',co.length,co.slice(0,8));
   if(topMcap.length) addSection('💰','Top MCap',topMcap.length,topMcap);
   if(topVol.length)  addSection('🔥','Top Volume',topVol.length,topVol);
   if(smart.length)   addSection('🧠','Smart Money',smart.length,smart);
+
+  if(!body.children.length)
+    body.innerHTML='<div class="empty"><div class="empty-ico">◌</div><div class="empty-msg">No Bankr tokens found</div></div>';
 }
 
 async function loadBankr(){
