@@ -155,7 +155,7 @@ html,body{height:100%;background:var(--bg);color:var(--t1);font-family:var(--san
     <div class="ts"><span class="ts-v" id="s-safe">89</span><span class="ts-l">Safe</span></div>
   </div>
   <div class="top-right">
-    <span class="status-txt" id="status-txt">Updated 14:32:07</span>
+    <span class="status-txt" id="status-txt"></span>
     <a href="/" class="tbtn tbtn-ghost">← Home</a>
     <a href="/app" class="tbtn tbtn-orange">App →</a>
   </div>
@@ -220,6 +220,20 @@ html,body{height:100%;background:var(--bg);color:var(--t1);font-family:var(--san
 <div class="caption" id="caption"></div>
 
 <script>
+// ── CLOCK (US Eastern) ───────────────────────────────────────────────────────
+function usEasternTime(){
+  return new Date().toLocaleTimeString('en-US',{
+    timeZone:'America/New_York',
+    hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false
+  });
+}
+function tickClock(){
+  const el=document.getElementById('status-txt');
+  if(el) el.textContent='Updated '+usEasternTime()+' ET';
+}
+tickClock();
+setInterval(tickClock,1000);
+
 // ── DEMO DATA ─────────────────────────────────────────────────────────────────
 const TOKENS = [
   {sym:'BRETT',name:'Brett',price:'$0.1423',c1:'+8.4',c6:'+12.1',c24:'+24.7',v1:'$892K',v24:'$6.2M',liq:'$4.1M',mc:'$142M',buys:312,sells:89,bg:'#1a1007',clr:'#F07830',age:'4mo'},
@@ -390,14 +404,14 @@ async function runDemo(){
   await wait(1200);
 
   // --- Scene 1: Overview ---
-  showCaption('Orlix Control Room — live tracker semua token di Base network');
+  showCaption('Orlix Control Room — every token moving on Base, right now');
   await moveCursor(window.innerWidth/2, 100, 800);
   await wait(2000);
   hideCaption();
 
   // --- Scene 2: Sort by 1h% ---
   await wait(400);
-  showCaption('Sort by 1h% — lihat token yang paling naik sekarang');
+  showCaption('Sort by 1h% — see what\'s pumping this hour');
   const th1h = document.getElementById('th-1h');
   const p1h = center(th1h);
   await moveCursor(p1h.x, p1h.y, 600);
@@ -414,7 +428,7 @@ async function runDemo(){
 
   // --- Scene 3: Click 24h% ---
   await wait(300);
-  showCaption('Sortable: Price, Volume, Liquidity, Market Cap — semua kolom');
+  showCaption('Click any column to sort — Price, Volume, Liquidity, MCap');
   const th24 = document.getElementById('th-24h');
   const p24 = center(th24);
   await moveCursor(p24.x, p24.y, 500);
@@ -427,7 +441,7 @@ async function runDemo(){
 
   // --- Scene 4: Filter Trending ---
   await wait(300);
-  showCaption('Filter: Trending — token paling aktif 1 jam terakhir');
+  showCaption('Trending — most active tokens in the last hour');
   const fHot = document.getElementById('f-hot');
   const pHot = center(fHot);
   await moveCursor(pHot.x, pHot.y, 700);
@@ -440,7 +454,7 @@ async function runDemo(){
 
   // --- Scene 5: Filter Safe ---
   await wait(300);
-  showCaption('Safe Only — token dengan liquidity $50K+, aman dari rug');
+  showCaption('Safe Only — tokens with $50K+ liquidity, filtered for rug risk');
   const fSafe = document.getElementById('f-safe');
   const pSafe = center(fSafe);
   await moveCursor(pSafe.x, pSafe.y, 600);
@@ -453,7 +467,7 @@ async function runDemo(){
 
   // --- Scene 6: Top Gainers ---
   await wait(300);
-  showCaption('Top Gainers — siapa yang paling pump hari ini');
+  showCaption('Top Gainers — biggest movers in the last 24h');
   const fG = document.getElementById('f-gainers');
   const pG = center(fG);
   await moveCursor(pG.x, pG.y, 600);
@@ -477,7 +491,7 @@ async function runDemo(){
   await wait(600);
 
   // --- Scene 8: Live Search ---
-  showCaption('Search token apapun — live dari DexScreener');
+  showCaption('Search any token — pulls live from DexScreener');
   const inp = document.getElementById('search-inp');
   const pInp = center(inp);
   await moveCursor(pInp.x, pInp.y, 700);
@@ -497,7 +511,7 @@ async function runDemo(){
 
   // --- Scene 9: Open AI Modal ---
   await wait(400);
-  showCaption('Klik token manapun → AI analisis: risk verdict, liquidity, buy pressure');
+  showCaption('Click any token → AI risk analysis: verdict, liquidity, buy pressure');
   // move to first row
   const firstRow = document.querySelector('.trow');
   if(firstRow){
@@ -532,19 +546,19 @@ async function runDemo(){
 
   // --- Scene 10: Auto-refresh flash ---
   await wait(600);
-  showCaption('Auto-refresh setiap 10 detik — data selalu live');
+  showCaption('Auto-refreshes every 10s — new tokens flash green as they appear');
   // simulate new token flash
   const body = document.getElementById('tbl-body');
   const newRow = document.createElement('div');
   newRow.innerHTML = buildRow({sym:'NEWTOKEN',name:'New Token Just Listed',price:'$0.00041',c1:'+142.3',c6:'+142.3',c24:'+142.3',v1:'$12K',v24:'$12K',liq:'$48K',mc:'$410K',buys:89,sells:4,bg:'#07100a',clr:'#22C55E',age:'2m'},' new-in');
   body.insertBefore(newRow.firstChild, body.firstChild);
-  document.getElementById('status-txt').textContent = 'Updated '+new Date().toLocaleTimeString();
+  document.getElementById('status-txt').textContent = 'Updated '+usEasternTime()+' ET';
   await wait(2500);
   hideCaption();
 
   // --- Scene 11: Closing ---
   await wait(400);
-  showCaption('orlixai.xyz/control-room — gratis, live, Base network 🔵');
+  showCaption('orlixai.xyz/control-room — free, live, Base network 🔵');
   await moveCursor(window.innerWidth/2, window.innerHeight/2, 800);
   await wait(3000);
   hideCaption();
