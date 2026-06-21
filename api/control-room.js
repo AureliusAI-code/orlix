@@ -12,11 +12,23 @@ const EXCLUDE_SYMBOLS = new Set([
   'RETH','STETH','WSTETH','ETH',
 ]);
 
-// Focused searches for high-volume Base-native tokens
+// Broad set of Base-native tokens — ensures 100+ unique results after dedup
 const BASE_SEARCHES = [
+  // Tier-1 Base native
   'BRETT','VIRTUAL','AERO','DEGEN','TOSHI','HIGHER',
   'MOG','WELL','NORMIE','BASED','MOCHI','TURBO',
   'ODOS','CBBTC','ZORA','ENJOY','MFER','PRIME',
+  // Popular Base memes
+  'MIGGLES','KEYCAT','BALD','TYBG','HAM','ANDY',
+  'ANON','MOON','WEN','BCT','SEAM','FRENPET',
+  'MOXIE','BUILD','CLANKER','TALENT','SMOL',
+  // DeFi active on Base
+  'SNX','AAVE','SUSHI','GMX','RDNT','COMP',
+  // Cross-chain memes with Base liquidity
+  'PEPE','BONK','FLOKI','APE','SHIB',
+  // Additional Base ecosystem
+  'WAIFU','KEYBOARD','TOSHICAT','DEGEN','KNINE',
+  'MIGGLES','DMAIL','EXTRA','YFI','GNS',
 ];
 
 let dataCache = { data: null, ts: 0 };
@@ -112,9 +124,10 @@ async function fetchAllPairs() {
     }
   }
 
-  const addrList = [...addrSet].slice(0, 90);
+  const addrList = [...addrSet].slice(0, 150);
   const chunks = [];
   for (let i = 0; i < addrList.length; i += 30) chunks.push(addrList.slice(i, i + 30).join(','));
+  // chunks handles up to 150 addresses across 5 batches
   const batchResults = await Promise.all(
     chunks.map(c => dget(`https://api.dexscreener.com/latest/dex/tokens/${c}`).catch(() => null))
   );
