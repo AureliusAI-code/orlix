@@ -135,8 +135,19 @@ async function fetchTop100() {
     }
   }
 
+  // Secondary dedup by symbol — if two tokens share a symbol, keep the one
+  // with highest volume24h (fake/scam tokens have near-zero real volume)
+  const symMap = {};
+  for (const p of Object.values(tokenMap)) {
+    const sym = (p.baseToken.symbol || '').toUpperCase();
+    const cur = symMap[sym];
+    if (!cur || (p.volume?.h24 || 0) > (cur.volume?.h24 || 0)) {
+      symMap[sym] = p;
+    }
+  }
+
   // Sort by 24h volume — closest public proxy to DexScreener trending rank
-  const sorted = Object.values(tokenMap)
+  const sorted = Object.values(symMap)
     .sort((a, b) => (b.volume?.h24 || 0) - (a.volume?.h24 || 0));
 
   return sorted.slice(0, 100).map((p, i) => mapPair(p, i + 1));
