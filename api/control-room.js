@@ -1,4 +1,11 @@
 // Orlix Control Room — live Base network intelligence
+// Stablecoins and wrapped assets to exclude from all panels
+const EXCLUDE_SYMBOLS = new Set([
+  'USDT','USDC','DAI','WETH','WBTC','CBETH','USDBC','USDB',
+  'EURC','CRVUSD','LUSD','FRAX','SUSD','BUSD','GUSD','TUSD',
+  'AERO','RETH','STETH','WSTETH',
+]);
+
 const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, OPTIONS',
@@ -46,7 +53,13 @@ async function fetchBasePairPool() {
   for (const r of results) {
     if (r.status !== 'fulfilled') continue;
     for (const p of r.value.pairs || []) {
-      if (p.chainId === 'base' && p.baseToken?.address && !seen.has(p.pairAddress)) {
+      const sym = (p.baseToken?.symbol || '').toUpperCase();
+      if (
+        p.chainId === 'base' &&
+        p.baseToken?.address &&
+        !seen.has(p.pairAddress) &&
+        !EXCLUDE_SYMBOLS.has(sym)
+      ) {
         seen.add(p.pairAddress);
         pairs.push(p);
       }
@@ -104,13 +117,13 @@ function deriveTrending(pairs) {
   return pairs
     .filter(p => (p.volume?.h24 || 0) > 100)
     .sort((a, b) => (b.volume?.h24 || 0) - (a.volume?.h24 || 0))
-    .slice(0, 15)
-    .map(mapPair);
+    .slice(0, 20)
+    .map(mapPair); // mapPair already includes volume1h, buys1h, sells1h
 }
 
 function deriveWhales(pairs) {
   return pairs
-    .filter(p => (p.volume?.h1 || 0) > 1000)
+    .filter(p => (p.volume?.h1 || 0) > 5000)
     .sort((a, b) => (b.volume?.h1 || 0) - (a.volume?.h1 || 0))
     .slice(0, 15)
     .map(mapPair);

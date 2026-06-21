@@ -4,155 +4,140 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Orlix Control Room — Base Network Live</title>
-<meta name="description" content="Real-time Base network intelligence: new tokens, whale activity, trending — powered by AI." />
+<meta name="description" content="Real-time Base network live feed — safe tokens, whale activity, trending." />
 <link rel="icon" href="/favicon.ico" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-
 :root{
-  --bg:#07070A;
-  --s1:#0D0D12;
-  --s2:#111118;
-  --b1:#1C1C26;
-  --b2:#252532;
-  --orange:#F07830;
-  --green:#4ADE80;
-  --yellow:#FBBF24;
-  --red:#F87171;
-  --purple:#A78BFA;
-  --text:#E5E7EB;
-  --muted:#6B7280;
-  --dim:#374151;
-  --mono:'JetBrains Mono',monospace;
-  --sans:'Plus Jakarta Sans',sans-serif;
+  --bg:#07070A; --s1:#0D0D12; --s2:#111118;
+  --b1:#1C1C26; --b2:#252532;
+  --orange:#F07830; --green:#4ADE80; --yellow:#FBBF24; --red:#F87171; --purple:#A78BFA;
+  --text:#E5E7EB; --muted:#6B7280; --dim:#374151;
+  --mono:'JetBrains Mono',monospace; --sans:'Plus Jakarta Sans',sans-serif;
 }
-
 html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--sans);overflow:hidden}
 
 /* HEADER */
 .hdr{
-  height:52px;display:flex;align-items:center;gap:14px;padding:0 18px;
+  height:50px;display:flex;align-items:center;gap:14px;padding:0 18px;
   border-bottom:1px solid var(--b1);background:var(--s1);
   position:fixed;top:0;left:0;right:0;z-index:100;
 }
 .logo{display:flex;align-items:center;gap:8px;text-decoration:none;color:inherit;flex-shrink:0}
-.logo img{width:24px;height:24px;border-radius:50%}
-.logo-name{font-weight:700;font-size:13px;letter-spacing:.04em}
+.logo img{width:22px;height:22px;border-radius:50%}
+.logo-name{font-weight:700;font-size:12px;letter-spacing:.04em}
 .logo-sep{color:var(--b2);margin:0 1px}
-.logo-cr{font-size:11px;font-weight:700;color:var(--orange);letter-spacing:.1em}
+.logo-cr{font-size:10px;font-weight:700;color:var(--orange);letter-spacing:.1em}
 
-.live-dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 2s ease-in-out infinite;flex-shrink:0}
+.live-wrap{display:flex;align-items:center;gap:5px;flex-shrink:0}
+.live-dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 2s ease-in-out infinite}
 @keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(74,222,128,.5)}50%{opacity:.7;box-shadow:0 0 0 5px rgba(74,222,128,0)}}
 .live-lbl{font-family:var(--mono);font-size:10px;font-weight:600;color:var(--green);letter-spacing:.1em}
 
 .hstats{display:flex;gap:20px;margin-left:auto}
 .hs{display:flex;flex-direction:column;align-items:center}
-.hs-v{font-family:var(--mono);font-size:13px;font-weight:500;line-height:1.2}
-.hs-l{font-size:9px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+.hs-v{font-family:var(--mono);font-size:12px;font-weight:500;line-height:1.2}
+.hs-l{font-size:8px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
 
-.hright{display:flex;align-items:center;gap:8px;flex-shrink:0}
-.refresh-txt{font-family:var(--mono);font-size:10px;color:var(--muted)}
-.btn-refresh{background:var(--b2);border:none;color:var(--muted);cursor:pointer;padding:5px 10px;border-radius:6px;font-size:11px;font-family:var(--sans);font-weight:600;transition:color .15s,background .15s}
-.btn-refresh:hover{background:var(--b1);color:var(--text)}
-.btn-nav{padding:5px 13px;border-radius:6px;font-size:12px;font-weight:600;text-decoration:none;transition:opacity .15s;display:inline-block}
+.hright{display:flex;align-items:center;gap:7px;flex-shrink:0}
+.status-txt{font-family:var(--mono);font-size:10px;color:var(--muted);min-width:100px;text-align:right}
+.btn-nav{padding:4px 12px;border-radius:6px;font-size:11px;font-weight:600;text-decoration:none;transition:opacity .15s;display:inline-block;border:none;cursor:pointer;font-family:var(--sans)}
 .btn-home{background:var(--b2);color:var(--muted)}.btn-home:hover{color:var(--text)}
 .btn-app{background:var(--orange);color:#fff}.btn-app:hover{opacity:.85}
 
-/* GRID */
-.main{position:fixed;top:52px;bottom:42px;left:0;right:0;display:grid;grid-template-columns:1fr 1fr 1fr}
+/* LAYOUT */
+.layout{
+  position:fixed;top:50px;bottom:42px;left:0;right:0;
+  display:grid;grid-template-columns:1fr 280px;
+  border-top:none;
+}
 
-/* PANELS */
-.panel{display:flex;flex-direction:column;border-right:1px solid var(--b1);overflow:hidden}
-.panel:last-child{border-right:none}
-
-.ph{
+/* LIVE FEED PANEL */
+.feed-panel{display:flex;flex-direction:column;overflow:hidden;border-right:1px solid var(--b1)}
+.panel-hdr{
   display:flex;align-items:center;justify-content:space-between;
   padding:8px 14px;border-bottom:1px solid var(--b1);background:var(--s1);flex-shrink:0;
 }
-.ph-left{display:flex;align-items:center;gap:8px}
-.ph-title{font-size:10px;font-weight:700;letter-spacing:.1em;color:var(--muted);text-transform:uppercase}
-.ph-badge{font-family:var(--mono);font-size:9px;padding:2px 7px;border-radius:99px;background:var(--b2);color:var(--muted)}
-.ph-count{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--orange)}
+.panel-title{font-size:10px;font-weight:700;letter-spacing:.1em;color:var(--muted);text-transform:uppercase}
+.panel-right{display:flex;align-items:center;gap:8px}
+.p-badge{font-family:var(--mono);font-size:9px;padding:2px 7px;border-radius:99px;background:var(--b2);color:var(--muted)}
+.p-count{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--orange)}
 
-.feed{flex:1;overflow-y:auto;padding:7px;scrollbar-width:thin;scrollbar-color:var(--b2) transparent}
-.feed::-webkit-scrollbar{width:3px}
-.feed::-webkit-scrollbar-thumb{background:var(--b2);border-radius:2px}
+.live-feed{flex:1;overflow-y:auto;padding:8px;scrollbar-width:thin;scrollbar-color:var(--b2) transparent}
+.live-feed::-webkit-scrollbar{width:3px}
+.live-feed::-webkit-scrollbar-thumb{background:var(--b2);border-radius:2px}
+
+/* FEED ENTRIES */
+.entry{
+  display:flex;align-items:center;gap:10px;
+  padding:9px 12px;border-radius:8px;border:1px solid var(--b1);
+  margin-bottom:5px;cursor:pointer;background:var(--s2);
+  transition:border-color .15s,background .15s;
+  animation:slideIn .3s cubic-bezier(.34,1.56,.64,1);
+}
+.entry:hover{border-color:var(--b2);background:#13131e}
+@keyframes slideIn{
+  from{opacity:0;transform:translateY(-10px);max-height:0}
+  to{opacity:1;transform:none;max-height:100px}
+}
+.entry.new-flash{animation:slideIn .3s cubic-bezier(.34,1.56,.64,1),flash .6s ease forwards}
+@keyframes flash{
+  0%{border-color:rgba(74,222,128,.5);background:rgba(74,222,128,.05)}
+  100%{border-color:var(--b1);background:var(--s2)}
+}
+
+.e-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.e-dot-buy{background:var(--green)}
+.e-dot-sell{background:var(--red)}
+.e-dot-neu{background:var(--muted)}
+
+.e-token{flex-shrink:0;min-width:90px}
+.e-sym{font-family:var(--mono);font-size:13px;font-weight:600;line-height:1.2}
+.e-name{font-size:9px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:88px}
+
+.e-vol{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--orange);min-width:80px;text-align:right}
+
+.e-chg{font-family:var(--mono);font-size:12px;font-weight:600;min-width:64px;text-align:right}
+
+.e-liq{font-family:var(--mono);font-size:11px;color:var(--muted);min-width:72px;text-align:right}
+
+.safe-badge{font-size:8px;font-weight:700;padding:2px 6px;border-radius:4px;background:rgba(74,222,128,.1);color:var(--green);letter-spacing:.04em;flex-shrink:0}
+
+.e-time{font-family:var(--mono);font-size:9px;color:var(--dim);margin-left:auto;flex-shrink:0;min-width:48px;text-align:right}
+
+.e-sep{display:flex;align-items:center;gap:6px;margin:6px 0 4px;flex-shrink:0}
+.e-sep-line{flex:1;height:1px;background:var(--b1)}
+.e-sep-txt{font-family:var(--mono);font-size:9px;color:var(--b2);letter-spacing:.06em;white-space:nowrap}
 
 /* SKELETON */
-.sk{border-radius:8px;background:linear-gradient(90deg,var(--b1) 0%,var(--b2) 50%,var(--b1) 100%);background-size:200%;animation:shim 1.5s infinite;margin-bottom:6px}
+.sk{border-radius:8px;background:linear-gradient(90deg,var(--b1) 0%,var(--b2) 50%,var(--b1) 100%);background-size:200%;animation:shim 1.5s infinite;margin-bottom:5px;height:50px}
 @keyframes shim{0%{background-position:-200% 0}100%{background-position:200% 0}}
 
-.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:160px;gap:8px;color:var(--muted)}
-.empty-ico{font-size:24px;opacity:.25}
-.empty-msg{font-size:12px}
+/* SIDEBAR — TRENDING */
+.sidebar{display:flex;flex-direction:column;overflow:hidden}
+.trending-feed{flex:1;overflow-y:auto;padding:7px;scrollbar-width:thin;scrollbar-color:var(--b2) transparent}
+.trending-feed::-webkit-scrollbar{width:3px}
+.trending-feed::-webkit-scrollbar-thumb{background:var(--b2);border-radius:2px}
 
-/* CARDS — NEW TOKENS */
-.card{
-  padding:10px 12px;border-radius:8px;border:1px solid var(--b1);
-  margin-bottom:6px;cursor:pointer;background:var(--s2);
-  transition:border-color .15s,background .15s;
-  animation:fadeIn .25s ease;
-}
-.card:hover{border-color:var(--b2);background:#13131e}
-@keyframes fadeIn{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:none}}
-
-.c-head{display:flex;align-items:center;gap:8px;margin-bottom:7px}
-.tok-ico{width:28px;height:28px;border-radius:50%;background:var(--b2);flex-shrink:0;object-fit:cover}
-.tok-ini{width:28px;height:28px;border-radius:50%;background:var(--b2);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--muted);flex-shrink:0}
-.c-meta{flex:1;min-width:0}
-.c-name{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3}
-.c-sub{font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:1px}
-.rbadge{font-size:9px;font-weight:700;padding:2px 7px;border-radius:4px;letter-spacing:.04em;flex-shrink:0}
-.r-safe{background:rgba(74,222,128,.1);color:var(--green)}
-.r-caution{background:rgba(251,191,36,.1);color:var(--yellow)}
-.r-high{background:rgba(248,113,113,.1);color:var(--red)}
-.r-unknown{background:var(--b2);color:var(--muted)}
-
-.c-row{display:flex;gap:12px;align-items:center}
-.cs{display:flex;flex-direction:column;gap:1px}
-.cs-v{font-family:var(--mono);font-size:12px;color:var(--text);line-height:1.2}
-.cs-l{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
-
-.c-age{margin-left:auto;font-family:var(--mono);font-size:9px;color:var(--dim);flex-shrink:0}
-
-.pos{color:var(--green)}.neg{color:var(--red)}.neu{color:var(--muted)}
-
-/* TRENDING */
 .titem{
-  display:flex;align-items:center;gap:9px;padding:9px 12px;
-  border-radius:8px;border:1px solid var(--b1);margin-bottom:5px;
+  display:flex;align-items:center;gap:8px;padding:8px 10px;
+  border-radius:8px;border:1px solid var(--b1);margin-bottom:4px;
   cursor:pointer;background:var(--s2);
   transition:border-color .15s,background .15s;animation:fadeIn .25s ease;
   text-decoration:none;color:inherit;
 }
 .titem:hover{border-color:var(--b2);background:#13131e}
-.t-rank{font-family:var(--mono);font-size:11px;color:var(--dim);width:16px;flex-shrink:0;text-align:center}
+@keyframes fadeIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+.t-rank{font-family:var(--mono);font-size:10px;color:var(--dim);width:14px;flex-shrink:0;text-align:center}
+.t-ini{width:24px;height:24px;border-radius:50%;background:var(--b2);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:var(--muted);flex-shrink:0}
 .t-info{flex:1;min-width:0}
-.t-name{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3}
-.t-sym{font-family:var(--mono);font-size:9px;color:var(--muted)}
-.t-right{text-align:right;flex-shrink:0;min-width:76px}
-.t-chg{font-family:var(--mono);font-size:13px;font-weight:600;line-height:1.2}
-.t-vol{font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:1px}
+.t-sym-t{font-family:var(--mono);font-size:11px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.t-vol{font-size:9px;color:var(--muted);margin-top:1px}
+.t-chg{font-family:var(--mono);font-size:11px;font-weight:600;text-align:right;flex-shrink:0;min-width:48px}
 
-/* WHALE */
-.witem{
-  padding:10px 12px;border-radius:8px;border:1px solid var(--b1);
-  margin-bottom:6px;cursor:pointer;background:var(--s2);
-  transition:border-color .15s,background .15s;animation:fadeIn .25s ease;
-}
-.witem:hover{border-color:var(--b2);background:#13131e}
-.w-head{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px}
-.w-sym{font-size:14px;font-weight:700;line-height:1.2}
-.w-price{font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:2px}
-.w-vol{font-family:var(--mono);font-size:14px;font-weight:600;color:var(--orange);line-height:1.2;text-align:right}
-.w-vlbl{font-family:var(--mono);font-size:9px;color:var(--muted);text-align:right;margin-top:2px}
-.w-bar-row{display:flex;align-items:center;gap:6px}
-.w-bar{flex:1;height:3px;border-radius:2px;background:var(--b2);overflow:hidden}
-.w-bar-b{height:100%;background:var(--green);border-radius:2px;transition:width .3s}
-.w-lbl{font-family:var(--mono);font-size:9px;flex-shrink:0}
-.w-lb{color:var(--green)}.w-ls{color:var(--red)}
+.pos{color:var(--green)}.neg{color:var(--red)}.neu{color:var(--muted)}
 
 /* COMMENTARY */
 .commentary{
@@ -169,34 +154,33 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--s
 .overlay.open{display:flex}
 .modal{background:var(--s1);border:1px solid var(--b2);border-radius:12px;width:500px;max-width:calc(100vw - 32px);max-height:calc(100vh - 60px);display:flex;flex-direction:column;overflow:hidden;animation:mIn .2s ease}
 @keyframes mIn{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:none}}
-.m-hd{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;border-bottom:1px solid var(--b1)}
+.m-hd{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--b1)}
 .m-ttl{font-size:14px;font-weight:700}
 .m-x{background:none;border:none;color:var(--muted);cursor:pointer;font-size:17px;line-height:1;padding:4px;transition:color .15s}.m-x:hover{color:var(--text)}
 .m-body{padding:16px;overflow-y:auto;flex:1}
-.m-foot{padding:11px 16px;border-top:1px solid var(--b1);display:flex;gap:8px}
-.btn{padding:7px 13px;border-radius:7px;font-size:12px;font-weight:600;border:none;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;transition:opacity .15s}.btn:hover{opacity:.82}
+.m-foot{padding:10px 16px;border-top:1px solid var(--b1);display:flex;gap:8px}
+.btn{padding:6px 13px;border-radius:7px;font-size:12px;font-weight:600;border:none;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;transition:opacity .15s}.btn:hover{opacity:.82}
 .btn-g{background:var(--b2);color:var(--text)}
-
 .mload{display:flex;flex-direction:column;align-items:center;gap:14px;padding:48px}
-.spin{width:30px;height:30px;border:2px solid var(--b2);border-top-color:var(--orange);border-radius:50%;animation:spin .75s linear infinite}
+.spin{width:28px;height:28px;border:2px solid var(--b2);border-top-color:var(--orange);border-radius:50%;animation:spin .75s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
-.mload-t{font-size:13px;color:var(--muted)}
-
-.verdict{display:flex;align-items:center;justify-content:center;padding:11px;border-radius:8px;font-size:15px;font-weight:700;letter-spacing:.06em;margin-bottom:14px}
+.mload-t{font-size:12px;color:var(--muted)}
+.verdict{display:flex;align-items:center;justify-content:center;padding:10px;border-radius:8px;font-size:15px;font-weight:700;letter-spacing:.06em;margin-bottom:13px}
 .v-safe{background:rgba(74,222,128,.08);color:var(--green);border:1px solid rgba(74,222,128,.2)}
 .v-caution{background:rgba(251,191,36,.08);color:var(--yellow);border:1px solid rgba(251,191,36,.2)}
 .v-high{background:rgba(248,113,113,.08);color:var(--red);border:1px solid rgba(248,113,113,.2)}
 .v-scam{background:rgba(248,113,113,.12);color:#ff4444;border:1px solid rgba(248,113,113,.3)}
-.ag{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:14px}
+.ag{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:13px}
 .astat{background:var(--bg);border:1px solid var(--b1);border-radius:8px;padding:9px 12px}
 .astat-l{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px}
-.astat-v{font-family:var(--mono);font-size:14px;font-weight:500}
-.atext{font-size:12px;color:var(--muted);line-height:1.65;white-space:pre-wrap;background:var(--bg);border:1px solid var(--b1);border-radius:8px;padding:12px;max-height:240px;overflow-y:auto}
+.astat-v{font-family:var(--mono);font-size:13px;font-weight:500}
+.atext{font-size:12px;color:var(--muted);line-height:1.65;white-space:pre-wrap;background:var(--bg);border:1px solid var(--b1);border-radius:8px;padding:12px;max-height:220px;overflow-y:auto}
 .aerr{color:var(--red);font-size:13px;text-align:center;padding:24px}
 </style>
 </head>
 <body>
 
+<!-- HEADER -->
 <header class="hdr">
   <a href="/" class="logo">
     <img src="/orlix-logo.png" alt="Orlix" onerror="this.style.display='none'" />
@@ -204,75 +188,61 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--s
     <span class="logo-sep">/</span>
     <span class="logo-cr">CONTROL ROOM</span>
   </a>
-  <div class="live-dot"></div>
-  <span class="live-lbl">LIVE</span>
+  <div class="live-wrap">
+    <div class="live-dot"></div>
+    <span class="live-lbl">LIVE</span>
+  </div>
 
   <div class="hstats">
-    <div class="hs"><span class="hs-v" id="s-new">—</span><span class="hs-l">New Tokens</span></div>
-    <div class="hs"><span class="hs-v" id="s-whale">—</span><span class="hs-l">Whale Vol/1h</span></div>
-    <div class="hs"><span class="hs-v" id="s-pairs">—</span><span class="hs-l">Pairs Scanned</span></div>
+    <div class="hs"><span class="hs-v" id="s-events">—</span><span class="hs-l">Events</span></div>
+    <div class="hs"><span class="hs-v" id="s-safe">—</span><span class="hs-l">Safe Tokens</span></div>
+    <div class="hs"><span class="hs-v" id="s-vol">—</span><span class="hs-l">Total Vol/1h</span></div>
   </div>
 
   <div class="hright">
-    <span class="refresh-txt" id="rtxt">Loading...</span>
-    <button class="btn-refresh" onclick="manualRefresh()">↻ Refresh</button>
+    <span class="status-txt" id="status-txt">Connecting...</span>
     <a href="/" class="btn-nav btn-home">← Home</a>
     <a href="/app" class="btn-nav btn-app">Open App →</a>
   </div>
 </header>
 
-<main class="main">
+<!-- LAYOUT -->
+<div class="layout">
 
-  <section class="panel">
-    <div class="ph">
-      <div class="ph-left">
-        <span class="ph-title">New Tokens</span>
-        <span class="ph-badge">Base · recent</span>
+  <!-- LIVE FEED -->
+  <div class="feed-panel">
+    <div class="panel-hdr">
+      <span class="panel-title">Live Activity Feed</span>
+      <div class="panel-right">
+        <span class="p-badge">SAFE · $1k+ activity · Base</span>
+        <span class="p-count" id="c-events">—</span>
       </div>
-      <span class="ph-count" id="c-new">—</span>
     </div>
-    <div class="feed" id="f-new">
-      <div class="sk" style="height:76px"></div>
-      <div class="sk" style="height:76px;opacity:.5"></div>
-      <div class="sk" style="height:76px;opacity:.25"></div>
+    <div class="live-feed" id="live-feed">
+      <div class="sk"></div>
+      <div class="sk" style="opacity:.6"></div>
+      <div class="sk" style="opacity:.3"></div>
     </div>
-  </section>
+  </div>
 
-  <section class="panel">
-    <div class="ph">
-      <div class="ph-left">
-        <span class="ph-title">Trending</span>
-        <span class="ph-badge">by 24h volume</span>
-      </div>
-      <span class="ph-count" id="c-trending">—</span>
+  <!-- SIDEBAR TRENDING -->
+  <div class="sidebar">
+    <div class="panel-hdr">
+      <span class="panel-title">Trending</span>
+      <span class="p-count" id="c-trending">—</span>
     </div>
-    <div class="feed" id="f-trending">
-      <div class="sk" style="height:54px"></div>
-      <div class="sk" style="height:54px;opacity:.5"></div>
-      <div class="sk" style="height:54px;opacity:.25"></div>
+    <div class="trending-feed" id="trending-feed">
+      <div class="sk" style="height:46px"></div>
+      <div class="sk" style="height:46px;opacity:.5"></div>
     </div>
-  </section>
+  </div>
 
-  <section class="panel">
-    <div class="ph">
-      <div class="ph-left">
-        <span class="ph-title">Whale Activity</span>
-        <span class="ph-badge">1h swap vol</span>
-      </div>
-      <span class="ph-count" id="c-whales">—</span>
-    </div>
-    <div class="feed" id="f-whales">
-      <div class="sk" style="height:72px"></div>
-      <div class="sk" style="height:72px;opacity:.5"></div>
-      <div class="sk" style="height:72px;opacity:.25"></div>
-    </div>
-  </section>
+</div>
 
-</main>
-
+<!-- COMMENTARY -->
 <footer class="commentary">
   <span class="ai-tag">AI</span>
-  <span class="c-text" id="c-text">Connecting to Base network...</span>
+  <span class="c-text" id="c-text">Scanning Base network...</span>
   <span class="c-time" id="c-time"></span>
 </footer>
 
@@ -283,9 +253,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--s
       <span class="m-ttl" id="m-ttl">Token Analysis</span>
       <button class="m-x" onclick="closeModal()">✕</button>
     </div>
-    <div class="m-body" id="m-body">
-      <div class="mload"><div class="spin"></div><span class="mload-t">Analyzing...</span></div>
-    </div>
+    <div class="m-body" id="m-body"></div>
     <div class="m-foot">
       <a href="#" class="btn btn-g" id="m-dex" target="_blank" rel="noopener noreferrer">DexScreener ↗</a>
       <a href="#" class="btn btn-g" id="m-scan" target="_blank" rel="noopener noreferrer">Basescan ↗</a>
@@ -294,13 +262,12 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--s
 </div>
 
 <script>
-// ── utils ─────────────────────────────────────────────────────────────────
+// ── utils ──────────────────────────────────────────────────────────────────
 
 function esc(s){
   if(typeof s!=='string')return'';
-  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#x27;');
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
-
 function fmtUsd(n){
   if(n==null||isNaN(n))return'—';
   if(n>=1e9)return'$'+(n/1e9).toFixed(2)+'B';
@@ -308,233 +275,243 @@ function fmtUsd(n){
   if(n>=1e3)return'$'+(n/1e3).toFixed(1)+'K';
   return'$'+n.toFixed(0);
 }
-
 function fmtChg(n){
-  if(n==null||isNaN(n))return'—';
+  if(n==null||isNaN(n))return'';
   return(n>=0?'+':'')+n.toFixed(2)+'%';
 }
-
-function chgCls(n){
-  if(n==null||isNaN(n))return'neu';
-  return n>=0?'pos':'neg';
-}
-
+function chgCls(n){return n==null||isNaN(n)?'neu':n>=0?'pos':'neg'}
 function fmtPrice(s){
   if(!s)return'—';
-  const n=parseFloat(s);
-  if(isNaN(n))return s;
+  const n=parseFloat(s);if(isNaN(n))return s;
   if(n<0.000001)return'$'+n.toExponential(2);
   if(n<0.001)return'$'+n.toFixed(8);
   if(n<1)return'$'+n.toFixed(6);
   if(n<100)return'$'+n.toFixed(4);
   return'$'+n.toFixed(2);
 }
-
-function fmtAge(ms){
-  if(!ms||ms<0)return'';
-  const s=ms/1000;
+function fmtAgo(ts){
+  const s=Math.floor((Date.now()-ts)/1000);
+  if(s<60)return s+'s ago';
   if(s<3600)return Math.floor(s/60)+'m ago';
-  if(s<86400)return Math.floor(s/3600)+'h ago';
-  return Math.floor(s/86400)+'d ago';
+  return Math.floor(s/3600)+'h ago';
 }
-
-function initials(name){
-  if(!name)return'?';
-  const w=name.trim().split(/\s+/);
-  return(w.length>=2?w[0][0]+w[1][0]:name.slice(0,2)).toUpperCase();
+function initials(n){
+  if(!n)return'?';
+  const w=n.trim().split(/\s+/);
+  return(w.length>=2?w[0][0]+w[1][0]:n.slice(0,2)).toUpperCase();
 }
-
-function riskCls(r){
-  if(r==='SAFE')return'r-safe';
-  if(r==='CAUTION')return'r-caution';
-  if(r==='HIGH RISK')return'r-high';
-  return'r-unknown';
-}
-
-function ico(src,name,sz){
-  sz=sz||28;
-  const ini=initials(name);
-  if(src)return`<img src="${esc(src)}" class="tok-ico" style="width:${sz}px;height:${sz}px" onerror="this.outerHTML='<div class=\\"tok-ini\\" style=\\"width:${sz}px;height:${sz}px\\">${ini}</div>'" />`;
-  return`<div class="tok-ini" style="width:${sz}px;height:${sz}px">${ini}</div>`;
-}
-
 function shorten(a){return a?a.slice(0,6)+'…'+a.slice(-4):'—'}
 
-// ── render new tokens ─────────────────────────────────────────────────────
+// ── state ──────────────────────────────────────────────────────────────────
 
-function renderNew(tokens){
-  const el=document.getElementById('f-new');
-  document.getElementById('c-new').textContent=tokens.length||'—';
-  if(!tokens.length){
-    el.innerHTML='<div class="empty"><div class="empty-ico">◌</div><div class="empty-msg">No recent tokens found</div></div>';
-    return;
-  }
-  el.innerHTML=tokens.map(t=>`
-    <div class="card" onclick="openModal('${esc(t.address||'')}','${esc(t.name)}','${esc(t.pairUrl||'')}')">
-      <div class="c-head">
-        ${ico(t.icon,t.name)}
-        <div class="c-meta">
-          <div class="c-name">${esc(t.name)}</div>
-          <div class="c-sub">$${esc(t.symbol||'???')} · ${shorten(t.address)}</div>
+const MAX_FEED = 100;
+let feedEntries = []; // {id, sym, name, address, vol1h, chg1h, liq, pairUrl, ts, isNew}
+let lastVolMap = {};  // address → last known vol1h
+let eventCount = 0;
+let fetching = false;
+
+// ── live feed ──────────────────────────────────────────────────────────────
+
+function buildEntry(t, isNew){
+  const buyPressure = (t.buys1h||0) > (t.sells1h||0);
+  const dotCls = t.priceChange1h == null ? 'e-dot-neu' : buyPressure ? 'e-dot-buy' : 'e-dot-sell';
+  const chgTxt = fmtChg(t.priceChange1h);
+  const id = 'e-' + (++eventCount);
+  return {
+    id,
+    html: `
+      <div class="entry${isNew?' new-flash':''}" id="${id}"
+        onclick="openModal('${esc(t.address||'')}','${esc(t.symbol)} — ${esc(t.name)}','${esc(t.pairUrl||'')}')">
+        <div class="e-dot ${dotCls}"></div>
+        <div class="e-token">
+          <div class="e-sym">$${esc(t.symbol||'???')}</div>
+          <div class="e-name">${esc(t.name)}</div>
         </div>
-        <span class="rbadge ${riskCls(t.risk)}">${esc(t.risk||'SCAN')}</span>
-      </div>
-      <div class="c-row">
-        <div class="cs">
-          <span class="cs-v">${fmtUsd(t.liquidity)}</span>
-          <span class="cs-l">Liquidity</span>
-        </div>
-        ${t.priceUsd?`<div class="cs"><span class="cs-v">${fmtPrice(t.priceUsd)}</span><span class="cs-l">Price</span></div>`:''}
-        ${t.volume24h?`<div class="cs"><span class="cs-v">${fmtUsd(t.volume24h)}</span><span class="cs-l">Vol 24h</span></div>`:''}
-        ${t.priceChange24h!=null?`<div class="cs"><span class="cs-v ${chgCls(t.priceChange24h)}">${fmtChg(t.priceChange24h)}</span><span class="cs-l">24h</span></div>`:''}
-        <span class="c-age">${fmtAge(t.pairAgeMs)}</span>
-      </div>
-    </div>
-  `).join('');
+        <div class="e-vol">${fmtUsd(t.volume1h)}</div>
+        ${chgTxt ? `<div class="e-chg ${chgCls(t.priceChange1h)}">${chgTxt}</div>` : '<div class="e-chg neu">—</div>'}
+        <div class="e-liq" title="Liquidity">${fmtUsd(t.liquidity)}</div>
+        <span class="safe-badge">SAFE</span>
+        <div class="e-time" id="${id}-t">${fmtAgo(Date.now())}</div>
+      </div>`,
+    ts: Date.now(),
+    address: t.address,
+  };
 }
 
-// ── render trending ───────────────────────────────────────────────────────
+function renderFeed(){
+  const el = document.getElementById('live-feed');
+  el.innerHTML = feedEntries.map(e => e.html).join('');
+}
+
+function processNewData(safePairs){
+  const newEntries = [];
+
+  for(const t of safePairs){
+    if(!t.address) continue;
+    const prev = lastVolMap[t.address];
+    const vol = t.volume1h || 0;
+    const isNew = prev == null || Math.abs(vol - prev) > 500;
+    if(isNew){
+      newEntries.push(buildEntry(t, true));
+      lastVolMap[t.address] = vol;
+    }
+  }
+
+  if(newEntries.length === 0) return false;
+
+  // Prepend new entries (newest first)
+  feedEntries = [...newEntries, ...feedEntries].slice(0, MAX_FEED);
+  return true;
+}
+
+function updateTimestamps(){
+  for(const e of feedEntries){
+    const el = document.getElementById(e.id + '-t');
+    if(el) el.textContent = fmtAgo(e.ts);
+  }
+}
+
+// ── trending ───────────────────────────────────────────────────────────────
 
 function renderTrending(tokens){
-  const el=document.getElementById('f-trending');
-  document.getElementById('c-trending').textContent=tokens.length||'—';
+  const el = document.getElementById('trending-feed');
+  document.getElementById('c-trending').textContent = tokens.length || '—';
   if(!tokens.length){
-    el.innerHTML='<div class="empty"><div class="empty-ico">◌</div><div class="empty-msg">No trending data</div></div>';
+    el.innerHTML = '<div style="padding:20px;text-align:center;font-size:12px;color:var(--muted)">No data</div>';
     return;
   }
-  el.innerHTML=tokens.map((t,i)=>`
-    <div class="titem" onclick="openModal('${esc(t.address||'')}','${esc(t.name)}','${esc(t.pairUrl||'')}')">
+  el.innerHTML = tokens.map((t,i) => `
+    <div class="titem" onclick="openModal('${esc(t.address||'')}','${esc(t.symbol)} — ${esc(t.name)}','${esc(t.pairUrl||'')}')">
       <span class="t-rank">${i+1}</span>
-      ${ico(null,t.name,26)}
+      <div class="t-ini">${initials(t.name)}</div>
       <div class="t-info">
-        <div class="t-name">${esc(t.name)}</div>
-        <div class="t-sym">$${esc(t.symbol||'???')} · ${fmtUsd(t.liquidity)}</div>
+        <div class="t-sym-t">$${esc(t.symbol||'???')}</div>
+        <div class="t-vol">${fmtUsd(t.volume24h)} 24h</div>
       </div>
-      <div class="t-right">
-        <div class="t-chg ${chgCls(t.priceChange24h)}">${fmtChg(t.priceChange24h)}</div>
-        <div class="t-vol">${fmtUsd(t.volume24h)} vol</div>
-      </div>
+      <div class="t-chg ${chgCls(t.priceChange24h)}">${fmtChg(t.priceChange24h)}</div>
     </div>
   `).join('');
 }
 
-// ── render whales ─────────────────────────────────────────────────────────
+// ── modal ──────────────────────────────────────────────────────────────────
 
-function renderWhales(whales){
-  const el=document.getElementById('f-whales');
-  document.getElementById('c-whales').textContent=whales.length||'—';
-  if(!whales.length){
-    el.innerHTML='<div class="empty"><div class="empty-ico">◌</div><div class="empty-msg">No whale activity detected</div></div>';
-    return;
-  }
-  el.innerHTML=whales.map(w=>{
-    const total=(w.buys1h||0)+(w.sells1h||0);
-    const buyPct=total>0?Math.round((w.buys1h/total)*100):50;
-    return`
-      <div class="witem" onclick="openModal('${esc(w.address||'')}','${esc(w.name)}','${esc(w.pairUrl||'')}')">
-        <div class="w-head">
-          <div>
-            <div class="w-sym">$${esc(w.symbol||w.token||'???')} <span class="neu" style="font-size:11px;font-weight:400">${esc(w.name)}</span></div>
-            <div class="w-price">${fmtPrice(w.priceUsd)} <span class="${chgCls(w.priceChange1h)}">${fmtChg(w.priceChange1h)}</span></div>
-          </div>
-          <div>
-            <div class="w-vol">${fmtUsd(w.volume1h)}</div>
-            <div class="w-vlbl">1H VOLUME</div>
-          </div>
-        </div>
-        <div class="w-bar-row">
-          <span class="w-lbl w-lb">B${w.buys1h||0}</span>
-          <div class="w-bar"><div class="w-bar-b" style="width:${buyPct}%"></div></div>
-          <span class="w-lbl w-ls">S${w.sells1h||0}</span>
-        </div>
-      </div>
-    `;
-  }).join('');
-}
-
-// ── modal ─────────────────────────────────────────────────────────────────
-
-function openModal(address,name,pairUrl){
-  if(!address)return;
-  document.getElementById('m-ttl').textContent=name||shorten(address);
-  document.getElementById('m-dex').href=pairUrl||`https://dexscreener.com/base/${address}`;
-  document.getElementById('m-scan').href=`https://basescan.org/token/${address}`;
-  document.getElementById('m-body').innerHTML=`
-    <div class="mload"><div class="spin"></div><span class="mload-t">Scanning ${esc(name||shorten(address))} on Base...</span></div>`;
+function openModal(address, name, pairUrl){
+  if(!address) return;
+  document.getElementById('m-ttl').textContent = name || shorten(address);
+  document.getElementById('m-dex').href = pairUrl || `https://dexscreener.com/base/${address}`;
+  document.getElementById('m-scan').href = `https://basescan.org/token/${address}`;
+  document.getElementById('m-body').innerHTML = `
+    <div class="mload"><div class="spin"></div><span class="mload-t">Analyzing on Base...</span></div>`;
   document.getElementById('overlay').classList.add('open');
   fetch(`/api/analyze?address=${encodeURIComponent(address)}`)
     .then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
     .then(renderAnalysis)
-    .catch(err=>{document.getElementById('m-body').innerHTML=`<div class="aerr">Analysis failed: ${esc(String(err))}</div>`;});
+    .catch(err=>{
+      document.getElementById('m-body').innerHTML = `<div class="aerr">Analysis failed: ${esc(String(err))}</div>`;
+    });
 }
 
 function closeModal(){document.getElementById('overlay').classList.remove('open')}
 
 function renderAnalysis(data){
-  const d=data.dexInfo||{};
-  const t=data.tokenInfo||{};
-  const analysis=data.analysis||'';
+  const d = data.dexInfo || {};
+  const t = data.tokenInfo || {};
+  const analysis = data.analysis || '';
   let vcls='',vtxt='';
   if(/SCAM LIKELY/i.test(analysis)){vcls='v-scam';vtxt='SCAM LIKELY';}
   else if(/HIGH.?RISK/i.test(analysis)){vcls='v-high';vtxt='HIGH RISK';}
   else if(/CAUTION/i.test(analysis)){vcls='v-caution';vtxt='CAUTION';}
   else if(/SAFE/i.test(analysis)){vcls='v-safe';vtxt='SAFE';}
-  document.getElementById('m-body').innerHTML=`
+  document.getElementById('m-body').innerHTML = `
     ${vcls?`<div class="verdict ${vcls}">${vtxt}</div>`:''}
     <div class="ag">
       <div class="astat"><div class="astat-l">Token</div><div class="astat-v">${esc(t.symbol||'—')}</div></div>
       <div class="astat"><div class="astat-l">Price</div><div class="astat-v">${fmtPrice(d.priceUsd)}</div></div>
       <div class="astat"><div class="astat-l">Liquidity</div><div class="astat-v">${fmtUsd(d.liquidityUsd)}</div></div>
       <div class="astat"><div class="astat-l">Market Cap</div><div class="astat-v">${fmtUsd(d.marketCap)}</div></div>
-      <div class="astat"><div class="astat-l">24h Volume</div><div class="astat-v">${fmtUsd(d.volume24h)}</div></div>
+      <div class="astat"><div class="astat-l">Vol 24h</div><div class="astat-v">${fmtUsd(d.volume24h)}</div></div>
       <div class="astat"><div class="astat-l">Liq/MCap</div><div class="astat-v">${d.liqMcapRatio?d.liqMcapRatio+'%':'—'}</div></div>
     </div>
     <div class="atext">${esc(analysis)}</div>`;
 }
 
-document.getElementById('overlay').addEventListener('click',e=>{if(e.target===document.getElementById('overlay'))closeModal();});
-document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
+document.getElementById('overlay').addEventListener('click', e=>{
+  if(e.target === document.getElementById('overlay')) closeModal();
+});
+document.addEventListener('keydown', e=>{if(e.key==='Escape') closeModal();});
 
-// ── fetch loop ────────────────────────────────────────────────────────────
+// ── fetch & update loop ────────────────────────────────────────────────────
 
-let countdown=30;
-let fetching=false;
+let pollTimer = null;
 
-async function fetchData(){
-  if(fetching)return;
-  fetching=true;
-  document.getElementById('rtxt').textContent='Fetching...';
+async function fetchAndUpdate(){
+  if(fetching) return;
+  fetching = true;
+  document.getElementById('status-txt').textContent = 'Fetching...';
+
   try{
-    const r=await fetch('/api/control-room');
-    if(!r.ok)throw new Error('HTTP '+r.status);
-    const data=await r.json();
-    countdown=30;
-    document.getElementById('s-new').textContent=data.stats?.newTokensCount??'—';
-    document.getElementById('s-whale').textContent=fmtUsd(data.stats?.totalVolume1h);
-    document.getElementById('s-pairs').textContent=data.stats?.pairsScanned??'—';
-    renderNew(data.newTokens||[]);
-    renderTrending(data.trending||[]);
-    renderWhales(data.whaleActivity||[]);
-    if(data.commentary){
-      document.getElementById('c-text').textContent=data.commentary;
-      document.getElementById('c-time').textContent=new Date().toLocaleTimeString();
+    const r = await fetch('/api/control-room');
+    if(!r.ok) throw new Error('HTTP ' + r.status);
+    const data = await r.json();
+
+    // Safe tokens = liq > 50k AND vol1h > 1k
+    const safePairs = (data.whaleActivity || [])
+      .concat(data.trending || [])
+      .filter((t, i, arr) => {
+        // deduplicate by address
+        return arr.findIndex(x => x.address === t.address) === i;
+      })
+      .filter(t => (t.liquidity || 0) >= 50000 && (t.volume1h || 0) >= 1000)
+      .sort((a, b) => (b.volume1h || 0) - (a.volume1h || 0));
+
+    const safeCount = safePairs.length;
+    const totalVol = safePairs.reduce((s, t) => s + (t.volume1h || 0), 0);
+
+    // Update stats
+    document.getElementById('s-safe').textContent = safeCount || '—';
+    document.getElementById('s-vol').textContent = fmtUsd(totalVol);
+
+    // Process new feed entries
+    const hadNew = processNewData(safePairs);
+    if(feedEntries.length === 0 && !hadNew){
+      // First load with no data - show skeleton message
+      document.getElementById('live-feed').innerHTML = `
+        <div style="padding:32px;text-align:center">
+          <div style="font-size:12px;color:var(--muted)">Waiting for activity on Base...</div>
+          <div style="font-size:11px;color:var(--dim);margin-top:8px">Safe tokens with $1k+ 1h volume will appear here</div>
+        </div>`;
+    } else if(hadNew) {
+      renderFeed();
+      document.getElementById('s-events').textContent = feedEntries.length;
+      document.getElementById('c-events').textContent = feedEntries.length;
     }
-  }catch(e){
-    document.getElementById('rtxt').textContent='Error — retrying...';
-    console.error('[control-room]',e);
-  }finally{fetching=false;}
+
+    // Trending sidebar
+    renderTrending((data.trending || []).slice(0, 15));
+
+    // Commentary
+    if(data.commentary){
+      document.getElementById('c-text').textContent = data.commentary;
+      document.getElementById('c-time').textContent = new Date().toLocaleTimeString();
+    }
+
+    document.getElementById('status-txt').textContent = 'Updated ' + new Date().toLocaleTimeString();
+  } catch(e){
+    document.getElementById('status-txt').textContent = 'Error — retrying...';
+    console.error('[control-room]', e);
+  } finally{
+    fetching = false;
+    // Schedule next poll
+    clearTimeout(pollTimer);
+    pollTimer = setTimeout(fetchAndUpdate, 8000);
+  }
 }
 
-function manualRefresh(){countdown=0;fetchData();}
+// Update timestamps every 10s
+setInterval(updateTimestamps, 10000);
 
-function tick(){
-  countdown=Math.max(0,countdown-1);
-  if(!fetching)document.getElementById('rtxt').textContent=`Refreshes in ${countdown}s`;
-  if(countdown===0&&!fetching)fetchData();
-}
-
-fetchData();
-setInterval(tick,1000);
+// Initial fetch
+fetchAndUpdate();
 </script>
 </body>
 </html>
