@@ -12,7 +12,8 @@
     "api/control-room.js":  { "memory": 128, "maxDuration": 30 },
     "api/token-search.js": { "memory": 128, "maxDuration": 15 },
     "api/song.js":         { "memory": 256, "maxDuration": 45 },
-    "api/music.js":        { "memory": 256, "maxDuration": 60 }
+    "api/music.js":        { "memory": 256, "maxDuration": 60 },
+    "api/bankr-tokens.js": { "memory": 128, "maxDuration": 20 }
   },
   "redirects": [
     { "source": "/app.html",       "destination": "/app",       "permanent": true },
@@ -25,7 +26,8 @@
     { "source": "/token.html",        "destination": "/token",        "permanent": true },
     { "source": "/control-room.html", "destination": "/control-room", "permanent": true },
     { "source": "/demo.html",         "destination": "/demo",         "permanent": true },
-    { "source": "/song.html",         "destination": "/song",         "permanent": true }
+    { "source": "/song.html",         "destination": "/song",         "permanent": true },
+    { "source": "/bankr.html",        "destination": "/bankr",        "permanent": true }
   ],
   "rewrites": [
     { "source": "/app",       "destination": "/app.html" },
@@ -38,6 +40,7 @@
     { "source": "/token",        "destination": "/token.html" },
     { "source": "/control-room", "destination": "/control-room.html" },
     { "source": "/demo",         "destination": "/demo.html" },
-    { "source": "/song",         "destination": "/song.html" }
+    { "source": "/song",         "destination": "/song.html" },
+    { "source": "/bankr",        "destination": "/bankr.html" }
   ]
 }

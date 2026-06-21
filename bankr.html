@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Bankr New Tokens — Orlix</title>
+<link rel="icon" href="/favicon.ico"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#07070A;--s1:#0C0C10;--s2:#101015;--s3:#16161C;--s4:#1C1C24;
+  --b1:rgba(255,255,255,.06);--b2:rgba(255,255,255,.1);--b3:rgba(255,255,255,.18);
+  --t1:#F1F1F3;--t2:#9CA3AF;--t3:#52525B;--t4:#3A3A42;
+  --accent:#F07830;--accent-d:rgba(240,120,48,.12);--accent-g:rgba(240,120,48,.25);
+  --green:#22C55E;--red:#EF4444;--yellow:#EAB308;
+  --mono:'JetBrains Mono',monospace;--font:'Plus Jakarta Sans',sans-serif;
+}
+*{-webkit-tap-highlight-color:transparent}
+html,body{background:var(--bg);color:var(--t2);font-family:var(--font);min-height:100vh;-webkit-font-smoothing:antialiased}
+
+/* NAV */
+.nav{
+  position:fixed;top:0;left:0;right:0;z-index:100;height:52px;
+  display:flex;align-items:center;justify-content:space-between;padding:0 20px;
+  background:rgba(7,7,10,.88);backdrop-filter:blur(20px);border-bottom:1px solid var(--b1);
+}
+.nav-brand{font-weight:800;font-size:.9rem;color:var(--t1);text-decoration:none;letter-spacing:-.01em}
+.nav-links{display:flex;gap:18px}
+.nav-links a{color:var(--t3);font-size:.78rem;text-decoration:none;transition:color .15s}
+.nav-links a:hover,.nav-links a.active{color:var(--t1)}
+
+/* PAGE HEADER */
+.page-header{padding:72px 20px 0;max-width:1100px;margin:0 auto}
+.page-title{display:flex;align-items:center;gap:10px;margin-bottom:6px;padding-top:20px}
+.page-title h1{font-size:1.25rem;font-weight:800;letter-spacing:-.02em;color:var(--t1)}
+.page-title .badge{
+  font-size:.65rem;font-weight:700;padding:2px 8px;border-radius:5px;
+  background:var(--accent-d);color:var(--accent);border:1px solid var(--accent-g);
+  letter-spacing:.08em;text-transform:uppercase;
+}
+.page-sub{font-size:.8rem;color:var(--t3)}
+.header-row{display:flex;align-items:center;justify-content:space-between;margin-top:16px;padding-bottom:16px;flex-wrap:wrap;gap:10px}
+
+/* TABS */
+.tabs{display:flex;gap:4px;background:var(--s2);border:1px solid var(--b1);border-radius:10px;padding:3px}
+.tab{
+  padding:6px 14px;border-radius:7px;font-size:.75rem;font-weight:600;
+  cursor:pointer;border:none;background:transparent;color:var(--t3);
+  transition:all .15s;font-family:var(--font);
+}
+.tab.active{background:var(--s3);color:var(--t1)}
+.tab:hover:not(.active){color:var(--t2)}
+
+/* CONTROLS */
+.controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.safe-toggle{
+  display:flex;align-items:center;gap:6px;
+  padding:6px 12px;border-radius:8px;border:1px solid var(--b1);
+  background:var(--s2);cursor:pointer;font-size:.73rem;font-weight:600;
+  color:var(--t2);font-family:var(--font);transition:all .15s;
+}
+.safe-toggle.on{border-color:rgba(34,197,94,.4);color:var(--green);background:rgba(34,197,94,.08)}
+.safe-toggle .dot{width:8px;height:8px;border-radius:50%;background:var(--t4)}
+.safe-toggle.on .dot{background:var(--green)}
+.refresh-btn{
+  display:flex;align-items:center;gap:6px;
+  padding:6px 12px;border-radius:8px;border:1px solid var(--b1);
+  background:var(--s2);cursor:pointer;font-size:.73rem;font-weight:600;
+  color:var(--t2);font-family:var(--font);transition:all .15s;
+}
+.refresh-btn:hover{color:var(--t1);border-color:var(--b2)}
+.refresh-btn.spinning svg{animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+#last-updated{font-size:.68rem;color:var(--t3);font-family:var(--mono)}
+
+/* GRID */
+.token-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(300px,1fr));
+  gap:10px;padding:16px 20px 60px;max-width:1100px;margin:0 auto;
+}
+
+/* TOKEN CARD */
+.token-card{
+  background:var(--s1);border:1px solid var(--b1);border-radius:14px;
+  padding:14px 16px;transition:border-color .2s,transform .15s;
+  cursor:pointer;text-decoration:none;display:block;
+}
+.token-card:hover{border-color:var(--b2);transform:translateY(-1px)}
+.card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:10px}
+.token-info{display:flex;align-items:center;gap:10px;min-width:0}
+.token-logo{
+  width:36px;height:36px;border-radius:50%;background:var(--s3);
+  display:flex;align-items:center;justify-content:center;
+  font-size:.85rem;font-weight:800;color:var(--t2);flex-shrink:0;overflow:hidden;
+}
+.token-logo img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+.token-names{min-width:0}
+.token-symbol{font-size:.95rem;font-weight:800;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.token-name{font-size:.7rem;color:var(--t3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card-right{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0}
+.token-age{font-size:.65rem;color:var(--t3);font-family:var(--mono);white-space:nowrap}
+.rug-badge{
+  font-size:.6rem;font-weight:700;padding:2px 6px;border-radius:4px;
+  letter-spacing:.06em;text-transform:uppercase;white-space:nowrap;
+}
+.rug-safe{background:rgba(34,197,94,.12);color:var(--green);border:1px solid rgba(34,197,94,.25)}
+.rug-watch{background:rgba(234,179,8,.12);color:var(--yellow);border:1px solid rgba(234,179,8,.25)}
+.rug-risk{background:rgba(239,68,68,.12);color:var(--red);border:1px solid rgba(239,68,68,.25)}
+
+/* STATS GRID */
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:6px 10px;margin-bottom:10px}
+.stat{display:flex;flex-direction:column;gap:1px}
+.stat-label{font-size:.6rem;color:var(--t3);text-transform:uppercase;letter-spacing:.07em}
+.stat-value{font-size:.78rem;font-weight:700;color:var(--t1);font-family:var(--mono)}
+.stat-value.green{color:var(--green)}
+.stat-value.red{color:var(--red)}
+
+/* SMART MONEY */
+.sm-row{display:flex;align-items:center;gap:6px;margin-bottom:10px}
+.sm-badge{
+  display:flex;align-items:center;gap:4px;
+  padding:3px 8px;border-radius:5px;font-size:.65rem;font-weight:700;
+  background:rgba(167,139,250,.1);color:#a78bfa;border:1px solid rgba(167,139,250,.2);
+}
+.kol-badge{
+  display:flex;align-items:center;gap:4px;
+  padding:3px 8px;border-radius:5px;font-size:.65rem;font-weight:700;
+  background:rgba(234,179,8,.1);color:var(--yellow);border:1px solid rgba(234,179,8,.2);
+}
+.wash-badge{
+  padding:3px 8px;border-radius:5px;font-size:.65rem;font-weight:700;
+  background:rgba(239,68,68,.1);color:var(--red);border:1px solid rgba(239,68,68,.2);
+}
+
+/* CARD FOOTER */
+.card-footer{display:flex;align-items:center;justify-content:space-between}
+.socials{display:flex;gap:6px}
+.social-link{
+  display:flex;align-items:center;justify-content:center;
+  width:24px;height:24px;border-radius:6px;
+  border:1px solid var(--b1);background:var(--s2);color:var(--t3);
+  text-decoration:none;transition:all .15s;font-size:.65rem;
+}
+.social-link:hover{color:var(--t1);border-color:var(--b2)}
+.card-links{display:flex;gap:5px}
+.dex-link{
+  padding:4px 9px;border-radius:6px;font-size:.67rem;font-weight:600;
+  border:1px solid var(--b1);background:var(--s2);color:var(--t2);
+  text-decoration:none;transition:all .15s;
+}
+.dex-link:hover{color:var(--t1);border-color:var(--b2)}
+.dex-link.primary{border-color:var(--accent-g);color:var(--accent);background:var(--accent-d)}
+.dex-link.primary:hover{background:rgba(240,120,48,.18)}
+
+/* STATES */
+.state-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;gap:12px;color:var(--t3);font-size:.85rem;text-align:center}
+.state-wrap svg{opacity:.4}
+
+/* SKELETON */
+.skeleton{background:linear-gradient(90deg,var(--s2) 25%,var(--s3) 50%,var(--s2) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:6px;height:14px}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+@media(max-width:500px){
+  .token-grid{padding:12px 12px 40px}
+  .page-header{padding:68px 12px 0}
+  .tabs .tab{padding:5px 10px}
+}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <a class="nav-brand" href="/">orlix</a>
+  <div class="nav-links">
+    <a href="/control-room">control room</a>
+    <a href="/app">app</a>
+    <a href="/bankr" class="active">bankr</a>
+    <a href="/song">song</a>
+  </div>
+</nav>
+
+<div class="page-header">
+  <div class="page-title">
+    <h1>Bankr New Tokens</h1>
+    <span class="badge">Base</span>
+  </div>
+  <div class="page-sub">Newly launched tokens on Bankr launchpad — auto-refreshes every 30s</div>
+
+  <div class="header-row">
+    <div class="tabs">
+      <button class="tab active" data-tab="new_creation" onclick="switchTab(this,'new_creation')">🆕 New</button>
+      <button class="tab" data-tab="pump" onclick="switchTab(this,'pump')">⏳ Near Grad</button>
+      <button class="tab" data-tab="completed" onclick="switchTab(this,'completed')">✅ Graduated</button>
+    </div>
+    <div class="controls">
+      <button class="safe-toggle" id="safe-toggle" onclick="toggleSafe()">
+        <div class="dot"></div>Safe only
+      </button>
+      <button class="refresh-btn" id="refresh-btn" onclick="load(true)">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
+        Refresh
+      </button>
+      <span id="last-updated"></span>
+    </div>
+  </div>
+</div>
+
+<div class="token-grid" id="grid">
+  <div class="state-wrap" style="grid-column:1/-1">
+    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+    Loading tokens…
+  </div>
+</div>
+
+<script>
+let currentTab = 'new_creation';
+let safeOnly   = false;
+let cache      = null;
+let autoTimer  = null;
+
+function switchTab(el, tab) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  currentTab = tab;
+  render();
+}
+
+function toggleSafe() {
+  safeOnly = !safeOnly;
+  const btn = document.getElementById('safe-toggle');
+  btn.classList.toggle('on', safeOnly);
+  render();
+}
+
+function fmtNum(n) {
+  if (!n || n === 0) return '—';
+  if (n >= 1e9) return '$' + (n/1e9).toFixed(2) + 'B';
+  if (n >= 1e6) return '$' + (n/1e6).toFixed(2) + 'M';
+  if (n >= 1e3) return '$' + (n/1e3).toFixed(1) + 'K';
+  return '$' + Number(n).toFixed(2);
+}
+
+function fmtAge(ts) {
+  if (!ts) return '—';
+  const s = Math.floor(Date.now()/1000) - ts;
+  if (s < 60)  return s + 's ago';
+  if (s < 3600) return Math.floor(s/60) + 'm ago';
+  if (s < 86400) return Math.floor(s/3600) + 'h ago';
+  return Math.floor(s/86400) + 'd ago';
+}
+
+function fmtPrice(p) {
+  if (!p) return '—';
+  const n = parseFloat(p);
+  if (n < 0.000001) return '$' + n.toExponential(2);
+  if (n < 0.001) return '$' + n.toFixed(6);
+  if (n < 1) return '$' + n.toFixed(4);
+  return '$' + n.toFixed(2);
+}
+
+function rugClass(r) {
+  if (!r && r !== 0) return '';
+  if (r < 0.1) return 'rug-safe';
+  if (r < 0.3) return 'rug-watch';
+  return 'rug-risk';
+}
+function rugLabel(r) {
+  if (!r && r !== 0) return '';
+  if (r < 0.1) return '✓ Safe';
+  if (r < 0.3) return '⚠ Watch';
+  return '✕ Risk';
+}
+
+function cardHtml(t) {
+  const sym = (t.symbol || '?').slice(0, 12);
+  const ini = sym.slice(0, 2).toUpperCase();
+  const logo = t.logo
+    ? `<img src="${t.logo}" alt="${sym}" onerror="this.style.display='none';this.nextSibling.style.display='flex'">`
+    : '';
+  const rug = typeof t.rug_ratio === 'number' ? t.rug_ratio : parseFloat(t.rug_ratio || 1);
+  const rc   = rugClass(rug);
+  const rl   = rugLabel(rug);
+  const mc   = fmtNum(t.usd_market_cap);
+  const liq  = fmtNum(t.liquidity);
+  const vol  = fmtNum(t.volume_1h);
+  const swaps = t.swaps_1h ? t.swaps_1h.toLocaleString() : '—';
+  const holders = t.holder_count ? t.holder_count.toLocaleString() : '—';
+  const price = fmtPrice(t.price);
+  const age  = fmtAge(t.created_timestamp);
+  const sm   = t.smart_degen_count || 0;
+  const kol  = t.renowned_count || 0;
+  const wash = t.is_wash_trading;
+
+  const addr = t.address || '';
+  const dexUrl  = `https://dexscreener.com/base/${addr}`;
+  const gmgnUrl = `https://gmgn.ai/base/token/${addr}`;
+
+  const twitterUrl = t.twitter ? (t.twitter.startsWith('http') ? t.twitter : 'https://x.com/' + t.twitter.replace('@','')) : '';
+  const tgUrl  = t.telegram || '';
+  const webUrl = t.website  || '';
+
+  return `
+  <a class="token-card" href="${dexUrl}" target="_blank" rel="noopener">
+    <div class="card-top">
+      <div class="token-info">
+        <div class="token-logo">
+          ${logo}
+          <span style="${logo?'display:none':''}">${ini}</span>
+        </div>
+        <div class="token-names">
+          <div class="token-symbol">$${sym}</div>
+          <div class="token-name">${(t.name || '').slice(0,28)}</div>
+        </div>
+      </div>
+      <div class="card-right">
+        <div class="token-age">${age}</div>
+        ${rc ? `<div class="rug-badge ${rc}">${rl}</div>` : ''}
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-label">Price</div>
+        <div class="stat-value">${price}</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Mkt Cap</div>
+        <div class="stat-value">${mc}</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Liq</div>
+        <div class="stat-value">${liq}</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Vol 1h</div>
+        <div class="stat-value">${vol}</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Swaps 1h</div>
+        <div class="stat-value">${swaps}</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Holders</div>
+        <div class="stat-value">${holders}</div>
+      </div>
+    </div>
+
+    ${(sm > 0 || kol > 0 || wash) ? `
+    <div class="sm-row">
+      ${sm > 0  ? `<div class="sm-badge">🧠 ${sm} Smart</div>`  : ''}
+      ${kol > 0 ? `<div class="kol-badge">⭐ ${kol} KOL</div>` : ''}
+      ${wash    ? `<div class="wash-badge">⚠ Wash</div>`        : ''}
+    </div>` : ''}
+
+    <div class="card-footer">
+      <div class="socials" onclick="event.stopPropagation();event.preventDefault()">
+        ${twitterUrl ? `<a class="social-link" href="${twitterUrl}" target="_blank" title="Twitter">𝕏</a>` : ''}
+        ${tgUrl  ? `<a class="social-link" href="${tgUrl}"  target="_blank" title="Telegram">✈</a>`  : ''}
+        ${webUrl ? `<a class="social-link" href="${webUrl}" target="_blank" title="Website">🌐</a>`  : ''}
+      </div>
+      <div class="card-links" onclick="event.stopPropagation();event.preventDefault()">
+        <a class="dex-link" href="${gmgnUrl}" target="_blank">GMGN</a>
+        <a class="dex-link primary" href="${dexUrl}" target="_blank">DexScreener</a>
+      </div>
+    </div>
+  </a>`;
+}
+
+function render() {
+  const grid = document.getElementById('grid');
+  if (!cache) return;
+
+  let tokens = [];
+  if (currentTab === 'new_creation') tokens = cache?.data?.new_creation || [];
+  else if (currentTab === 'pump')    tokens = cache?.data?.pump || [];
+  else                               tokens = cache?.data?.completed  || [];
+
+  if (safeOnly) {
+    tokens = tokens.filter(t => {
+      const r = typeof t.rug_ratio === 'number' ? t.rug_ratio : parseFloat(t.rug_ratio || 1);
+      return r < 0.3 && !t.is_wash_trading;
+    });
+  }
+
+  if (!tokens.length) {
+    grid.innerHTML = `<div class="state-wrap" style="grid-column:1/-1">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      No tokens found${safeOnly ? ' — try turning off Safe filter' : ''}
+    </div>`;
+    return;
+  }
+
+  grid.innerHTML = tokens.map(cardHtml).join('');
+}
+
+async function load(manual = false) {
+  const btn = document.getElementById('refresh-btn');
+  btn.classList.add('spinning');
+
+  try {
+    const r = await fetch('/api/bankr-tokens');
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    cache = await r.json();
+    if (cache.error) throw new Error(cache.error);
+
+    const now = new Date();
+    document.getElementById('last-updated').textContent =
+      'Updated ' + now.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    render();
+  } catch (e) {
+    if (!cache) {
+      document.getElementById('grid').innerHTML = `<div class="state-wrap" style="grid-column:1/-1">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        ${e.message}
+      </div>`;
+    }
+    document.getElementById('last-updated').textContent = '⚠ ' + e.message.slice(0, 60);
+  } finally {
+    btn.classList.remove('spinning');
+  }
+}
+
+function startAuto() {
+  clearInterval(autoTimer);
+  autoTimer = setInterval(() => load(), 30000);
+}
+
+load();
+startAuto();
+</script>
+</body>
+</html>
