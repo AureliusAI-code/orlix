@@ -88,22 +88,21 @@ async function fetchBasePairPool() {
     }
   }
 
-  // Deduplicate, filter for Base, exclude stablecoins
-  const seen = new Set();
-  const pairs = [];
+  // Deduplicate by TOKEN address (not pair address) — one card per token
+  // Keep the pair with highest liquidity for each token
+  const tokenMap = {};
   for (const p of rawPairs) {
     const sym = (p.baseToken?.symbol || '').toUpperCase();
-    if (
-      p.chainId === 'base' &&
-      p.baseToken?.address &&
-      !seen.has(p.pairAddress) &&
-      !EXCLUDE_SYMBOLS.has(sym)
-    ) {
-      seen.add(p.pairAddress);
-      pairs.push(p);
+    if (p.chainId !== 'base') continue;
+    if (!p.baseToken?.address) continue;
+    if (EXCLUDE_SYMBOLS.has(sym)) continue;
+    const key = p.baseToken.address.toLowerCase();
+    const liq = p.liquidity?.usd || 0;
+    if (!tokenMap[key] || liq > (tokenMap[key].liquidity?.usd || 0)) {
+      tokenMap[key] = p;
     }
   }
-  return pairs;
+  return Object.values(tokenMap);
 }
 
 function mapPair(p) {
