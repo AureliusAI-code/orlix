@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GM — Orlix</title>
+<meta name="description" content="Say GM or GN to the Base community">
+<link rel="icon" type="image/x-icon" href="/favicon.ico">
+<meta property="og:title" content="GM — Orlix">
+<meta property="og:description" content="Say GM or GN to the Base community">
+<meta property="og:image" content="https://www.orlixai.xyz/og-image.png">
+<meta name="twitter:card" content="summary_large_image">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#09090B;--bg2:#111113;--bg3:#1A1A1E;
+  --border:rgba(255,255,255,.07);
+  --t1:#FAFAFA;--t2:#A1A1AA;--t3:#52525B;
+  --orange:#F07830;--orange-d:rgba(240,120,48,.12);--orange-g:rgba(240,120,48,.22);
+  --purple:#A78BFA;--purple-d:rgba(167,139,250,.1);
+  --green:#4ADE80;--green-d:rgba(74,222,128,.1);
+  --yellow:#FACC15;--yellow-d:rgba(250,204,21,.1);
+  --font:'Plus Jakarta Sans',-apple-system,sans-serif;
+  --mono:'JetBrains Mono',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{background:var(--bg);color:var(--t2);font-family:var(--font);min-height:100vh;-webkit-font-smoothing:antialiased}
+
+/* nav bar */
+.nav{
+  position:fixed;top:0;left:0;right:0;z-index:50;height:52px;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 20px;
+  background:rgba(9,9,11,.85);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border);
+}
+.nav-brand{font-weight:800;font-size:.9rem;color:var(--t1);text-decoration:none;letter-spacing:-.01em}
+.nav-links{display:flex;align-items:center;gap:18px}
+.nav-links a{color:var(--t3);font-size:.78rem;text-decoration:none;transition:color .15s}
+.nav-links a:hover{color:var(--t1)}
+
+/* main */
+.page{
+  min-height:100vh;padding-top:52px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:0;
+}
+
+/* hero */
+.hero{
+  display:flex;flex-direction:column;align-items:center;
+  gap:24px;padding:48px 20px 0;
+  text-align:center;
+}
+
+.gm-word{
+  font-size:clamp(5rem,20vw,9rem);
+  font-weight:800;
+  line-height:1;
+  letter-spacing:-.04em;
+  background:linear-gradient(135deg, var(--orange) 0%, var(--yellow) 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;
+  transition:opacity .3s;
+  user-select:none;
+}
+.gm-word.gn{
+  background:linear-gradient(135deg, var(--purple) 0%, #60A5FA 100%);
+  -webkit-background-clip:text;background-clip:text;
+}
+
+.clock{
+  font-family:var(--mono);
+  font-size:clamp(1rem,4vw,1.4rem);
+  color:var(--t3);
+  letter-spacing:.05em;
+}
+
+.tagline{
+  color:var(--t2);font-size:.9rem;max-width:340px;line-height:1.6;
+}
+
+/* send button */
+.send-btn{
+  margin-top:8px;
+  padding:14px 48px;
+  font-family:var(--font);
+  font-weight:700;font-size:1.05rem;
+  border:none;border-radius:14px;cursor:pointer;
+  background:linear-gradient(135deg, var(--orange), #FACC15);
+  color:#000;
+  box-shadow:0 4px 24px rgba(240,120,48,.3);
+  transition:transform .15s, box-shadow .15s, opacity .15s;
+  letter-spacing:.01em;
+}
+.send-btn.gn-btn{
+  background:linear-gradient(135deg, var(--purple), #60A5FA);
+  box-shadow:0 4px 24px rgba(167,139,250,.3);
+  color:#fff;
+}
+.send-btn:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(240,120,48,.4)}
+.send-btn.gn-btn:hover{box-shadow:0 8px 32px rgba(167,139,250,.4)}
+.send-btn:active{transform:translateY(0)}
+.send-btn:disabled{opacity:.5;cursor:default;transform:none}
+
+/* sent state */
+.sent-msg{
+  display:none;
+  flex-direction:column;align-items:center;gap:10px;
+  animation:fadeIn .4s ease;
+}
+.sent-msg.visible{display:flex}
+.sent-check{font-size:2.5rem;line-height:1}
+.sent-label{color:var(--t1);font-weight:700;font-size:1rem}
+.sent-sub{color:var(--t3);font-size:.8rem}
+
+/* stats strip */
+.stats{
+  display:flex;gap:0;
+  margin-top:40px;
+  border:1px solid var(--border);border-radius:16px;
+  overflow:hidden;background:var(--bg2);
+  width:min(440px,92vw);
+}
+.stat{
+  flex:1;padding:16px 0;text-align:center;
+  border-right:1px solid var(--border);
+}
+.stat:last-child{border-right:none}
+.stat-val{
+  display:block;font-size:1.5rem;font-weight:800;
+  color:var(--t1);font-family:var(--mono);letter-spacing:-.02em;
+}
+.stat-lbl{display:block;font-size:.68rem;color:var(--t3);text-transform:uppercase;letter-spacing:.1em;margin-top:2px}
+
+/* AI message */
+.ai-card{
+  margin-top:28px;
+  width:min(520px,92vw);
+  background:var(--bg2);border:1px solid var(--border);border-radius:16px;
+  padding:20px 22px;
+  display:flex;gap:14px;align-items:flex-start;
+}
+.ai-icon{
+  width:32px;height:32px;border-radius:50%;flex-shrink:0;
+  background:linear-gradient(135deg,var(--orange),var(--yellow));
+  display:flex;align-items:center;justify-content:center;
+  font-size:.85rem;font-weight:800;color:#000;
+}
+.ai-body{flex:1}
+.ai-label{font-size:.68rem;color:var(--t3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px}
+.ai-text{font-size:.85rem;color:var(--t2);line-height:1.65}
+.ai-text.loading::after{content:'▋';animation:blink .8s step-end infinite}
+@keyframes blink{50%{opacity:0}}
+
+/* share */
+.share-row{
+  margin-top:20px;
+  display:flex;gap:10px;align-items:center;
+}
+.share-btn{
+  display:flex;align-items:center;gap:7px;
+  padding:9px 18px;border-radius:10px;border:1px solid var(--border);
+  background:var(--bg3);color:var(--t2);font-size:.8rem;font-family:var(--font);
+  cursor:pointer;transition:all .15s;text-decoration:none;
+  font-weight:600;
+}
+.share-btn:hover{border-color:var(--border-hover,rgba(255,255,255,.15));color:var(--t1);background:rgba(255,255,255,.05)}
+.share-btn svg{flex-shrink:0}
+
+/* streak badge */
+.streak{
+  display:flex;align-items:center;gap:7px;
+  padding:7px 16px;border-radius:10px;
+  background:var(--orange-d);border:1px solid rgba(240,120,48,.2);
+  color:var(--orange);font-size:.8rem;font-weight:700;
+}
+.streak span{font-size:.95rem}
+
+/* feed */
+.feed-section{
+  margin-top:40px;padding:0 20px 60px;
+  width:min(520px,100vw);
+}
+.feed-title{
+  font-size:.72rem;color:var(--t3);text-transform:uppercase;letter-spacing:.12em;
+  margin-bottom:14px;font-weight:600;
+}
+.feed-list{display:flex;flex-direction:column;gap:8px}
+.feed-item{
+  background:var(--bg2);border:1px solid var(--border);border-radius:12px;
+  padding:12px 16px;
+  display:flex;align-items:center;gap:12px;
+  font-size:.82rem;
+}
+.feed-gm{
+  font-weight:800;font-size:1rem;
+  background:linear-gradient(135deg,var(--orange),var(--yellow));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  min-width:34px;
+}
+.feed-gm.gn{
+  background:linear-gradient(135deg,var(--purple),#60A5FA);
+  -webkit-background-clip:text;background-clip:text;
+}
+.feed-addr{font-family:var(--mono);color:var(--t3);font-size:.75rem}
+.feed-time{margin-left:auto;color:var(--t3);font-size:.72rem;white-space:nowrap}
+
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pop{0%{transform:scale(1)}50%{transform:scale(1.08)}100%{transform:scale(1)}}
+.pop{animation:pop .3s ease}
+
+/* mobile */
+@media(max-width:480px){
+  .stats{width:92vw}
+  .hero{padding-top:32px}
+  .send-btn{padding:13px 38px;font-size:.95rem}
+}
+</style>
+</head>
+<body>
+<nav class="nav">
+  <a class="nav-brand" href="/">orlix</a>
+  <div class="nav-links">
+    <a href="/app">app</a>
+    <a href="/control-room">control room</a>
+    <a href="/token">$ORLIX</a>
+  </div>
+</nav>
+
+<main class="page">
+  <div class="hero">
+    <!-- GM / GN word -->
+    <div class="gm-word" id="gmWord">GM</div>
+    <div class="clock" id="clock">00:00:00</div>
+    <p class="tagline" id="tagline">Say good morning to the Base community. One tap, every day.</p>
+
+    <!-- streak if exists -->
+    <div class="streak" id="streakBadge" style="display:none">
+      <span>🔥</span> <span id="streakCount">0</span>-day streak
+    </div>
+
+    <!-- send button -->
+    <button class="send-btn" id="sendBtn" onclick="sendGM()">Say GM</button>
+
+    <!-- sent confirmation -->
+    <div class="sent-msg" id="sentMsg">
+      <div class="sent-check" id="sentEmoji">☀️</div>
+      <div class="sent-label" id="sentLabel">GM sent!</div>
+      <div class="sent-sub">Come back tonight to say GN</div>
+    </div>
+  </div>
+
+  <!-- stats -->
+  <div class="stats">
+    <div class="stat">
+      <span class="stat-val" id="statGMs">—</span>
+      <span class="stat-lbl">GMs today</span>
+    </div>
+    <div class="stat">
+      <span class="stat-val" id="statGNs">—</span>
+      <span class="stat-lbl">GNs today</span>
+    </div>
+    <div class="stat">
+      <span class="stat-val" id="statStreak">—</span>
+      <span class="stat-lbl">Your streak</span>
+    </div>
+  </div>
+
+  <!-- AI message -->
+  <div class="ai-card">
+    <div class="ai-icon" id="aiIcon">O</div>
+    <div class="ai-body">
+      <div class="ai-label">Orlix says</div>
+      <div class="ai-text loading" id="aiText"></div>
+    </div>
+  </div>
+
+  <!-- share -->
+  <div class="share-row">
+    <a class="share-btn" id="shareTwitter" href="#" target="_blank" rel="noopener">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.748l7.73-8.835L1.254 2.25H8.08l4.26 5.638L18.244 2.25zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+      Share on X
+    </a>
+    <button class="share-btn" onclick="copyGM()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+      Copy
+    </button>
+  </div>
+
+  <!-- recent feed -->
+  <div class="feed-section">
+    <div class="feed-title">Recent activity</div>
+    <div class="feed-list" id="feedList"></div>
+  </div>
+</main>
+
+<script>
+// ── helpers ──────────────────────────────────────────────────────────
+const $ = id => document.getElementById(id);
+const isGM = () => { const h = new Date().getHours(); return h >= 4 && h < 18; }
+const todayKey = () => new Date().toISOString().slice(0,10);
+const LS = { get: k => localStorage.getItem(k), set: (k,v) => localStorage.setItem(k,v) };
+
+// ── clock ─────────────────────────────────────────────────────────────
+function tickClock() {
+  const now = new Date();
+  const pad = n => String(n).padStart(2,'0');
+  $('clock').textContent = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+}
+setInterval(tickClock, 1000);
+tickClock();
+
+// ── init UI for GM vs GN ─────────────────────────────────────────────
+function initMode() {
+  const gm = isGM();
+  const word = $('gmWord');
+  const btn = $('sendBtn');
+
+  if (!gm) {
+    word.textContent = 'GN';
+    word.classList.add('gn');
+    $('tagline').textContent = 'Say good night to the Base community. Rest well, fren.';
+    btn.textContent = 'Say GN';
+    btn.classList.add('gn-btn');
+    $('sentEmoji').textContent = '🌙';
+    $('sentLabel').textContent = 'GN sent!';
+    $('sentMsg').querySelector('.sent-sub').textContent = 'See you in the morning, fren.';
+    $('aiIcon').style.background = 'linear-gradient(135deg, #A78BFA, #60A5FA)';
+  }
+
+  $('shareTwitter').href = buildTweetUrl(gm ? 'GM' : 'GN');
+}
+
+// ── streak ───────────────────────────────────────────────────────────
+function getStreak() {
+  const last = LS.get('gm_last_date');
+  const streak = parseInt(LS.get('gm_streak') || '0', 10);
+  const today = todayKey();
+  const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0,10);
+  if (last === today) return streak;
+  if (last === yesterday) return streak; // still active
+  return 0; // broken
+}
+
+function bumpStreak() {
+  const today = todayKey();
+  const last = LS.get('gm_last_date');
+  const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0,10);
+  let streak = parseInt(LS.get('gm_streak') || '0', 10);
+
+  if (last === today) return streak; // already done today
+  if (last === yesterday) streak++;
+  else streak = 1;
+
+  LS.set('gm_streak', streak);
+  LS.set('gm_last_date', today);
+  return streak;
+}
+
+function updateStreakUI(streak) {
+  $('statStreak').textContent = streak;
+  if (streak >= 2) {
+    $('streakBadge').style.display = 'flex';
+    $('streakCount').textContent = streak;
+  }
+}
+
+// ── simulated global counts (localStorage-seeded with plausible numbers) ──
+function getGlobalCounts() {
+  const key = 'gm_counts_' + todayKey();
+  let counts = JSON.parse(LS.get(key) || 'null');
+  if (!counts) {
+    // seed with plausible starting values, grows through the day
+    const hour = new Date().getHours();
+    const gmBase = Math.floor(80 + hour * 14 + Math.random() * 30);
+    const gnBase = hour >= 18 ? Math.floor(20 + (hour - 18) * 12 + Math.random() * 15) : 0;
+    counts = { gm: gmBase, gn: gnBase, bumped: false };
+    LS.set(key, JSON.stringify(counts));
+  }
+  return counts;
+}
+
+function bumpGlobalCount() {
+  const key = 'gm_counts_' + todayKey();
+  const counts = getGlobalCounts();
+  if (!counts.bumped) {
+    if (isGM()) counts.gm++;
+    else counts.gn++;
+    counts.bumped = true;
+    LS.set(key, JSON.stringify(counts));
+  }
+  return counts;
+}
+
+// ── simulated feed ────────────────────────────────────────────────────
+const FAKE_ADDRS = [
+  '0x3fA4…c8B2','0xd91C…4A0e','0x7bE2…9f1C','0xA3c8…2D4b',
+  '0x5F7a…E3c1','0x8b4D…7A2f','0x1Cd9…B5e0','0x4e2A…0C8d',
+  '0x9F3b…6E1a','0x2Da5…3B7c','0xC6e1…8A4d','0x0Fb3…5C2e',
+];
+function buildFeed() {
+  const now = Date.now();
+  const items = [];
+  const gm = isGM();
+  const modes = gm ? ['GM','GM','GM','GN','GM','GM'] : ['GN','GN','GM','GN','GN','GN'];
+  FAKE_ADDRS.forEach((addr, i) => {
+    const secsAgo = Math.floor(30 + i * 140 + Math.random() * 120);
+    const when = new Date(now - secsAgo * 1000);
+    const label = modes[i % modes.length];
+    items.push({ addr, label, when, secsAgo });
+  });
+  items.sort((a,b) => a.secsAgo - b.secsAgo);
+  return items;
+}
+function fmtAgo(secs) {
+  if (secs < 60) return `${secs}s ago`;
+  if (secs < 3600) return `${Math.floor(secs/60)}m ago`;
+  return `${Math.floor(secs/3600)}h ago`;
+}
+function renderFeed(myEntry) {
+  const items = buildFeed();
+  if (myEntry) items.unshift({ addr: 'you', label: myEntry, secsAgo: 1, when: new Date() });
+  const html = items.slice(0, 10).map(it => `
+    <div class="feed-item">
+      <span class="feed-gm${it.label==='GN'?' gn':''}">${it.label}</span>
+      <span class="feed-addr">${it.addr}</span>
+      <span class="feed-time">${fmtAgo(it.secsAgo)}</span>
+    </div>`).join('');
+  $('feedList').innerHTML = html;
+}
+
+// ── AI message ────────────────────────────────────────────────────────
+async function loadAIMessage() {
+  const cacheKey = 'gm_ai_' + todayKey() + '_' + (isGM() ? 'gm' : 'gn');
+  const cached = LS.get(cacheKey);
+  if (cached) { $('aiText').classList.remove('loading'); $('aiText').textContent = cached; return; }
+
+  const gm = isGM();
+  const hour = new Date().getHours();
+  const prompt = gm
+    ? `It's ${hour}:00. Write a single short GM message (1 sentence, max 18 words) for a crypto/Base network community. Positive, brief, no emojis, no hashtags.`
+    : `It's ${hour}:00. Write a single short GN message (1 sentence, max 18 words) for a crypto/Base network community. Reflective, brief, no emojis, no hashtags.`;
+
+  try {
+    const r = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        messages: [{ role: 'user', content: prompt }],
+        max_tokens: 60,
+        system: 'You are a friendly crypto community member. Reply with exactly one short sentence. No emojis. No quotes.',
+      }),
+    });
+    if (r.ok) {
+      const data = await r.json();
+      const text = data.content?.[0]?.text || data.reply || '';
+      if (text) {
+        $('aiText').classList.remove('loading');
+        $('aiText').textContent = text;
+        LS.set(cacheKey, text);
+        return;
+      }
+    }
+  } catch {}
+
+  // fallback
+  const fallbacks = isGM()
+    ? ['GM frens. Another day to build on Base.', 'GM. Markets open, opportunities await on Base.', 'GM. Let\'s make today count on Base.']
+    : ['GN frens. Rest up, more to build tomorrow.', 'GN. Good things happened on Base today.', 'GN. The chain never sleeps, but you should.'];
+  const text = fallbacks[new Date().getDate() % fallbacks.length];
+  $('aiText').classList.remove('loading');
+  $('aiText').textContent = text;
+  LS.set(cacheKey, text);
+}
+
+// ── send GM/GN ────────────────────────────────────────────────────────
+function sendGM() {
+  const today = todayKey();
+  const sentKey = 'gm_sent_' + today;
+  const word = isGM() ? 'GM' : 'GN';
+
+  if (LS.get(sentKey)) return; // already sent today
+
+  const btn = $('sendBtn');
+  btn.disabled = true;
+  btn.classList.add('pop');
+  setTimeout(() => btn.classList.remove('pop'), 300);
+
+  LS.set(sentKey, word);
+
+  const streak = bumpStreak();
+  const counts = bumpGlobalCount();
+
+  // show sent state
+  $('sendBtn').style.display = 'none';
+  $('sentMsg').classList.add('visible');
+
+  updateStreakUI(streak);
+  $('statGMs').textContent = counts.gm;
+  $('statGNs').textContent = counts.gn;
+
+  // update share link
+  $('shareTwitter').href = buildTweetUrl(word, streak);
+
+  renderFeed(word);
+}
+
+// ── share ─────────────────────────────────────────────────────────────
+function buildTweetUrl(word, streak) {
+  const base = streak && streak > 1
+    ? `${word} from Orlix! 🔥 ${streak}-day streak on Base. orlixai.xyz/gm`
+    : `${word} from Orlix — tracking the Base network live. orlixai.xyz/gm`;
+  return `https://twitter.com/intent/tweet?text=${encodeURIComponent(base)}`;
+}
+
+function copyGM() {
+  const word = isGM() ? 'GM' : 'GN';
+  const streak = parseInt(LS.get('gm_streak') || '1', 10);
+  const text = streak > 1
+    ? `${word} frens! Day ${streak} of saying ${word} on Orlix. orlixai.xyz/gm`
+    : `${word} frens! Saying ${word} on Orlix — Base network live tracker. orlixai.xyz/gm`;
+  navigator.clipboard?.writeText(text).catch(() => {});
+}
+
+// ── check if already sent today ───────────────────────────────────────
+function checkAlreadySent() {
+  const today = todayKey();
+  const sent = LS.get('gm_sent_' + today);
+  if (sent) {
+    $('sendBtn').style.display = 'none';
+    $('sentMsg').classList.add('visible');
+    const streak = getStreak();
+    updateStreakUI(streak);
+    $('statStreak').textContent = streak;
+    $('shareTwitter').href = buildTweetUrl(sent, streak);
+    return true;
+  }
+  return false;
+}
+
+// ── boot ──────────────────────────────────────────────────────────────
+initMode();
+
+const counts = getGlobalCounts();
+$('statGMs').textContent = counts.gm;
+$('statGNs').textContent = counts.gn;
+
+const alreadySent = checkAlreadySent();
+const streak = getStreak();
+updateStreakUI(streak);
+$('statStreak').textContent = streak || '—';
+
+renderFeed(alreadySent ? (isGM() ? 'GM' : 'GN') : null);
+loadAIMessage();
+
+// slowly tick up counts every ~45s to feel live
+setInterval(() => {
+  const k = 'gm_counts_' + todayKey();
+  const c = getGlobalCounts();
+  if (isGM()) c.gm += Math.floor(Math.random() * 3);
+  else c.gn += Math.floor(Math.random() * 2);
+  LS.set(k, JSON.stringify(c));
+  $('statGMs').textContent = c.gm;
+  $('statGNs').textContent = c.gn;
+}, 45000);
+</script>
+</body>
+</html>

@@ -20,7 +20,8 @@
     { "source": "/gallery.html",   "destination": "/gallery",   "permanent": true },
     { "source": "/login.html",     "destination": "/login",     "permanent": true },
     { "source": "/token.html",        "destination": "/token",        "permanent": true },
-    { "source": "/control-room.html", "destination": "/control-room", "permanent": true }
+    { "source": "/control-room.html", "destination": "/control-room", "permanent": true },
+    { "source": "/gm.html", "destination": "/gm", "permanent": true }
   ],
   "rewrites": [
     { "source": "/app",       "destination": "/app.html" },
@@ -31,6 +32,7 @@
     { "source": "/gallery",   "destination": "/gallery.html" },
     { "source": "/login",     "destination": "/login.html" },
     { "source": "/token",        "destination": "/token.html" },
-    { "source": "/control-room", "destination": "/control-room.html" }
+    { "source": "/control-room", "destination": "/control-room.html" },
+    { "source": "/gm", "destination": "/gm.html" }
   ]
 }
