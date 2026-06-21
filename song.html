@@ -301,7 +301,6 @@ html,body{background:var(--bg);color:var(--t2);font-family:var(--font);min-heigh
         </div>
       </div>
     </div>
-    <audio id="audio-el" preload="auto" style="display:none"></audio>
     <!-- body (loading / lyrics) -->
     <div id="lyrics-body-wrap"></div>
     <!-- actions -->
@@ -687,9 +686,11 @@ async function generate() {
   btn.disabled = true;
   btn.innerHTML = '<span class="btn-ico">⏳</span> Generating…';
 
-  // Reset player
-  if (audioEl) { audioEl.pause(); audioEl.src = ''; }
-  isPlaying = false;
+  // Unlock Web Audio during user gesture (must be before any await)
+  if (!toneReady) { try { await Tone.start(); toneReady = true; } catch {} }
+
+  // Reset beat player
+  disposeCurrentBeat();
   document.getElementById('music-player').style.display = 'none';
 
   const card = document.getElementById('lyrics-card');
@@ -780,8 +781,6 @@ document.getElementById('token-inp').addEventListener('keydown', e => {
   if (e.key === 'Enter') generate();
 });
 
-// Init audio player
-initPlayer();
 </script>
 </body>
 </html>
