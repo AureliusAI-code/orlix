@@ -27,7 +27,7 @@
     { "source": "/control-room.html", "destination": "/control-room", "permanent": true },
     { "source": "/demo.html",         "destination": "/demo",         "permanent": true },
     { "source": "/song.html",         "destination": "/song",         "permanent": true },
-    { "source": "/bankr.html",        "destination": "/bankr",        "permanent": true }
+    { "source": "/bankr.html",        "destination": "/control-room", "permanent": true }
   ],
   "rewrites": [
     { "source": "/app",       "destination": "/app.html" },
@@ -41,6 +41,6 @@
     { "source": "/control-room", "destination": "/control-room.html" },
     { "source": "/demo",         "destination": "/demo.html" },
     { "source": "/song",         "destination": "/song.html" },
-    { "source": "/bankr",        "destination": "/bankr.html" }
+    { "source": "/bankr",        "destination": "/control-room" }
   ]
 }
