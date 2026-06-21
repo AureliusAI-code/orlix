@@ -198,13 +198,46 @@ html,body{height:100%;background:var(--bg);color:var(--t1);font-family:var(--san
 
 /* responsive hide */
 @media(max-width:900px){.hide-md{display:none!important}}
+
+/* mobile filter bar */
+.mob-filters{
+  display:none;gap:6px;overflow-x:auto;padding:8px 12px;
+  border-bottom:1px solid var(--b1);background:var(--s1);
+  position:fixed;top:48px;left:0;right:0;z-index:200;
+  scrollbar-width:none;-ms-overflow-style:none;
+}
+.mob-filters::-webkit-scrollbar{display:none}
+.mf-pill{
+  flex-shrink:0;padding:5px 12px;border-radius:99px;
+  font-size:11px;font-weight:600;cursor:pointer;user-select:none;
+  border:1px solid var(--b1);background:var(--s2);color:var(--t3);
+  white-space:nowrap;transition:all .12s;
+}
+.mf-pill.active{background:rgba(240,120,48,.1);color:var(--orange);border-color:rgba(240,120,48,.3)}
+
 @media(max-width:640px){
+  html,body{overflow:auto}
   .sidebar{display:none}
   .hide-sm{display:none!important}
+  .mob-filters{display:flex}
+  .top-stats,.top-div{display:none!important}
+  .app{padding-top:calc(48px + 41px);height:auto;min-height:100vh}
+  :root{--cols:1fr 65px 50px 60px 80px}
 }
 </style>
 </head>
 <body>
+
+<!-- MOBILE FILTER BAR -->
+<div class="mob-filters" id="mob-filters">
+  <div class="mf-pill active" data-f="all"     onclick="setFilter('all',this)">◈ All</div>
+  <div class="mf-pill" data-f="hot"     onclick="setFilter('hot',this)">🔥 Hot</div>
+  <div class="mf-pill" data-f="safe"    onclick="setFilter('safe',this)">✓ Safe</div>
+  <div class="mf-pill" data-f="new"     onclick="setFilter('new',this)">◎ New</div>
+  <div class="mf-pill" data-f="gainers" onclick="setFilter('gainers',this)">↑ Gainers</div>
+  <div class="mf-pill" data-f="losers"  onclick="setFilter('losers',this)">↓ Losers</div>
+  <div class="mf-pill" data-f="bankr"   onclick="setFilter('bankr',this)">🚀 Bankr</div>
+</div>
 
 <!-- TOP BAR -->
 <header class="topbar">
@@ -260,6 +293,10 @@ html,body{height:100%;background:var(--bg);color:var(--t1);font-family:var(--san
       <div class="sb-item" data-f="losers" onclick="setFilter('losers',this)">
         <span class="sb-ico" style="color:var(--red)">↓</span> Top Losers
       </div>
+      <div class="sb-item" data-f="bankr" onclick="setFilter('bankr',this)">
+        <span class="sb-ico">🚀</span> Bankr New
+        <span class="sb-badge" id="badge-bankr">—</span>
+      </div>
     </div>
 
     <div class="sb-section">
@@ -268,16 +305,6 @@ html,body{height:100%;background:var(--bg);color:var(--t1);font-family:var(--san
         <span class="sb-ico">🔵</span> Base
         <span class="sb-badge" style="background:rgba(59,130,246,.12);color:var(--blue)">LIVE</span>
       </div>
-    </div>
-
-    <div class="sb-section">
-      <span class="sb-label">Tools</span>
-      <a class="sb-item" href="/bankr" style="text-decoration:none;color:inherit">
-        <span class="sb-ico">🚀</span> Bankr Tokens
-      </a>
-      <a class="sb-item" href="/song" style="text-decoration:none;color:inherit">
-        <span class="sb-ico">🎵</span> Token Song
-      </a>
     </div>
 
     <div class="sb-commentary">
@@ -298,10 +325,10 @@ html,body{height:100%;background:var(--bg);color:var(--t1);font-family:var(--san
       <div class="th" onclick="sortBy('symbol')">Token</div>
       <div class="th th-right" onclick="sortBy('priceUsd')">Price</div>
       <div class="th th-right" onclick="sortBy('priceChange1h')">1h %</div>
-      <div class="th th-right" onclick="sortBy('priceChange6h')">6h %</div>
-      <div class="th th-right" onclick="sortBy('priceChange24h')">24h %</div>
+      <div class="th th-right hide-sm" onclick="sortBy('priceChange6h')">6h %</div>
+      <div class="th th-right hide-sm" onclick="sortBy('priceChange24h')">24h %</div>
       <div class="th th-right" onclick="sortBy('volume1h')">Vol 1h</div>
-      <div class="th th-right" onclick="sortBy('volume24h')">Vol 24h</div>
+      <div class="th th-right hide-sm" onclick="sortBy('volume24h')">Vol 24h</div>
       <div class="th th-right hide-md" onclick="sortBy('liquidity')">Liquidity</div>
       <div class="th th-right hide-md" onclick="sortBy('marketCap')">MCap</div>
       <div class="th th-right">Txns / Links</div>
@@ -354,12 +381,62 @@ function logoColor(sym){
 
 // ── state ────────────────────────────────────────────────────────────────────
 let allTokens=[], seenAddrs=new Set(), activeFilter='all', searchQ='', sortKey='volume1h', sortDir=-1, isFirst=true;
+let bankrTokens=[], bankrState='idle'; // idle | loading | done | error
+
+function normalizeBankrToken(t){
+  const addr=(t.address||'').toLowerCase();
+  const swaps=t.swaps_1h||0;
+  return{
+    symbol:t.symbol||'?',
+    name:t.name||t.symbol||'?',
+    address:addr,
+    priceUsd:t.price||null,
+    priceChange1h:null,priceChange6h:null,priceChange24h:null,
+    volume1h:t.volume_1h||null,
+    volume24h:null,
+    liquidity:t.liquidity||null,
+    marketCap:t.usd_market_cap||null,
+    buys1h:swaps?Math.round(swaps*.55):0,
+    sells1h:swaps?Math.round(swaps*.45):0,
+    pairUrl:`https://dexscreener.com/base/${addr}`,
+    pairCreatedAt:t.created_timestamp?t.created_timestamp*1000:null,
+  };
+}
+
+async function loadBankr(){
+  if(bankrState==='loading') return;
+  bankrState='loading';
+  document.getElementById('status-txt').textContent='Loading Bankr…';
+  try{
+    const r=await fetch('/api/bankr-tokens');
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const data=await r.json();
+    if(data.error) throw new Error(data.error);
+    const all=[
+      ...(data.data?.new_creation||[]),
+      ...(data.data?.pump||[]),
+      ...(data.data?.completed||[]),
+    ];
+    bankrTokens=all.map(normalizeBankrToken);
+    document.getElementById('badge-bankr').textContent=bankrTokens.length||'0';
+    bankrState='done';
+    if(activeFilter==='bankr') renderTable(bankrTokens,false);
+    document.getElementById('status-txt').textContent='Bankr updated '+new Date().toLocaleTimeString();
+  }catch(e){
+    bankrState='error';
+    document.getElementById('status-txt').textContent='Bankr error: '+e.message.slice(0,40);
+  }
+}
 
 // ── filter + sort ────────────────────────────────────────────────────────────
 function setFilter(f, el){
   activeFilter=f;
-  document.querySelectorAll('.sb-item[data-f]').forEach(e=>e.classList.toggle('active',e.dataset.f===f));
-  renderTable(allTokens, false);
+  document.querySelectorAll('.sb-item[data-f],.mf-pill[data-f]').forEach(e=>e.classList.toggle('active',e.dataset.f===f));
+  if(f==='bankr'){
+    loadBankr();
+  } else {
+    renderTable(allTokens, false);
+  }
 }
 
 let searchTimer=null;
@@ -419,9 +496,9 @@ function sortBy(key){
 
 function applyAll(tokens){
   let t=[...tokens];
-  // local search (fast pre-filter before DexScreener results arrive)
+  // local search
   if(searchQ) t=t.filter(x=>(x.symbol||'').toLowerCase().includes(searchQ)||(x.name||'').toLowerCase().includes(searchQ)||(x.address||'').toLowerCase().includes(searchQ));
-  // filter
+  // filter (skip for bankr — already pre-filtered)
   if(activeFilter==='safe') t=t.filter(x=>(x.liquidity||0)>=50000);
   else if(activeFilter==='hot') t=t.filter(x=>(x.volume1h||0)>=5000);
   else if(activeFilter==='new') t=t.filter(x=>x.pairCreatedAt&&(Date.now()-x.pairCreatedAt)<7*86400000);
@@ -462,10 +539,10 @@ function buildRow(t, isNew){
   </div>
   <div class="tc-num">${fmtPrice(t.priceUsd)}</div>
   <div class="tc-num ${cc(t.priceChange1h)}">${fmtChg(t.priceChange1h)}</div>
-  <div class="tc-num ${cc(t.priceChange6h)}">${fmtChg(t.priceChange6h)}</div>
-  <div class="tc-num ${cc(t.priceChange24h)}">${fmtChg(t.priceChange24h)}</div>
+  <div class="tc-num hide-sm ${cc(t.priceChange6h)}">${fmtChg(t.priceChange6h)}</div>
+  <div class="tc-num hide-sm ${cc(t.priceChange24h)}">${fmtChg(t.priceChange24h)}</div>
   <div class="tc-num">${fmtUsd(t.volume1h)}</div>
-  <div class="tc-num">${fmtUsd(t.volume24h)}</div>
+  <div class="tc-num hide-sm">${fmtUsd(t.volume24h)}</div>
   <div class="tc-num hide-md">${fmtUsd(t.liquidity)}</div>
   <div class="tc-num hide-md">${fmtUsd(t.marketCap)}</div>
   <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px">
