@@ -327,7 +327,7 @@ function buildEntry(t, isNew){
           <div class="e-sym">$${esc(t.symbol||'???')}</div>
           <div class="e-name">${esc(t.name)}</div>
         </div>
-        <div class="e-vol">${fmtUsd(t.volume1h)}</div>
+        <div class="e-vol">${fmtUsd(t.volume1h || t.volume24h)}</div>
         ${chgTxt ? `<div class="e-chg ${chgCls(t.priceChange1h)}">${chgTxt}</div>` : '<div class="e-chg neu">—</div>'}
         <div class="e-liq" title="Liquidity">${fmtUsd(t.liquidity)}</div>
         <span class="safe-badge">SAFE</span>
@@ -343,23 +343,22 @@ function renderFeed(){
   el.innerHTML = feedEntries.map(e => e.html).join('');
 }
 
-function processNewData(safePairs){
+function processNewData(safePairs, isFirstLoad){
   const newEntries = [];
 
   for(const t of safePairs){
     if(!t.address) continue;
     const prev = lastVolMap[t.address];
-    const vol = t.volume1h || 0;
-    const isNew = prev == null || Math.abs(vol - prev) > 500;
-    if(isNew){
-      newEntries.push(buildEntry(t, true));
-      lastVolMap[t.address] = vol;
+    const vol = t.volume1h || t.volume24h || 0;
+    // On first load: show everything. After: only show if volume changed
+    const isNew = isFirstLoad ? (prev == null) : (prev != null && Math.abs(vol - (prev.vol || 0)) > 200);
+    if(prev == null || isNew){
+      if(prev == null || isNew) newEntries.push(buildEntry(t, !isFirstLoad));
+      lastVolMap[t.address] = { vol, ts: Date.now() };
     }
   }
 
   if(newEntries.length === 0) return false;
-
-  // Prepend new entries (newest first)
   feedEntries = [...newEntries, ...feedEntries].slice(0, MAX_FEED);
   return true;
 }
@@ -443,6 +442,7 @@ document.addEventListener('keydown', e=>{if(e.key==='Escape') closeModal();});
 // ── fetch & update loop ────────────────────────────────────────────────────
 
 let pollTimer = null;
+let isFirstLoad = true;
 
 async function fetchAndUpdate(){
   if(fetching) return;
@@ -466,7 +466,8 @@ async function fetchAndUpdate(){
     document.getElementById('s-vol').textContent = fmtUsd(totalVol);
 
     // Process new feed entries
-    const hadNew = processNewData(safePairs);
+    const hadNew = processNewData(safePairs, isFirstLoad);
+    isFirstLoad = false;
     if(feedEntries.length === 0 && !hadNew){
       // First load with no data - show skeleton message
       document.getElementById('live-feed').innerHTML = `

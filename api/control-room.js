@@ -130,11 +130,16 @@ function deriveWhales(pairs) {
     .map(mapPair);
 }
 
-// Live activity: SAFE tokens (liq >= 20k) with any 1h action (>= 500)
+// Live activity: any non-stablecoin Base token with liquidity >= 1k and some 24h volume
 function deriveLiveActivity(pairs) {
   return pairs
-    .filter(p => (p.liquidity?.usd || 0) >= 20000 && (p.volume?.h1 || 0) >= 500)
-    .sort((a, b) => (b.volume?.h1 || 0) - (a.volume?.h1 || 0))
+    .filter(p => (p.liquidity?.usd || 0) >= 1000 && (p.volume?.h24 || 0) >= 50)
+    .sort((a, b) => {
+      // Sort by 1h volume first, fall back to 24h volume
+      const va = (b.volume?.h1 || 0) || (b.volume?.h24 || 0) / 24;
+      const vb = (a.volume?.h1 || 0) || (a.volume?.h24 || 0) / 24;
+      return va - vb;
+    })
     .slice(0, 50)
     .map(mapPair);
 }
