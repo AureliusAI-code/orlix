@@ -198,6 +198,17 @@ html,body{height:100%;background:var(--bg);color:var(--t1);font-family:var(--san
 .empty-ico{font-size:28px;opacity:.25}
 .empty-msg{font-size:13px}
 
+/* bankr section headers */
+.sec-hd{
+  grid-column:1/-1;display:flex;align-items:center;gap:8px;
+  padding:4px 2px 8px;margin-top:6px;
+  border-bottom:1px solid var(--b1);
+}
+.sec-hd:first-child{margin-top:0}
+.sec-ico{font-size:14px}
+.sec-title{font-size:11px;font-weight:700;color:var(--t2);letter-spacing:.04em;flex:1}
+.sec-count{font-size:10px;color:var(--t3);font-family:var(--mono)}
+
 /* ── MODAL ── */
 .overlay{display:none;position:fixed;inset:0;background:rgba(7,7,10,.88);
   backdrop-filter:blur(6px);z-index:500;align-items:center;justify-content:center}
@@ -445,7 +456,7 @@ function logoColor(sym){
 
 // ── state ────────────────────────────────────────────────────────────────────
 let allTokens=[], seenAddrs=new Set(), activeFilter='all', searchQ='', sortKey='volume1h', sortDir=-1, isFirst=true;
-let bankrTokens=[], bankrState='idle'; // idle | loading | done | error
+let bankrTokens=[], bankrRaw={new_creation:[],pump:[],completed:[]}, bankrState='idle';
 
 function normalizeBankrToken(t){
   const addr=(t.address||'').toLowerCase();
@@ -464,7 +475,56 @@ function normalizeBankrToken(t){
     sells1h:swaps?Math.round(swaps*.45):0,
     pairUrl:`https://dexscreener.com/base/${addr}`,
     pairCreatedAt:t.created_timestamp?t.created_timestamp*1000:null,
+    _logo:t.logo||null,
+    _smart:t.smart_degen_count||0,
+    _kol:t.renowned_count||0,
+    _rug:typeof t.rug_ratio==='number'?t.rug_ratio:parseFloat(t.rug_ratio||1),
   };
+}
+
+function renderBankr(){
+  const body=document.getElementById('tbl-body');
+  const sk=document.getElementById('skeletons');
+  if(sk) sk.remove();
+
+  const norm=cat=>cat.map(normalizeBankrToken);
+  const nc=norm(bankrRaw.new_creation);
+  const pu=norm(bankrRaw.pump);
+  const co=norm(bankrRaw.completed);
+  const all=[...nc,...pu,...co];
+
+  const topMcap=[...all].filter(t=>t.marketCap).sort((a,b)=>(b.marketCap||0)-(a.marketCap||0)).slice(0,8);
+  const topVol=[...all].filter(t=>t.volume1h).sort((a,b)=>(b.volume1h||0)-(a.volume1h||0)).slice(0,8);
+  const smart=[...all].filter(t=>t._smart>0||t._kol>0).sort((a,b)=>(b._smart+b._kol)-(a._smart+a._kol)).slice(0,8);
+
+  function section(ico,title,tokens,count){
+    if(!tokens.length) return '';
+    return `<div class="sec-hd"><span class="sec-ico">${ico}</span><span class="sec-title">${title}</span><span class="sec-count">${count!=null?count:tokens.length}</span></div>`
+      + tokens.map(t=>buildCard(t,false)).join('');
+  }
+
+  body.innerHTML=
+    section('🆕','New',''+nc.length,nc.slice(0,12))+
+    section('⏳','Near Graduation',''+pu.length,pu.slice(0,8))+
+    section('✅','Graduated',''+co.length,co.slice(0,8))+
+    (topMcap.length?section('💰','Top MCap','',topMcap):'')+
+    (topVol.length?section('🔥','Top Volume','',topVol):'')+
+    (smart.length?section('🧠','Smart Money','',smart):'');
+
+  // fix: section() params were wrong — rewrite inline
+  body.innerHTML='';
+  function addSection(ico,title,badge,tokens){
+    if(!tokens.length) return;
+    body.insertAdjacentHTML('beforeend',
+      `<div class="sec-hd"><span class="sec-ico">${ico}</span><span class="sec-title">${title}</span><span class="sec-count">${badge}</span></div>`
+      +tokens.map(t=>buildCard(t,false)).join(''));
+  }
+  addSection('🆕','New',nc.length,nc.slice(0,12));
+  addSection('⏳','Near Graduation',pu.length,pu.slice(0,8));
+  addSection('✅','Graduated',co.length,co.slice(0,8));
+  if(topMcap.length) addSection('💰','Top MCap',topMcap.length,topMcap);
+  if(topVol.length)  addSection('🔥','Top Volume',topVol.length,topVol);
+  if(smart.length)   addSection('🧠','Smart Money',smart.length,smart);
 }
 
 async function loadBankr(){
@@ -476,15 +536,15 @@ async function loadBankr(){
     if(!r.ok) throw new Error('HTTP '+r.status);
     const data=await r.json();
     if(data.error) throw new Error(data.error);
-    const all=[
-      ...(data.data?.new_creation||[]),
-      ...(data.data?.pump||[]),
-      ...(data.data?.completed||[]),
-    ];
-    bankrTokens=all.map(normalizeBankrToken);
-    document.getElementById('badge-bankr').textContent=bankrTokens.length||'0';
+    bankrRaw={
+      new_creation:data.data?.new_creation||[],
+      pump:data.data?.pump||[],
+      completed:data.data?.completed||[],
+    };
+    const total=bankrRaw.new_creation.length+bankrRaw.pump.length+bankrRaw.completed.length;
+    document.getElementById('badge-bankr').textContent=total||'0';
     bankrState='done';
-    if(activeFilter==='bankr') renderTable(bankrTokens,false);
+    if(activeFilter==='bankr') renderBankr();
     document.getElementById('status-txt').textContent='Bankr updated '+new Date().toLocaleTimeString();
   }catch(e){
     bankrState='error';
@@ -497,7 +557,7 @@ function setFilter(f, el){
   activeFilter=f;
   document.querySelectorAll('.sb-item[data-f],.mf-pill[data-f]').forEach(e=>e.classList.toggle('active',e.dataset.f===f));
   if(f==='bankr'){
-    loadBankr();
+    if(bankrState==='done') renderBankr(); else loadBankr();
   } else {
     renderTable(allTokens, false);
   }
@@ -584,7 +644,7 @@ function buildCard(t, isNew){
   const buys=t.buys1h||0, sells=t.sells1h||0, total=buys+sells;
   const buyPct=total>0?Math.round(buys/total*100):50;
   const [clr,bg]=logoColor(sym);
-  const logoUrl=`https://dd.dexscreener.com/ds-data/tokens/base/${(t.address||'').toLowerCase()}.png`;
+  const logoUrl=t._logo||`https://dd.dexscreener.com/ds-data/tokens/base/${(t.address||'').toLowerCase()}.png`;
   const age=t.pairCreatedAt?fmtAgo(t.pairCreatedAt):'';
   const bsColor=buyPct>=50?'bs-g':'bs-r';
 
@@ -709,7 +769,7 @@ async function fetchData(){
     document.getElementById('s-safe').textContent=safe||'—';
 
     const markNew=!isFirst; isFirst=false;
-    renderTable(allTokens, markNew);
+    if(activeFilter!=='bankr') renderTable(allTokens, markNew);
 
     if(data.commentary) document.getElementById('commentary-txt').textContent=data.commentary;
     document.getElementById('status-txt').textContent='Updated '+new Date().toLocaleTimeString();
