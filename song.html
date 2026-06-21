@@ -513,7 +513,7 @@ function showMusicLoading(sym) {
       <span>Generating ${selectedGenre} beat for $${sym}</span>
       <span class="gen-dots"><span>.</span><span>.</span><span>.</span></span>
     </div>
-    <div style="font-size:9px;color:var(--t3);margin-top:4px;font-family:var(--mono)">~30 seconds via HuggingFace MusicGen</div>`;
+    <div style="font-size:9px;color:var(--t3);margin-top:4px;font-family:var(--mono)">~30 seconds via Mubert AI Music</div>`;
   document.getElementById('play-btn').disabled = true;
   document.getElementById('play-btn').textContent = '♪';
 }
@@ -527,19 +527,13 @@ async function generateMusic(sym, genre) {
     });
     if (!res.ok) throw new Error((await res.json().catch(()=>({}))).error || `HTTP ${res.status}`);
     const data = await res.json();
-    if (data.audioData) {
-      const binary = atob(data.audioData);
-      const bytes = new Uint8Array(binary.length);
-      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-      const blob = new Blob([bytes], { type: data.contentType || 'audio/flac' });
-      const blobUrl = URL.createObjectURL(blob);
-      setAudioReady(blobUrl, sym, genre);
-    } else throw new Error('No audio returned');
+    if (data.audioUrl) setAudioReady(data.audioUrl, sym, genre);
+    else throw new Error('No audio returned');
   } catch (e) {
     const info = document.getElementById('player-info');
     const msg = e.message || String(e);
     const isNoKey = msg.includes('no_key') || msg.includes('not set');
-    if (info) info.innerHTML = `<div style="font-size:.75rem;color:var(--t3)">${isNoKey ? '⚙ Add HUGGINGFACE_API_KEY in Vercel to enable music' : '⚠ ' + msg.slice(0, 120)}</div>`;
+    if (info) info.innerHTML = `<div style="font-size:.75rem;color:var(--t3)">${isNoKey ? '⚙ Add MUBERT_API_KEY in Vercel to enable music' : '⚠ ' + msg.slice(0, 120)}</div>`;
   }
 }
 

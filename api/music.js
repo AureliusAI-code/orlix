@@ -1,4 +1,4 @@
-// /api/music.js — generate music via Hugging Face MusicGen (free tier)
+// /api/music.js — generate music via Mubert TTM API (free tier)
 const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
@@ -15,17 +15,30 @@ const GENRE_PROMPTS = {
   ballad: 'emotional piano ballad, orchestral strings, melancholic melody, slow tempo, cinematic',
 };
 
-// HuggingFace hosted MusicGen — completely free with a free HF account
-const HF_MODEL = 'https://api-inference.huggingface.co/models/facebook/musicgen-small';
+const MUBERT_API = 'https://api.mubert.com/v2';
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+async function mubertPost(path, params, apiKey) {
+  const r = await fetch(`${MUBERT_API}/${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ method: path, params: { pat: apiKey, ...params } }),
+    signal: AbortSignal.timeout(10000),
+  });
+  if (!r.ok) throw new Error(`Mubert HTTP ${r.status}`);
+  const data = await r.json();
+  if (data.status !== 1) throw new Error(`Mubert: ${data.error?.text || JSON.stringify(data).slice(0, 200)}`);
+  return data;
+}
 
 module.exports = async (req, res) => {
   if (req.method === 'OPTIONS') { res.writeHead(204, CORS); return res.end(); }
   if (req.method !== 'POST') { res.writeHead(405, CORS); return res.end(JSON.stringify({ error: 'POST only' })); }
 
-  const apiKey = process.env.HUGGINGFACE_API_KEY;
+  const apiKey = process.env.MUBERT_API_KEY;
   if (!apiKey) {
     res.writeHead(503, CORS);
-    return res.end(JSON.stringify({ error: 'no_key', message: 'HUGGINGFACE_API_KEY not set' }));
+    return res.end(JSON.stringify({ error: 'no_key', message: 'MUBERT_API_KEY not set' }));
   }
 
   let body = '';
@@ -37,39 +50,37 @@ module.exports = async (req, res) => {
   }
 
   genre = (genre || 'trap').toLowerCase();
-  const prompt = (GENRE_PROMPTS[genre] || GENRE_PROMPTS.trap) + (symbol ? `, ${symbol} token anthem` : '');
+  const prompt = (GENRE_PROMPTS[genre] || GENRE_PROMPTS.trap) + (symbol ? `, ${symbol} anthem` : '');
 
   try {
-    const hfRes = await fetch(HF_MODEL, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-        'X-Wait-For-Model': 'true',
-      },
-      body: JSON.stringify({
-        inputs: prompt,
-        parameters: { max_new_tokens: 512 },
-      }),
-      signal: AbortSignal.timeout(55000),
-    });
+    // Start generation
+    const startData = await mubertPost('RecordTrackTTM', {
+      text: prompt,
+      duration: 30,
+      format: 'mp3',
+      intensity: 'medium',
+    }, apiKey);
 
-    if (!hfRes.ok) {
-      const errText = await hfRes.text().catch(() => hfRes.status);
-      throw new Error(`HuggingFace ${hfRes.status}: ${String(errText).slice(0, 200)}`);
+    const taskId = startData.data?.tasks?.[0]?.task_id;
+    if (!taskId) throw new Error('No task ID returned from Mubert');
+
+    // Poll every 3.5s, up to 50s total
+    for (let i = 0; i < 14; i++) {
+      await sleep(3500);
+      const pollData = await mubertPost('GetTrackTTM', { task_id: taskId }, apiKey);
+      const task = pollData.data?.tasks?.[0];
+      if (!task) continue;
+
+      if (task.task_activation_status === 'Done' && task.download_link) {
+        res.writeHead(200, CORS);
+        return res.end(JSON.stringify({ audioUrl: task.download_link, genre }));
+      }
+      if (task.task_activation_status === 'Error') {
+        throw new Error('Mubert task failed');
+      }
     }
 
-    // HF returns raw audio bytes
-    const audioBuffer = await hfRes.arrayBuffer();
-    const base64 = Buffer.from(audioBuffer).toString('base64');
-    const contentType = hfRes.headers.get('content-type') || 'audio/flac';
-
-    res.writeHead(200, CORS);
-    res.end(JSON.stringify({
-      audioData: base64,
-      contentType,
-      genre,
-    }));
+    throw new Error('Music generation timed out (>50s)');
   } catch (e) {
     res.writeHead(502, CORS);
     res.end(JSON.stringify({ error: e.message }));
