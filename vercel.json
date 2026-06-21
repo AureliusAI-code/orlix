@@ -25,8 +25,6 @@
     { "source": "/login.html",     "destination": "/login",     "permanent": true },
     { "source": "/token.html",        "destination": "/token",        "permanent": true },
     { "source": "/control-room.html", "destination": "/control-room", "permanent": true },
-    { "source": "/demo.html",         "destination": "/demo",         "permanent": true },
-    { "source": "/demo-aeon.html",    "destination": "/demo-aeon",    "permanent": true },
     { "source": "/song.html",         "destination": "/song",         "permanent": true },
     { "source": "/bankr.html",        "destination": "/control-room", "permanent": true }
   ],
@@ -40,8 +38,6 @@
     { "source": "/login",     "destination": "/login.html" },
     { "source": "/token",        "destination": "/token.html" },
     { "source": "/control-room", "destination": "/control-room.html" },
-    { "source": "/demo",         "destination": "/demo.html" },
-    { "source": "/demo-aeon",    "destination": "/demo-aeon.html" },
     { "source": "/song",         "destination": "/song.html" },
     { "source": "/bankr",        "destination": "/control-room" }
   ]
