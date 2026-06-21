@@ -659,7 +659,7 @@ function buildCard(t, isNew){
       <div class="card-ini" style="background:${bg};color:${clr}">${esc(sym.slice(0,3))}</div>
     </div>
     <div class="card-id">
-      <div class="card-sym">$${esc(sym)}</div>
+      <div class="card-sym">${t.rank?`<span style="font-size:9px;color:var(--t3);font-family:var(--mono);margin-right:3px">#${t.rank}</span>`:''}$${esc(sym)}</div>
       <div class="card-name">${esc(name)}</div>
     </div>
     ${age?`<div class="card-age">${esc(age)}</div>`:''}
