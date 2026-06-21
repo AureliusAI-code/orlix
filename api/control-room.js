@@ -37,6 +37,8 @@ const BASE_SEARCHES = [
   // Additional ecosystem
   'CYBER','TAO','GODS','PIXEL','FARM','DARK',
   'MORPHO','COIN','DEGEN','TOSHI',
+  // Bankr ecosystem
+  'BNKR','BANKR',
 ];
 
 let dataCache = { data: null, ts: 0 };
