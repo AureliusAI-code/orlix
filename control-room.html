@@ -602,8 +602,12 @@ function renderSearchResults(tokens){
 function sortBy(key){
   if(sortKey===key) sortDir*=-1; else{sortKey=key;sortDir=-1;}
   document.querySelectorAll('.sort-pill').forEach(p=>p.classList.toggle('active',p.dataset.s===key));
-  const tokens=activeFilter==='bankr'?bankrTokens:allTokens;
-  renderTable(tokens, false);
+  if(activeFilter==='bankr'){
+    const all=[...bankrRaw.new_creation,...bankrRaw.pump,...bankrRaw.completed].map(normalizeBankrToken);
+    renderTable(all, false);
+  } else {
+    renderTable(allTokens, false);
+  }
 }
 
 function applyAll(tokens){
