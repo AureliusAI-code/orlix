@@ -91,77 +91,110 @@ html,body{height:100%;background:var(--bg);color:var(--t1);font-family:var(--san
 /* ── MAIN ── */
 .main{flex:1;display:flex;flex-direction:column;overflow:hidden}
 
-/* table header row */
-.tbl-header{
-  display:grid;grid-template-columns:var(--cols);
-  padding:0 12px;height:32px;align-items:center;
+/* sort bar */
+.sort-bar{
+  display:flex;align-items:center;gap:6px;padding:8px 14px;
   border-bottom:1px solid var(--b1);background:var(--s1);
-  position:sticky;top:0;z-index:10;
-  font-size:10px;font-weight:600;color:var(--t3);
-  text-transform:uppercase;letter-spacing:.06em;
-  flex-shrink:0;
+  overflow-x:auto;scrollbar-width:none;flex-shrink:0;
 }
-.th{cursor:pointer;display:flex;align-items:center;gap:3px;user-select:none;transition:color .12s;white-space:nowrap}
-.th:hover{color:var(--t1)}
-.th.asc::after{content:'↑';color:var(--orange);margin-left:2px}
-.th.desc::after{content:'↓';color:var(--orange);margin-left:2px}
-.th-right{justify-content:flex-end}
-
-/* table body */
-.tbl-body{flex:1;overflow-y:auto}
-.tbl-body::-webkit-scrollbar{width:4px}
-.tbl-body::-webkit-scrollbar-track{background:transparent}
-.tbl-body::-webkit-scrollbar-thumb{background:var(--s4);border-radius:2px}
-
-.trow{
-  display:grid;grid-template-columns:var(--cols);
-  padding:0 12px;height:var(--row-h);align-items:center;
-  border-bottom:1px solid rgba(255,255,255,.03);
-  cursor:pointer;transition:background .1s;
+.sort-bar::-webkit-scrollbar{display:none}
+.sort-lbl{font-size:9px;font-weight:700;color:var(--t3);letter-spacing:.1em;text-transform:uppercase;white-space:nowrap;flex-shrink:0}
+.sort-pill{
+  padding:4px 10px;border-radius:99px;font-size:10px;font-weight:600;
+  cursor:pointer;border:1px solid var(--b1);background:transparent;
+  color:var(--t3);white-space:nowrap;transition:all .12s;flex-shrink:0;
+  font-family:var(--sans);
 }
-.trow:hover{background:rgba(255,255,255,.04)}
-.trow.new-flash{animation:rowFlash .8s ease forwards}
-@keyframes rowFlash{
-  0%{background:rgba(34,197,94,.12)}
-  100%{background:transparent}
+.sort-pill:hover{color:var(--t1);border-color:var(--b2)}
+.sort-pill.active{background:rgba(240,120,48,.1);color:var(--orange);border-color:rgba(240,120,48,.3)}
+
+/* card grid */
+.card-grid{
+  flex:1;overflow-y:auto;
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
+  gap:10px;padding:12px;
+  align-content:start;
+}
+.card-grid::-webkit-scrollbar{width:4px}
+.card-grid::-webkit-scrollbar-track{background:transparent}
+.card-grid::-webkit-scrollbar-thumb{background:var(--s4);border-radius:2px}
+
+/* token card */
+.tok-card{
+  background:var(--s1);border:1px solid var(--b1);border-radius:14px;
+  padding:13px;cursor:pointer;
+  transition:border-color .15s,background .15s,transform .12s;
+  display:flex;flex-direction:column;gap:10px;
+}
+.tok-card:hover{border-color:var(--b2);background:var(--s2);transform:translateY(-1px)}
+.tok-card.new-flash{animation:cardFlash .9s ease forwards}
+@keyframes cardFlash{
+  0%{border-color:rgba(34,197,94,.5);background:rgba(34,197,94,.06)}
+  100%{border-color:var(--b1);background:var(--s1)}
 }
 
-/* token cell */
-.tc-token{display:flex;align-items:center;gap:8px;min-width:0;overflow:hidden}
-.tok-wrap{position:relative;width:26px;height:26px;flex-shrink:0}
-.tok-logo{width:26px;height:26px;border-radius:50%;background:var(--s4);object-fit:cover;display:block}
-.tok-ini{width:26px;height:26px;border-radius:50%;position:absolute;top:0;left:0;align-items:center;justify-content:center;font-size:9px;font-weight:800;letter-spacing:.01em}
-.tc-info{display:flex;flex-direction:column;min-width:0;overflow:hidden}
-.tc-sym{font-weight:700;font-size:12px;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.tc-name{font-size:10px;color:var(--t3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+/* card head */
+.card-head{display:flex;align-items:center;gap:9px}
+.card-logo-wrap{position:relative;width:38px;height:38px;flex-shrink:0}
+.card-logo{width:38px;height:38px;border-radius:50%;object-fit:cover;display:block}
+.card-ini{
+  width:38px;height:38px;border-radius:50%;
+  position:absolute;top:0;left:0;
+  display:none;align-items:center;justify-content:center;
+  font-size:11px;font-weight:800;letter-spacing:.01em;
+}
+.card-id{flex:1;min-width:0}
+.card-sym{font-weight:800;font-size:13px;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card-name{font-size:10px;color:var(--t3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+.card-age{font-family:var(--mono);font-size:9px;color:var(--t3);white-space:nowrap;flex-shrink:0}
 
-/* number cells */
-.tc-num{font-family:var(--mono);font-size:11px;text-align:right;white-space:nowrap}
-.pos{color:var(--green)}.neg{color:var(--red)}.neu{color:var(--t3)}
-.tc-links{display:flex;gap:4px;justify-content:flex-end}
-.tc-link{font-size:9px;color:var(--t3);text-decoration:none;padding:2px 5px;border-radius:3px;background:var(--s4);transition:color .12s;white-space:nowrap}
-.tc-link:hover{color:var(--t1)}
+/* price row */
+.card-price-row{display:flex;align-items:center;justify-content:space-between;gap:6px}
+.card-price{font-family:var(--mono);font-size:14px;font-weight:600;color:var(--t1)}
+.card-chg-wrap{display:flex;gap:4px}
+.chg-badge{
+  font-family:var(--mono);font-size:10px;font-weight:600;
+  padding:2px 7px;border-radius:5px;white-space:nowrap;
+}
+.chg-badge.pos{background:rgba(34,197,94,.1);color:var(--green)}
+.chg-badge.neg{background:rgba(239,68,68,.1);color:var(--red)}
+.chg-badge.neu{background:var(--s4);color:var(--t3)}
 
-/* buy/sell bar inline */
-.bs-mini{display:flex;align-items:center;gap:3px}
-.bs-bar{height:3px;border-radius:2px;background:var(--s4);overflow:hidden;width:40px;flex-shrink:0}
+/* stats grid */
+.card-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+.cs{display:flex;flex-direction:column;gap:2px}
+.cs-l{font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:.06em}
+.cs-v{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--t1)}
+
+/* card footer */
+.card-foot{display:flex;align-items:center;justify-content:space-between;padding-top:8px;border-top:1px solid var(--b1)}
+.bs-mini{display:flex;align-items:center;gap:4px}
+.bs-bar{height:3px;border-radius:2px;background:var(--s4);overflow:hidden;width:36px;flex-shrink:0}
 .bs-fill{height:100%;border-radius:2px}
 .bs-g{background:var(--green)}.bs-r{background:var(--red)}
 .bs-num{font-family:var(--mono);font-size:9px;color:var(--t3);white-space:nowrap}
-
-/* skeletons */
-.sk-row{
-  display:grid;grid-template-columns:var(--cols);
-  padding:0 12px;height:var(--row-h);align-items:center;
-  border-bottom:1px solid rgba(255,255,255,.03);
+.card-links{display:flex;gap:4px}
+.tc-link{
+  font-size:9px;color:var(--t3);text-decoration:none;
+  padding:3px 7px;border-radius:5px;background:var(--s4);
+  transition:color .12s;white-space:nowrap;border:1px solid transparent;
 }
-.sk-cell{border-radius:4px;background:linear-gradient(90deg,var(--s2) 0%,var(--s4) 50%,var(--s2) 100%);
-  background-size:200%;animation:shim 1.5s infinite;height:12px}
+.tc-link:hover{color:var(--t1);border-color:var(--b2)}
+.tc-link.primary{background:rgba(240,120,48,.1);color:var(--orange);border-color:rgba(240,120,48,.2)}
+
+/* skeleton cards */
+.sk-card{
+  background:var(--s1);border:1px solid var(--b1);border-radius:14px;
+  padding:13px;display:flex;flex-direction:column;gap:10px;
+}
+.sk-cell{border-radius:6px;background:linear-gradient(90deg,var(--s2) 0%,var(--s4) 50%,var(--s2) 100%);
+  background-size:200%;animation:shim 1.5s infinite}
 @keyframes shim{0%{background-position:-200% 0}100%{background-position:200% 0}}
 
 /* empty */
 .empty{display:flex;flex-direction:column;align-items:center;justify-content:center;
-  padding:80px 20px;gap:12px;color:var(--t3)}
+  padding:80px 20px;gap:12px;color:var(--t3);grid-column:1/-1}
 .empty-ico{font-size:28px;opacity:.25}
 .empty-msg{font-size:13px}
 
@@ -222,7 +255,8 @@ html,body{height:100%;background:var(--bg);color:var(--t1);font-family:var(--san
   .mob-filters{display:flex}
   .top-stats,.top-div{display:none!important}
   .app{padding-top:calc(48px + 41px);height:auto;min-height:100vh}
-  :root{--cols:1fr 65px 50px 60px 80px}
+  .card-grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px;padding:8px}
+  .sort-bar{padding:6px 10px}
 }
 </style>
 </head>
@@ -313,30 +347,20 @@ html,body{height:100%;background:var(--bg);color:var(--t1);font-family:var(--san
     </div>
   </aside>
 
-  <!-- MAIN TABLE -->
+  <!-- MAIN CARDS -->
   <main class="main">
-    <!-- column layout var -->
-    <style>
-      :root{--cols:200px 90px 60px 60px 60px 80px 80px 75px 75px 100px}
-    </style>
-
-    <!-- header -->
-    <div class="tbl-header">
-      <div class="th" onclick="sortBy('symbol')">Token</div>
-      <div class="th th-right" onclick="sortBy('priceUsd')">Price</div>
-      <div class="th th-right" onclick="sortBy('priceChange1h')">1h %</div>
-      <div class="th th-right hide-sm" onclick="sortBy('priceChange6h')">6h %</div>
-      <div class="th th-right hide-sm" onclick="sortBy('priceChange24h')">24h %</div>
-      <div class="th th-right" onclick="sortBy('volume1h')">Vol 1h</div>
-      <div class="th th-right hide-sm" onclick="sortBy('volume24h')">Vol 24h</div>
-      <div class="th th-right hide-md" onclick="sortBy('liquidity')">Liquidity</div>
-      <div class="th th-right hide-md" onclick="sortBy('marketCap')">MCap</div>
-      <div class="th th-right">Txns / Links</div>
+    <div class="sort-bar">
+      <span class="sort-lbl">Sort</span>
+      <button class="sort-pill active" data-s="volume1h"    onclick="sortBy('volume1h')">Vol 1h</button>
+      <button class="sort-pill"        data-s="priceChange1h" onclick="sortBy('priceChange1h')">1h %</button>
+      <button class="sort-pill"        data-s="priceChange24h" onclick="sortBy('priceChange24h')">24h %</button>
+      <button class="sort-pill"        data-s="marketCap"   onclick="sortBy('marketCap')">MCap</button>
+      <button class="sort-pill"        data-s="liquidity"   onclick="sortBy('liquidity')">Liq</button>
+      <button class="sort-pill"        data-s="priceUsd"    onclick="sortBy('priceUsd')">Price</button>
+      <button class="sort-pill"        data-s="symbol"      onclick="sortBy('symbol')">A–Z</button>
     </div>
 
-    <!-- rows -->
-    <div class="tbl-body" id="tbl-body">
-      <!-- skeletons (rendered by JS) -->
+    <div class="card-grid" id="tbl-body">
       <div id="skeletons"></div>
     </div>
   </main>
@@ -361,8 +385,29 @@ html,body{height:100%;background:var(--bg);color:var(--t1);font-family:var(--san
 // ── skeletons ────────────────────────────────────────────────────────────────
 (function(){
   const sk=document.getElementById('skeletons');
-  const cell='<div class="sk-cell"></div>';
-  sk.innerHTML=Array(12).fill(`<div class="sk-row">${Array(10).fill(cell).join('')}</div>`).join('');
+  sk.style.cssText='display:contents';
+  sk.innerHTML=Array(16).fill(`
+    <div class="sk-card">
+      <div class="card-head">
+        <div class="sk-cell" style="width:38px;height:38px;border-radius:50%;flex-shrink:0"></div>
+        <div style="flex:1;display:flex;flex-direction:column;gap:5px">
+          <div class="sk-cell" style="height:13px;width:70%"></div>
+          <div class="sk-cell" style="height:10px;width:50%"></div>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div class="sk-cell" style="height:14px;width:80px"></div>
+        <div class="sk-cell" style="height:18px;width:50px;border-radius:5px"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
+        ${Array(3).fill('<div style="display:flex;flex-direction:column;gap:3px"><div class="sk-cell" style="height:9px;width:60%"></div><div class="sk-cell" style="height:11px"></div></div>').join('')}
+      </div>
+      <div style="display:flex;justify-content:space-between;padding-top:8px;border-top:1px solid var(--b1)">
+        <div class="sk-cell" style="height:10px;width:80px"></div>
+        <div class="sk-cell" style="height:10px;width:60px"></div>
+      </div>
+    </div>
+  `).join('');
 })();
 
 // ── utils ────────────────────────────────────────────────────────────────────
@@ -482,16 +527,14 @@ function renderSearchResults(tokens){
     body.innerHTML='<div class="empty"><div class="empty-ico">◌</div><div class="empty-msg">No tokens found</div></div>';
     return;
   }
-  body.innerHTML=tokens.map(t=>buildRow(t,false)).join('');
+  body.innerHTML=tokens.map(t=>buildCard(t,false)).join('');
 }
 
 function sortBy(key){
   if(sortKey===key) sortDir*=-1; else{sortKey=key;sortDir=-1;}
-  document.querySelectorAll('.th').forEach(th=>{th.classList.remove('asc','desc')});
-  const idx=['symbol','priceUsd','priceChange1h','priceChange6h','priceChange24h','volume1h','volume24h','liquidity','marketCap'].indexOf(key);
-  const ths=document.querySelectorAll('.th');
-  if(idx>=0){ths[idx].classList.add(sortDir===-1?'desc':'asc')}
-  renderTable(allTokens, false);
+  document.querySelectorAll('.sort-pill').forEach(p=>p.classList.toggle('active',p.dataset.s===key));
+  const tokens=activeFilter==='bankr'?bankrTokens:allTokens;
+  renderTable(tokens, false);
 }
 
 function applyAll(tokens){
@@ -515,8 +558,8 @@ function applyAll(tokens){
   return t;
 }
 
-// ── row builder ──────────────────────────────────────────────────────────────
-function buildRow(t, isNew){
+// ── card builder ──────────────────────────────────────────────────────────────
+function buildCard(t, isNew){
   const sym=t.symbol||'???';
   const name=t.name||sym;
   const buys=t.buys1h||0, sells=t.sells1h||0, total=buys+sells;
@@ -526,35 +569,48 @@ function buildRow(t, isNew){
   const age=t.pairCreatedAt?fmtAgo(t.pairCreatedAt):'';
   const bsColor=buyPct>=50?'bs-g':'bs-r';
 
-  return `<div class="trow${isNew?' new-flash':''}" onclick="openModal('${esc(t.address||'')}','$${esc(sym)}','${esc(t.pairUrl||'')}')">
-  <div class="tc-token">
-    <div class="tok-wrap">
-      <img class="tok-logo" src="${esc(logoUrl)}" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
-      <div class="tok-ini" style="display:none;background:${bg};color:${clr}">${esc(sym.slice(0,3))}</div>
+  function chgBadge(n){
+    if(n==null||isNaN(n)) return '';
+    const cls=n>0?'pos':n<0?'neg':'neu';
+    return `<span class="chg-badge ${cls}">${n>=0?'+':''}${n.toFixed(1)}%</span>`;
+  }
+
+  return `<div class="tok-card${isNew?' new-flash':''}" onclick="openModal('${esc(t.address||'')}','$${esc(sym)}','${esc(t.pairUrl||'')}')">
+  <div class="card-head">
+    <div class="card-logo-wrap">
+      <img class="card-logo" src="${esc(logoUrl)}" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
+      <div class="card-ini" style="background:${bg};color:${clr}">${esc(sym.slice(0,3))}</div>
     </div>
-    <div class="tc-info">
-      <div class="tc-sym">$${esc(sym)}</div>
-      <div class="tc-name">${esc(name)}</div>
+    <div class="card-id">
+      <div class="card-sym">$${esc(sym)}</div>
+      <div class="card-name">${esc(name)}</div>
+    </div>
+    ${age?`<div class="card-age">${esc(age)}</div>`:''}
+  </div>
+
+  <div class="card-price-row">
+    <div class="card-price">${fmtPrice(t.priceUsd)}</div>
+    <div class="card-chg-wrap">
+      ${chgBadge(t.priceChange1h)}
+      ${chgBadge(t.priceChange24h)}
     </div>
   </div>
-  <div class="tc-num">${fmtPrice(t.priceUsd)}</div>
-  <div class="tc-num ${cc(t.priceChange1h)}">${fmtChg(t.priceChange1h)}</div>
-  <div class="tc-num hide-sm ${cc(t.priceChange6h)}">${fmtChg(t.priceChange6h)}</div>
-  <div class="tc-num hide-sm ${cc(t.priceChange24h)}">${fmtChg(t.priceChange24h)}</div>
-  <div class="tc-num">${fmtUsd(t.volume1h)}</div>
-  <div class="tc-num hide-sm">${fmtUsd(t.volume24h)}</div>
-  <div class="tc-num hide-md">${fmtUsd(t.liquidity)}</div>
-  <div class="tc-num hide-md">${fmtUsd(t.marketCap)}</div>
-  <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px">
+
+  <div class="card-stats">
+    <div class="cs"><div class="cs-l">Vol 1h</div><div class="cs-v">${fmtUsd(t.volume1h)}</div></div>
+    <div class="cs"><div class="cs-l">MCap</div><div class="cs-v">${fmtUsd(t.marketCap)}</div></div>
+    <div class="cs"><div class="cs-l">Liq</div><div class="cs-v">${fmtUsd(t.liquidity)}</div></div>
+  </div>
+
+  <div class="card-foot">
     ${total>0?`<div class="bs-mini">
       <span class="bs-num" style="color:var(--green)">B${buys}</span>
       <div class="bs-bar"><div class="bs-fill ${bsColor}" style="width:${buyPct}%"></div></div>
       <span class="bs-num" style="color:var(--red)">S${sells}</span>
-    </div>`:''}
-    <div class="tc-links">
-      ${age?`<span style="font-family:var(--mono);font-size:9px;color:var(--t3)">${esc(age)}</span>`:''}
-      <a class="tc-link" href="${esc(t.pairUrl||'#')}" target="_blank" rel="noopener" onclick="event.stopPropagation()">DEX</a>
-      <a class="tc-link" href="https://basescan.org/token/${esc(t.address||'')}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Scan</a>
+    </div>`:'<div></div>'}
+    <div class="card-links" onclick="event.stopPropagation()">
+      <a class="tc-link primary" href="${esc(t.pairUrl||'#')}" target="_blank" rel="noopener">DEX</a>
+      <a class="tc-link" href="https://basescan.org/token/${esc(t.address||'')}" target="_blank" rel="noopener">Scan</a>
     </div>
   </div>
 </div>`;
@@ -573,7 +629,7 @@ function renderTable(tokens, markNew){
     body.innerHTML='<div class="empty"><div class="empty-ico">◌</div><div class="empty-msg">No tokens match</div></div>';
     return;
   }
-  body.innerHTML=filtered.map(t=>buildRow(t,markNew&&!seenAddrs.has(t.address))).join('');
+  body.innerHTML=filtered.map(t=>buildCard(t,markNew&&!seenAddrs.has(t.address))).join('');
   if(markNew) filtered.forEach(t=>seenAddrs.add(t.address));
 }
 
