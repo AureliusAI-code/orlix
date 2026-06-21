@@ -185,24 +185,24 @@ module.exports = async (req, res) => {
 
   const allTokens = await fetchAllPairs();
 
-  // Sort by 1h volume desc (most active first), fallback to 24h
-  allTokens.sort((a, b) =>
-    ((b.volume1h || 0) || (b.volume24h || 0) / 24) -
-    ((a.volume1h || 0) || (a.volume24h || 0) / 24)
-  );
+  // Sort by 24h volume desc — best proxy for DexScreener trending rank
+  allTokens.sort((a, b) => (b.volume24h || 0) - (a.volume24h || 0));
 
-  const totalVol1h = allTokens.reduce((s, t) => s + (t.volume1h || 0), 0);
-  const safeCount = allTokens.filter(t => (t.liquidity || 0) >= 50000).length;
+  // Top 100 only
+  const top100 = allTokens.slice(0, 100);
+
+  const totalVol1h = top100.reduce((s, t) => s + (t.volume1h || 0), 0);
+  const safeCount = top100.filter(t => (t.liquidity || 0) >= 50000).length;
 
   const stats = {
-    total: allTokens.length,
+    total: top100.length,
     safeCount,
     totalVol1h,
     ts: now,
   };
 
-  const liveActivity = allTokens;
-  const trending = [...allTokens].sort((a, b) => (b.volume24h || 0) - (a.volume24h || 0)).slice(0, 15);
+  const liveActivity = top100;
+  const trending = top100.slice(0, 15);
 
   const commentary = await generateCommentary(allTokens, process.env.ANTHROPIC_API_KEY);
 
