@@ -455,17 +455,11 @@ async function fetchAndUpdate(){
     const data = await r.json();
 
     // Safe tokens = liq > 50k AND vol1h > 1k
-    const safePairs = (data.whaleActivity || [])
-      .concat(data.trending || [])
-      .filter((t, i, arr) => {
-        // deduplicate by address
-        return arr.findIndex(x => x.address === t.address) === i;
-      })
-      .filter(t => (t.liquidity || 0) >= 50000 && (t.volume1h || 0) >= 1000)
-      .sort((a, b) => (b.volume1h || 0) - (a.volume1h || 0));
+    // liveActivity = pre-filtered by backend: liq >= 20k, vol1h >= 500, no stablecoins
+    const safePairs = data.liveActivity || [];
 
     const safeCount = safePairs.length;
-    const totalVol = safePairs.reduce((s, t) => s + (t.volume1h || 0), 0);
+    const totalVol = data.stats?.totalVolume1h || 0;
 
     // Update stats
     document.getElementById('s-safe').textContent = safeCount || '—';

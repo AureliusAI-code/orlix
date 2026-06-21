@@ -3,7 +3,8 @@
 const EXCLUDE_SYMBOLS = new Set([
   'USDT','USDC','DAI','WETH','WBTC','CBETH','USDBC','USDB',
   'EURC','CRVUSD','LUSD','FRAX','SUSD','BUSD','GUSD','TUSD',
-  'AERO','RETH','STETH','WSTETH',
+  'RETH','STETH','WSTETH',
+  // AERO intentionally NOT excluded — it's a real Base-native token
 ]);
 
 const CORS = {
@@ -129,6 +130,15 @@ function deriveWhales(pairs) {
     .map(mapPair);
 }
 
+// Live activity: SAFE tokens (liq >= 20k) with any 1h action (>= 500)
+function deriveLiveActivity(pairs) {
+  return pairs
+    .filter(p => (p.liquidity?.usd || 0) >= 20000 && (p.volume?.h1 || 0) >= 500)
+    .sort((a, b) => (b.volume?.h1 || 0) - (a.volume?.h1 || 0))
+    .slice(0, 50)
+    .map(mapPair);
+}
+
 async function generateCommentary(data, apiKey) {
   if (!apiKey) return '';
   const now = Date.now();
@@ -191,15 +201,17 @@ module.exports = async (req, res) => {
 
   const pairs = await fetchBasePairPool();
 
-  const newTokens    = deriveNewTokens(pairs);
-  const trending     = deriveTrending(pairs);
+  const newTokens     = deriveNewTokens(pairs);
+  const trending      = deriveTrending(pairs);
   const whaleActivity = deriveWhales(pairs);
+  const liveActivity  = deriveLiveActivity(pairs);
 
-  const totalVolume1h = whaleActivity.reduce((s, w) => s + (w.volume1h || 0), 0);
+  const totalVolume1h = liveActivity.reduce((s, w) => s + (w.volume1h || 0), 0);
   const stats = {
     newTokensCount: newTokens.length,
     trendingCount: trending.length,
     whaleCount: whaleActivity.length,
+    liveCount: liveActivity.length,
     totalVolume1h,
     pairsScanned: pairs.length,
     ts: now,
@@ -210,7 +222,7 @@ module.exports = async (req, res) => {
     process.env.ANTHROPIC_API_KEY
   );
 
-  const data = { newTokens, trending, whaleActivity, stats, commentary };
+  const data = { newTokens, trending, whaleActivity, liveActivity, stats, commentary };
   dataCache = { data, ts: now };
 
   res.writeHead(200, CORS);
