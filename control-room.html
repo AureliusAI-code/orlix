@@ -806,9 +806,21 @@ async function fetchData(){
   }finally{
     fetching=false;
     clearTimeout(timer);
-    timer=setTimeout(fetchData,10000);
+    // Only schedule next fetch when the tab is visible — stops browser
+    // loading indicators from appearing in background tabs
+    if(!document.hidden) timer=setTimeout(fetchData,10000);
   }
 }
+
+// Pause when tab goes to background, resume immediately when it comes back
+document.addEventListener('visibilitychange',()=>{
+  if(document.hidden){
+    clearTimeout(timer);
+    timer=null;
+  } else {
+    fetchData();
+  }
+});
 
 fetchData();
 </script>
