@@ -111,6 +111,7 @@ Structure the song with:
 (2-4 lines — strong finish)
 
 Rules:
+- Write ONLY in English
 - Make it genuinely creative and funny/hype
 - Weave in the REAL stats naturally (the price, the % change, the volume)
 - Include the token symbol $${token.symbol} multiple times
@@ -161,7 +162,7 @@ module.exports = async (req, res) => {
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
         max_tokens: 1024,
-        system: 'You are a creative, witty songwriter who specializes in crypto culture music. You write genuinely funny, hype, and creative lyrics that reference real token stats.',
+        system: 'You are a creative, witty songwriter who specializes in crypto culture music. You ALWAYS write in English only. You write genuinely funny, hype, and creative lyrics that reference real token stats.',
         messages: [{ role: 'user', content: prompt }],
       }),
       signal: AbortSignal.timeout(30000),
