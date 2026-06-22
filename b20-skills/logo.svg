@@ -1,27 +1,26 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
-  <defs>
-    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#1a1a1a"/>
-      <stop offset="100%" style="stop-color:#0d0d0d"/>
-    </linearGradient>
-    <linearGradient id="hex" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#F07830"/>
-      <stop offset="100%" style="stop-color:#E05A10"/>
-    </linearGradient>
-  </defs>
-  <!-- Background circle -->
-  <circle cx="50" cy="50" r="50" fill="url(#bg)"/>
-  <!-- Outer hex -->
-  <polygon points="50,8 84,28 84,72 50,92 16,72 16,28"
-    fill="none" stroke="#F07830" stroke-width="2.5" stroke-opacity="0.5"/>
-  <!-- Inner hex filled -->
-  <polygon points="50,18 76,33 76,67 50,82 24,67 24,33"
-    fill="url(#hex)" opacity="0.15"/>
-  <!-- Core hex -->
-  <polygon points="50,26 70,37 70,63 50,74 30,63 30,37"
-    fill="url(#hex)" opacity="0.9"/>
-  <!-- B20 text -->
-  <text x="50" y="56" font-family="'SF Pro Display','Helvetica Neue',Arial,sans-serif"
-    font-size="16" font-weight="800" fill="#ffffff"
-    text-anchor="middle" letter-spacing="-0.5">B20</text>
+  <!-- Background -->
+  <rect width="100" height="100" fill="#111111"/>
+
+  <!-- White circle ring — 300° arc, 60° gap on left side -->
+  <path d="M 17.1,31 A 38,38 0 1 1 17.1,69"
+    fill="none" stroke="#FFFFFF" stroke-width="8.5" stroke-linecap="round"/>
+
+  <!-- Small upper-left stub -->
+  <path d="M 12.6,40.2 A 38,38 0 0 1 17.1,31"
+    fill="none" stroke="#FFFFFF" stroke-width="8.5" stroke-linecap="round"/>
+
+  <!-- Small lower-left stub -->
+  <path d="M 17.1,69 A 38,38 0 0 1 12.6,59.8"
+    fill="none" stroke="#FFFFFF" stroke-width="8.5" stroke-linecap="round"/>
+
+  <!-- Orange > chevron -->
+  <polyline points="24,33 44,50 24,67"
+    fill="none" stroke="#E07828" stroke-width="8.5" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- White | cursor line -->
+  <line x1="50" y1="46" x2="50" y2="66" stroke="#FFFFFF" stroke-width="5" stroke-linecap="round"/>
+
+  <!-- Orange _ underscore -->
+  <line x1="54" y1="66" x2="76" y2="66" stroke="#E07828" stroke-width="6.5" stroke-linecap="round"/>
 </svg>
