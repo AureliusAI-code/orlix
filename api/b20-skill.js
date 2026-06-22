@@ -101,7 +101,7 @@ function abiEncode(types, values) {
 // B20 factory calldata
 // Assumed ABI: create(string,string,uint8,uint256,address,uint8,uint8,string)
 // Selector confirmed pending official Base Beryl ABI publication
-const B20_SELECTOR = 'b20facade'; // placeholder — visually obvious, updated at Beryl activation
+const B20_SELECTOR = 'b20b20b2'; // placeholder (4 bytes) — official selector published at Beryl activation
 const B20_TYPES    = ['string','string','uint8','uint256','address','uint8','uint8','string'];
 
 function buildCalldata(config, policyBits) {
@@ -523,7 +523,7 @@ async function handlePrepare(body, res) {
     config,
 
     chain: {
-      network, chainId: CHAIN_ID[net],
+      network: net, chainId: CHAIN_ID[net],
       blockNumber: gas?.blockNumber ?? null,
       adminBalance: ethBalance,
       gas: gas ? {
@@ -535,7 +535,7 @@ async function handlePrepare(body, res) {
 
     deployment: {
       factory:    B20_FACTORY,
-      network,
+      network:    net,
       chainId:    CHAIN_ID[net],
       policyBits,
       calldata: {
