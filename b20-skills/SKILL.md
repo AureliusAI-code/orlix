@@ -1,13 +1,10 @@
 ---
 name: orlix-b20
-description: B20 token skill on Base via Orlix AI. Use when an agent wants to create a B20 token (Base's native precompile token standard, Beryl upgrade), validate a config with live gas + admin balance check from Base RPC, build a complete ABI-encoded EIP-1559 deployment transaction, read any ERC-20 on Base, check wallet ETH balances, get current gas prices, or verify a tx receipt. No authentication required. Supports Base mainnet and Base Sepolia.
+description: Deploy and manage B20 tokens on Base via Orlix AI. Use when an agent wants to create a B20 token (Base's native precompile token standard, Beryl upgrade), validate a config with live gas + admin balance from Base RPC, build a complete ABI-encoded EIP-1559 deployment transaction, read any ERC-20 on Base, check wallet ETH balances, get current gas prices, or verify a tx receipt. No auth required. Supports Base mainnet and Base Sepolia.
 metadata:
-  {
-    "clawdbot": {
-      "emoji": "⬡",
-      "homepage": "https://orlixai.xyz/b20",
-    }
-  }
+  clawdbot:
+    emoji: "⬡"
+    homepage: "https://orlixai.xyz/b20"
 ---
 
 # Orlix B20
@@ -27,12 +24,12 @@ All actions use real Base RPC calls. Gas prices, nonces, and balances are fetche
 | Action | Method | What it does |
 |--------|--------|-------------|
 | `info` | GET | Live chain status, gas prices, B20 standard overview |
-| `gas` | GET | EIP-1559 gas breakdown with deploy cost estimate |
+| `gas` | GET | EIP-1559 gas breakdown with deploy cost estimate in ETH |
 | `balance` | POST | ETH balance + optional ERC-20 balance for any address |
-| `token_info` | POST | Read name, symbol, decimals, total supply for any ERC-20 on Base |
-| `validate` | POST | Deep B20 config check + live admin ETH balance vs. gas estimate |
+| `token_info` | POST | Name, symbol, decimals, total supply for any ERC-20 on Base |
+| `validate` | POST | Deep B20 config check + live admin balance vs. gas estimate |
 | `prepare` | POST | Complete EIP-1559 deployment tx with live gas + nonce from Base |
-| `receipt` | POST | Tx hash status + deployed token address extracted from factory logs |
+| `receipt` | POST | Tx status + deployed token address from factory logs |
 
 ---
 
@@ -46,24 +43,24 @@ bankr prompt "Use the Orlix B20 skill to get current chain info and gas on Base"
 bankr prompt "Use Orlix B20 skill to check the ETH balance of 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"
 
 # Read any ERC-20 token on Base
-bankr prompt "Use Orlix B20 skill to get token info for 0x799c28BAC95B3E0B26534D1e9A586511895EcBA3 on Base"
+bankr prompt "Use Orlix B20 skill to get token info for 0x799c28BAC95B3E0B26534D1e9A586511895EcBA3"
 
-# Validate a B20 config (live balance check included)
+# Validate a B20 config (live balance + gas check included)
 bankr prompt "Use Orlix B20 skill to validate: name='BNKR Token', symbol='BNKR', variant=asset, decimals=18, admin=0x1234..."
 
-# Prepare a full deployment bundle (real gas + nonce)
+# Prepare a full deployment bundle (real gas + nonce from Base RPC)
 bankr prompt "Use Orlix B20 skill to prepare a B20 asset token: name='My Token', symbol='MTK', 10M supply cap, admin=0x1234..., blocklist policy"
 
 # Stablecoin with allowlist
 bankr prompt "Use Orlix B20 skill to prepare a B20 stablecoin: name='OrUSD', symbol='OUSD', supply_cap=100000000, admin=0xABCD..., allowlist policy"
 
-# Check a transaction receipt
+# Check a deployment receipt
 bankr prompt "Use Orlix B20 skill to check receipt of 0xabc...123 on Base"
 ```
 
 ---
 
-## Reference
+## API Reference
 
 ### GET `?action=info`
 
@@ -112,7 +109,7 @@ curl -X POST https://orlixai.xyz/api/b20-skill \
   }'
 ```
 
-Reads name, symbol, decimals, and total supply via live `eth_call`. Add `"holder"` to also return that address's balance.
+Reads name, symbol, decimals, and total supply via live `eth_call`. Add `"holder"` to also return that address's token balance.
 
 ---
 
@@ -132,7 +129,7 @@ curl -X POST https://orlixai.xyz/api/b20-skill \
   }'
 ```
 
-Validates all config params, then fetches the admin wallet's live ETH balance from Base and compares it against the current deploy cost estimate. Returns a `chainCheck` block with the results.
+Validates all config fields, then fetches the admin wallet's live ETH balance from Base and compares it against the current deploy cost estimate.
 
 ---
 
@@ -154,7 +151,7 @@ curl -X POST https://orlixai.xyz/api/b20-skill \
   }'
 ```
 
-Returns ABI-encoded calldata for the B20 factory precompile and a complete unsigned EIP-1559 transaction with live gas and nonce fetched from Base. Sign and broadcast once B20 activates.
+Returns ABI-encoded calldata for the B20 factory precompile and a complete unsigned EIP-1559 transaction with live gas and nonce from Base.
 
 **Response shape:**
 ```json
@@ -169,23 +166,22 @@ Returns ABI-encoded calldata for the B20 factory precompile and a complete unsig
     "adminBalance": { "ether": "0.023100" },
     "gas": { "baseFeeGwei": "0.0012", "maxFeePerGas": "0x...", "maxPriorityFeePerGas": "0x..." }
   },
+  "txSummary": {
+    "maxFeePerGas": "0.0025 gwei (0x...)",
+    "maxPriorityFee": "0.001 gwei (0x...)",
+    "estimatedCost": "~0.0005 ETH at current Base gas",
+    "nonce": 4
+  },
   "deployment": {
     "factory": "0x4200000000000000000000000000000000000B20",
-    "policyBits": 2,
-    "calldata": {
-      "data": "0x...",
-      "abiSig": "create(string,string,uint8,uint256,address,uint8,uint8,string)"
-    },
+    "calldata": { "data": "0x..." },
     "tx": {
       "type": "0x02",
       "chainId": "0x2105",
       "to": "0x4200000000000000000000000000000000000B20",
       "value": "0x0",
       "data": "0x...",
-      "gas": "0x30d40",
-      "maxFeePerGas": "0x...",
-      "maxPriorityFeePerGas": "0x...",
-      "nonce": "0x4"
+      "gas": "0x30d40"
     }
   }
 }
@@ -215,7 +211,7 @@ Returns `success` / `pending` / `failed`, gas used, block number, and parses the
 |-------|------|----------|-------|
 | `name` | string | ✓ | Max 64 chars |
 | `symbol` | string | ✓ | Max 11 alphanumeric chars |
-| `admin` | string | ✓ | 0x wallet — required unless `adminless: true` |
+| `admin` | string | ✓ | 0x wallet address (unless `adminless: true`) |
 | `variant` | `asset` \| `stablecoin` | — | Default: `asset` |
 | `decimals` | integer 6–18 | — | Default: 18. Fixed at 6 for stablecoin. |
 | `supply_cap` | string | — | Integer string. `"0"` = uncapped. |
@@ -230,9 +226,9 @@ Returns `success` / `pending` / `failed`, gas used, block number, and parses the
 
 ## B20 Variants
 
-**`asset`** — general-purpose. Configurable decimals (6–18), rebasing support, issuer metadata. Good for governance tokens, onchain-native assets, and real-world assets.
+**`asset`** — general-purpose. Configurable decimals (6–18), rebasing support, issuer metadata. For governance tokens, onchain-native assets, and real-world assets.
 
-**`stablecoin`** — fiat-focused. Fixed 6 decimals, currency code field. Good for fiat-backed stablecoins and regulated assets.
+**`stablecoin`** — fiat-focused. Fixed 6 decimals, currency code field. For fiat-backed stablecoins and regulated assets.
 
 Both variants are ERC-20 compatible — no changes needed in wallets, DEXes, or indexers.
 
@@ -240,7 +236,7 @@ Both variants are ERC-20 compatible — no changes needed in wallets, DEXes, or 
 
 ## Compliance Policies
 
-Policies are set at deploy time. Encoded as a bitmask in the factory call.
+Encoded as a bitmask in the factory call at deploy time.
 
 | Policy | Bit | Description |
 |--------|-----|-------------|
@@ -256,10 +252,19 @@ Policies are set at deploy time. Encoded as a bitmask in the factory call.
 
 | Network | Chain ID | RPC |
 |---------|----------|-----|
-| Base (mainnet) | 8453 | https://mainnet.base.org |
-| Base Sepolia (testnet) | 84532 | https://sepolia.base.org |
+| Base mainnet | 8453 | https://mainnet.base.org |
+| Base Sepolia | 84532 | https://sepolia.base.org |
 
-Pass `"network": "sepolia"` to any POST action to target testnet.
+Pass `"network": "sepolia"` to any POST action to use testnet.
+
+---
+
+## B20 Factory
+
+- **Address:** `0x4200000000000000000000000000000000000B20`
+- **Standard:** Base Beryl native precompile
+- **Signature:** `create(string,string,uint8,uint256,address,uint8,uint8,string)`
+- **Chain:** Base mainnet (chainId 8453)
 
 ---
 
