@@ -1,5 +1,4 @@
 // /api/b20 — B20 token standard info + token list on Base
-// Beryl mainnet: June 25, 2026
 const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, OPTIONS',
@@ -26,7 +25,7 @@ module.exports = async (req, res) => {
       standard: 'B20',
       network: 'Base',
       upgrade: 'Beryl',
-      mainnetDate: '2026-06-25',
+      mainnetDate: null,
       mainnetLive,
       msUntilMainnet: mainnetLive ? 0 : BERYL_MAINNET_TS - now,
       testnet: {
@@ -71,7 +70,7 @@ module.exports = async (req, res) => {
         tokens: [],
         total: 0,
         mainnetLive: false,
-        message: 'B20 tokens go live on Base mainnet June 25, 2026. Check back then.',
+        message: 'B20 tokens go live when Base activates the standard.',
         msUntilMainnet: BERYL_MAINNET_TS - now,
         testnetExplorer: 'https://sepolia.basescan.org',
       }));

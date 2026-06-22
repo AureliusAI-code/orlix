@@ -13,6 +13,7 @@
     "api/music.js":        { "maxDuration": 60 },
     "api/bankr-tokens.js": { "maxDuration": 20 },
     "api/b20.js":          { "maxDuration": 15 },
+    "api/b20-skill.js":    { "maxDuration": 10 },
     "api/search.js":       { "maxDuration": 10 },
     "api/telegram.js":     { "maxDuration": 60 }
   },

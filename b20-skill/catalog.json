@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "slug": "orlix-b20",
+  "provider": "Orlix AI",
+  "providerUrl": "https://orlixai.xyz",
+  "logo": "/b20-logo.png",
+  "name": "Orlix B20 Token Skill",
+  "description": "Create, validate, and deploy B20 tokens on Base through Orlix AI. Asset & Stablecoin variants, supply caps, role-based access, compliance policies (allowlist, blocklist, freeze).",
+  "status": "gated",
+  "standard": "B20/Beryl",
+  "network": "Base",
+  "chainId": 8453,
+  "endpoint": "https://orlixai.xyz/api/b20-skill",
+  "manifest": "https://orlixai.xyz/api/b20-skill?action=manifest",
+  "demo": {
+    "title": "orlix-b20-demo.sh",
+    "language": "bash",
+    "code": "# Prepare a B20 Asset token deployment\ncurl -X POST https://orlixai.xyz/api/b20-skill \\\n  -H 'Content-Type: application/json' \\\n  -d '{\n    \"action\": \"prepare\",\n    \"name\": \"BNKR Token\",\n    \"symbol\": \"BNKR\",\n    \"variant\": \"asset\",\n    \"decimals\": 18,\n    \"supply_cap\": \"1000000000\",\n    \"admin\": \"0xYOUR_WALLET\",\n    \"policies\": { \"blocklist\": true }\n  }'\n\n# Validate config only\ncurl -X POST https://orlixai.xyz/api/b20-skill \\\n  -H 'Content-Type: application/json' \\\n  -d '{ \"action\": \"validate\", \"name\": \"My Token\", \"symbol\": \"MTK\", \"admin\": \"0x...\" }'\n\n# Get B20 standard info\ncurl 'https://orlixai.xyz/api/b20-skill?action=info'\n\n# Get full tool manifest (Claude + OpenAI format)\ncurl 'https://orlixai.xyz/api/b20-skill?action=manifest'"
+  },
+  "setup": [
+    "No setup required — the API is open and does not require authentication",
+    "POST to https://orlixai.xyz/api/b20-skill with action=prepare and your token config",
+    "The skill returns a validated config, deterministic address preview, and deployment params",
+    "B20 deploys go live when Base activates the standard — save the config and deploy then",
+    "For a visual configurator, use the B20 Studio at https://orlixai.xyz/b20"
+  ],
+  "actions": [
+    {
+      "name": "prepare",
+      "description": "Validate config + return deployment bundle (address preview, params, deployment data)",
+      "method": "POST",
+      "body": { "action": "prepare", "name": "...", "symbol": "...", "admin": "0x..." }
+    },
+    {
+      "name": "validate",
+      "description": "Validate config only — returns errors and warnings",
+      "method": "POST",
+      "body": { "action": "validate", "name": "...", "symbol": "...", "admin": "0x..." }
+    },
+    {
+      "name": "info",
+      "description": "B20 standard status, variants, and features",
+      "method": "GET",
+      "url": "https://orlixai.xyz/api/b20-skill?action=info"
+    },
+    {
+      "name": "manifest",
+      "description": "Full tool schema in Claude + OpenAI function-calling format",
+      "method": "GET",
+      "url": "https://orlixai.xyz/api/b20-skill?action=manifest"
+    }
+  ],
+  "links": {
+    "studio": "https://orlixai.xyz/b20",
+    "app": "https://orlixai.xyz",
+    "docs": "https://orlixai.xyz/docs",
+    "control_room": "https://orlixai.xyz/control-room",
+    "api_info": "https://orlixai.xyz/api/b20?action=info"
+  }
+}

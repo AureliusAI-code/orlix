@@ -39,6 +39,22 @@ Full Orlix access inside Telegram via **@orlixai_bot**.
 - Token analysis on any Base address
 - No app needed
 
+### ⬡ B20 Token Studio
+Configure and deploy B20 tokens on Base — the native precompile token standard from Base Beryl.
+
+- Visual configurator at **orlixai.xyz/b20**
+- **Agent API**: `POST https://orlixai.xyz/api/b20-skill`
+- Asset & Stablecoin variants
+- Supply caps, roles, compliance policies (allowlist, blocklist, freeze)
+- Deploys go live when Base activates the standard
+
+```bash
+# Prepare a B20 token via agent
+bankr prompt "Use Orlix B20 skill to prepare a token: name=BNKR Token, symbol=BNKR, variant=asset, decimals=18, admin=0x1234..., policies.blocklist=true"
+```
+
+---
+
 ### 🪙 $ORLIX Token
 Native token powering the Orlix ecosystem, live on Base.
 
