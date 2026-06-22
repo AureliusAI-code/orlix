@@ -975,7 +975,7 @@ select.inp{cursor:pointer}
 
           <div style="border-top:1px solid rgba(255,255,255,.06);padding-top:18px;margin-top:4px">
             <div class="setting-label" style="margin-bottom:6px">Connection Diagnostic</div>
-            <button class="btn" id="testPingBtn" style="font-size:.78rem">Test /api/ping</button>
+            <button class="btn" id="testPingBtn" style="font-size:.78rem">Test /api/b20</button>
             <button class="btn" id="testChatBtn" style="font-size:.78rem;margin-left:8px">Test /api/chat</button>
             <div id="diagResult" style="margin-top:10px;font-size:.74rem;font-family:'JetBrains Mono',monospace;line-height:1.6;white-space:pre-wrap;color:var(--dim)"></div>
           </div>
@@ -2103,13 +2103,13 @@ document.getElementById('bkSaveProxy').addEventListener('click',()=>{
 document.getElementById('testPingBtn').addEventListener('click', async()=>{
   const el = document.getElementById('diagResult');
   el.style.color='var(--dim)';
-  el.textContent = 'Testing /api/ping...';
+  el.textContent = 'Testing /api/b20...';
   try{
-    const r = await fetch('/api/ping');
-    const text = await r.text();
-    if(r.ok){ el.style.color='var(--green)'; el.textContent='✓ /api/ping OK ('+r.status+')\n'+text+'\n\nVercel function is deployed and working!'; }
-    else{ el.style.color='var(--amber)'; el.textContent='✗ /api/ping returned '+r.status+'\n'+text; }
-  }catch(e){ el.style.color='#ff6b6b'; el.textContent='✗ /api/ping failed: '+e.message+'\n\nVercel function not deployed. Redeploy on Vercel dashboard.'; }
+    const r = await fetch('/api/b20?action=info');
+    const data = await r.json();
+    if(r.ok){ el.style.color='var(--green)'; el.textContent='✓ /api/b20 OK ('+r.status+')\nstandard: '+data.standard+', network: '+data.network+'\n\nVercel functions are deployed and working!'; }
+    else{ el.style.color='var(--amber)'; el.textContent='✗ /api/b20 returned '+r.status; }
+  }catch(e){ el.style.color='#ff6b6b'; el.textContent='✗ /api/b20 failed: '+e.message+'\n\nVercel function not deployed. Redeploy on Vercel dashboard.'; }
 });
 
 document.getElementById('testChatBtn').addEventListener('click', async()=>{
