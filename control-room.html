@@ -282,6 +282,7 @@ html,body{height:100%;background:var(--bg);color:var(--t1);font-family:var(--san
   <div class="mf-pill" data-f="gainers" onclick="setFilter('gainers',this)">↑ Gainers</div>
   <div class="mf-pill" data-f="losers"  onclick="setFilter('losers',this)">↓ Losers</div>
   <div class="mf-pill" data-f="bankr"   onclick="setFilter('bankr',this)">🚀 Bankr</div>
+  <div class="mf-pill" data-f="b20"     onclick="setFilter('b20',this)">⬡ B20</div>
 </div>
 
 <!-- TOP BAR -->
@@ -342,6 +343,10 @@ html,body{height:100%;background:var(--bg);color:var(--t1);font-family:var(--san
         <span class="sb-ico">🚀</span> Bankr New
         <span class="sb-badge" id="badge-bankr">—</span>
       </div>
+      <div class="sb-item" data-f="b20" onclick="setFilter('b20',this)">
+        <span class="sb-ico" style="color:#60A5FA">⬡</span> B20 Tokens
+        <span class="sb-badge" style="background:rgba(96,165,250,.12);color:#60A5FA">NEW</span>
+      </div>
     </div>
 
     <div class="sb-section">
@@ -373,6 +378,91 @@ html,body{height:100%;background:var(--bg);color:var(--t1);font-family:var(--san
 
     <div class="card-grid" id="tbl-body">
       <div id="skeletons"></div>
+    </div>
+
+    <!-- B20 PANEL -->
+    <div id="b20-panel" style="display:none;padding:20px">
+
+      <!-- Countdown banner -->
+      <div id="b20-countdown-wrap" style="
+        background:linear-gradient(135deg,rgba(96,165,250,.08),rgba(96,165,250,.03));
+        border:1px solid rgba(96,165,250,.15);border-radius:10px;
+        padding:28px 32px;margin-bottom:20px;text-align:center
+      ">
+        <div style="font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#60A5FA;margin-bottom:12px">Base Beryl Upgrade</div>
+        <div style="font-size:28px;font-weight:800;color:#fff;margin-bottom:6px" id="b20-countdown-txt">Loading…</div>
+        <div style="font-size:13px;color:var(--t2)" id="b20-countdown-sub">B20 tokens go live on Base mainnet June 25, 2026</div>
+        <div style="margin-top:16px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap" id="b20-cta-row">
+          <a href="https://sepolia.basescan.org" target="_blank" rel="noopener" style="
+            font-size:12px;color:#60A5FA;border:1px solid rgba(96,165,250,.3);
+            padding:7px 16px;border-radius:5px;text-decoration:none;letter-spacing:.5px
+          ">Testnet Explorer ↗</a>
+          <a href="https://docs.base.org/base-chain/specs/upgrades/beryl/b20" target="_blank" rel="noopener" style="
+            font-size:12px;color:var(--t2);border:1px solid var(--bdr);
+            padding:7px 16px;border-radius:5px;text-decoration:none;letter-spacing:.5px
+          ">B20 Docs ↗</a>
+          <a href="/docs/api" style="
+            font-size:12px;color:var(--t2);border:1px solid var(--bdr);
+            padding:7px 16px;border-radius:5px;text-decoration:none;letter-spacing:.5px
+          ">Orlix API</a>
+        </div>
+      </div>
+
+      <!-- Token list (shown after mainnet live) -->
+      <div id="b20-tokens-wrap" style="display:none">
+        <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--t3);margin-bottom:14px">Live B20 Tokens on Base</div>
+        <div class="card-grid" id="b20-token-grid"></div>
+      </div>
+
+      <!-- Features grid -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;margin-top:4px">
+        <div style="background:var(--c2);border:1px solid var(--bdr);border-radius:8px;padding:16px">
+          <div style="font-size:18px;margin-bottom:8px">🔐</div>
+          <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:4px">Role-Based Access</div>
+          <div style="font-size:11px;color:var(--t3)">Mint, burn, pause, and metadata changes gated by roles</div>
+        </div>
+        <div style="background:var(--c2);border:1px solid var(--bdr);border-radius:8px;padding:16px">
+          <div style="font-size:18px;margin-bottom:8px">🛡️</div>
+          <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:4px">Freeze & Seize</div>
+          <div style="font-size:11px;color:var(--t3)">Burn balance of blocked address — built-in compliance path</div>
+        </div>
+        <div style="background:var(--c2);border:1px solid var(--bdr);border-radius:8px;padding:16px">
+          <div style="font-size:18px;margin-bottom:8px">📋</div>
+          <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:4px">Transfer Policies</div>
+          <div style="font-size:11px;color:var(--t3)">Granular control by sender, receiver, and executor</div>
+        </div>
+        <div style="background:var(--c2);border:1px solid var(--bdr);border-radius:8px;padding:16px">
+          <div style="font-size:18px;margin-bottom:8px">⚡</div>
+          <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:4px">~50% Cheaper</div>
+          <div style="font-size:11px;color:var(--t3)">Runs natively in node — not EVM bytecode, way faster</div>
+        </div>
+        <div style="background:var(--c2);border:1px solid var(--bdr);border-radius:8px;padding:16px">
+          <div style="font-size:18px;margin-bottom:8px">🔵</div>
+          <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:4px">ERC-20 Compatible</div>
+          <div style="font-size:11px;color:var(--t3)">Drop-in for all existing wallets, DEXes, and indexers</div>
+        </div>
+        <div style="background:var(--c2);border:1px solid var(--bdr);border-radius:8px;padding:16px">
+          <div style="font-size:18px;margin-bottom:8px">🤖</div>
+          <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:4px">Agent-Ready</div>
+          <div style="font-size:11px;color:var(--t3)">Deploy & manage B20 tokens programmatically via Orlix API</div>
+        </div>
+      </div>
+
+      <!-- Ask AI -->
+      <div style="
+        margin-top:16px;background:var(--c2);border:1px solid var(--bdr);border-radius:8px;
+        padding:16px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap
+      ">
+        <div>
+          <div style="font-size:13px;font-weight:600;color:#fff">Want to deploy a B20 token?</div>
+          <div style="font-size:11px;color:var(--t3);margin-top:3px">Ask Orlix AI — it can guide you through deployment step by step</div>
+        </div>
+        <a href="/app?q=How+do+I+deploy+a+B20+token+on+Base%3F" style="
+          font-size:12px;font-weight:700;letter-spacing:.5px;
+          background:var(--orange);color:#fff;
+          padding:8px 18px;border-radius:5px;text-decoration:none;white-space:nowrap
+        ">Ask Orlix AI →</a>
+      </div>
     </div>
   </main>
 </div>
@@ -560,11 +650,67 @@ async function loadBankr(){
 function setFilter(f, el){
   activeFilter=f;
   document.querySelectorAll('.sb-item[data-f],.mf-pill[data-f]').forEach(e=>e.classList.toggle('active',e.dataset.f===f));
-  if(f==='bankr'){
-    if(bankrState==='done') renderBankr(); else loadBankr();
+  const b20Panel=document.getElementById('b20-panel');
+  const tblBody=document.getElementById('tbl-body');
+  const sortBar=document.querySelector('.sort-bar');
+  if(f==='b20'){
+    b20Panel.style.display='block';
+    tblBody.style.display='none';
+    if(sortBar) sortBar.style.display='none';
+    loadB20();
   } else {
-    renderTable(allTokens, false);
+    b20Panel.style.display='none';
+    tblBody.style.display='';
+    if(sortBar) sortBar.style.display='';
+    if(f==='bankr'){
+      if(bankrState==='done') renderBankr(); else loadBankr();
+    } else {
+      renderTable(allTokens, false);
+    }
   }
+}
+
+// ── B20 explorer ─────────────────────────────────────────────────────────────
+const BERYL_DATE = new Date('2026-06-25T00:00:00Z');
+
+function updateB20Countdown(){
+  const now=new Date();
+  const diff=BERYL_DATE-now;
+  const el=document.getElementById('b20-countdown-txt');
+  const sub=document.getElementById('b20-countdown-sub');
+  if(!el) return;
+  if(diff<=0){
+    el.textContent='🟢 Base Beryl is Live';
+    el.style.color='#4ADE80';
+    if(sub) sub.textContent='B20 tokens are now active on Base mainnet';
+    return;
+  }
+  const d=Math.floor(diff/86400000);
+  const h=Math.floor((diff%86400000)/3600000);
+  const m=Math.floor((diff%3600000)/60000);
+  const s=Math.floor((diff%60000)/1000);
+  el.textContent=`${d}d ${h}h ${m}m ${s}s`;
+  if(sub) sub.textContent='Until B20 tokens go live on Base mainnet (June 25, 2026)';
+}
+
+async function loadB20(){
+  updateB20Countdown();
+  setInterval(updateB20Countdown, 1000);
+  try{
+    const r=await fetch('/api/b20?action=tokens');
+    const data=await r.json();
+    if(data.mainnetLive && data.tokens && data.tokens.length>0){
+      document.getElementById('b20-tokens-wrap').style.display='block';
+      const grid=document.getElementById('b20-token-grid');
+      grid.innerHTML=data.tokens.map(t=>`
+        <div class="tok-card">
+          <div class="card-rank">#B20</div>
+          <div class="card-sym">${t.symbol}</div>
+          <div class="card-name">${t.name}</div>
+          <div style="font-size:10px;color:#60A5FA;margin-top:4px">${t.variant||'Asset'}</div>
+        </div>`).join('');
+    }
+  }catch(e){ console.warn('B20 load error',e); }
 }
 
 let searchTimer=null;
