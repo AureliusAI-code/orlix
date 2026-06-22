@@ -416,32 +416,32 @@ html,body{height:100%;background:var(--bg);color:var(--t1);font-family:var(--san
 
       <!-- Features grid -->
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;margin-top:4px">
-        <div style="background:var(--c2);border:1px solid var(--bdr);border-radius:8px;padding:16px">
+        <div style="background:var(--s4);border:1px solid var(--b1);border-radius:8px;padding:16px">
           <div style="font-size:18px;margin-bottom:8px">🔐</div>
           <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:4px">Role-Based Access</div>
           <div style="font-size:11px;color:var(--t3)">Mint, burn, pause, and metadata changes gated by roles</div>
         </div>
-        <div style="background:var(--c2);border:1px solid var(--bdr);border-radius:8px;padding:16px">
+        <div style="background:var(--s4);border:1px solid var(--b1);border-radius:8px;padding:16px">
           <div style="font-size:18px;margin-bottom:8px">🛡️</div>
           <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:4px">Freeze & Seize</div>
           <div style="font-size:11px;color:var(--t3)">Burn balance of blocked address — built-in compliance path</div>
         </div>
-        <div style="background:var(--c2);border:1px solid var(--bdr);border-radius:8px;padding:16px">
+        <div style="background:var(--s4);border:1px solid var(--b1);border-radius:8px;padding:16px">
           <div style="font-size:18px;margin-bottom:8px">📋</div>
           <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:4px">Transfer Policies</div>
           <div style="font-size:11px;color:var(--t3)">Granular control by sender, receiver, and executor</div>
         </div>
-        <div style="background:var(--c2);border:1px solid var(--bdr);border-radius:8px;padding:16px">
+        <div style="background:var(--s4);border:1px solid var(--b1);border-radius:8px;padding:16px">
           <div style="font-size:18px;margin-bottom:8px">⚡</div>
           <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:4px">~50% Cheaper</div>
           <div style="font-size:11px;color:var(--t3)">Runs natively in node — not EVM bytecode, way faster</div>
         </div>
-        <div style="background:var(--c2);border:1px solid var(--bdr);border-radius:8px;padding:16px">
+        <div style="background:var(--s4);border:1px solid var(--b1);border-radius:8px;padding:16px">
           <div style="font-size:18px;margin-bottom:8px">🔵</div>
           <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:4px">ERC-20 Compatible</div>
           <div style="font-size:11px;color:var(--t3)">Drop-in for all existing wallets, DEXes, and indexers</div>
         </div>
-        <div style="background:var(--c2);border:1px solid var(--bdr);border-radius:8px;padding:16px">
+        <div style="background:var(--s4);border:1px solid var(--b1);border-radius:8px;padding:16px">
           <div style="font-size:18px;margin-bottom:8px">🤖</div>
           <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:4px">Agent-Ready</div>
           <div style="font-size:11px;color:var(--t3)">Deploy & manage B20 tokens programmatically via Orlix API</div>
@@ -450,7 +450,7 @@ html,body{height:100%;background:var(--bg);color:var(--t1);font-family:var(--san
 
       <!-- Ask AI -->
       <div style="
-        margin-top:16px;background:var(--c2);border:1px solid var(--bdr);border-radius:8px;
+        margin-top:16px;background:var(--s4);border:1px solid var(--b1);border-radius:8px;
         padding:16px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap
       ">
         <div>
@@ -693,9 +693,10 @@ function updateB20Countdown(){
   if(sub) sub.textContent='Until B20 tokens go live on Base mainnet (June 25, 2026)';
 }
 
+let b20CountdownInterval = null;
 async function loadB20(){
   updateB20Countdown();
-  setInterval(updateB20Countdown, 1000);
+  if(!b20CountdownInterval) b20CountdownInterval = setInterval(updateB20Countdown, 1000);
   try{
     const r=await fetch('/api/b20?action=tokens');
     const data=await r.json();
