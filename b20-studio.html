@@ -594,7 +594,7 @@ input[type=range]:disabled{opacity:.4;cursor:not-allowed}
     <div class="empty">
       <div class="empty-ico">◈</div>
       <div class="empty-t">No tokens yet</div>
-      B20 mainnet activates <strong style="color:var(--orange)">June 25, 2026</strong>.<br>
+      B20 deploys go live <strong style="color:var(--orange)">when Base activates the standard</strong>.<br>
       Configure and deploy from the <a onclick="showTab('create',document.getElementById('sbCreate'))" style="color:var(--orange);cursor:pointer;text-decoration:underline">Create</a> tab.
     </div>
   </div>
@@ -659,7 +659,7 @@ input[type=range]:disabled{opacity:.4;cursor:not-allowed}
   </div>
 
   <div class="rp-note">
-    <strong>Demo preview</strong> — shows what your deployed token's manage UI looks like. Actual deployment goes live <strong>June 25</strong> when Base Beryl activates.
+    <strong>Demo preview</strong> — shows what your deployed token's manage UI looks like. Actual deployment goes live when Base Beryl activates.
   </div>
 </aside>
 
@@ -699,12 +699,12 @@ input[type=range]:disabled{opacity:.4;cursor:not-allowed}
 <div class="modal-ov" id="deployModal" onclick="if(event.target===this)closeModal()">
   <div class="modal-box">
     <div class="modal-ico">🪙</div>
-    <div class="modal-title" id="mTitle">B20 Mainnet Countdown</div>
-    <div class="modal-cd" id="mCd">—</div>
-    <div class="modal-until" id="mUntil">Until Base Beryl mainnet activates</div>
+    <div class="modal-title" id="mTitle">Not yet active</div>
+    <div class="modal-cd" id="mCd" style="font-size:1.1rem">⏳ Waiting on Base</div>
+    <div class="modal-until" id="mUntil">B20 deploys go live when Base activates the standard</div>
     <div class="modal-sub" id="mSub">
-      Your token config is saved. B20 deploys go live when the Base Beryl upgrade activates on
-      <strong style="color:var(--orange)">June 25, 2026</strong>. Come back then and hit Deploy.
+      Your token config is ready. B20 deploys go live when Base Beryl activates the standard —
+      <strong style="color:var(--orange)">come back then and hit Deploy</strong>.
     </div>
     <button class="modal-close" onclick="closeModal()">Got it</button>
   </div>
@@ -821,7 +821,7 @@ function updateSubtitle() {
   const d = Math.floor(diff / 86400000);
   const h = Math.floor((diff % 86400000) / 3600000);
   const m = Math.floor((diff % 3600000) / 60000);
-  el.textContent = `Mainnet in ${d}d ${h}h ${m}m · Base Beryl`;
+  el.textContent = `Deploy when Base activates · Base Beryl`;
 }
 
 // ── deploy modal ──────────────────────────────────────────────────────────────
@@ -834,16 +834,8 @@ function onDeploy() {
     document.getElementById('mUntil').textContent = walletAddress ? 'Connected — deploy on Base mainnet' : 'Connect wallet to deploy';
     document.getElementById('mSub').innerHTML     = 'Base Beryl is live! ' + (walletAddress ? 'Confirm the transaction in your wallet to deploy this B20 token on Base mainnet.' : 'Connect your wallet to deploy this B20 token on Base mainnet.');
   } else {
-    tick(); cdTimer = setInterval(tick, 1000);
+    // not live yet — static message, no countdown
   }
-}
-function tick() {
-  const diff = MAINNET_TS - Date.now();
-  if (diff <= 0) {
-    document.getElementById('mCd').textContent = '🟢 Now Live';
-    clearInterval(cdTimer); return;
-  }
-  document.getElementById('mCd').textContent = formatCountdown(diff);
 }
 function closeModal() {
   document.getElementById('deployModal').classList.remove('open');

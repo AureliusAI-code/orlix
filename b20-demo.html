@@ -137,7 +137,7 @@
       <span class="w1">Base</span>
       <span class="w2">B20</span>
     </div>
-    <div class="sub">Now on Orlix AI · Mainnet June 25</div>
+    <div class="sub">Now on Orlix AI · Deploy when Base activates</div>
   </div>
 
   <!-- S2: what is B20 -->
@@ -214,7 +214,7 @@
         <div class="app-url">orlixai.xyz/app</div>
       </div>
       <div class="app-body">
-        <div class="skill-label">⬡ B20 Token Standard <span class="skill-badge">Base Beryl · June 25</span></div>
+        <div class="skill-label">⬡ B20 Token Standard <span class="skill-badge">Base Beryl · Coming Soon</span></div>
         <div class="skills-grid">
           <div class="sk-card highlight" id="sk0"><div class="sk-name">Deploy B20 Token</div><div class="sk-desc">Step-by-step guide to deploy on Base</div><div class="sk-tag">b20 + web_search</div></div>
           <div class="sk-card" id="sk1"><div class="sk-name">B20 vs ERC-20</div><div class="sk-desc">Compare — when to use which</div><div class="sk-tag">web_search + fetch</div></div>
@@ -253,7 +253,7 @@
         </div>
         <div class="api-body">
 <span class="k">"tokens"</span>: [],  <span class="k">"mainnetLive"</span>: <span class="v">false</span>,
-<span class="k">"message"</span>: <span class="s">"B20 tokens go live June 25, 2026"</span>,
+<span class="k">"message"</span>: <span class="s">"B20 tokens go live when Base activates the standard"</span>,
 <span class="k">"testnetExplorer"</span>: <span class="s">"https://sepolia.basescan.org"</span></div>
       </div>
       <div class="api-block" id="ab2">
@@ -293,7 +293,7 @@
 
 <script>
 const TOTAL = 56000;
-const AI_TEXT = 'To deploy BNKRR as a B20 Asset token: 1. Connect to Base Sepolia (testnet) or wait for Beryl mainnet June 25. 2. Call the B20 factory precompile with your token config — name, symbol, decimals, supply cap. 3. Assign MINTER and PAUSER roles to your admin wallet. 4. Enable freeze policy for compliance. Your token is ERC-20 compatible immediately.';
+const AI_TEXT = 'To deploy BNKRR as a B20 Asset token: 1. Connect to Base Sepolia (testnet) or wait for Beryl mainnet to activate. 2. Call the B20 factory precompile with your token config — name, symbol, decimals, supply cap. 3. Assign MINTER and PAUSER roles to your admin wallet. 4. Enable freeze policy for compliance. Your token is ERC-20 compatible immediately.';
 
 let startTime=null, raf=null, aiTimer=null, activeScene=null, timerInterval=null;
 
@@ -320,20 +320,8 @@ function enterS3(){
   show('s3');
   // live countdown
   if(timerInterval) clearInterval(timerInterval);
-  const target=new Date('2026-06-25T00:00:00Z');
-  function updateTimer(){
-    const diff=target-new Date();
-    const el=document.getElementById('demo-timer');
-    if(!el) return;
-    if(diff<=0){ el.textContent='🟢 Live Now'; return; }
-    const d=Math.floor(diff/86400000);
-    const h=Math.floor((diff%86400000)/3600000);
-    const m=Math.floor((diff%3600000)/60000);
-    const s=Math.floor((diff%60000)/1000);
-    el.textContent=`${d}d ${h}h ${m}m ${s}s`;
-  }
-  updateTimer();
-  timerInterval=setInterval(updateTimer,1000);
+  const el=document.getElementById('demo-timer');
+  if(el) el.textContent='⏳ Waiting on Base';
   // animate feat cards
   document.querySelectorAll('.b20-feat').forEach(f=>f.classList.remove('show'));
   document.querySelectorAll('.b20-feat').forEach((f,i)=>setTimeout(()=>f.classList.add('show'),400+i*200));
