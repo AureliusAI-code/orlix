@@ -14,7 +14,9 @@
     "api/song.js":         { "maxDuration": 45 },
     "api/music.js":        { "maxDuration": 60 },
     "api/bankr-tokens.js": { "maxDuration": 20 },
-    "api/b20.js":          { "maxDuration": 15 }
+    "api/b20.js":          { "maxDuration": 15 },
+    "api/search.js":       { "maxDuration": 10 },
+    "api/telegram.js":     { "maxDuration": 60 }
   },
   "redirects": [
     { "source": "/app.html",          "destination": "/app",          "permanent": true },
