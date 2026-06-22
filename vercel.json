@@ -29,7 +29,8 @@
     { "source": "/control-room.html", "destination": "/control-room", "permanent": true },
     { "source": "/song.html",         "destination": "/song",         "permanent": true },
     { "source": "/bankr.html",        "destination": "/control-room", "permanent": true },
-    { "source": "/b20-demo.html",     "destination": "/b20-demo",     "permanent": true }
+    { "source": "/b20-demo.html",     "destination": "/b20-demo",     "permanent": true },
+    { "source": "/b20-studio.html",   "destination": "/b20",           "permanent": true }
   ],
   "rewrites": [
     { "source": "/app",          "destination": "/app.html" },
@@ -44,6 +45,7 @@
     { "source": "/control-room", "destination": "/control-room.html" },
     { "source": "/song",         "destination": "/song.html" },
     { "source": "/bankr",        "destination": "/control-room" },
-    { "source": "/b20-demo",     "destination": "/b20-demo.html" }
+    { "source": "/b20-demo",     "destination": "/b20-demo.html" },
+    { "source": "/b20",          "destination": "/b20-studio.html" }
   ]
 }
