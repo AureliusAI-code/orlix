@@ -302,10 +302,12 @@ async function handleGas(net, res) {
       chainId:   CHAIN_ID[net],
       blockNumber: gas.blockNumber,
       eip1559: {
-        baseFeeGwei:         gas.baseFeeGwei,
-        maxFeePerGas:        gas.maxFeePerGas,
-        maxPriorityFeePerGas:gas.maxPriorityFeePerGas,
-        tips:                gas.tips,
+        baseFeeGwei:              gas.baseFeeGwei,
+        maxFeePerGas:             gas.maxFeePerGas,
+        maxFeePerGas_gwei:        gas.baseFeeGwei + ' (approx)',
+        maxPriorityFeePerGas:     gas.maxPriorityFeePerGas,
+        maxPriorityFeePerGas_gwei:(Number(BigInt(gas.raw.maxPriorityFeePerGas)) / 1e9).toFixed(6) + ' gwei',
+        tips:                     gas.tips,
       },
       legacy: { gasPriceGwei: gas.gasPriceGwei },
       deployEstimate: {
@@ -313,6 +315,7 @@ async function handleGas(net, res) {
         note:        'Approximate — actual gas depends on calldata length (name/symbol)',
         maxCostEth:  costEth.toFixed(8),
         maxCostWei:  costWei.toString(),
+        summary:     costEth.toFixed(8) + ' ETH at ' + gas.baseFeeGwei + ' gwei base fee',
       },
     }));
   } catch (e) {
@@ -502,16 +505,29 @@ async function handlePrepare(body, res) {
     warnings.push(`Live chain data fetch failed: ${e.message} — fill nonce/gas manually before signing`);
   }
 
+  const maxFeeHex  = gas?.maxFeePerGas ?? null;
+  const tipHex     = gas?.maxPriorityFeePerGas ?? null;
+  const maxFeeGwei = maxFeeHex ? (Number(BigInt(maxFeeHex)) / 1e9).toFixed(6) + ' gwei' : null;
+  const tipGwei    = tipHex    ? (Number(BigInt(tipHex))    / 1e9).toFixed(6) + ' gwei' : null;
+
+  const DEPLOY_GAS_UNITS = 200000;
+  const deployCostEth = maxFeeHex
+    ? (Number(BigInt(maxFeeHex) * BigInt(DEPLOY_GAS_UNITS)) / 1e18).toFixed(8) + ' ETH'
+    : null;
+
   const tx = {
-    type:                 '0x02',
-    chainId:              '0x' + CHAIN_ID[net].toString(16),
-    to:                   B20_FACTORY,
-    value:                '0x0',
-    data:                 cd.calldata,
-    gas:                  '0x' + (200000).toString(16),
-    maxFeePerGas:         gas?.maxFeePerGas ?? null,
-    maxPriorityFeePerGas: gas?.maxPriorityFeePerGas ?? null,
-    nonce:                nonce !== null ? '0x' + nonce.toString(16) : null,
+    type:                    '0x02',
+    chainId:                 '0x' + CHAIN_ID[net].toString(16),
+    to:                      B20_FACTORY,
+    value:                   '0x0',
+    data:                    cd.calldata,
+    gas:                     '0x' + DEPLOY_GAS_UNITS.toString(16),
+    maxFeePerGas:            maxFeeHex,
+    maxFeePerGas_gwei:       maxFeeGwei,
+    maxPriorityFeePerGas:    tipHex,
+    maxPriorityFeePerGas_gwei: tipGwei,
+    nonce:                   nonce !== null ? '0x' + nonce.toString(16) : null,
+    _deployCostEstimate:     deployCostEth,
   };
 
   return res.end(JSON.stringify({
