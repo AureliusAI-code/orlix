@@ -1,0 +1,128 @@
+/* Orlix Wallet Widget styles — all classes prefixed .ow- to avoid global conflicts */
+
+.ow-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ow-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #101015;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 7px;
+  padding: 5px 12px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #9ca3af;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+  font-family: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, sans-serif;
+  white-space: nowrap;
+  line-height: 1.2;
+  outline: none;
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+}
+
+.ow-btn:focus-visible {
+  outline: 2px solid #F07830;
+  outline-offset: 2px;
+}
+
+/* ── Disconnected ── */
+.ow-btn-connect:hover {
+  color: #f1f1f3;
+  border-color: rgba(255, 255, 255, 0.10);
+  background: #16161c;
+}
+
+/* ── Chain selector (left pill when connected) ── */
+.ow-btn-chain {
+  color: #9ca3af;
+  padding: 5px 9px;
+}
+.ow-btn-chain:hover {
+  color: #f1f1f3;
+  border-color: rgba(255, 255, 255, 0.10);
+  background: #16161c;
+}
+
+/* ── Account (right pill when connected) ── */
+.ow-btn-connected {
+  color: #f1f1f3;
+  border-color: rgba(34, 197, 94, 0.25);
+  background: rgba(34, 197, 94, 0.07);
+}
+.ow-btn-connected:hover {
+  background: rgba(34, 197, 94, 0.12);
+  border-color: rgba(34, 197, 94, 0.35);
+}
+
+/* ── Wrong network ── */
+.ow-btn-wrong {
+  border-color: rgba(239, 68, 68, 0.30);
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.08);
+}
+.ow-btn-wrong:hover {
+  background: rgba(239, 68, 68, 0.14);
+  border-color: rgba(239, 68, 68, 0.40);
+}
+
+/* ── Pending (awaiting approval) ── */
+.ow-btn-pending {
+  color: #F07830;
+  border-color: rgba(240, 120, 48, 0.30);
+  background: rgba(240, 120, 48, 0.08);
+  cursor: wait;
+}
+
+/* ── Status dot ── */
+.ow-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #52525b;
+  flex-shrink: 0;
+}
+.ow-dot-connected {
+  background: #22c55e;
+  box-shadow: 0 0 5px rgba(34, 197, 94, 0.5);
+}
+.ow-dot-pending {
+  background: #F07830;
+  animation: ow-pulse 1.2s ease-in-out infinite;
+}
+@keyframes ow-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+/* ── Chain icon ── */
+.ow-chain-ico {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+/* ── Balance + address ── */
+.ow-balance {
+  opacity: 0.70;
+  font-size: 10.5px;
+}
+.ow-addr {
+  font-family: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
+  font-size: 10.5px;
+  letter-spacing: -0.01em;
+}
+
+/* ── Responsive: hide balance on very small screens ── */
+@media (max-width: 380px) {
+  .ow-balance { display: none; }
+  .ow-btn { padding: 5px 9px; }
+}

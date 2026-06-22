@@ -46,17 +46,7 @@ button,input,select{font-family:var(--font)}
   padding:5px 10px;font-size:.7rem;font-weight:600;color:var(--t2);
 }
 .chain-dot{width:6px;height:6px;border-radius:50%;background:var(--blue);box-shadow:0 0 5px rgba(59,130,246,.6)}
-.wallet-btn{
-  display:flex;align-items:center;gap:6px;
-  background:var(--s2);border:1px solid var(--b1);border-radius:7px;
-  padding:5px 12px;font-size:.72rem;font-weight:600;color:var(--t2);
-  cursor:pointer;transition:all .15s;white-space:nowrap;
-}
-.wallet-btn:hover{color:var(--t1);border-color:var(--b2);background:var(--s3)}
-.wallet-btn.connected{color:var(--t1);border-color:rgba(34,197,94,.25);background:rgba(34,197,94,.06)}
-.wallet-dot{width:6px;height:6px;border-radius:50%;background:var(--t3);flex-shrink:0}
-.wallet-btn.connected .wallet-dot{background:var(--green)}
-.wallet-addr{font-family:var(--mono);font-size:.67rem}
+/* wallet widget styles are injected by /wallet-dist/wallet.js */
 
 /* ── LAYOUT ── */
 .layout{
@@ -333,23 +323,6 @@ input[type=range]:disabled{opacity:.4;cursor:not-allowed}
 }
 .modal-close:hover{color:var(--t1);border-color:var(--b2)}
 
-/* ── WALLET MODAL ── */
-.wm-box{max-width:380px}
-.wm-opts{display:flex;flex-direction:column;gap:8px;margin-bottom:20px}
-.wm-opt{
-  display:flex;align-items:center;gap:12px;
-  background:var(--s2);border:1px solid var(--b1);border-radius:10px;
-  padding:13px 14px;cursor:pointer;transition:all .15s;text-decoration:none;
-}
-.wm-opt:hover{border-color:rgba(240,120,48,.3);background:rgba(240,120,48,.05)}
-.wm-opt-ico{width:32px;height:32px;border-radius:8px;object-fit:cover;flex-shrink:0}
-.wm-opt-ico.emoji{
-  background:var(--s3);border:1px solid var(--b1);
-  display:flex;align-items:center;justify-content:center;font-size:1rem;
-}
-.wm-opt-name{font-size:.82rem;font-weight:700;color:var(--t1)}
-.wm-opt-desc{font-size:.7rem;color:var(--t3)}
-
 /* ── EMPTY STATES ── */
 .empty{
   text-align:center;padding:56px 20px;
@@ -416,10 +389,7 @@ input[type=range]:disabled{opacity:.4;cursor:not-allowed}
   </div>
   <div class="nav-right">
     <div class="chain-pill"><div class="chain-dot"></div>Base</div>
-    <button class="wallet-btn" id="walletBtn" onclick="handleWallet()">
-      <div class="wallet-dot" id="walletDot"></div>
-      <span id="walletLabel">Connect Wallet</span>
-    </button>
+    <div id="orlix-wallet" style="display:flex;align-items:center"></div>
   </div>
 </nav>
 
@@ -740,38 +710,11 @@ input[type=range]:disabled{opacity:.4;cursor:not-allowed}
   </div>
 </div>
 
-<!-- WALLET MODAL (no wallet detected) -->
-<div class="modal-ov" id="walletModal" onclick="if(event.target===this)closeWalletModal()">
-  <div class="modal-box wm-box">
-    <div class="modal-ico">🦊</div>
-    <div class="modal-title">Connect a Wallet</div>
-    <div class="modal-sub" style="margin-bottom:16px">No wallet detected in your browser. Open this page inside a wallet browser, or install MetaMask.</div>
-    <div class="wm-opts">
-      <a class="wm-opt" href="https://metamask.app.link/dapp/orlix.ai/b20" target="_blank" rel="noopener">
-        <div class="wm-opt-ico emoji">🦊</div>
-        <div>
-          <div class="wm-opt-name">MetaMask</div>
-          <div class="wm-opt-desc">Open in MetaMask Mobile</div>
-        </div>
-      </a>
-      <a class="wm-opt" href="https://go.cb-w.com/dapp?cb_url=https%3A%2F%2Forlix.ai%2Fb20" target="_blank" rel="noopener">
-        <div class="wm-opt-ico emoji">🔵</div>
-        <div>
-          <div class="wm-opt-name">Coinbase Wallet</div>
-          <div class="wm-opt-desc">Open in Coinbase Wallet</div>
-        </div>
-      </a>
-    </div>
-    <button class="modal-close" onclick="closeWalletModal()">Cancel</button>
-  </div>
-</div>
-
 <script>
 const MAINNET_TS = new Date('2026-06-25T00:00:00Z').getTime();
-const BASE_CHAIN_ID = '0x2105'; // 8453 decimal
 let variant = 'asset';
 let cdTimer = null;
-let walletAddress = null;
+let walletAddress = null; // updated by orlix:wallet:connected events from wallet.js
 
 // ── variant ───────────────────────────────────────────────────────────────────
 function setVariant(v) {
@@ -916,138 +859,22 @@ function dismissFeatGate() {
   try { sessionStorage.setItem('fg_dismissed','1'); } catch {}
 }
 
-// ── wallet connect ────────────────────────────────────────────────────────────
-function setWalletUI(addr) {
+// ── wallet events (dispatched by /wallet-dist/wallet.js) ─────────────────────
+window.addEventListener('orlix:wallet:connected', (e) => {
+  const addr = e.detail?.address;
+  if (!addr) return;
   walletAddress = addr;
-  const btn = document.getElementById('walletBtn');
-  const lbl = document.getElementById('walletLabel');
-  btn.classList.add('connected');
-  lbl.innerHTML = '<span class="wallet-addr">' + addr.slice(0,6) + '…' + addr.slice(-4) + '</span>';
-  document.getElementById('fAdmin').value = addr;
-  onFormChange();
-}
-function clearWalletUI() {
+  const el = document.getElementById('fAdmin');
+  if (el && !el.value) { el.value = addr; onFormChange(); }
+});
+window.addEventListener('orlix:wallet:disconnected', () => {
   walletAddress = null;
-  const btn = document.getElementById('walletBtn');
-  const lbl = document.getElementById('walletLabel');
-  btn.classList.remove('connected');
-  lbl.textContent = 'Connect Wallet';
-  document.getElementById('fAdmin').value = '';
-  onFormChange();
-}
-
-async function handleWallet() {
-  // Disconnect if already connected
-  if (walletAddress) {
-    clearWalletUI();
-    try {
-      localStorage.removeItem('orlix_user');
-      localStorage.removeItem('orlix_token');
-    } catch {}
-    return;
-  }
-
-  // Try stored session first
-  try {
-    const stored = localStorage.getItem('orlix_user');
-    if (stored) {
-      const u = JSON.parse(stored);
-      const addr = (u.address || u.id || '').toLowerCase();
-      if (addr && addr.startsWith('0x') && addr.length === 42) {
-        setWalletUI(u.address || u.id);
-        return;
-      }
-    }
-  } catch {}
-
-  // No ethereum provider
-  if (!window.ethereum) {
-    document.getElementById('walletModal').classList.add('open');
-    return;
-  }
-
-  const btn = document.getElementById('walletBtn');
-  const lbl = document.getElementById('walletLabel');
-  const origText = lbl.textContent;
-  lbl.textContent = 'Connecting…';
-  btn.style.pointerEvents = 'none';
-
-  try {
-    // Request accounts
-    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-    if (!accounts || !accounts[0]) throw new Error('No account');
-
-    const addr = accounts[0];
-
-    // Switch/add Base chain
-    try {
-      const chainId = await window.ethereum.request({ method: 'eth_chainId' });
-      if (chainId !== BASE_CHAIN_ID) {
-        try {
-          await window.ethereum.request({
-            method: 'wallet_switchEthereumChain',
-            params: [{ chainId: BASE_CHAIN_ID }]
-          });
-        } catch (swErr) {
-          if (swErr.code === 4902) {
-            await window.ethereum.request({
-              method: 'wallet_addEthereumChain',
-              params: [{
-                chainId: BASE_CHAIN_ID,
-                chainName: 'Base',
-                nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
-                rpcUrls: ['https://mainnet.base.org'],
-                blockExplorerUrls: ['https://basescan.org']
-              }]
-            });
-          }
-        }
-      }
-    } catch {}
-
-    setWalletUI(addr);
-
-    // Persist session
-    try {
-      localStorage.setItem('orlix_user', JSON.stringify({
-        id: addr, address: addr,
-        display: addr.slice(0,6) + '…' + addr.slice(-4),
-        type: 'wallet'
-      }));
-      localStorage.setItem('orlix_token', 'wallet:' + addr);
-    } catch {}
-
-    // Listen for account changes
-    window.ethereum.on('accountsChanged', accs => {
-      if (accs && accs[0]) { setWalletUI(accs[0]); }
-      else { clearWalletUI(); }
-    });
-    window.ethereum.on('chainChanged', () => location.reload());
-
-  } catch (e) {
-    lbl.textContent = origText;
-    if (e.code !== 4001) console.error(e);
-  } finally {
-    btn.style.pointerEvents = '';
-  }
-}
-
-function closeWalletModal() {
-  document.getElementById('walletModal').classList.remove('open');
-}
+  const el = document.getElementById('fAdmin');
+  if (el) { el.value = ''; onFormChange(); }
+});
 
 // ── init ──────────────────────────────────────────────────────────────────────
 (function init() {
-  // Restore wallet from session
-  try {
-    const stored = localStorage.getItem('orlix_user');
-    if (stored) {
-      const u = JSON.parse(stored);
-      const a = u.address || u.id || '';
-      if (a && a.startsWith('0x') && a.length === 42) setWalletUI(a);
-    }
-  } catch {}
-
   // Subtitle countdown
   updateSubtitle();
   setInterval(updateSubtitle, 60000);
@@ -1063,5 +890,8 @@ function closeWalletModal() {
   } catch {}
 })();
 </script>
+
+<!-- Orlix Wallet Widget — wagmi + RainbowKit (MetaMask, Coinbase, WalletConnect) -->
+<script src="/wallet-dist/wallet.js" defer></script>
 </body>
 </html>
