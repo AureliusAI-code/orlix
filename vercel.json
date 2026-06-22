@@ -33,7 +33,8 @@
   "rewrites": [
     { "source": "/app",       "destination": "/app.html" },
     { "source": "/docs",      "destination": "/docs.html" },
-    { "source": "/docs/api",  "destination": "/api-docs.html" },
+    { "source": "/docs/api",   "destination": "/api-docs.html" },
+    { "source": "/b20-demo",   "destination": "/b20-demo.html" },
     { "source": "/changelog", "destination": "/changelog.html" },
     { "source": "/privacy",   "destination": "/privacy.html" },
     { "source": "/terms",     "destination": "/terms.html" },
