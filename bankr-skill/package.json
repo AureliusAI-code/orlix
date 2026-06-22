@@ -1,0 +1,10 @@
+{
+  "name": "orlix",
+  "version": "1.0.0",
+  "description": "Orlix AI skill — Personal AI OS on Base with B20 token deployment",
+  "type": "module",
+  "scripts": {
+    "start": "node scripts/orlix.mjs"
+  },
+  "dependencies": {}
+}
