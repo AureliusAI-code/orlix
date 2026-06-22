@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>API Reference — Orlix AI</title>
+<meta name="description" content="Orlix AI public API. Access live Base token data — top 100 tokens, prices, volume, market cap, and AI commentary.">
+<link rel="icon" type="image/x-icon" href="/favicon.ico">
+<meta property="og:title" content="Orlix AI — API Reference">
+<meta property="og:description" content="Public API for live Base token data. Free, no auth required.">
+<meta property="og:image" content="https://www.orlixai.xyz/og-image.png">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#09090B;--bg-2:#111113;--bg-3:#1A1A1E;--bg-4:#222226;
+  --border:rgba(255,255,255,.06);--border-b:rgba(255,255,255,.12);
+  --text-1:#FAFAFA;--text-2:#A1A1AA;--text-3:#52525B;
+  --orange:#F07830;--orange-dim:rgba(240,120,48,.1);
+  --green:#4ADE80;--green-dim:rgba(74,222,128,.09);
+  --blue:#60A5FA;--blue-dim:rgba(96,165,250,.08);
+  --radius:10px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text-1);font-family:'Plus Jakarta Sans',sans-serif;font-size:15px;line-height:1.6}
+a{color:var(--orange);text-decoration:none}
+a:hover{text-decoration:underline}
+code,pre{font-family:'JetBrains Mono',monospace}
+
+/* Nav */
+nav{
+  position:sticky;top:0;z-index:100;
+  background:rgba(9,9,11,.9);backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--border);
+  padding:0 32px;height:56px;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.nav-logo{display:flex;align-items:center;gap:10px;color:var(--text-1);font-weight:700;font-size:15px}
+.nav-logo img{width:28px;height:28px;border-radius:50%;object-fit:cover}
+.nav-links{display:flex;gap:24px;font-size:13px;color:var(--text-2)}
+.nav-links a{color:var(--text-2)}
+.nav-links a:hover{color:var(--text-1);text-decoration:none}
+.nav-badge{font-size:11px;background:var(--orange-dim);color:var(--orange);border:1px solid rgba(240,120,48,.25);padding:2px 8px;border-radius:4px;letter-spacing:.5px}
+
+/* Layout */
+.layout{display:flex;max-width:1100px;margin:0 auto;padding:0 24px}
+
+/* Sidebar */
+.sidebar{
+  width:220px;flex-shrink:0;
+  padding:40px 0;
+  position:sticky;top:56px;height:calc(100vh - 56px);overflow-y:auto;
+}
+.sidebar-group{margin-bottom:28px}
+.sidebar-label{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-3);margin-bottom:10px}
+.sidebar ul{list-style:none;display:flex;flex-direction:column;gap:4px}
+.sidebar ul li a{font-size:13px;color:var(--text-2);padding:4px 8px;border-radius:5px;display:block;transition:.15s}
+.sidebar ul li a:hover{color:var(--text-1);background:var(--bg-3);text-decoration:none}
+.sidebar ul li a.active{color:var(--orange);background:var(--orange-dim)}
+
+/* Main */
+main{flex:1;padding:48px 0 80px 48px;min-width:0;border-left:1px solid var(--border)}
+
+/* Sections */
+section{margin-bottom:64px;scroll-margin-top:72px}
+h1{font-size:32px;font-weight:800;line-height:1.1;margin-bottom:8px}
+h2{font-size:20px;font-weight:700;margin-bottom:16px;color:var(--text-1);padding-bottom:10px;border-bottom:1px solid var(--border)}
+h3{font-size:15px;font-weight:700;color:var(--text-1);margin-bottom:10px;margin-top:24px}
+p{color:var(--text-2);margin-bottom:14px}
+
+/* Hero */
+.hero-badge{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--green);background:var(--green-dim);border:1px solid rgba(74,222,128,.2);padding:4px 10px;border-radius:20px;margin-bottom:16px;letter-spacing:.5px}
+.hero-badge .dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.hero-sub{font-size:16px;color:var(--text-2);margin-top:10px;max-width:560px}
+
+/* Endpoint block */
+.endpoint{
+  background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius);
+  overflow:hidden;margin-bottom:24px;
+}
+.endpoint-header{
+  padding:14px 20px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:12px;
+}
+.method{font-size:12px;font-weight:700;padding:3px 8px;border-radius:4px;letter-spacing:.5px;flex-shrink:0}
+.method.get{background:rgba(74,222,128,.12);color:var(--green)}
+.endpoint-path{font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--text-1)}
+.endpoint-desc{font-size:13px;color:var(--text-3);margin-left:auto}
+.endpoint-body{padding:20px}
+
+/* Code block */
+.code-block{
+  background:var(--bg-3);border:1px solid var(--border);border-radius:8px;
+  overflow:hidden;margin:12px 0;
+}
+.code-header{
+  padding:8px 16px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+  font-size:11px;color:var(--text-3);letter-spacing:.5px;
+}
+.code-header .lang{color:var(--orange)}
+.copy-btn{
+  font-size:11px;color:var(--text-3);background:none;border:none;cursor:pointer;
+  padding:2px 6px;border-radius:3px;transition:.15s;letter-spacing:.5px;
+}
+.copy-btn:hover{color:var(--text-1);background:var(--bg-4)}
+.code-block pre{padding:16px;overflow-x:auto;font-size:12.5px;line-height:1.7;color:#e2e8f0}
+.code-block pre .c{color:var(--text-3)}
+.code-block pre .k{color:#c792ea}
+.code-block pre .s{color:#c3e88d}
+.code-block pre .n{color:var(--blue)}
+.code-block pre .v{color:#f78c6c}
+.code-block pre .p{color:var(--text-2)}
+
+/* Field table */
+.field-table{width:100%;border-collapse:collapse;font-size:13px;margin:12px 0}
+.field-table th{text-align:left;padding:8px 12px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3);border-bottom:1px solid var(--border)}
+.field-table td{padding:9px 12px;border-bottom:1px solid var(--border);vertical-align:top}
+.field-table tr:last-child td{border-bottom:none}
+.field-table tr:hover td{background:var(--bg-3)}
+.field-name{font-family:'JetBrains Mono',monospace;color:var(--orange);font-size:12px}
+.field-type{font-family:'JetBrains Mono',monospace;color:var(--blue);font-size:11px}
+.field-desc{color:var(--text-2)}
+
+/* Info box */
+.info-box{
+  padding:14px 18px;border-radius:8px;margin:16px 0;
+  font-size:13px;display:flex;gap:10px;align-items:flex-start;
+}
+.info-box.green{background:var(--green-dim);border:1px solid rgba(74,222,128,.15);color:#86efac}
+.info-box.orange{background:var(--orange-dim);border:1px solid rgba(240,120,48,.2);color:#fdba74}
+.info-box.blue{background:var(--blue-dim);border:1px solid rgba(96,165,250,.15);color:#93c5fd}
+.info-icon{flex-shrink:0;margin-top:1px}
+
+/* Rate limit bar */
+.rate-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin:16px 0}
+.rate-card{background:var(--bg-3);border:1px solid var(--border);border-radius:8px;padding:16px}
+.rate-card .val{font-size:22px;font-weight:800;color:var(--text-1);margin-bottom:4px}
+.rate-card .lbl{font-size:12px;color:var(--text-3);letter-spacing:.5px}
+
+/* Response status */
+.status-row{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-2);margin:6px 0}
+.status-code{font-family:'JetBrains Mono',monospace;font-size:12px;padding:2px 8px;border-radius:3px}
+.status-code.ok{background:var(--green-dim);color:var(--green)}
+.status-code.err{background:rgba(248,113,113,.1);color:#f87171}
+
+/* Inline code */
+ic{display:inline;font-family:'JetBrains Mono',monospace;font-size:12px;background:var(--bg-3);border:1px solid var(--border);padding:1px 5px;border-radius:3px;color:var(--orange)}
+
+/* Footer */
+footer{border-top:1px solid var(--border);padding:32px 0;text-align:center;font-size:13px;color:var(--text-3)}
+footer a{color:var(--text-3)}
+footer a:hover{color:var(--text-1)}
+
+@media(max-width:768px){
+  .sidebar{display:none}
+  main{padding:32px 0 60px;border-left:none}
+  .layout{padding:0 20px}
+  .rate-grid{grid-template-columns:1fr}
+  .endpoint-desc{display:none}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="nav-logo" style="text-decoration:none">
+    <img src="/orlix-logo.jpeg" alt="Orlix AI">
+    <span>Orlix AI</span>
+  </a>
+  <div class="nav-links">
+    <a href="/docs">Docs</a>
+    <a href="/docs/api" style="color:var(--text-1)">API</a>
+    <a href="/control-room">Control Room</a>
+    <a href="/app">Playground</a>
+  </div>
+  <div class="nav-badge">Free · No Auth</div>
+</nav>
+
+<div class="layout">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-group">
+      <div class="sidebar-label">Overview</div>
+      <ul>
+        <li><a href="#intro">Introduction</a></li>
+        <li><a href="#base-url">Base URL</a></li>
+        <li><a href="#rate-limits">Rate Limits</a></li>
+      </ul>
+    </div>
+    <div class="sidebar-group">
+      <div class="sidebar-label">Endpoints</div>
+      <ul>
+        <li><a href="#control-room">GET /api/control-room</a></li>
+        <li><a href="#token-search">GET /api/token-search</a></li>
+      </ul>
+    </div>
+    <div class="sidebar-group">
+      <div class="sidebar-label">Response Schema</div>
+      <ul>
+        <li><a href="#token-object">Token object</a></li>
+        <li><a href="#stats-object">Stats object</a></li>
+      </ul>
+    </div>
+    <div class="sidebar-group">
+      <div class="sidebar-label">Examples</div>
+      <ul>
+        <li><a href="#ex-js">JavaScript</a></li>
+        <li><a href="#ex-python">Python</a></li>
+        <li><a href="#ex-curl">cURL</a></li>
+      </ul>
+    </div>
+  </aside>
+
+  <!-- Main content -->
+  <main>
+
+    <!-- Intro -->
+    <section id="intro">
+      <div class="hero-badge"><span class="dot"></span> API Live</div>
+      <h1>API Reference</h1>
+      <p class="hero-sub">Public REST API for live Base token data. No API key required. Free to use. Built on top of Orlix Control Room.</p>
+
+      <div class="info-box green">
+        <span class="info-icon">✓</span>
+        <span>No authentication required. All endpoints are open and CORS-enabled — call directly from the browser or any backend.</span>
+      </div>
+    </section>
+
+    <!-- Base URL -->
+    <section id="base-url">
+      <h2>Base URL</h2>
+      <div class="code-block">
+        <div class="code-header"><span class="lang">BASE URL</span></div>
+        <pre>https://orlixai.xyz</pre>
+      </div>
+      <p>All endpoints are served over HTTPS. HTTP requests are redirected to HTTPS automatically.</p>
+    </section>
+
+    <!-- Rate Limits -->
+    <section id="rate-limits">
+      <h2>Rate Limits</h2>
+      <div class="rate-grid">
+        <div class="rate-card">
+          <div class="val">30s</div>
+          <div class="lbl">Cache TTL</div>
+        </div>
+        <div class="rate-card">
+          <div class="val">∞</div>
+          <div class="lbl">No rate limit</div>
+        </div>
+        <div class="rate-card">
+          <div class="val">Free</div>
+          <div class="lbl">No API key</div>
+        </div>
+      </div>
+      <p>Responses are cached for 30 seconds server-side. Calling more frequently than that returns the same cached response — there's no benefit to polling faster.</p>
+      <div class="info-box orange">
+        <span class="info-icon">⚠</span>
+        <span>Fair use applies. If you're building something with high traffic, consider caching responses on your end.</span>
+      </div>
+    </section>
+
+    <!-- /api/control-room -->
+    <section id="control-room">
+      <h2>GET /api/control-room</h2>
+      <p>Returns live Base token data — top 100 tokens sorted by 24h volume, trending tokens, market stats, and an AI-generated market commentary.</p>
+
+      <div class="endpoint">
+        <div class="endpoint-header">
+          <span class="method get">GET</span>
+          <span class="endpoint-path">https://orlixai.xyz/api/control-room</span>
+          <span class="endpoint-desc">No params required</span>
+        </div>
+        <div class="endpoint-body">
+          <h3>Response status</h3>
+          <div class="status-row"><span class="status-code ok">200</span> Success — returns JSON data</div>
+          <div class="status-row"><span class="status-code err">405</span> Method not allowed — only GET is supported</div>
+          <div class="status-row"><span class="status-code err">500</span> Upstream error — DexScreener API unavailable</div>
+        </div>
+      </div>
+
+      <h3>Response structure</h3>
+      <div class="code-block">
+        <div class="code-header"><span class="lang">JSON</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+        <pre>{
+  <span class="s">"liveActivity"</span>: [ <span class="c">/* Token[] — all 100 tokens */</span> ],
+  <span class="s">"trending"</span>:     [ <span class="c">/* Token[] — top 15 by volume */</span> ],
+  <span class="s">"stats"</span>: {
+    <span class="s">"total"</span>:      <span class="v">100</span>,        <span class="c">// number of tokens returned</span>
+    <span class="s">"safeCount"</span>:  <span class="v">74</span>,         <span class="c">// tokens with liquidity ≥ $50k</span>
+    <span class="s">"totalVol1h"</span>: <span class="v">4820000</span>,    <span class="c">// total 1h volume across all tokens (USD)</span>
+    <span class="s">"ts"</span>:         <span class="v">1750000000000</span> <span class="c">// Unix timestamp ms when data was fetched</span>
+  },
+  <span class="s">"commentary"</span>: <span class="s">"BRETT leads today up +12.4% on 3× normal volume..."</span>
+}</pre>
+      </div>
+    </section>
+
+    <!-- /api/token-search -->
+    <section id="token-search">
+      <h2>GET /api/token-search</h2>
+      <p>Search for a specific token on Base by symbol or name. Returns the best-matching pair with full token data.</p>
+
+      <div class="endpoint">
+        <div class="endpoint-header">
+          <span class="method get">GET</span>
+          <span class="endpoint-path">https://orlixai.xyz/api/token-search?q=<ic>BRETT</ic></span>
+        </div>
+        <div class="endpoint-body">
+          <h3>Query parameters</h3>
+          <table class="field-table">
+            <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+            <tbody>
+              <tr>
+                <td><span class="field-name">q</span></td>
+                <td><span class="field-type">string</span></td>
+                <td style="color:var(--orange)">Yes</td>
+                <td class="field-desc">Token symbol or name to search (e.g. <ic>BRETT</ic>, <ic>VIRTUAL</ic>)</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Token object -->
+    <section id="token-object">
+      <h2>Token object</h2>
+      <p>Every token in <ic>liveActivity</ic> and <ic>trending</ic> follows this schema:</p>
+      <table class="field-table">
+        <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><span class="field-name">rank</span></td><td><span class="field-type">number</span></td><td class="field-desc">Position 1–100, sorted by 24h volume</td></tr>
+          <tr><td><span class="field-name">address</span></td><td><span class="field-type">string</span></td><td class="field-desc">Token contract address (lowercase)</td></tr>
+          <tr><td><span class="field-name">name</span></td><td><span class="field-type">string</span></td><td class="field-desc">Full token name</td></tr>
+          <tr><td><span class="field-name">symbol</span></td><td><span class="field-type">string</span></td><td class="field-desc">Ticker symbol (e.g. <ic>BRETT</ic>)</td></tr>
+          <tr><td><span class="field-name">priceUsd</span></td><td><span class="field-type">string | null</span></td><td class="field-desc">Current price in USD as string</td></tr>
+          <tr><td><span class="field-name">priceChange5m</span></td><td><span class="field-type">number | null</span></td><td class="field-desc">Price change % over last 5 minutes</td></tr>
+          <tr><td><span class="field-name">priceChange1h</span></td><td><span class="field-type">number | null</span></td><td class="field-desc">Price change % over last 1 hour</td></tr>
+          <tr><td><span class="field-name">priceChange6h</span></td><td><span class="field-type">number | null</span></td><td class="field-desc">Price change % over last 6 hours</td></tr>
+          <tr><td><span class="field-name">priceChange24h</span></td><td><span class="field-type">number | null</span></td><td class="field-desc">Price change % over last 24 hours</td></tr>
+          <tr><td><span class="field-name">volume1h</span></td><td><span class="field-type">number</span></td><td class="field-desc">Trading volume (USD) in last 1 hour</td></tr>
+          <tr><td><span class="field-name">volume6h</span></td><td><span class="field-type">number</span></td><td class="field-desc">Trading volume (USD) in last 6 hours</td></tr>
+          <tr><td><span class="field-name">volume24h</span></td><td><span class="field-type">number</span></td><td class="field-desc">Trading volume (USD) in last 24 hours</td></tr>
+          <tr><td><span class="field-name">liquidity</span></td><td><span class="field-type">number</span></td><td class="field-desc">Pool liquidity in USD</td></tr>
+          <tr><td><span class="field-name">marketCap</span></td><td><span class="field-type">number</span></td><td class="field-desc">Market cap in USD (falls back to FDV)</td></tr>
+          <tr><td><span class="field-name">fdv</span></td><td><span class="field-type">number</span></td><td class="field-desc">Fully diluted valuation in USD</td></tr>
+          <tr><td><span class="field-name">buys1h</span></td><td><span class="field-type">number</span></td><td class="field-desc">Number of buy transactions in last 1h</td></tr>
+          <tr><td><span class="field-name">sells1h</span></td><td><span class="field-type">number</span></td><td class="field-desc">Number of sell transactions in last 1h</td></tr>
+          <tr><td><span class="field-name">buys24h</span></td><td><span class="field-type">number</span></td><td class="field-desc">Number of buy transactions in last 24h</td></tr>
+          <tr><td><span class="field-name">sells24h</span></td><td><span class="field-type">number</span></td><td class="field-desc">Number of sell transactions in last 24h</td></tr>
+          <tr><td><span class="field-name">pairAddress</span></td><td><span class="field-type">string | null</span></td><td class="field-desc">DEX pair contract address</td></tr>
+          <tr><td><span class="field-name">pairCreatedAt</span></td><td><span class="field-type">number | null</span></td><td class="field-desc">Pair creation timestamp (Unix ms)</td></tr>
+          <tr><td><span class="field-name">pairUrl</span></td><td><span class="field-type">string</span></td><td class="field-desc">DexScreener URL for this pair</td></tr>
+          <tr><td><span class="field-name">dexId</span></td><td><span class="field-type">string</span></td><td class="field-desc">DEX identifier (e.g. <ic>uniswap</ic>, <ic>aerodrome</ic>)</td></tr>
+          <tr><td><span class="field-name">pairName</span></td><td><span class="field-type">string</span></td><td class="field-desc">Pair label e.g. <ic>BRETT/WETH</ic></td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- Stats object -->
+    <section id="stats-object">
+      <h2>Stats object</h2>
+      <table class="field-table">
+        <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><span class="field-name">total</span></td><td><span class="field-type">number</span></td><td class="field-desc">Total tokens returned (max 100)</td></tr>
+          <tr><td><span class="field-name">safeCount</span></td><td><span class="field-type">number</span></td><td class="field-desc">Tokens with liquidity ≥ $50k</td></tr>
+          <tr><td><span class="field-name">totalVol1h</span></td><td><span class="field-type">number</span></td><td class="field-desc">Sum of 1h volume across all tokens (USD)</td></tr>
+          <tr><td><span class="field-name">ts</span></td><td><span class="field-type">number</span></td><td class="field-desc">Unix timestamp (ms) when data was fetched</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- Examples -->
+    <section id="ex-js">
+      <h2>Examples</h2>
+      <h3>JavaScript / TypeScript</h3>
+      <div class="code-block">
+        <div class="code-header"><span class="lang">JS</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+        <pre><span class="k">const</span> res = <span class="k">await</span> fetch(<span class="s">'https://orlixai.xyz/api/control-room'</span>);
+<span class="k">const</span> { liveActivity, trending, stats, commentary } = <span class="k">await</span> res.json();
+
+<span class="c">// Top 5 tokens by volume</span>
+trending.slice(<span class="v">0</span>, <span class="v">5</span>).forEach(t => {
+  console.log(<span class="s">`#<span class="n">${t.rank}</span> <span class="n">${t.symbol}</span> — $<span class="n">${t.priceUsd}</span> (<span class="n">${t.priceChange24h}</span>% 24h)`</span>);
+});
+
+<span class="c">// Market overview</span>
+console.log(<span class="s">`<span class="n">${stats.total}</span> tokens · <span class="n">${stats.safeCount}</span> safe · AI: <span class="n">${commentary}</span>`</span>);</pre>
+      </div>
+    </section>
+
+    <section id="ex-python">
+      <h3>Python</h3>
+      <div class="code-block">
+        <div class="code-header"><span class="lang">PYTHON</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+        <pre><span class="k">import</span> requests
+
+data = requests.get(<span class="s">'https://orlixai.xyz/api/control-room'</span>).json()
+
+<span class="k">for</span> token <span class="k">in</span> data[<span class="s">'trending'</span>][:5]:
+    print(<span class="s">f"#{token['rank']} {token['symbol']} — ${token['priceUsd']} ({token['priceChange24h']}% 24h)"</span>)</pre>
+      </div>
+    </section>
+
+    <section id="ex-curl">
+      <h3>cURL</h3>
+      <div class="code-block">
+        <div class="code-header"><span class="lang">BASH</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+        <pre>curl https://orlixai.xyz/api/control-room | jq <span class="s">'.trending[:5] | .[] | {rank, symbol, priceUsd, priceChange24h}'</span></pre>
+      </div>
+
+      <div class="info-box blue">
+        <span class="info-icon">💡</span>
+        <span>Building something with Orlix data? Tag <a href="https://x.com/orlixai" target="_blank">@orlixai</a> — we'd love to see it.</span>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<footer>
+  <a href="/">Orlix AI</a> · <a href="/docs">Docs</a> · <a href="/control-room">Control Room</a> · <a href="/app">Playground</a>
+  <br><br>
+  <span>Data sourced from DexScreener public API · Refreshed every 30s</span>
+</footer>
+
+<script>
+function copyCode(btn){
+  const pre=btn.closest('.code-block').querySelector('pre');
+  navigator.clipboard.writeText(pre.innerText).then(()=>{
+    btn.textContent='copied!';
+    setTimeout(()=>btn.textContent='copy',2000);
+  });
+}
+
+// Highlight active sidebar link on scroll
+const sections=document.querySelectorAll('section[id]');
+const links=document.querySelectorAll('.sidebar a');
+const obs=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(e.isIntersecting){
+      links.forEach(l=>l.classList.remove('active'));
+      const a=document.querySelector(`.sidebar a[href="#${e.target.id}"]`);
+      if(a) a.classList.add('active');
+    }
+  });
+},{rootMargin:'-20% 0px -70% 0px'});
+sections.forEach(s=>obs.observe(s));
+</script>
+
+</body>
+</html>

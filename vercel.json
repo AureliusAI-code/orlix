@@ -18,6 +18,7 @@
   "redirects": [
     { "source": "/app.html",       "destination": "/app",       "permanent": true },
     { "source": "/docs.html",      "destination": "/docs",      "permanent": true },
+    { "source": "/api-docs.html",  "destination": "/docs/api",  "permanent": true },
     { "source": "/changelog.html", "destination": "/changelog", "permanent": true },
     { "source": "/privacy.html",   "destination": "/privacy",   "permanent": true },
     { "source": "/terms.html",     "destination": "/terms",     "permanent": true },
@@ -31,6 +32,7 @@
   "rewrites": [
     { "source": "/app",       "destination": "/app.html" },
     { "source": "/docs",      "destination": "/docs.html" },
+    { "source": "/docs/api",  "destination": "/api-docs.html" },
     { "source": "/changelog", "destination": "/changelog.html" },
     { "source": "/privacy",   "destination": "/privacy.html" },
     { "source": "/terms",     "destination": "/terms.html" },
