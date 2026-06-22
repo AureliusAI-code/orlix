@@ -5,7 +5,6 @@
   "outputDirectory": ".",
   "functions": {
     "api/chat.js":         { "maxDuration": 60 },
-    "api/ping.js":         { "maxDuration": 10 },
     "api/gallery.js":      { "maxDuration": 10 },
     "api/auth.js":         { "maxDuration": 10 },
     "api/analyze.js":      { "maxDuration": 60 },
