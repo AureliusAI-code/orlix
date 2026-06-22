@@ -80,8 +80,6 @@ body::after{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
 .wo-right{display:flex;flex-direction:column;gap:1px}
 .wo-name{color:var(--bright);font-size:.83rem;font-weight:600}
 .wo-desc{color:var(--dim);font-size:.68rem;font-weight:400}
-.wm-footer{text-align:center;color:rgba(255,255,255,.2);font-size:.68rem;margin-top:16px}
-.wm-footer span{color:var(--amber)}
 
 .wm-msg{font-size:.73rem;text-align:center;margin-top:12px;line-height:1.5;display:none}
 .wm-msg-err{color:var(--red)}.wm-msg-ok{color:var(--dim)}
@@ -95,11 +93,11 @@ body::after{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
 <div class="card">
   <div class="brand"><span class="brand-dot">●</span>ORLIX</div>
   <div class="login-title">Sign in</div>
-  <div class="login-sub">Connect to your personal AI operating system.</div>
+  <div class="login-sub">Connect your wallet to access your personal AI operating system.</div>
 
   <button class="btn-main" id="btnSignIn" onclick="openModal()">
     <span style="font-size:1rem">⬡</span>
-    <span id="lblSignIn">Sign in / Connect</span>
+    <span id="lblSignIn">Connect Wallet</span>
   </button>
 
   <div id="msgErr" class="msg msg-err"></div>
@@ -112,23 +110,12 @@ body::after{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
   </div>
 </div>
 
-<!-- Wallet / Social selection modal -->
+<!-- Wallet selection modal -->
 <div class="wm-overlay" id="walletModal" onclick="onOverlayClick(event)">
   <div class="wm-box">
     <button class="wm-close" onclick="closeModal()">×</button>
-    <div class="wm-title">Log in or sign up</div>
-    <div class="wm-sub">Choose how you want to connect</div>
-
-    <!-- Twitter / X -->
-    <button class="wo" id="woX" onclick="loginWithX()">
-      <div class="wo-icon" style="background:rgba(255,255,255,.06)">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style="color:#f0ebe3"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
-      </div>
-      <div class="wo-right">
-        <div class="wo-name">Twitter</div>
-        <div class="wo-desc">Login with your X account</div>
-      </div>
-    </button>
+    <div class="wm-title">Connect Wallet</div>
+    <div class="wm-sub">Choose your wallet to sign in</div>
 
     <!-- MetaMask -->
     <button class="wo" id="woMM" onclick="connectMM()">
@@ -201,27 +188,17 @@ body::after{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
 
     <div id="wmErr" class="wm-msg wm-msg-err"></div>
     <div id="wmOk"  class="wm-msg wm-msg-ok"></div>
-
-    <div class="wm-footer">Protected by <span>●</span> Privy</div>
   </div>
 </div>
 
 <script>
-const APP_ID     = 'cmqh5fvyg00co0ci68birz0s2';
-const CLIENT_ID  = 'client-WY6aRspZ68mzwa8hexMRYu9xiCKWRkscPMKYYu3oayZ99';
-const ORIGIN     = 'https://orlixai.xyz';
-const PRIVY_BASE = 'https://auth.privy.io/api/v1';
-const IS_MOBILE  = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+const IS_MOBILE = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
 if (localStorage.getItem('orlix_token')) location.replace('/app');
 
-// ── Modal ────────────────────────────────────────────────────────────────────
-
-function openModal() { document.getElementById('walletModal').classList.add('open'); }
+function openModal()  { document.getElementById('walletModal').classList.add('open'); }
 function closeModal() { document.getElementById('walletModal').classList.remove('open'); }
 function onOverlayClick(e) { if (e.target === document.getElementById('walletModal')) closeModal(); }
-
-// ── UI helpers ────────────────────────────────────────────────────────────────
 
 function wmErr(msg) {
   const e = document.getElementById('wmErr'), o = document.getElementById('wmOk');
@@ -234,57 +211,11 @@ function wmOk(msg) {
   o.style.display = 'block'; e.style.display = 'none';
 }
 function setModalBusy(b) {
-  ['woX','woMM','woCB','woOther'].forEach(id => {
+  ['woMM','woCB','woOther'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.disabled = b;
   });
 }
-
-// ── PKCE (WebCrypto) ──────────────────────────────────────────────────────────
-
-async function pkce() {
-  const arr = new Uint8Array(32);
-  crypto.getRandomValues(arr);
-  const v = btoa(String.fromCharCode(...arr)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');
-  const h = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(v));
-  const c = btoa(String.fromCharCode(...new Uint8Array(h))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');
-  return { verifier: v, challenge: c };
-}
-function rndState() {
-  const a = new Uint8Array(16); crypto.getRandomValues(a);
-  return btoa(String.fromCharCode(...a)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');
-}
-function privyHdrs() {
-  return { 'Content-Type':'application/json', 'privy-app-id':APP_ID, 'privy-client-id':CLIENT_ID };
-}
-
-// ── Twitter / X ───────────────────────────────────────────────────────────────
-
-async function loginWithX() {
-  setModalBusy(true);
-  wmOk('Redirecting to X…');
-  try {
-    const { verifier, challenge } = await pkce();
-    const state = rndState();
-    sessionStorage.setItem('privy_cv', verifier);
-    sessionStorage.setItem('privy_st', state);
-    const r = await fetch(PRIVY_BASE + '/oauth/init', {
-      method: 'POST',
-      headers: privyHdrs(),
-      body: JSON.stringify({
-        type: 'oauth', provider: 'twitter',
-        redirect_to: ORIGIN + '/login',
-        state, code_challenge: challenge, code_challenge_method: 'S256',
-      }),
-    });
-    const d = await r.json();
-    const url = d.authorization_url || d.url || d.redirect_url;
-    if (url) { window.location.href = url; }
-    else { wmErr('X login failed: ' + (d.error || d.message || JSON.stringify(d))); }
-  } catch (e) { wmErr('X login error: ' + e.message); }
-}
-
-// ── Wallet helpers ────────────────────────────────────────────────────────────
 
 function getMetaMask() {
   if (!window.ethereum) return null;
@@ -298,9 +229,7 @@ function getCoinbase() {
   const p = window.ethereum.providers;
   return p ? (p.find(x => x.isCoinbaseWallet) || null) : null;
 }
-function getAny() {
-  return window.ethereum || null;
-}
+function getAny() { return window.ethereum || null; }
 
 async function doWalletLogin(provider) {
   setModalBusy(true);
@@ -321,8 +250,6 @@ async function doWalletLogin(provider) {
   }
 }
 
-// ── MetaMask ──────────────────────────────────────────────────────────────────
-
 async function connectMM() {
   const prov = getMetaMask();
   if (!prov) {
@@ -335,8 +262,6 @@ async function connectMM() {
   }
   await doWalletLogin(prov);
 }
-
-// ── Coinbase Wallet ───────────────────────────────────────────────────────────
 
 async function connectCoinbase() {
   const prov = getCoinbase();
@@ -351,8 +276,6 @@ async function connectCoinbase() {
   await doWalletLogin(prov);
 }
 
-// ── Other wallets ─────────────────────────────────────────────────────────────
-
 async function connectOther() {
   const prov = getAny();
   if (!prov) {
@@ -361,69 +284,6 @@ async function connectOther() {
   }
   await doWalletLogin(prov);
 }
-
-// ── OAuth callback (Twitter redirect back to /login?code=…&state=…) ───────────
-
-(async function handleCallback() {
-  const p     = new URLSearchParams(location.search);
-  const code  = p.get('code');
-  const state = p.get('state');
-  const err   = p.get('error');
-  if (!code && !err) return;
-
-  history.replaceState({}, '', '/login');
-
-  // Show callback status in the main card area
-  function mainMsg(msg, isErr) {
-    const el = document.getElementById(isErr ? 'msgErr' : 'msgOk');
-    const other = document.getElementById(isErr ? 'msgOk' : 'msgErr');
-    el.innerHTML = msg; el.style.display = 'block'; other.style.display = 'none';
-  }
-
-  if (err) { mainMsg('X login cancelled' + (err !== 'access_denied' ? ': ' + err : '.'), true); return; }
-
-  const verifier   = sessionStorage.getItem('privy_cv');
-  const savedState = sessionStorage.getItem('privy_st');
-  sessionStorage.removeItem('privy_cv');
-  sessionStorage.removeItem('privy_st');
-
-  if (!verifier || state !== savedState) {
-    mainMsg('Session expired. Please try again.', true); return;
-  }
-
-  const btn = document.getElementById('btnSignIn');
-  if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spin">◌</span> Authenticating…'; }
-
-  try {
-    const r = await fetch(PRIVY_BASE + '/oauth/authenticate', {
-      method: 'POST', headers: privyHdrs(),
-      body: JSON.stringify({ state, code, code_verifier: verifier }),
-    });
-    const d = await r.json();
-    if (d.token) {
-      const user  = d.user || {};
-      const accts = user.linked_accounts || [];
-      const tw    = accts.find(a => a.type === 'twitter_oauth');
-      const display = tw ? '@' + tw.username : (user.id || '').slice(0,12) || 'user';
-      localStorage.setItem('orlix_token', 'privy:' + d.token);
-      localStorage.setItem('orlix_user',  JSON.stringify({
-        id:      user.id,
-        display,
-        type:    'twitter',
-        username: tw?.username || '',
-        name:     tw?.name || '',
-        avatar:   tw?.profile_picture_url || '',
-      }));
-      window.location.href = '/app';
-    } else {
-      if (btn) { btn.disabled = false; btn.innerHTML = '<span style="font-size:1rem">⬡</span> Sign in / Connect'; }
-      mainMsg('Auth failed: ' + (d.error || d.message || d.cause || JSON.stringify(d)), true);
-    }
-  } catch (e) {
-    if (btn) { btn.disabled = false; btn.innerHTML = '<span style="font-size:1rem">⬡</span> Sign in / Connect'; }
-    mainMsg('Auth error: ' + e.message, true);
-  }
-})();
 </script>
 
 </body>

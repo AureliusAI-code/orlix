@@ -6,7 +6,6 @@
   "functions": {
     "api/chat.js":         { "maxDuration": 60 },
     "api/gallery.js":      { "maxDuration": 10 },
-    "api/auth.js":         { "maxDuration": 10 },
     "api/analyze.js":      { "maxDuration": 60 },
     "api/control-room.js": { "maxDuration": 30 },
     "api/token-search.js": { "maxDuration": 15 },
