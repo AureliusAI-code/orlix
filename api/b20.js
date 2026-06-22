@@ -9,38 +9,7 @@ const CORS = {
 
 const BERYL_MAINNET_TS = new Date('2026-06-25T00:00:00Z').getTime();
 
-// Known B20 tokens — populated as tokens deploy post-Beryl
-// Format: { address, name, symbol, variant, deployer, deployedAt }
 const KNOWN_B20 = [];
-
-// Base RPC to query B20 registry precompile once address is confirmed
-const BASE_RPC = 'https://mainnet.base.org';
-const BASE_SEPOLIA_RPC = 'https://sepolia.base.org';
-
-async function rpcCall(rpc, method, params = []) {
-  const r = await fetch(rpc, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
-    signal: AbortSignal.timeout(6000),
-  });
-  if (!r.ok) throw new Error(`RPC ${r.status}`);
-  const j = await r.json();
-  if (j.error) throw new Error(j.error.message);
-  return j.result;
-}
-
-async function isB20Live() {
-  try {
-    // Beryl adds block.timestamp-based detection — check if mainnet is past June 25
-    const blockHex = await rpcCall(BASE_RPC, 'eth_blockNumber');
-    const block = await rpcCall(BASE_RPC, 'eth_getBlockByNumber', [blockHex, false]);
-    const ts = parseInt(block.timestamp, 16) * 1000;
-    return ts >= BERYL_MAINNET_TS;
-  } catch {
-    return Date.now() >= BERYL_MAINNET_TS;
-  }
-}
 
 module.exports = async (req, res) => {
   if (req.method === 'OPTIONS') { res.writeHead(204, CORS); return res.end(); }
@@ -49,6 +18,8 @@ module.exports = async (req, res) => {
   const action = req.query.action || 'info';
   const now = Date.now();
   const mainnetLive = now >= BERYL_MAINNET_TS;
+
+  res.writeHead(200, CORS);
 
   if (action === 'info') {
     return res.end(JSON.stringify({
@@ -100,12 +71,11 @@ module.exports = async (req, res) => {
         tokens: [],
         total: 0,
         mainnetLive: false,
-        message: `B20 tokens go live on Base mainnet June 25, 2026. Check back then.`,
+        message: 'B20 tokens go live on Base mainnet June 25, 2026. Check back then.',
         msUntilMainnet: BERYL_MAINNET_TS - now,
         testnetExplorer: 'https://sepolia.basescan.org',
       }));
     }
-
     return res.end(JSON.stringify({
       tokens: KNOWN_B20,
       total: KNOWN_B20.length,
@@ -114,6 +84,5 @@ module.exports = async (req, res) => {
     }));
   }
 
-  res.writeHead(400, CORS);
   res.end(JSON.stringify({ error: 'Unknown action. Use ?action=info or ?action=tokens' }));
 };
