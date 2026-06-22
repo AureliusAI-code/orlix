@@ -302,7 +302,7 @@ footer a:hover{color:var(--text-1)}
     <!-- /api/token-search -->
     <section id="token-search">
       <h2>GET /api/token-search</h2>
-      <p>Search for a specific token on Base by symbol or name. Returns the best-matching pair with full token data.</p>
+      <p>Search for a token on Base by symbol or name. Returns all matching pairs sorted by 24h volume.</p>
 
       <div class="endpoint">
         <div class="endpoint-header">
@@ -322,6 +322,18 @@ footer a:hover{color:var(--text-1)}
               </tr>
             </tbody>
           </table>
+          <h3>Response structure</h3>
+          <div class="code-block">
+            <div class="code-header"><span class="lang">JSON</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+            <pre>{
+  <span class="s">"tokens"</span>: [ <span class="c">/* Token[] — matching pairs, sorted by 24h volume */</span> ],
+  <span class="s">"total"</span>:  <span class="v">2</span>,       <span class="c">// number of results found</span>
+  <span class="s">"query"</span>:  <span class="s">"BNKR"</span>  <span class="c">// the search term used</span>
+}</pre>
+          </div>
+          <div class="status-row"><span class="status-code ok">200</span> Success</div>
+          <div class="status-row"><span class="status-code err">400</span> Missing or empty <ic>q</ic> parameter</div>
+          <div class="status-row"><span class="status-code err">502</span> DexScreener upstream error</div>
         </div>
       </div>
     </section>
