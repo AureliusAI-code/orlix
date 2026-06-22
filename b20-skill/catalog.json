@@ -5,7 +5,7 @@
   "providerUrl": "https://orlixai.xyz",
   "logo": "/b20-logo.png",
   "name": "Orlix B20 Token Skill",
-  "description": "Create, validate, and deploy B20 tokens on Base through Orlix AI. Asset & Stablecoin variants, supply caps, role-based access, compliance policies (allowlist, blocklist, freeze).",
+  "description": "Full B20 token lifecycle on Base — live gas prices, ETH/ERC-20 balance checks, deep config validation, ABI-encoded deployment bundles with real nonce + gas, token reads, and tx receipts. Real Base RPC calls, no mocks.",
   "status": "gated",
   "standard": "B20/Beryl",
   "network": "Base",
@@ -15,33 +15,58 @@
   "demo": {
     "title": "orlix-b20-demo.sh",
     "language": "bash",
-    "code": "# Prepare a B20 Asset token deployment\ncurl -X POST https://orlixai.xyz/api/b20-skill \\\n  -H 'Content-Type: application/json' \\\n  -d '{\n    \"action\": \"prepare\",\n    \"name\": \"BNKR Token\",\n    \"symbol\": \"BNKR\",\n    \"variant\": \"asset\",\n    \"decimals\": 18,\n    \"supply_cap\": \"1000000000\",\n    \"admin\": \"0xYOUR_WALLET\",\n    \"policies\": { \"blocklist\": true }\n  }'\n\n# Validate config only\ncurl -X POST https://orlixai.xyz/api/b20-skill \\\n  -H 'Content-Type: application/json' \\\n  -d '{ \"action\": \"validate\", \"name\": \"My Token\", \"symbol\": \"MTK\", \"admin\": \"0x...\" }'\n\n# Get B20 standard info\ncurl 'https://orlixai.xyz/api/b20-skill?action=info'\n\n# Get full tool manifest (Claude + OpenAI format)\ncurl 'https://orlixai.xyz/api/b20-skill?action=manifest'"
+    "code": "# Get live Base chain status + gas prices\ncurl 'https://orlixai.xyz/api/b20-skill?action=info'\n\n# Read any ERC-20 on Base ($ORLIX token)\ncurl -X POST https://orlixai.xyz/api/b20-skill \\\n  -H 'Content-Type: application/json' \\\n  -d '{ \"action\": \"token_info\", \"address\": \"0x799c28BAC95B3E0B26534D1e9A586511895EcBA3\" }'\n\n# Check ETH balance of any wallet\ncurl -X POST https://orlixai.xyz/api/b20-skill \\\n  -H 'Content-Type: application/json' \\\n  -d '{ \"action\": \"balance\", \"address\": \"0xYOUR_WALLET\" }'\n\n# Prepare full B20 deployment bundle (real gas + nonce from Base)\ncurl -X POST https://orlixai.xyz/api/b20-skill \\\n  -H 'Content-Type: application/json' \\\n  -d '{\n    \"action\": \"prepare\",\n    \"name\": \"BNKR Token\",\n    \"symbol\": \"BNKR\",\n    \"variant\": \"asset\",\n    \"decimals\": 18,\n    \"supply_cap\": \"1000000000\",\n    \"admin\": \"0xYOUR_WALLET\",\n    \"policies\": { \"blocklist\": true }\n  }'\n\n# Get full tool manifest (Claude + OpenAI format)\ncurl 'https://orlixai.xyz/api/b20-skill?action=manifest'"
   },
   "setup": [
-    "No setup required — the API is open and does not require authentication",
-    "POST to https://orlixai.xyz/api/b20-skill with action=prepare and your token config",
-    "The skill returns a validated config, deterministic address preview, and deployment params",
-    "B20 deploys go live when Base activates the standard — save the config and deploy then",
+    "No authentication required — the API is open",
+    "POST to https://orlixai.xyz/api/b20-skill with your action and params",
+    "GET ?action=info for live chain status and gas prices",
+    "The prepare action fetches real gas prices and nonce from Base RPC",
+    "Deploys go live when Base activates the B20 standard — save the prepared tx and broadcast then",
     "For a visual configurator, use the B20 Studio at https://orlixai.xyz/b20"
   ],
   "actions": [
     {
-      "name": "prepare",
-      "description": "Validate config + return deployment bundle (address preview, params, deployment data)",
+      "name": "info",
+      "description": "Live Base chain status, gas prices, B20 standard details",
+      "method": "GET",
+      "url": "https://orlixai.xyz/api/b20-skill?action=info"
+    },
+    {
+      "name": "gas",
+      "description": "Current EIP-1559 gas prices with deploy cost estimate",
+      "method": "GET",
+      "url": "https://orlixai.xyz/api/b20-skill?action=gas"
+    },
+    {
+      "name": "balance",
+      "description": "ETH balance + optional ERC-20 balance for any address on Base",
       "method": "POST",
-      "body": { "action": "prepare", "name": "...", "symbol": "...", "admin": "0x..." }
+      "body": { "action": "balance", "address": "0x..." }
+    },
+    {
+      "name": "token_info",
+      "description": "Read name, symbol, decimals, total supply for any ERC-20 on Base",
+      "method": "POST",
+      "body": { "action": "token_info", "address": "0x..." }
     },
     {
       "name": "validate",
-      "description": "Validate config only — returns errors and warnings",
+      "description": "Validate B20 config + live admin ETH balance + gas estimate from Base RPC",
       "method": "POST",
       "body": { "action": "validate", "name": "...", "symbol": "...", "admin": "0x..." }
     },
     {
-      "name": "info",
-      "description": "B20 standard status, variants, and features",
-      "method": "GET",
-      "url": "https://orlixai.xyz/api/b20-skill?action=info"
+      "name": "prepare",
+      "description": "Validate + build complete EIP-1559 deployment tx with live gas + nonce from Base",
+      "method": "POST",
+      "body": { "action": "prepare", "name": "...", "symbol": "...", "admin": "0x..." }
+    },
+    {
+      "name": "receipt",
+      "description": "Check tx hash status on Base + extract deployed token address from logs",
+      "method": "POST",
+      "body": { "action": "receipt", "tx_hash": "0x..." }
     },
     {
       "name": "manifest",
@@ -55,6 +80,6 @@
     "app": "https://orlixai.xyz",
     "docs": "https://orlixai.xyz/docs",
     "control_room": "https://orlixai.xyz/control-room",
-    "api_info": "https://orlixai.xyz/api/b20?action=info"
+    "api_info": "https://orlixai.xyz/api/b20-skill?action=info"
   }
 }
