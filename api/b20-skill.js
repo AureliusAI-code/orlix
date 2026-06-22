@@ -507,27 +507,40 @@ async function handlePrepare(body, res) {
 
   const maxFeeHex  = gas?.maxFeePerGas ?? null;
   const tipHex     = gas?.maxPriorityFeePerGas ?? null;
-  const maxFeeGwei = maxFeeHex ? (Number(BigInt(maxFeeHex)) / 1e9).toFixed(6) + ' gwei' : null;
-  const tipGwei    = tipHex    ? (Number(BigInt(tipHex))    / 1e9).toFixed(6) + ' gwei' : null;
+  const maxFeeGwei = maxFeeHex ? (Number(BigInt(maxFeeHex)) / 1e9).toFixed(6) : null;
+  const tipGwei    = tipHex    ? (Number(BigInt(tipHex))    / 1e9).toFixed(6) : null;
 
   const DEPLOY_GAS_UNITS = 200000;
   const deployCostEth = maxFeeHex
-    ? (Number(BigInt(maxFeeHex) * BigInt(DEPLOY_GAS_UNITS)) / 1e18).toFixed(8) + ' ETH'
+    ? (Number(BigInt(maxFeeHex) * BigInt(DEPLOY_GAS_UNITS)) / 1e18).toFixed(8)
     : null;
 
+  // Human-readable summary for agents / display
+  const txSummary = {
+    to:               'B20 Factory Precompile (Base Beryl)',
+    toAddress:        B20_FACTORY,
+    network:          net === 'mainnet' ? 'Base Mainnet' : 'Base Sepolia',
+    chainId:          CHAIN_ID[net],
+    gasLimit:         `${DEPLOY_GAS_UNITS.toLocaleString()} units`,
+    maxFeePerGas:     maxFeeGwei ? `${maxFeeGwei} gwei (${maxFeeHex})` : 'unknown',
+    maxPriorityFee:   tipGwei    ? `${tipGwei} gwei (${tipHex})`    : 'unknown',
+    nonce:            nonce !== null ? nonce : 'unknown',
+    value:            '0 ETH',
+    estimatedCost:    deployCostEth ? `~${deployCostEth} ETH at current Base gas` : 'unknown',
+    calldataSelector: cd.selector + ' (placeholder — updated at Beryl activation)',
+    status:           'ready to sign once Base Beryl activates',
+  };
+
   const tx = {
-    type:                    '0x02',
-    chainId:                 '0x' + CHAIN_ID[net].toString(16),
-    to:                      B20_FACTORY,
-    value:                   '0x0',
-    data:                    cd.calldata,
-    gas:                     '0x' + DEPLOY_GAS_UNITS.toString(16),
-    maxFeePerGas:            maxFeeHex,
-    maxFeePerGas_gwei:       maxFeeGwei,
-    maxPriorityFeePerGas:    tipHex,
-    maxPriorityFeePerGas_gwei: tipGwei,
-    nonce:                   nonce !== null ? '0x' + nonce.toString(16) : null,
-    _deployCostEstimate:     deployCostEth,
+    type:                 '0x02',
+    chainId:              '0x' + CHAIN_ID[net].toString(16),
+    to:                   B20_FACTORY,
+    value:                '0x0',
+    data:                 cd.calldata,
+    gas:                  '0x' + DEPLOY_GAS_UNITS.toString(16),
+    maxFeePerGas:         maxFeeHex,
+    maxPriorityFeePerGas: tipHex,
+    nonce:                nonce !== null ? '0x' + nonce.toString(16) : null,
   };
 
   return res.end(JSON.stringify({
@@ -538,14 +551,16 @@ async function handlePrepare(body, res) {
 
     config,
 
+    txSummary,
+
     chain: {
       network: net, chainId: CHAIN_ID[net],
       blockNumber: gas?.blockNumber ?? null,
       adminBalance: ethBalance,
       gas: gas ? {
         baseFeeGwei:         gas.baseFeeGwei,
-        maxFeePerGas:        gas.maxFeePerGas,
-        maxPriorityFeePerGas:gas.maxPriorityFeePerGas,
+        maxFeePerGas:        maxFeeGwei ? `${maxFeeGwei} gwei` : gas.maxFeePerGas,
+        maxPriorityFeePerGas:tipGwei    ? `${tipGwei} gwei`    : gas.maxPriorityFeePerGas,
       } : null,
     },
 
