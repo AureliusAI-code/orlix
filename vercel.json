@@ -34,8 +34,9 @@
     { "source": "/b20-studio.html",   "destination": "/b20",           "permanent": true }
   ],
   "rewrites": [
-    { "source": "/skills/b20",   "destination": "/b20-skill/SKILL.md" },
-    { "source": "/skills/orlix", "destination": "/bankr-skill/SKILL.md" },
+    { "source": "/skills/b20",        "destination": "/b20-skills/SKILL.md" },
+    { "source": "/skills/orlix",      "destination": "/bankr-skill/SKILL.md" },
+    { "source": "/b20-skills/SKILL.md","destination": "/b20-skills/SKILL.md" },
     { "source": "/app",          "destination": "/app.html" },
     { "source": "/docs",         "destination": "/docs.html" },
     { "source": "/docs/api",     "destination": "/api-docs.html" },
