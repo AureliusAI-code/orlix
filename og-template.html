@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{
+    width:1200px;height:630px;overflow:hidden;
+    background:#09090B;
+    font-family:'Courier New',monospace;
+    color:#fff;
+    position:relative;
+  }
+
+  /* Grid lines subtle */
+  .grid{
+    position:absolute;inset:0;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+    background-size:60px 60px;
+  }
+
+  /* Orange glow top-left */
+  .glow{
+    position:absolute;
+    top:-120px;left:-80px;
+    width:500px;height:500px;
+    background:radial-gradient(circle, rgba(255,107,0,0.12) 0%, transparent 70%);
+    pointer-events:none;
+  }
+
+  /* Content */
+  .content{
+    position:relative;z-index:10;
+    padding:64px 72px;
+    height:100%;
+    display:flex;
+    flex-direction:column;
+    justify-content:space-between;
+  }
+
+  /* Top row — logo + badge */
+  .top{display:flex;align-items:center;justify-content:space-between}
+  .logo{display:flex;align-items:center;gap:14px}
+  .logo-icon{
+    width:48px;height:48px;
+    background:#fff;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .logo-icon span{color:#000;font-weight:900;font-size:18px}
+  .logo-name{font-size:22px;font-weight:700;letter-spacing:1px;color:#fff}
+  .badge{
+    font-size:12px;color:#ff6b00;
+    border:1px solid rgba(255,107,0,0.4);
+    padding:5px 14px;border-radius:4px;letter-spacing:2px;
+    text-transform:uppercase;
+    background:rgba(255,107,0,0.06);
+  }
+
+  /* Main headline */
+  .headline{
+    font-size:72px;font-weight:900;line-height:1.0;
+    letter-spacing:-2px;
+    font-family:'Courier New',monospace;
+  }
+  .headline .white{color:#fff}
+  .headline .orange{
+    background:linear-gradient(90deg,#ff6b00,#ff9a00);
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  }
+
+  /* Features row */
+  .features{display:flex;gap:32px;align-items:center}
+  .feat{display:flex;align-items:center;gap:8px;font-size:14px;color:#666;letter-spacing:0.5px}
+  .feat-dot{width:6px;height:6px;border-radius:50%;background:#ff6b00;flex-shrink:0}
+  .divider{color:#222;font-size:18px}
+
+  /* Bottom */
+  .bottom{display:flex;align-items:center;justify-content:space-between}
+  .url{font-size:16px;color:#444;letter-spacing:2px}
+  .powered{display:flex;align-items:center;gap:8px;font-size:12px;color:#333;letter-spacing:1px}
+  .powered-dot{width:4px;height:4px;border-radius:50%;background:#333}
+</style>
+</head>
+<body>
+<div class="grid"></div>
+<div class="glow"></div>
+
+<div class="content">
+  <div class="top">
+    <div class="logo">
+      <div class="logo-icon"><span>&gt;_</span></div>
+      <div class="logo-name">Orlix AI</div>
+    </div>
+    <div class="badge">Now Agentic</div>
+  </div>
+
+  <div>
+    <div class="headline">
+      <div class="white">AI that acts</div>
+      <div class="orange">on Base.</div>
+    </div>
+  </div>
+
+  <div>
+    <div class="features">
+      <div class="feat"><div class="feat-dot"></div>Web search</div>
+      <div class="divider">·</div>
+      <div class="feat"><div class="feat-dot"></div>Fetch URLs</div>
+      <div class="divider">·</div>
+      <div class="feat"><div class="feat-dot"></div>GitHub analysis</div>
+      <div class="divider">·</div>
+      <div class="feat"><div class="feat-dot"></div>Base blockchain live</div>
+      <div class="divider">·</div>
+      <div class="feat"><div class="feat-dot"></div>5-tool chains</div>
+    </div>
+  </div>
+
+  <div class="bottom">
+    <div class="url">orlixai.xyz/app</div>
+    <div class="powered">
+      <div class="powered-dot"></div>
+      Powered by Aeon Framework
+    </div>
+  </div>
+</div>
+</body>
+</html>
