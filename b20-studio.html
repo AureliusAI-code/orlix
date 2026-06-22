@@ -10,262 +10,394 @@
 <style>
 :root{
   --bg:#07070A;--s1:#0C0C10;--s2:#101015;--s3:#16161C;--s4:#1C1C24;
-  --b1:rgba(255,255,255,.06);--b2:rgba(255,255,255,.10);--b3:rgba(255,255,255,.16);
-  --orange:#F07830;--blue:#3B82F6;--blue-d:rgba(59,130,246,.12);--blue-g:rgba(59,130,246,.22);
+  --b1:rgba(255,255,255,.06);--b2:rgba(255,255,255,.10);--b3:rgba(255,255,255,.18);
+  --orange:#F07830;--orange-d:rgba(240,120,48,.12);--orange-g:rgba(240,120,48,.20);
+  --blue:#3B82F6;--blue-d:rgba(59,130,246,.12);
   --green:#22C55E;--red:#EF4444;--yellow:#EAB308;
   --t1:#F1F1F3;--t2:#9CA3AF;--t3:#52525B;
   --font:'Plus Jakarta Sans',sans-serif;--mono:'JetBrains Mono',monospace;
+  --radius:14px;
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-html,body{background:var(--bg);color:var(--t2);font-family:var(--font);min-height:100vh;-webkit-font-smoothing:antialiased}
+html,body{background:var(--bg);color:var(--t2);font-family:var(--font);min-height:100vh;-webkit-font-smoothing:antialiased;scroll-behavior:smooth}
+button,input,select{font-family:var(--font)}
 
 /* ── NAV ── */
 .nav{
-  position:fixed;top:0;left:0;right:0;z-index:100;height:52px;
-  display:flex;align-items:center;justify-content:space-between;padding:0 20px;
-  background:rgba(7,7,10,.92);backdrop-filter:blur(20px);border-bottom:1px solid var(--b1);
+  position:fixed;top:0;left:0;right:0;z-index:100;height:54px;
+  display:flex;align-items:center;justify-content:space-between;padding:0 18px;
+  background:rgba(7,7,10,.94);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+  border-bottom:1px solid var(--b1);
 }
-.nav-left{display:flex;align-items:center;gap:12px}
-.nav-logo{display:flex;align-items:center;gap:8px;text-decoration:none}
-.nav-logo img{width:26px;height:26px;border-radius:50%;object-fit:cover}
-.nav-logo-text{font-weight:800;font-size:.88rem;color:var(--t1);letter-spacing:-.01em}
-.nav-div{width:1px;height:18px;background:var(--b2)}
-.nav-badge{display:flex;align-items:center;gap:7px;font-size:.82rem;font-weight:700;color:var(--t1)}
-.b20-nav-ico{width:22px;height:22px;border-radius:4px;background:#fff;padding:2px;overflow:hidden;flex-shrink:0}
+.nav-left{display:flex;align-items:center;gap:12px;min-width:0}
+.nav-logo{display:flex;align-items:center;gap:7px;text-decoration:none;flex-shrink:0}
+.nav-logo img{width:24px;height:24px;border-radius:50%;object-fit:cover}
+.nav-logo-text{font-weight:800;font-size:.84rem;color:var(--t1);letter-spacing:-.01em}
+.nav-div{width:1px;height:16px;background:var(--b2);flex-shrink:0}
+.nav-badge{display:flex;align-items:center;gap:7px;flex-shrink:0}
+.b20-nav-ico{width:20px;height:20px;border-radius:4px;background:#fff;padding:2px;overflow:hidden;flex-shrink:0}
 .b20-nav-ico img{width:100%;height:100%;object-fit:contain}
-.beta-tag{font-size:.6rem;font-weight:700;color:var(--blue);background:var(--blue-d);border:1px solid rgba(59,130,246,.2);border-radius:4px;padding:1px 6px;letter-spacing:.06em}
-.nav-right{display:flex;align-items:center;gap:8px}
-.chain-pill{display:flex;align-items:center;gap:5px;background:var(--s2);border:1px solid var(--b1);border-radius:6px;padding:5px 10px;font-size:.72rem;font-weight:600;color:var(--t1)}
-.chain-dot{width:7px;height:7px;border-radius:50%;background:var(--blue);box-shadow:0 0 6px rgba(59,130,246,.6)}
-.wallet-pill{font-family:var(--mono);font-size:.7rem;color:var(--t2);background:var(--s2);border:1px solid var(--b1);border-radius:6px;padding:5px 10px;cursor:pointer;transition:all .15s}
-.wallet-pill:hover{color:var(--t1);border-color:var(--b2)}
+.nav-badge-label{font-size:.82rem;font-weight:700;color:var(--t1)}
+.beta-tag{font-size:.58rem;font-weight:700;color:var(--orange);background:var(--orange-d);border:1px solid rgba(240,120,48,.25);border-radius:4px;padding:1px 6px;letter-spacing:.06em}
+.nav-right{display:flex;align-items:center;gap:7px;flex-shrink:0}
+.chain-pill{
+  display:flex;align-items:center;gap:5px;
+  background:var(--s2);border:1px solid var(--b1);border-radius:7px;
+  padding:5px 10px;font-size:.7rem;font-weight:600;color:var(--t2);
+}
+.chain-dot{width:6px;height:6px;border-radius:50%;background:var(--blue);box-shadow:0 0 5px rgba(59,130,246,.6)}
+.wallet-btn{
+  display:flex;align-items:center;gap:6px;
+  background:var(--s2);border:1px solid var(--b1);border-radius:7px;
+  padding:5px 12px;font-size:.72rem;font-weight:600;color:var(--t2);
+  cursor:pointer;transition:all .15s;white-space:nowrap;
+}
+.wallet-btn:hover{color:var(--t1);border-color:var(--b2);background:var(--s3)}
+.wallet-btn.connected{color:var(--t1);border-color:rgba(34,197,94,.25);background:rgba(34,197,94,.06)}
+.wallet-dot{width:6px;height:6px;border-radius:50%;background:var(--t3);flex-shrink:0}
+.wallet-btn.connected .wallet-dot{background:var(--green)}
+.wallet-addr{font-family:var(--mono);font-size:.67rem}
 
 /* ── LAYOUT ── */
-.layout{display:grid;grid-template-columns:176px 1fr 296px;min-height:100vh;padding-top:52px}
+.layout{
+  display:grid;
+  grid-template-columns:180px 1fr 300px;
+  min-height:100vh;
+  padding-top:54px;
+}
 
 /* ── SIDEBAR ── */
 .sidebar{
-  border-right:1px solid var(--b1);padding:20px 0;
-  position:sticky;top:52px;height:calc(100vh - 52px);
+  border-right:1px solid var(--b1);
+  padding:18px 0;
+  position:sticky;top:54px;height:calc(100vh - 54px);
   background:var(--s1);overflow-y:auto;
 }
-.sb-sect{font-size:.6rem;font-weight:700;color:var(--t3);letter-spacing:.12em;text-transform:uppercase;padding:0 16px;margin:16px 0 6px}
-.sb-sect:first-child{margin-top:0}
+.sb-sect{
+  font-size:.58rem;font-weight:700;color:var(--t3);
+  letter-spacing:.14em;text-transform:uppercase;
+  padding:0 16px;margin:18px 0 6px;
+}
+.sb-sect:first-child{margin-top:4px}
 .sb-link{
   display:flex;align-items:center;gap:9px;padding:9px 16px;
-  font-size:.79rem;font-weight:500;color:var(--t3);cursor:pointer;
+  font-size:.78rem;font-weight:500;color:var(--t3);cursor:pointer;
   transition:all .15s;border-left:2px solid transparent;text-decoration:none;
+  user-select:none;
 }
-.sb-link:hover{color:var(--t1);background:rgba(255,255,255,.03)}
-.sb-link.active{color:var(--t1);background:var(--blue-d);border-left-color:var(--blue)}
-.sb-ico{font-size:.85rem;width:17px;text-align:center;flex-shrink:0}
+.sb-link:hover{color:var(--t2);background:rgba(255,255,255,.03)}
+.sb-link.active{color:var(--t1);background:var(--orange-d);border-left-color:var(--orange)}
+.sb-ico{font-size:.82rem;width:16px;text-align:center;flex-shrink:0;opacity:.7}
+.sb-link.active .sb-ico{opacity:1}
 
-/* ── MAIN ── */
-.content{padding:28px 24px 60px;overflow-y:auto;min-width:0}
-.pg-label{font-size:.63rem;font-weight:700;color:var(--blue);letter-spacing:.12em;text-transform:uppercase;margin-bottom:5px}
-.pg-title{font-size:1.55rem;font-weight:800;color:var(--t1);letter-spacing:-.025em;margin-bottom:5px}
-.pg-sub{font-size:.8rem;color:var(--t3);margin-bottom:24px}
+/* ── CONTENT ── */
+.content{padding:28px 26px 80px;min-width:0;overflow-x:hidden}
+.pg-label{font-size:.6rem;font-weight:700;color:var(--orange);letter-spacing:.12em;text-transform:uppercase;margin-bottom:5px}
+.pg-title{font-size:1.5rem;font-weight:800;color:var(--t1);letter-spacing:-.025em;margin-bottom:5px;line-height:1.2}
+.pg-sub{font-size:.79rem;color:var(--t3);margin-bottom:22px;line-height:1.55}
 
-/* ── FORM CARD ── */
-.card{background:var(--s1);border:1px solid var(--b1);border-radius:16px;padding:22px}
-.sec-label{font-size:.62rem;font-weight:700;color:var(--t3);letter-spacing:.12em;text-transform:uppercase;margin-bottom:11px}
+/* ── CARD ── */
+.card{background:var(--s1);border:1px solid var(--b1);border-radius:var(--radius);padding:22px;margin-bottom:16px}
+.sec-label{font-size:.6rem;font-weight:700;color:var(--t3);letter-spacing:.14em;text-transform:uppercase;margin-bottom:12px}
 
-/* variant */
+/* ── VARIANT ── */
 .variant-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:20px}
 .variant-card{
   background:var(--s2);border:2px solid var(--b1);border-radius:10px;
-  padding:13px 15px;cursor:pointer;transition:all .15s;position:relative;
+  padding:13px 14px;cursor:pointer;transition:all .15s;position:relative;
 }
 .variant-card:hover{border-color:var(--b2)}
-.variant-card.sel{border-color:var(--blue);background:var(--blue-d)}
+.variant-card.sel{border-color:var(--orange);background:var(--orange-d)}
 .vc-chk{
-  position:absolute;top:10px;right:10px;width:17px;height:17px;border-radius:50%;
+  position:absolute;top:10px;right:10px;width:16px;height:16px;border-radius:50%;
   border:2px solid var(--b2);display:flex;align-items:center;justify-content:center;
-  font-size:.6rem;color:transparent;transition:all .15s;
+  font-size:.58rem;color:transparent;transition:all .15s;
 }
-.variant-card.sel .vc-chk{background:var(--blue);border-color:var(--blue);color:#fff}
-.vc-name{font-size:.88rem;font-weight:700;color:var(--t1);margin-bottom:3px}
-.vc-desc{font-size:.7rem;color:var(--t3);line-height:1.5}
+.variant-card.sel .vc-chk{background:var(--orange);border-color:var(--orange);color:#fff}
+.vc-name{font-size:.86rem;font-weight:700;color:var(--t1);margin-bottom:3px}
+.vc-desc{font-size:.69rem;color:var(--t3);line-height:1.5}
 
-/* fields */
-.field-row{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-bottom:11px}
-.field{margin-bottom:11px}
-.field-label{display:block;font-size:.7rem;font-weight:600;color:var(--t2);margin-bottom:5px}
+/* ── FIELDS ── */
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.field{margin-bottom:10px}
+.field:last-child{margin-bottom:0}
+.field-label{display:flex;align-items:center;gap:6px;font-size:.7rem;font-weight:600;color:var(--t2);margin-bottom:5px}
 .field-label .sub{color:var(--t3);font-weight:400}
 .inp{
   width:100%;background:var(--s2);border:1px solid var(--b1);border-radius:8px;
-  padding:9px 12px;font-size:.81rem;color:var(--t1);font-family:var(--mono);
-  outline:none;transition:border-color .15s;
+  padding:9px 12px;font-size:.8rem;color:var(--t1);font-family:var(--mono);
+  outline:none;transition:border-color .15s,box-shadow .15s;
 }
-.inp:focus{border-color:rgba(59,130,246,.5);box-shadow:0 0 0 3px rgba(59,130,246,.07)}
+.inp:focus{border-color:rgba(240,120,48,.4);box-shadow:0 0 0 3px rgba(240,120,48,.08)}
 .inp::placeholder{color:var(--t3)}
-.inp:disabled{opacity:.45;cursor:not-allowed}
+.inp:disabled{opacity:.4;cursor:not-allowed}
 
-/* range */
+/* ── RANGE ── */
 .range-row{display:flex;align-items:center;gap:9px}
-.range-lim{font-size:.68rem;color:var(--t3)}
+.range-lim{font-size:.67rem;color:var(--t3)}
 input[type=range]{
-  flex:1;-webkit-appearance:none;height:4px;border-radius:2px;
+  flex:1;-webkit-appearance:none;appearance:none;height:4px;border-radius:2px;
   background:var(--s3);outline:none;cursor:pointer;
 }
 input[type=range]::-webkit-slider-thumb{
   -webkit-appearance:none;width:16px;height:16px;border-radius:50%;
-  background:var(--blue);cursor:pointer;box-shadow:0 0 0 3px rgba(59,130,246,.2);
+  background:var(--orange);cursor:pointer;box-shadow:0 0 0 3px rgba(240,120,48,.18);
+}
+input[type=range]::-moz-range-thumb{
+  width:16px;height:16px;border-radius:50%;border:none;
+  background:var(--orange);cursor:pointer;
 }
 input[type=range]:disabled{opacity:.4;cursor:not-allowed}
 .range-val{
-  font-family:var(--mono);font-size:.76rem;color:var(--blue);
-  background:var(--blue-d);border:1px solid rgba(59,130,246,.2);
+  font-family:var(--mono);font-size:.74rem;color:var(--orange);
+  background:var(--orange-d);border:1px solid rgba(240,120,48,.2);
   border-radius:5px;padding:3px 9px;min-width:34px;text-align:center;
 }
 
-/* cap row inline */
-.cap-inline{display:inline-flex;align-items:center;gap:5px;margin-left:8px;vertical-align:middle}
-
-/* toggle */
-.toggle{position:relative;display:inline-flex;cursor:pointer;flex-shrink:0}
-.toggle input{opacity:0;width:0;height:0;position:absolute}
+/* ── TOGGLE ── */
+.toggle{position:relative;display:inline-flex;cursor:pointer;flex-shrink:0;user-select:none}
+.toggle input{opacity:0;width:0;height:0;position:absolute;pointer-events:none}
 .tg-track{width:34px;height:19px;background:var(--s3);border-radius:10px;transition:background .2s;border:1px solid var(--b2)}
-.toggle input:checked ~ .tg-track{background:var(--blue);border-color:var(--blue)}
-.tg-thumb{position:absolute;top:3px;left:3px;width:13px;height:13px;background:#fff;border-radius:50%;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.toggle input:checked ~ .tg-track{background:var(--orange);border-color:var(--orange)}
+.tg-thumb{position:absolute;top:3px;left:3px;width:13px;height:13px;background:#fff;border-radius:50%;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.3);pointer-events:none}
 .toggle input:checked ~ .tg-thumb{transform:translateX(15px)}
 .toggle.danger input:checked ~ .tg-track{background:var(--red);border-color:var(--red)}
-.toggle.orange input:checked ~ .tg-track{background:var(--orange);border-color:var(--orange)}
 
-/* admin-less */
+/* ── ADMIN-LESS ROW ── */
 .adminless-row{
   display:flex;align-items:flex-start;gap:12px;
-  background:var(--s2);border:1px solid rgba(239,68,68,.2);border-radius:8px;
-  padding:12px 14px;margin-bottom:11px;
+  background:rgba(239,68,68,.05);border:1px solid rgba(239,68,68,.18);border-radius:8px;
+  padding:12px 14px;margin-bottom:10px;
 }
-.al-name{font-size:.81rem;font-weight:600;color:var(--t1)}
-.al-desc{font-size:.7rem;color:var(--red);margin-top:2px}
+.al-name{font-size:.8rem;font-weight:600;color:var(--t1)}
+.al-desc{font-size:.69rem;color:var(--red);margin-top:2px;line-height:1.45}
 
-/* policy rows */
+/* ── POLICY ROWS ── */
 .policy-row{
   display:flex;align-items:center;justify-content:space-between;
   background:var(--s2);border:1px solid var(--b1);border-radius:8px;
-  padding:12px 14px;margin-bottom:8px;transition:all .15s;
+  padding:11px 14px;margin-bottom:7px;transition:background .15s,border-color .15s;
 }
-.policy-row.on-blue{border-color:rgba(59,130,246,.25);background:rgba(59,130,246,.06)}
-.policy-row.on-orange{border-color:rgba(240,120,48,.25);background:rgba(240,120,48,.06)}
-.p-name{font-size:.81rem;font-weight:600;color:var(--t1);margin-bottom:2px}
-.p-desc{font-size:.7rem;color:var(--t3)}
-.p-warn{font-size:.68rem;color:var(--orange);margin-top:4px;display:none}
+.policy-row.on{border-color:rgba(240,120,48,.25);background:rgba(240,120,48,.06)}
+.policy-row.on-red{border-color:rgba(239,68,68,.25);background:rgba(239,68,68,.06)}
+.p-name{font-size:.8rem;font-weight:600;color:var(--t1);margin-bottom:2px}
+.p-desc{font-size:.69rem;color:var(--t3);line-height:1.45}
+.p-warn{font-size:.67rem;color:var(--red);margin-top:4px;display:none}
 .p-warn.show{display:block}
 
-/* addr preview */
+/* ── CAP INLINE ── */
+.cap-label-row{display:flex;align-items:center;gap:8px;margin-bottom:5px}
+.cap-toggle-wrap{display:flex;align-items:center;gap:5px;margin-left:auto}
+.cap-toggle-lbl{font-size:.67rem;color:var(--t3)}
+
+/* ── ADDR PREVIEW ── */
 .addr-row{
   display:flex;align-items:center;justify-content:space-between;
   background:var(--s2);border:1px solid var(--b1);border-radius:8px;
-  padding:11px 14px;margin-top:4px;
+  padding:10px 13px;margin-top:12px;
 }
-.addr-lbl{font-size:.63rem;color:var(--t3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px}
-.addr-val{font-family:var(--mono);font-size:.78rem;color:var(--blue)}
+.addr-lbl{font-size:.6rem;color:var(--t3);text-transform:uppercase;letter-spacing:.09em;margin-bottom:3px}
+.addr-val{font-family:var(--mono);font-size:.77rem;color:var(--blue)}
 .det-btn{
-  font-size:.63rem;font-weight:700;color:var(--t3);background:var(--s3);
-  border:1px solid var(--b1);border-radius:5px;padding:4px 8px;cursor:pointer;
-  text-transform:uppercase;letter-spacing:.06em;transition:all .15s;
+  font-size:.61rem;font-weight:700;color:var(--t3);background:var(--s3);
+  border:1px solid var(--b1);border-radius:5px;padding:4px 9px;cursor:pointer;
+  text-transform:uppercase;letter-spacing:.06em;transition:all .15s;white-space:nowrap;
 }
 .det-btn:hover{color:var(--t1);border-color:var(--b2)}
 
-/* deploy btn */
+/* ── DEPLOY BTN ── */
 .deploy-btn{
-  width:100%;padding:14px;border-radius:10px;border:none;cursor:pointer;
-  font-family:var(--font);font-weight:800;font-size:.98rem;letter-spacing:.02em;
-  background:linear-gradient(135deg,var(--blue),#60A5FA);color:#fff;
-  margin-top:14px;transition:opacity .15s,transform .15s;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
+  width:100%;padding:14px 20px;border-radius:10px;border:none;cursor:pointer;
+  font-weight:800;font-size:.96rem;letter-spacing:.01em;
+  background:linear-gradient(135deg, var(--orange) 0%, #FB923C 100%);
+  color:#fff;margin-top:14px;
+  transition:opacity .15s,transform .12s,box-shadow .15s;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+  box-shadow:0 4px 20px rgba(240,120,48,.3);
 }
-.deploy-btn:hover{opacity:.9;transform:translateY(-1px)}
-.deploy-sub{font-size:.68rem;font-weight:500;opacity:.75}
+.deploy-btn:hover{opacity:.92;transform:translateY(-1px);box-shadow:0 6px 28px rgba(240,120,48,.38)}
+.deploy-btn:active{transform:translateY(0);opacity:1}
+.deploy-sub{font-size:.67rem;font-weight:500;opacity:.75}
 
-/* use in orlix */
-.use-section{margin-top:24px}
-.use-hdr{display:flex;align-items:center;gap:10px;margin-bottom:14px;padding:12px 14px;background:var(--s1);border:1px solid var(--b1);border-radius:10px}
+/* ── USE IN ORLIX ── */
+.use-section{margin-top:20px}
+.use-hdr{
+  display:flex;align-items:center;gap:10px;
+  padding:12px 14px;background:var(--s1);border:1px solid var(--b1);
+  border-radius:10px;margin-bottom:11px;
+}
 .use-hdr img{width:20px;height:20px;border-radius:50%;object-fit:cover}
-.use-hdr-t{font-size:.8rem;font-weight:700;color:var(--t2)}
-.use-hdr-s{font-size:.7rem;color:var(--t3)}
-.use-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+.use-hdr-t{font-size:.79rem;font-weight:700;color:var(--t2)}
+.use-hdr-s{font-size:.69rem;color:var(--t3)}
+.use-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .use-card{
   background:var(--s1);border:1px solid var(--b1);border-radius:10px;
-  padding:14px;transition:border-color .15s;cursor:pointer;text-decoration:none;
-  display:block;
+  padding:13px;transition:border-color .15s,background .15s;
+  cursor:pointer;text-decoration:none;display:block;
 }
-.use-card:hover{border-color:rgba(59,130,246,.3)}
-.use-ico{width:30px;height:30px;border-radius:7px;background:var(--s3);border:1px solid var(--b1);display:flex;align-items:center;justify-content:center;font-size:.85rem;margin-bottom:9px}
-.use-cname{font-size:.79rem;font-weight:700;color:var(--t1);margin-bottom:3px}
-.use-cdesc{font-size:.69rem;color:var(--t3);line-height:1.5}
-.use-open{font-size:.7rem;color:var(--blue);margin-top:7px}
+.use-card:hover{border-color:rgba(240,120,48,.25);background:rgba(240,120,48,.04)}
+.use-ico{
+  width:30px;height:30px;border-radius:7px;
+  background:var(--s3);border:1px solid var(--b1);
+  display:flex;align-items:center;justify-content:center;
+  font-size:.85rem;margin-bottom:9px;
+}
+.use-cname{font-size:.78rem;font-weight:700;color:var(--t1);margin-bottom:3px}
+.use-cdesc{font-size:.68rem;color:var(--t3);line-height:1.5}
+.use-open{font-size:.69rem;color:var(--orange);margin-top:7px}
 
 /* ── RIGHT PANEL ── */
 .right-panel{
-  border-left:1px solid var(--b1);padding:22px 18px;
-  background:var(--s1);position:sticky;top:52px;
-  height:calc(100vh - 52px);overflow-y:auto;
+  border-left:1px solid var(--b1);padding:20px 16px;
+  background:var(--s1);position:sticky;top:54px;
+  height:calc(100vh - 54px);overflow-y:auto;
 }
 .rp-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
-.rp-title{font-size:.62rem;font-weight:700;color:var(--t3);letter-spacing:.12em;text-transform:uppercase}
-.rp-badge{font-size:.65rem;font-weight:700;color:var(--green);background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.2);border-radius:4px;padding:2px 7px}
+.rp-title{font-size:.6rem;font-weight:700;color:var(--t3);letter-spacing:.13em;text-transform:uppercase}
+.rp-badge{font-size:.63rem;font-weight:700;color:var(--green);background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.18);border-radius:4px;padding:2px 7px}
 
-.rp-card{background:var(--s2);border:1px solid var(--b1);border-radius:10px;padding:13px;margin-bottom:11px}
+.rp-card{background:var(--s2);border:1px solid var(--b1);border-radius:10px;padding:12px;margin-bottom:10px}
 .rp-tok-top{display:flex;align-items:center;gap:10px;margin-bottom:11px}
-.rp-tok-ico{width:34px;height:34px;border-radius:8px;background:var(--blue-d);border:1px solid rgba(59,130,246,.2);display:flex;align-items:center;justify-content:center;font-size:.95rem;flex-shrink:0}
-.rp-tok-name{font-size:.86rem;font-weight:700;color:var(--t1)}
-.rp-tok-sym{font-size:.7rem;color:var(--t3);font-family:var(--mono);margin-top:1px}
+.rp-tok-ico{
+  width:34px;height:34px;border-radius:8px;
+  background:var(--orange-d);border:1px solid rgba(240,120,48,.18);
+  display:flex;align-items:center;justify-content:center;font-size:.95rem;flex-shrink:0;
+}
+.rp-tok-name{font-size:.84rem;font-weight:700;color:var(--t1)}
+.rp-tok-sym{font-size:.69rem;color:var(--t3);font-family:var(--mono);margin-top:1px}
 
-.act-row{margin-bottom:10px}
-.act-lbl{font-size:.68rem;color:var(--t3);margin-bottom:5px}
-.act-sub{font-size:.62rem;color:var(--t3);opacity:.6}
+.act-row{margin-bottom:9px}
+.act-lbl{font-size:.67rem;color:var(--t3);margin-bottom:5px}
+.act-sub{font-size:.61rem;color:var(--t3);opacity:.6}
 .act-btns{display:flex;gap:5px}
 .act-btn{
-  flex:1;padding:7px;border-radius:7px;border:1px solid var(--b1);
-  background:var(--s3);color:var(--t2);font-size:.73rem;font-weight:600;
-  cursor:pointer;font-family:var(--font);transition:all .15s;text-align:center;
+  flex:1;padding:7px 5px;border-radius:7px;border:1px solid var(--b1);
+  background:var(--s3);color:var(--t2);font-size:.72rem;font-weight:600;
+  cursor:pointer;transition:all .15s;text-align:center;
 }
 .act-btn:hover{border-color:var(--b2);color:var(--t1)}
-.act-btn.primary{background:var(--blue-d);border-color:rgba(59,130,246,.3);color:var(--blue)}
-.act-btn.primary:hover{background:rgba(59,130,246,.2)}
+.act-btn.primary{background:var(--orange-d);border-color:rgba(240,120,48,.3);color:var(--orange)}
+.act-btn.primary:hover{background:rgba(240,120,48,.18)}
 
 .stat-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--b1)}
-.stat-row:last-child{border-bottom:none}
-.stat-lbl{font-size:.7rem;color:var(--t3)}
-.stat-val{font-size:.76rem;font-weight:600;color:var(--t1);font-family:var(--mono)}
+.stat-row:last-child{border-bottom:none;padding-bottom:0}
+.stat-lbl{font-size:.69rem;color:var(--t3)}
+.stat-val{font-size:.74rem;font-weight:600;color:var(--t1);font-family:var(--mono)}
 
 .rp-note{
-  background:var(--blue-d);border:1px solid rgba(59,130,246,.15);border-radius:8px;
-  padding:10px 12px;font-size:.7rem;color:var(--t3);line-height:1.55;margin-top:11px;
+  background:var(--orange-d);border:1px solid rgba(240,120,48,.12);border-radius:8px;
+  padding:10px 12px;font-size:.69rem;color:var(--t3);line-height:1.55;
 }
-.rp-note strong{color:var(--blue)}
+.rp-note strong{color:var(--orange)}
+
+/* ── FEATURE GATED TOAST ── */
+.feat-gate{
+  position:fixed;bottom:24px;left:24px;z-index:200;
+  display:flex;align-items:flex-start;gap:10px;
+  background:var(--s4);border:1px solid rgba(234,179,8,.22);border-radius:12px;
+  padding:13px 14px 13px 14px;max-width:272px;
+  box-shadow:0 8px 40px rgba(0,0,0,.5),0 1px 0 rgba(255,255,255,.04) inset;
+  transition:opacity .3s, transform .3s;
+}
+.fg-ico{font-size:.88rem;color:var(--yellow);flex-shrink:0;margin-top:.5px}
+.fg-body{flex:1;min-width:0}
+.fg-title{font-size:.76rem;font-weight:700;color:var(--yellow);margin-bottom:3px}
+.fg-desc{font-size:.7rem;color:var(--t2);line-height:1.52}
+.fg-x{
+  background:none;border:none;color:var(--t3);font-size:.95rem;cursor:pointer;
+  flex-shrink:0;padding:0;line-height:1;margin-top:-1px;transition:color .15s;
+}
+.fg-x:hover{color:var(--t1)}
 
 /* ── MODAL ── */
 .modal-ov{
-  position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.75);
+  position:fixed;inset:0;z-index:500;
+  background:rgba(0,0,0,.8);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);
   display:none;align-items:center;justify-content:center;padding:20px;
 }
 .modal-ov.open{display:flex}
 .modal-box{
-  background:var(--s1);border:1px solid var(--b2);border-radius:16px;
-  padding:32px 28px;max-width:420px;width:100%;text-align:center;
+  background:var(--s1);border:1px solid var(--b2);border-radius:18px;
+  padding:30px 26px;max-width:420px;width:100%;text-align:center;
+  box-shadow:0 24px 80px rgba(0,0,0,.6);
 }
-.modal-ico{font-size:2.6rem;margin-bottom:14px}
-.modal-title{font-size:1.1rem;font-weight:800;color:var(--t1);margin-bottom:10px}
-.modal-cd{font-family:var(--mono);font-size:1.5rem;color:var(--blue);font-weight:700;margin-bottom:4px}
-.modal-until{font-size:.68rem;color:var(--t3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:18px}
-.modal-sub{font-size:.8rem;color:var(--t3);line-height:1.65;margin-bottom:22px}
-.modal-close{background:var(--s2);border:1px solid var(--b1);color:var(--t2);border-radius:8px;padding:10px 24px;font-family:var(--font);font-size:.82rem;font-weight:600;cursor:pointer;transition:all .15s}
+.modal-ico{font-size:2.4rem;margin-bottom:14px}
+.modal-title{font-size:1.05rem;font-weight:800;color:var(--t1);margin-bottom:10px}
+.modal-cd{font-family:var(--mono);font-size:1.5rem;color:var(--orange);font-weight:700;margin-bottom:4px}
+.modal-until{font-size:.67rem;color:var(--t3);letter-spacing:.09em;text-transform:uppercase;margin-bottom:18px}
+.modal-sub{font-size:.79rem;color:var(--t3);line-height:1.65;margin-bottom:22px}
+.modal-close{
+  background:var(--s2);border:1px solid var(--b1);color:var(--t2);
+  border-radius:8px;padding:10px 28px;font-size:.82rem;font-weight:600;
+  cursor:pointer;transition:all .15s;
+}
 .modal-close:hover{color:var(--t1);border-color:var(--b2)}
 
-/* responsive */
+/* ── WALLET MODAL ── */
+.wm-box{max-width:380px}
+.wm-opts{display:flex;flex-direction:column;gap:8px;margin-bottom:20px}
+.wm-opt{
+  display:flex;align-items:center;gap:12px;
+  background:var(--s2);border:1px solid var(--b1);border-radius:10px;
+  padding:13px 14px;cursor:pointer;transition:all .15s;text-decoration:none;
+}
+.wm-opt:hover{border-color:rgba(240,120,48,.3);background:rgba(240,120,48,.05)}
+.wm-opt-ico{width:32px;height:32px;border-radius:8px;object-fit:cover;flex-shrink:0}
+.wm-opt-ico.emoji{
+  background:var(--s3);border:1px solid var(--b1);
+  display:flex;align-items:center;justify-content:center;font-size:1rem;
+}
+.wm-opt-name{font-size:.82rem;font-weight:700;color:var(--t1)}
+.wm-opt-desc{font-size:.7rem;color:var(--t3)}
+
+/* ── EMPTY STATES ── */
+.empty{
+  text-align:center;padding:56px 20px;
+  color:var(--t3);font-size:.8rem;
+  border:1px solid var(--b1);border-radius:var(--radius);
+  background:var(--s1);
+}
+.empty-ico{font-size:2rem;margin-bottom:13px}
+.empty-t{color:var(--t2);font-weight:600;margin-bottom:6px;font-size:.86rem}
+
+/* ── MOBILE BOTTOM NAV ── */
+.bottom-nav{
+  display:none;position:fixed;bottom:0;left:0;right:0;z-index:100;
+  background:rgba(10,10,14,.97);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  border-top:1px solid var(--b1);
+  display:none;grid-template-columns:repeat(4,1fr);
+}
+.bn-item{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:3px;padding:9px 4px 10px;cursor:pointer;
+  border:none;background:none;color:var(--t3);
+  text-decoration:none;transition:color .15s;
+}
+.bn-item.active,.bn-item:hover{color:var(--orange)}
+.bn-ico{font-size:.95rem;line-height:1}
+.bn-lbl{font-size:.6rem;font-weight:600;letter-spacing:.02em}
+
+/* ── RESPONSIVE ── */
 @media(max-width:1100px){
-  .layout{grid-template-columns:160px 1fr}
+  .layout{grid-template-columns:170px 1fr}
   .right-panel{display:none}
 }
-@media(max-width:640px){
-  .layout{grid-template-columns:1fr}
+@media(max-width:700px){
+  .layout{grid-template-columns:1fr;padding-top:54px}
   .sidebar{display:none}
+  .content{padding:20px 16px 72px}
   .field-row,.variant-grid,.use-grid{grid-template-columns:1fr}
-  .content{padding:20px 16px 60px}
+  .pg-title{font-size:1.25rem}
+  .card{padding:16px}
+  .bottom-nav{display:grid}
+  .feat-gate{
+    bottom:68px;left:10px;right:10px;max-width:none;
+    border-radius:10px;
+  }
+}
+@media(max-width:380px){
+  .nav-badge-label{display:none}
+  .chain-pill{display:none}
 }
 </style>
 </head>
@@ -278,13 +410,16 @@ input[type=range]:disabled{opacity:.4;cursor:not-allowed}
     <div class="nav-div"></div>
     <div class="nav-badge">
       <div class="b20-nav-ico"><img src="/b20-logo.png" alt="B20"></div>
-      B20 Studio
+      <span class="nav-badge-label" style="font-size:.82rem;font-weight:700;color:var(--t1)">B20 Studio</span>
       <span class="beta-tag">BETA</span>
     </div>
   </div>
   <div class="nav-right">
-    <div class="chain-pill"><div class="chain-dot"></div>on Base</div>
-    <div class="wallet-pill" id="walletAddr" onclick="connectWallet()">Connect Wallet</div>
+    <div class="chain-pill"><div class="chain-dot"></div>Base</div>
+    <button class="wallet-btn" id="walletBtn" onclick="handleWallet()">
+      <div class="wallet-dot" id="walletDot"></div>
+      <span id="walletLabel">Connect Wallet</span>
+    </button>
   </div>
 </nav>
 
@@ -293,11 +428,17 @@ input[type=range]:disabled{opacity:.4;cursor:not-allowed}
 <!-- SIDEBAR -->
 <aside class="sidebar">
   <div class="sb-sect">Studio</div>
-  <a class="sb-link active" id="sbCreate" onclick="showTab('create',this)"><span class="sb-ico">+</span> Create</a>
-  <a class="sb-link" id="sbTokens" onclick="showTab('tokens',this)"><span class="sb-ico">◈</span> My Tokens</a>
-  <a class="sb-link" id="sbManage" onclick="showTab('manage',this)"><span class="sb-ico">⚙</span> Manage</a>
+  <a class="sb-link active" id="sbCreate" onclick="showTab('create',this)">
+    <span class="sb-ico">+</span> Create
+  </a>
+  <a class="sb-link" id="sbTokens" onclick="showTab('tokens',this)">
+    <span class="sb-ico">◈</span> My Tokens
+  </a>
+  <a class="sb-link" id="sbManage" onclick="showTab('manage',this)">
+    <span class="sb-ico">⚙</span> Manage
+  </a>
   <div class="sb-sect">Orlix</div>
-  <a class="sb-link" href="/app"><span class="sb-ico">⬡</span> Use in Orlix</a>
+  <a class="sb-link" href="/app"><span class="sb-ico">✦</span> Use in Orlix</a>
   <a class="sb-link" href="/control-room"><span class="sb-ico">📊</span> Control Room</a>
   <a class="sb-link" href="/docs/api"><span class="sb-ico">🔌</span> API Docs</a>
   <a class="sb-link" href="/docs"><span class="sb-ico">📄</span> Docs</a>
@@ -310,7 +451,7 @@ input[type=range]:disabled{opacity:.4;cursor:not-allowed}
   <div id="tabCreate">
     <div class="pg-label">Create</div>
     <h1 class="pg-title">Create a B20 Token</h1>
-    <p class="pg-sub">Deploy a native Base token. Powers are role-gated and explicit.</p>
+    <p class="pg-sub">Deploy a native Base token. Role-gated, ERC-20 compatible, precompile-backed.</p>
 
     <div class="card">
 
@@ -320,7 +461,7 @@ input[type=range]:disabled{opacity:.4;cursor:not-allowed}
         <div class="variant-card sel" id="varAsset" onclick="setVariant('asset')">
           <div class="vc-chk">✓</div>
           <div class="vc-name">Asset</div>
-          <div class="vc-desc">Configurable 6–18 decimals, rebase multiplier, batched issuance.</div>
+          <div class="vc-desc">6–18 decimals, rebase multiplier, batched issuance.</div>
         </div>
         <div class="variant-card" id="varStable" onclick="setVariant('stablecoin')">
           <div class="vc-chk">✓</div>
@@ -333,11 +474,11 @@ input[type=range]:disabled{opacity:.4;cursor:not-allowed}
       <div class="field-row">
         <div class="field">
           <label class="field-label">Token Name</label>
-          <input class="inp" id="fName" type="text" placeholder="e.g. BNKR Token" oninput="onFormChange()">
+          <input class="inp" id="fName" type="text" placeholder="e.g. BNKR Token" oninput="onFormChange()" autocomplete="off">
         </div>
         <div class="field">
           <label class="field-label">Symbol</label>
-          <input class="inp" id="fSym" type="text" placeholder="e.g. BNKR" maxlength="11" oninput="onFormChange()">
+          <input class="inp" id="fSym" type="text" placeholder="e.g. BNKR" maxlength="11" oninput="onFormChange()" autocomplete="off" style="text-transform:uppercase">
         </div>
       </div>
 
@@ -355,22 +496,22 @@ input[type=range]:disabled{opacity:.4;cursor:not-allowed}
       <!-- Supply Cap + Initial Admin -->
       <div class="field-row">
         <div class="field">
-          <label class="field-label">
-            Supply Cap
-            <span class="cap-inline">
-              <span style="font-size:.68rem;color:var(--t3)">Uncapped</span>
+          <div class="cap-label-row">
+            <label class="field-label" style="margin-bottom:0">Supply Cap</label>
+            <div class="cap-toggle-wrap">
+              <span class="cap-toggle-lbl">Uncapped</span>
               <label class="toggle">
                 <input type="checkbox" id="fUncapped" onchange="onCapToggle()">
                 <div class="tg-track"></div>
                 <div class="tg-thumb"></div>
               </label>
-            </span>
-          </label>
+            </div>
+          </div>
           <input class="inp" id="fCap" type="text" placeholder="e.g. 10,000,000" oninput="onFormChange()">
         </div>
         <div class="field">
           <label class="field-label">Initial Admin</label>
-          <input class="inp" id="fAdmin" type="text" placeholder="0x…" style="font-size:.71rem" oninput="onFormChange()">
+          <input class="inp" id="fAdmin" type="text" placeholder="0x… (auto-fills on connect)" style="font-size:.68rem" oninput="onFormChange()">
         </div>
       </div>
 
@@ -390,11 +531,11 @@ input[type=range]:disabled{opacity:.4;cursor:not-allowed}
       <!-- Contract URI -->
       <div class="field">
         <label class="field-label">Contract URI <span class="sub">· metadata</span></label>
-        <input class="inp" id="fUri" type="text" placeholder="ipfs://bafkrei…_metadata.json">
+        <input class="inp" id="fUri" type="text" placeholder="ipfs://bafkrei…_metadata.json" autocomplete="off">
       </div>
 
       <!-- Compliance -->
-      <div class="sec-label" style="margin-top:4px">Compliance Policy</div>
+      <div class="sec-label" style="margin-top:6px">Compliance Policy</div>
       <div class="policy-row" id="polAllow">
         <div>
           <div class="p-name">Allowlist</div>
@@ -419,27 +560,27 @@ input[type=range]:disabled{opacity:.4;cursor:not-allowed}
         <div>
           <div class="p-name">⚠ Freeze &amp; Seize</div>
           <div class="p-desc">Grants admin power to freeze and seize holder balances.</div>
-          <div class="p-warn" id="freezeWarn">This grants the admin power to freeze and seize holder balances.</div>
+          <div class="p-warn" id="freezeWarn">Admin can freeze accounts and seize token balances at any time.</div>
         </div>
-        <label class="toggle orange">
+        <label class="toggle danger">
           <input type="checkbox" id="fFreeze" onchange="onPolicyChange()">
           <div class="tg-track"></div><div class="tg-thumb"></div>
         </label>
       </div>
 
       <!-- Address preview -->
-      <div class="addr-row" style="margin-top:12px">
+      <div class="addr-row">
         <div>
-          <div class="addr-lbl">Token address preview</div>
-          <div class="addr-val" id="addrPreview">0xB20a7F3c…91Fd4E</div>
+          <div class="addr-lbl">Deterministic address preview</div>
+          <div class="addr-val" id="addrPreview">0xB20a…—</div>
         </div>
-        <button class="det-btn" onclick="refreshAddr()">Deterministic Preview</button>
+        <button class="det-btn" onclick="onFormChange()">Refresh</button>
       </div>
 
       <!-- Deploy -->
       <button class="deploy-btn" onclick="onDeploy()">
         <span>→ Deploy B20 Token</span>
-        <span class="deploy-sub" id="deploySubtitle">Base mainnet · June 25, 2026</span>
+        <span class="deploy-sub" id="deploySubtitle">Loading…</span>
       </button>
     </div>
 
@@ -449,20 +590,20 @@ input[type=range]:disabled{opacity:.4;cursor:not-allowed}
         <img src="/orlix-logo.jpeg" alt="Orlix">
         <div>
           <div class="use-hdr-t">Use in Orlix</div>
-          <div class="use-hdr-s">Orlix-native actions, built on top of your B20</div>
+          <div class="use-hdr-s">Native Orlix tools built on top of your B20 token</div>
         </div>
       </div>
       <div class="use-grid">
         <a class="use-card" href="/control-room">
           <div class="use-ico">📊</div>
           <div class="use-cname">Control Room</div>
-          <div class="use-cdesc">Track B20 tokens live on Base. Volume, liquidity, activity feed.</div>
+          <div class="use-cdesc">Track B20 tokens live on Base. Volume, liquidity, activity.</div>
           <div class="use-open">Open →</div>
         </a>
         <a class="use-card" href="/app">
-          <div class="use-ico">⬡</div>
+          <div class="use-ico">✦</div>
           <div class="use-cname">Ask AI</div>
-          <div class="use-cdesc">Deploy guides, role audits, compliance setup — all via Orlix AI.</div>
+          <div class="use-cdesc">Role audits, compliance setup, deploy guides via Orlix AI.</div>
           <div class="use-open">Open →</div>
         </a>
         <a class="use-card" href="/docs/api">
@@ -479,12 +620,12 @@ input[type=range]:disabled{opacity:.4;cursor:not-allowed}
   <div id="tabTokens" style="display:none">
     <div class="pg-label">My Tokens</div>
     <h1 class="pg-title">My B20 Tokens</h1>
-    <p class="pg-sub">Tokens you have deployed on Base will appear here after mainnet.</p>
-    <div style="text-align:center;padding:60px 20px;color:var(--t3);font-size:.82rem;border:1px solid var(--b1);border-radius:16px;background:var(--s1)">
-      <div style="font-size:2rem;margin-bottom:14px">⬡</div>
-      <div style="color:var(--t2);font-weight:600;margin-bottom:6px">No tokens yet</div>
-      B20 mainnet activates <strong style="color:var(--blue)">June 25, 2026</strong>.<br>
-      Configure and deploy your first token from the <a onclick="showTab('create',document.getElementById('sbCreate'))" style="color:var(--blue);cursor:pointer">Create</a> tab.
+    <p class="pg-sub">Tokens you deploy on Base appear here after mainnet activates.</p>
+    <div class="empty">
+      <div class="empty-ico">◈</div>
+      <div class="empty-t">No tokens yet</div>
+      B20 mainnet activates <strong style="color:var(--orange)">June 25, 2026</strong>.<br>
+      Configure and deploy from the <a onclick="showTab('create',document.getElementById('sbCreate'))" style="color:var(--orange);cursor:pointer;text-decoration:underline">Create</a> tab.
     </div>
   </div>
 
@@ -493,9 +634,9 @@ input[type=range]:disabled{opacity:.4;cursor:not-allowed}
     <div class="pg-label">Manage</div>
     <h1 class="pg-title">Manage Token</h1>
     <p class="pg-sub">Mint, burn, pause, and configure roles for your deployed B20 token.</p>
-    <div style="text-align:center;padding:60px 20px;color:var(--t3);font-size:.82rem;border:1px solid var(--b1);border-radius:16px;background:var(--s1)">
-      <div style="font-size:2rem;margin-bottom:14px">⚙</div>
-      <div style="color:var(--t2);font-weight:600;margin-bottom:6px">No token selected</div>
+    <div class="empty">
+      <div class="empty-ico">⚙</div>
+      <div class="empty-t">No token selected</div>
       Deploy a token first, then manage it here.
     </div>
   </div>
@@ -505,8 +646,8 @@ input[type=range]:disabled{opacity:.4;cursor:not-allowed}
 <!-- RIGHT PANEL -->
 <aside class="right-panel">
   <div class="rp-hdr">
-    <div class="rp-title">Manage</div>
-    <div class="rp-badge">● Demo Preview</div>
+    <div class="rp-title">Preview</div>
+    <div class="rp-badge">● Demo</div>
   </div>
 
   <div class="rp-card">
@@ -514,15 +655,15 @@ input[type=range]:disabled{opacity:.4;cursor:not-allowed}
       <div class="rp-tok-ico">🪙</div>
       <div>
         <div class="rp-tok-name" id="rpName">My B20 Token</div>
-        <div class="rp-tok-sym" id="rpSym">TOKEN · 0xB20a…Fd4E</div>
+        <div class="rp-tok-sym" id="rpSym">TOKEN · 0xB20a…—</div>
       </div>
     </div>
     <div class="act-row">
-      <div class="act-lbl">Mint <span class="act-sub">· Role: MINTER</span></div>
+      <div class="act-lbl">Mint <span class="act-sub">· MINTER role</span></div>
       <div class="act-btns"><button class="act-btn primary">Mint</button></div>
     </div>
     <div class="act-row">
-      <div class="act-lbl">Burn <span class="act-sub">· Role: BURNER</span></div>
+      <div class="act-lbl">Burn <span class="act-sub">· BURNER role</span></div>
       <div class="act-btns"><button class="act-btn">Burn</button></div>
     </div>
     <div class="act-row">
@@ -548,32 +689,89 @@ input[type=range]:disabled{opacity:.4;cursor:not-allowed}
   </div>
 
   <div class="rp-note">
-    <strong>Demo Preview</strong> — this shows what your deployed token's manage view looks like. Deploy goes live <strong>June 25</strong> when Base Beryl activates.
+    <strong>Demo preview</strong> — shows what your deployed token's manage UI looks like. Actual deployment goes live <strong>June 25</strong> when Base Beryl activates.
   </div>
 </aside>
 
 </div>
 
+<!-- MOBILE BOTTOM NAV -->
+<nav class="bottom-nav" id="bottomNav">
+  <button class="bn-item active" id="bnCreate" onclick="showTab('create',this,true)">
+    <span class="bn-ico">+</span>
+    <span class="bn-lbl">Create</span>
+  </button>
+  <button class="bn-item" id="bnTokens" onclick="showTab('tokens',this,true)">
+    <span class="bn-ico">◈</span>
+    <span class="bn-lbl">My Tokens</span>
+  </button>
+  <button class="bn-item" id="bnManage" onclick="showTab('manage',this,true)">
+    <span class="bn-ico">⚙</span>
+    <span class="bn-lbl">Manage</span>
+  </button>
+  <a class="bn-item" href="/app">
+    <span class="bn-ico">✦</span>
+    <span class="bn-lbl">Orlix AI</span>
+  </a>
+</nav>
+
+<!-- FEATURE GATED TOAST -->
+<div class="feat-gate" id="featGate">
+  <div class="fg-ico">⚠</div>
+  <div class="fg-body">
+    <div class="fg-title">Feature gated</div>
+    <div class="fg-desc">B20 deploys are live once Base activates the standard.</div>
+  </div>
+  <button class="fg-x" onclick="dismissFeatGate()" aria-label="Dismiss">×</button>
+</div>
+
 <!-- DEPLOY MODAL -->
 <div class="modal-ov" id="deployModal" onclick="if(event.target===this)closeModal()">
   <div class="modal-box">
-    <div class="modal-ico">⬡</div>
+    <div class="modal-ico">🪙</div>
     <div class="modal-title" id="mTitle">B20 Mainnet Countdown</div>
     <div class="modal-cd" id="mCd">—</div>
     <div class="modal-until" id="mUntil">Until Base Beryl mainnet activates</div>
     <div class="modal-sub" id="mSub">
-      Your token config is ready. B20 can be deployed on Base mainnet when the Beryl upgrade activates on
-      <strong style="color:var(--blue)">June 25, 2026</strong>.
-      Come back then and hit Deploy.
+      Your token config is saved. B20 deploys go live when the Base Beryl upgrade activates on
+      <strong style="color:var(--orange)">June 25, 2026</strong>. Come back then and hit Deploy.
     </div>
     <button class="modal-close" onclick="closeModal()">Got it</button>
   </div>
 </div>
 
+<!-- WALLET MODAL (no wallet detected) -->
+<div class="modal-ov" id="walletModal" onclick="if(event.target===this)closeWalletModal()">
+  <div class="modal-box wm-box">
+    <div class="modal-ico">🦊</div>
+    <div class="modal-title">Connect a Wallet</div>
+    <div class="modal-sub" style="margin-bottom:16px">No wallet detected in your browser. Open this page inside a wallet browser, or install MetaMask.</div>
+    <div class="wm-opts">
+      <a class="wm-opt" href="https://metamask.app.link/dapp/orlix.ai/b20" target="_blank" rel="noopener">
+        <div class="wm-opt-ico emoji">🦊</div>
+        <div>
+          <div class="wm-opt-name">MetaMask</div>
+          <div class="wm-opt-desc">Open in MetaMask Mobile</div>
+        </div>
+      </a>
+      <a class="wm-opt" href="https://go.cb-w.com/dapp?cb_url=https%3A%2F%2Forlix.ai%2Fb20" target="_blank" rel="noopener">
+        <div class="wm-opt-ico emoji">🔵</div>
+        <div>
+          <div class="wm-opt-name">Coinbase Wallet</div>
+          <div class="wm-opt-desc">Open in Coinbase Wallet</div>
+        </div>
+      </a>
+    </div>
+    <button class="modal-close" onclick="closeWalletModal()">Cancel</button>
+  </div>
+</div>
+
 <script>
 const MAINNET_TS = new Date('2026-06-25T00:00:00Z').getTime();
+const BASE_CHAIN_ID = '0x2105'; // 8453 decimal
 let variant = 'asset';
 let cdTimer = null;
+let walletAddress = null;
 
 // ── variant ───────────────────────────────────────────────────────────────────
 function setVariant(v) {
@@ -613,7 +811,6 @@ function h32(s) {
   for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; }
   return h.toString(16).padStart(8,'0').toUpperCase();
 }
-function refreshAddr() { onFormChange(); }
 function onFormChange() {
   const name = document.getElementById('fName').value || 'Token';
   const sym  = document.getElementById('fSym').value  || 'TKN';
@@ -623,7 +820,7 @@ function onFormChange() {
   const addr = '0xB20' + h1.slice(0,4) + '…' + h2.slice(0,4);
   document.getElementById('addrPreview').textContent = addr;
   document.getElementById('rpName').textContent = name || 'My B20 Token';
-  document.getElementById('rpSym').textContent  = (sym || 'TOKEN') + ' · ' + addr;
+  document.getElementById('rpSym').textContent  = (sym || 'TOKEN').toUpperCase() + ' · ' + addr;
   const capVal = document.getElementById('fUncapped').checked ? '∞' : (cap || '—');
   document.getElementById('rpCap').textContent    = capVal;
   document.getElementById('rpCapMax').textContent = capVal;
@@ -634,92 +831,237 @@ function onPolicyChange() {
   const al = document.getElementById('fAllow').checked;
   const bl = document.getElementById('fBlock').checked;
   const fr = document.getElementById('fFreeze').checked;
-  document.getElementById('polAllow').classList.toggle('on-blue', al);
-  document.getElementById('polBlock').classList.toggle('on-blue', bl);
-  document.getElementById('polFreeze').classList.toggle('on-orange', fr);
+  document.getElementById('polAllow').classList.toggle('on', al);
+  document.getElementById('polBlock').classList.toggle('on', bl);
+  document.getElementById('polFreeze').classList.toggle('on-red', fr);
   document.getElementById('freezeWarn').classList.toggle('show', fr);
 }
 
 // ── tabs ──────────────────────────────────────────────────────────────────────
-function showTab(name, el) {
+function showTab(name, el, isMobile) {
   ['tabCreate','tabTokens','tabManage'].forEach(id => {
-    document.getElementById(id).style.display = id === 'tab' + cap1(name) ? '' : 'none';
+    document.getElementById(id).style.display = (id === 'tab' + cap1(name)) ? '' : 'none';
   });
-  document.querySelectorAll('.sb-link').forEach(l => l.classList.remove('active'));
-  if (el) el.classList.add('active');
+  // sidebar
+  ['sbCreate','sbTokens','sbManage'].forEach(id => {
+    const el2 = document.getElementById(id);
+    if (el2) el2.classList.remove('active');
+  });
+  const sbMap = {create:'sbCreate',tokens:'sbTokens',manage:'sbManage'};
+  const sbEl = document.getElementById(sbMap[name]);
+  if (sbEl) sbEl.classList.add('active');
+  // bottom nav
+  ['bnCreate','bnTokens','bnManage'].forEach(id => {
+    const el2 = document.getElementById(id);
+    if (el2) el2.classList.remove('active');
+  });
+  const bnMap = {create:'bnCreate',tokens:'bnTokens',manage:'bnManage'};
+  const bnEl = document.getElementById(bnMap[name]);
+  if (bnEl) bnEl.classList.add('active');
+  if (isMobile) window.scrollTo({top:0,behavior:'smooth'});
 }
 function cap1(s) { return s[0].toUpperCase() + s.slice(1); }
 
-// ── deploy ────────────────────────────────────────────────────────────────────
+// ── deploy countdown ──────────────────────────────────────────────────────────
+function formatCountdown(diff) {
+  const d = Math.floor(diff / 86400000);
+  const h = Math.floor((diff % 86400000) / 3600000);
+  const m = Math.floor((diff % 3600000) / 60000);
+  const s = Math.floor((diff % 60000) / 1000);
+  return `${d}d ${String(h).padStart(2,'0')}h ${String(m).padStart(2,'0')}m ${String(s).padStart(2,'0')}s`;
+}
+function updateSubtitle() {
+  const diff = MAINNET_TS - Date.now();
+  const el = document.getElementById('deploySubtitle');
+  if (!el) return;
+  if (diff <= 0) { el.textContent = 'Base Beryl is live — deploy now'; return; }
+  const d = Math.floor(diff / 86400000);
+  const h = Math.floor((diff % 86400000) / 3600000);
+  const m = Math.floor((diff % 3600000) / 60000);
+  el.textContent = `Mainnet in ${d}d ${h}h ${m}m · Base Beryl`;
+}
+
+// ── deploy modal ──────────────────────────────────────────────────────────────
 function onDeploy() {
   document.getElementById('deployModal').classList.add('open');
   const now = Date.now();
   if (now >= MAINNET_TS) {
     document.getElementById('mTitle').textContent = 'Ready to Deploy';
-    document.getElementById('mCd').textContent = '🟢 Base Beryl is Live';
-    document.getElementById('mUntil').textContent = 'Connect wallet to deploy on mainnet';
-    document.getElementById('mSub').innerHTML = 'Base Beryl is live! Connect your wallet to deploy this B20 token on Base mainnet.';
+    document.getElementById('mCd').textContent    = '🟢 Base Beryl is Live';
+    document.getElementById('mUntil').textContent = walletAddress ? 'Connected — deploy on Base mainnet' : 'Connect wallet to deploy';
+    document.getElementById('mSub').innerHTML     = 'Base Beryl is live! ' + (walletAddress ? 'Confirm the transaction in your wallet to deploy this B20 token on Base mainnet.' : 'Connect your wallet to deploy this B20 token on Base mainnet.');
   } else {
     tick(); cdTimer = setInterval(tick, 1000);
   }
 }
 function tick() {
   const diff = MAINNET_TS - Date.now();
-  if (diff <= 0) { document.getElementById('mCd').textContent = '🟢 Now Live'; clearInterval(cdTimer); return; }
-  const d = Math.floor(diff / 86400000);
-  const h = Math.floor((diff % 86400000) / 3600000);
-  const m = Math.floor((diff % 3600000) / 60000);
-  const s = Math.floor((diff % 60000) / 1000);
-  document.getElementById('mCd').textContent =
-    `${d}d ${String(h).padStart(2,'0')}h ${String(m).padStart(2,'0')}m ${String(s).padStart(2,'0')}s`;
+  if (diff <= 0) {
+    document.getElementById('mCd').textContent = '🟢 Now Live';
+    clearInterval(cdTimer); return;
+  }
+  document.getElementById('mCd').textContent = formatCountdown(diff);
 }
 function closeModal() {
   document.getElementById('deployModal').classList.remove('open');
   if (cdTimer) { clearInterval(cdTimer); cdTimer = null; }
 }
 
-// ── wallet ────────────────────────────────────────────────────────────────────
-async function connectWallet() {
-  const stored = localStorage.getItem('orlix_user');
-  if (stored) {
-    try {
-      const u = JSON.parse(stored);
-      const addr = u.address || u.id || '';
-      if (addr) { setWallet(addr); return; }
-    } catch {}
-  }
-  if (!window.ethereum) { alert('No wallet detected. Install MetaMask or open in a wallet browser.'); return; }
-  try {
-    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-    if (accounts[0]) setWallet(accounts[0]);
-  } catch (e) { console.error(e); }
+// ── feature gated toast ───────────────────────────────────────────────────────
+function dismissFeatGate() {
+  const el = document.getElementById('featGate');
+  el.style.opacity = '0';
+  el.style.transform = 'translateY(10px)';
+  setTimeout(() => el.style.display = 'none', 300);
+  try { sessionStorage.setItem('fg_dismissed','1'); } catch {}
 }
-function setWallet(addr) {
-  document.getElementById('walletAddr').textContent = addr.slice(0,6) + '…' + addr.slice(-4);
+
+// ── wallet connect ────────────────────────────────────────────────────────────
+function setWalletUI(addr) {
+  walletAddress = addr;
+  const btn = document.getElementById('walletBtn');
+  const lbl = document.getElementById('walletLabel');
+  btn.classList.add('connected');
+  lbl.innerHTML = '<span class="wallet-addr">' + addr.slice(0,6) + '…' + addr.slice(-4) + '</span>';
   document.getElementById('fAdmin').value = addr;
   onFormChange();
+}
+function clearWalletUI() {
+  walletAddress = null;
+  const btn = document.getElementById('walletBtn');
+  const lbl = document.getElementById('walletLabel');
+  btn.classList.remove('connected');
+  lbl.textContent = 'Connect Wallet';
+  document.getElementById('fAdmin').value = '';
+  onFormChange();
+}
+
+async function handleWallet() {
+  // Disconnect if already connected
+  if (walletAddress) {
+    clearWalletUI();
+    try {
+      localStorage.removeItem('orlix_user');
+      localStorage.removeItem('orlix_token');
+    } catch {}
+    return;
+  }
+
+  // Try stored session first
+  try {
+    const stored = localStorage.getItem('orlix_user');
+    if (stored) {
+      const u = JSON.parse(stored);
+      const addr = (u.address || u.id || '').toLowerCase();
+      if (addr && addr.startsWith('0x') && addr.length === 42) {
+        setWalletUI(u.address || u.id);
+        return;
+      }
+    }
+  } catch {}
+
+  // No ethereum provider
+  if (!window.ethereum) {
+    document.getElementById('walletModal').classList.add('open');
+    return;
+  }
+
+  const btn = document.getElementById('walletBtn');
+  const lbl = document.getElementById('walletLabel');
+  const origText = lbl.textContent;
+  lbl.textContent = 'Connecting…';
+  btn.style.pointerEvents = 'none';
+
+  try {
+    // Request accounts
+    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+    if (!accounts || !accounts[0]) throw new Error('No account');
+
+    const addr = accounts[0];
+
+    // Switch/add Base chain
+    try {
+      const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+      if (chainId !== BASE_CHAIN_ID) {
+        try {
+          await window.ethereum.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: BASE_CHAIN_ID }]
+          });
+        } catch (swErr) {
+          if (swErr.code === 4902) {
+            await window.ethereum.request({
+              method: 'wallet_addEthereumChain',
+              params: [{
+                chainId: BASE_CHAIN_ID,
+                chainName: 'Base',
+                nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
+                rpcUrls: ['https://mainnet.base.org'],
+                blockExplorerUrls: ['https://basescan.org']
+              }]
+            });
+          }
+        }
+      }
+    } catch {}
+
+    setWalletUI(addr);
+
+    // Persist session
+    try {
+      localStorage.setItem('orlix_user', JSON.stringify({
+        id: addr, address: addr,
+        display: addr.slice(0,6) + '…' + addr.slice(-4),
+        type: 'wallet'
+      }));
+      localStorage.setItem('orlix_token', 'wallet:' + addr);
+    } catch {}
+
+    // Listen for account changes
+    window.ethereum.on('accountsChanged', accs => {
+      if (accs && accs[0]) { setWalletUI(accs[0]); }
+      else { clearWalletUI(); }
+    });
+    window.ethereum.on('chainChanged', () => location.reload());
+
+  } catch (e) {
+    lbl.textContent = origText;
+    if (e.code !== 4001) console.error(e);
+  } finally {
+    btn.style.pointerEvents = '';
+  }
+}
+
+function closeWalletModal() {
+  document.getElementById('walletModal').classList.remove('open');
 }
 
 // ── init ──────────────────────────────────────────────────────────────────────
 (function init() {
-  const stored = localStorage.getItem('orlix_user');
-  if (stored) {
-    try { const u = JSON.parse(stored); const a = u.address || u.id || ''; if (a) setWallet(a); } catch {}
-  }
-  // countdown in deploy button subtitle
-  function updateSubtitle() {
-    const diff = MAINNET_TS - Date.now();
-    if (diff <= 0) { document.getElementById('deploySubtitle').textContent = 'Base Beryl is live — deploy now'; return; }
-    const d = Math.floor(diff / 86400000);
-    const h = Math.floor((diff % 86400000) / 3600000);
-    const m = Math.floor((diff % 3600000) / 60000);
-    document.getElementById('deploySubtitle').textContent = `Mainnet in ${d}d ${h}h ${m}m · Base Beryl`;
-  }
+  // Restore wallet from session
+  try {
+    const stored = localStorage.getItem('orlix_user');
+    if (stored) {
+      const u = JSON.parse(stored);
+      const a = u.address || u.id || '';
+      if (a && a.startsWith('0x') && a.length === 42) setWalletUI(a);
+    }
+  } catch {}
+
+  // Subtitle countdown
   updateSubtitle();
   setInterval(updateSubtitle, 60000);
+
+  // Form init
   onFormChange();
+
+  // Feature gate: hide if already dismissed this session
+  try {
+    if (sessionStorage.getItem('fg_dismissed')) {
+      document.getElementById('featGate').style.display = 'none';
+    }
+  } catch {}
 })();
 </script>
-
 </body>
 </html>
