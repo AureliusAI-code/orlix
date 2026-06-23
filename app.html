@@ -1800,8 +1800,9 @@ async function sendChat(){
   const key   = getApiKey();
   const model = pgModelSel.value;
   const ml = model.toLowerCase();
-  const isMimo = ml.startsWith('mimo');
-  // all models route through Bankr LLM gateway — no user API key needed
+  const isMimo   = ml.startsWith('mimo');
+  const isClaude = ml.startsWith('claude');
+  // all non-Mimo models route through Bankr LLM gateway
   const text = chatInput.value.trim();
   if(!text && !pendingImages.length) return;
   chatInput.value = '';
@@ -1870,7 +1871,8 @@ async function sendChat(){
   }
 
   // Build messages array for the API call
-  let messages = (isMimo||isGrok||isOpenAI||isGroq||isDeepSeek||isGemini)
+  // Non-Claude models use OpenAI format — inject system as first message
+  let messages = !isClaude
     ? [{role:'system',content:systemWithMemory}, ...chatHistory.slice(0,-1)]
     : [...chatHistory.slice(0,-1)];
 
