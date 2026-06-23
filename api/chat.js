@@ -245,11 +245,35 @@ async function executeTool(name, input) {
   }
 }
 
+// ── Holder tier check ─────────────────────────────────────────────────────────
+const { getOrlixTier, withTier, canUseModel } = require('./_shared/holder');
+
+// Model category mapping — controls tier-gating
+const MODEL_CATEGORY = {
+  'mimo':      'basic',    // free for all
+  'claude':    'full',     // POWER_HOLDER+ only
+  'gpt-':      'full',
+  'o1':        'full',
+  'o3':        'full',
+  'o4':        'full',
+  'grok-':     'standard', // HOLDER+
+  'groq-':     'standard',
+  'deepseek-': 'standard',
+  'gemini-':   'standard',
+};
+
+function getModelCategory(model) {
+  for (const [prefix, cat] of Object.entries(MODEL_CATEGORY)) {
+    if (model.startsWith(prefix)) return cat;
+  }
+  return 'full';
+}
+
 // ── Main handler ──────────────────────────────────────────────────────────────
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin',  '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-api-key');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-api-key, x-wallet');
   res.setHeader('x-orlix-proxy', '1');
 
   if (req.method === 'OPTIONS') return res.status(204).end();
@@ -258,11 +282,31 @@ module.exports = async function handler(req, res) {
   const bodyObj = typeof req.body === 'object' && req.body !== null
     ? req.body : JSON.parse(req.body || '{}');
 
+  // ── Tier check ──────────────────────────────────────────────────────────────
+  const wallet = (req.headers['x-wallet'] || bodyObj.wallet || '').trim();
+  const tier   = await getOrlixTier(wallet);
+
   const model    = (bodyObj.model || '').toLowerCase();
   const isMimo   = model.startsWith('mimo');
   const isClaude = model.startsWith('claude');
   const isGrok   = model.startsWith('grok');
   const isOpenAI = model.startsWith('gpt-') || /^o[134]/.test(model);
+
+  // Gate models by tier
+  const modelCat = getModelCategory(model);
+  if (!canUseModel(tier.tier, modelCat)) {
+    const tierNeeded = modelCat === 'full' ? 'Power Holder (10M+ ORLIX)' : 'Holder (1M+ ORLIX)';
+    return res.status(403).json(withTier({
+      error: `This model requires ${tierNeeded}. Hold more $ORLIX to unlock.`,
+      ca:    '0x799c28BAC95B3E0B26534D1e9A586511895EcBA3',
+    }, tier));
+  }
+
+  // Apply tier max_tokens cap
+  const maxTokensAllowed = tier.maxTokens;
+  if (bodyObj.max_tokens && bodyObj.max_tokens > maxTokensAllowed) {
+    bodyObj.max_tokens = maxTokensAllowed;
+  }
 
   async function callCompat(url, key) {
     const body = { model: bodyObj.model, messages: bodyObj.messages || [], max_tokens: bodyObj.max_tokens || 4096 };
