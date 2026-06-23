@@ -133,57 +133,6 @@
         }
       }
     },
-    "search": {
-      "description": "Web search powered by Brave. Free tier: 5 results. $ORLIX holders get up to 50 results + AI synthesis of findings.",
-      "price": "0.005",
-      "methods": ["GET"],
-      "schema": {
-        "input": {
-          "type": "object",
-          "properties": {
-            "q":      { "type": "string", "description": "Search query" },
-            "wallet": { "type": "string", "description": "Optional — $ORLIX holder wallet for more results + AI synthesis" }
-          },
-          "required": ["q"]
-        },
-        "output": {
-          "type": "object",
-          "properties": {
-            "query":     { "type": "string" },
-            "count":     { "type": "number" },
-            "results":   { "type": "array",  "description": "title, url, description, published" },
-            "aiSummary": { "type": "string", "description": "AI synthesis of results (holders only)" },
-            "_orlix":    { "type": "object" },
-            "timestamp": { "type": "string" }
-          }
-        }
-      }
-    },
-    "music": {
-      "description": "Generate crypto-themed instrumental music via Mubert AI. Free tier: 30s tracks. $ORLIX holders get up to 60s tracks. Pass genre and optional token symbol.",
-      "price": "0.05",
-      "methods": ["POST"],
-      "schema": {
-        "input": {
-          "type": "object",
-          "properties": {
-            "genre":  { "type": "string", "description": "Music genre", "enum": ["trap","phonk","pop","drill","hype","ballad"] },
-            "token":  { "type": "string", "description": "Optional token symbol for themed music (e.g. ORLIX, DEGEN)" },
-            "wallet": { "type": "string", "description": "Optional — $ORLIX holder wallet for longer tracks" }
-          }
-        },
-        "output": {
-          "type": "object",
-          "properties": {
-            "audioUrl":  { "type": "string", "description": "Direct MP3 download URL" },
-            "genre":     { "type": "string" },
-            "duration":  { "type": "string" },
-            "_orlix":    { "type": "object" },
-            "timestamp": { "type": "string" }
-          }
-        }
-      }
-    },
     "b20": {
       "description": "B20 token standard info on Base — variants, features, live network stats (block, gas). $ORLIX holders get the full deployment guide with recommended config and gas estimate.",
       "price": "0.01",
