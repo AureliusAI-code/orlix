@@ -1,4 +1,6 @@
 // Token Analyzer — Base RPC + DexScreener + AI verdict (upgraded)
+const { getOrlixTier, withTier } = require('./_shared/holder');
+
 const BASE_RPC = 'https://mainnet.base.org';
 
 async function rpc(method, params = []) {
@@ -146,6 +148,7 @@ When data suggests risk, be explicit. When data looks healthy, say so with reaso
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-wallet');
   if (req.method === 'OPTIONS') return res.status(204).end();
 
   const address = ((req.query.address || '') + '').trim().toLowerCase();
@@ -153,12 +156,21 @@ module.exports = async function handler(req, res) {
     return res.status(400).json({ error: 'Invalid address — must be 0x + 40 hex chars.' });
   }
 
+  const wallet = (req.query.wallet || req.headers['x-wallet'] || '').trim();
+  const tier   = await getOrlixTier(wallet);
+
+  if (tier.tier === 'NONE') {
+    return res.status(403).json(withTier({
+      error: 'AI analysis requires holding at least 1,000,000 $ORLIX (Holder tier)',
+    }, tier));
+  }
+
   try {
     const [tokR, dexR] = await Promise.allSettled([getTokenInfo(address), getDex(address)]);
     const token    = tokR.status === 'fulfilled' ? tokR.value : null;
     const dex      = dexR.status === 'fulfilled' ? dexR.value : null;
     const analysis = await aiVerdict(address, token, dex);
-    return res.json({ address, tokenInfo: token, dexInfo: dex, analysis, timestamp: new Date().toISOString() });
+    return res.json(withTier({ address, tokenInfo: token, dexInfo: dex, analysis, timestamp: new Date().toISOString() }, tier));
   } catch (e) {
     return res.status(502).json({ error: e.message });
   }

@@ -148,6 +148,48 @@ main{padding-top:56px}
 .bs-bar-track{height:8px;background:var(--red-dim);border-radius:4px;overflow:hidden;border:1px solid var(--border);margin-top:10px}
 .bs-bar-buy{height:100%;border-radius:4px;background:var(--green);transition:width .8s cubic-bezier(.4,0,.2,1)}
 
+/* UTILITY / STAKING SECTION */
+.utility-section{padding:0 0 64px}
+.util-hd{text-align:center;margin-bottom:40px}
+.util-tag{display:inline-block;font-size:.62rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--orange);background:var(--orange-dim);border:1px solid rgba(240,120,48,.2);border-radius:20px;padding:4px 12px;margin-bottom:14px}
+.util-title{font-size:1.7rem;font-weight:800;color:var(--text-1);margin-bottom:10px}
+.util-sub{font-size:.88rem;color:var(--text-2);max-width:480px;margin:0 auto;line-height:1.65}
+
+/* Tier cards */
+.tier-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:24px}
+.tier-card{background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius);padding:22px 20px;display:flex;flex-direction:column;gap:14px;transition:all var(--tr)}
+.tier-card:hover{border-color:var(--border-b);transform:translateY(-2px)}
+.tier-card.featured{border-color:rgba(240,120,48,.3);background:linear-gradient(160deg,rgba(240,120,48,.06) 0%,var(--bg-2) 100%)}
+.tier-card.featured:hover{border-color:var(--orange);box-shadow:0 16px 48px var(--orange-glow)}
+.tier-badge{display:inline-flex;align-items:center;font-size:.62rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;border-radius:20px;padding:3px 10px;width:fit-content}
+.tier-badge.holder{background:rgba(74,222,128,.1);color:var(--green);border:1px solid rgba(74,222,128,.2)}
+.tier-badge.power{background:var(--orange-dim);color:var(--orange);border:1px solid rgba(240,120,48,.25)}
+.tier-badge.elite{background:var(--purple-dim);color:var(--purple);border:1px solid rgba(167,139,250,.2)}
+.tier-amount{font-size:1.5rem;font-weight:800;font-family:var(--mono);color:var(--text-1)}
+.tier-amount span{font-size:.78rem;font-weight:500;color:var(--text-3);font-family:inherit}
+.tier-perks{list-style:none;display:flex;flex-direction:column;gap:8px;margin:0;padding:0}
+.tier-perks li{font-size:.78rem;color:var(--text-2);display:flex;align-items:center;gap:8px}
+.tier-perks li::before{content:'✓';color:var(--green);font-weight:700;font-size:.7rem;flex-shrink:0}
+
+/* Staking box */
+.stake-box{background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius);padding:28px 24px;display:flex;flex-direction:column;gap:20px}
+.stake-hd{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+.stake-title{font-size:1rem;font-weight:700;color:var(--text-1)}
+.stake-badge{font-size:.62rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;background:rgba(167,139,250,.1);color:var(--purple);border:1px solid rgba(167,139,250,.2);border-radius:20px;padding:3px 10px}
+.stake-tiers{display:flex;flex-direction:column;gap:10px}
+.st-row{display:grid;grid-template-columns:1fr auto 1fr auto;align-items:center;gap:14px;background:var(--bg-3);border:1px solid var(--border);border-radius:10px;padding:14px 18px}
+.st-amount{font-size:.88rem;font-weight:700;font-family:var(--mono);color:var(--text-1)}
+.st-arrow{color:var(--text-3);font-size:.9rem}
+.st-reward{font-size:1.2rem;font-weight:800;font-family:var(--mono);color:var(--orange)}
+.st-reward span{font-size:.72rem;color:var(--text-3);font-weight:500}
+.st-lock{font-size:.68rem;color:var(--text-3);background:var(--bg-2);border:1px solid var(--border);border-radius:6px;padding:3px 8px;text-align:center}
+.stake-note{display:flex;align-items:flex-start;gap:10px;font-size:.8rem;color:var(--text-2);background:rgba(248,113,113,.05);border:1px solid rgba(248,113,113,.12);border-radius:10px;padding:12px 16px;line-height:1.55}
+.burn-icon{font-size:1rem;flex-shrink:0;margin-top:1px}
+.stake-rule{text-align:center;font-size:.82rem;font-weight:600;color:var(--text-2);border-top:1px solid var(--border);padding-top:16px}
+.stake-rule strong,.stake-rule b{color:var(--orange)}
+
+@media(max-width:600px){.st-row{grid-template-columns:1fr auto;gap:8px}.st-arrow{display:none}.st-lock{display:none}}
+
 /* FOOTER */
 footer{border-top:1px solid var(--border);padding:40px 0 56px}
 .f-bottom{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:16px}
