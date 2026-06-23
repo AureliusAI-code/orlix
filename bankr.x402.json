@@ -1,5 +1,210 @@
 {
   "network": "base",
   "currency": "USDC",
-  "services": {}
+  "services": {
+    "analyze": {
+      "description": "AI-powered security analysis for any Base token. Returns red flags, green flags, liquidity risk, and SAFE/CAUTION/HIGH RISK/SCAM LIKELY verdict. $ORLIX holders (pass ?wallet=) get deeper analysis with price action + whale risk sections.",
+      "price": "0.05",
+      "methods": ["GET"],
+      "schema": {
+        "input": {
+          "type": "object",
+          "properties": {
+            "address": { "type": "string", "description": "ERC-20 contract address on Base (0x...40 hex chars)" },
+            "wallet":  { "type": "string", "description": "Optional — your wallet address for $ORLIX holder discount tier" }
+          },
+          "required": ["address"]
+        },
+        "output": {
+          "type": "object",
+          "properties": {
+            "address":   { "type": "string" },
+            "tokenInfo": { "type": "object", "description": "name, symbol, decimals, totalSupply" },
+            "dexInfo":   { "type": "object", "description": "price, liquidity, volume, buys/sells, liqMcapRatio" },
+            "analysis":  { "type": "string", "description": "AI security verdict" },
+            "_orlix":    { "type": "object", "description": "Holder tier info" },
+            "timestamp": { "type": "string" }
+          }
+        }
+      }
+    },
+    "chat": {
+      "description": "Chat with 19 frontier AI models — Claude, GPT-5, Gemini, Grok, DeepSeek, Qwen, Kimi, GLM, Mimo. Free tier gets fast models only. $ORLIX holders unlock all models + higher token limits.",
+      "price": "0.002",
+      "methods": ["POST"],
+      "schema": {
+        "input": {
+          "type": "object",
+          "properties": {
+            "message": { "type": "string", "description": "Your message or question" },
+            "model":   { "type": "string", "description": "Model ID — e.g. claude-sonnet-4-6, gpt-5.4, gemini-3.1-pro, grok-4.20, deepseek-v3.2" },
+            "system":  { "type": "string", "description": "Optional system prompt" },
+            "wallet":  { "type": "string", "description": "Optional — $ORLIX holder wallet for premium model access" }
+          },
+          "required": ["message"]
+        },
+        "output": {
+          "type": "object",
+          "properties": {
+            "model":     { "type": "string" },
+            "response":  { "type": "string" },
+            "maxTokens": { "type": "number" },
+            "_orlix":    { "type": "object", "description": "Holder tier info" },
+            "timestamp": { "type": "string" }
+          }
+        }
+      }
+    },
+    "song": {
+      "description": "Generate crypto song lyrics for any token. Pass a symbol or contract address, choose a genre (trap/phonk/pop/drill/hype/ballad), get a full song. $ORLIX holders get extended songs with bridge + outro.",
+      "price": "0.05",
+      "methods": ["GET"],
+      "schema": {
+        "input": {
+          "type": "object",
+          "properties": {
+            "token":  { "type": "string", "description": "Token symbol (e.g. ORLIX, DEGEN, BRETT) or Base contract address" },
+            "genre":  { "type": "string", "description": "Music genre", "enum": ["trap","phonk","pop","drill","hype","ballad"] },
+            "wallet": { "type": "string", "description": "Optional — $ORLIX holder wallet for extended song structure" }
+          },
+          "required": ["token"]
+        },
+        "output": {
+          "type": "object",
+          "properties": {
+            "token":     { "type": "object", "description": "symbol, name, priceUsd, priceChange24h" },
+            "genre":     { "type": "string" },
+            "structure": { "type": "string", "description": "Song structure used" },
+            "lyrics":    { "type": "string" },
+            "_orlix":    { "type": "object" },
+            "timestamp": { "type": "string" }
+          }
+        }
+      }
+    },
+    "market": {
+      "description": "Live Base network market data — top tokens by volume with price, liquidity, and 24h stats. $ORLIX holders get more tokens + live AI market commentary.",
+      "price": "0.01",
+      "methods": ["GET"],
+      "schema": {
+        "input": {
+          "type": "object",
+          "properties": {
+            "wallet": { "type": "string", "description": "Optional — $ORLIX holder wallet for more results + AI commentary" }
+          }
+        },
+        "output": {
+          "type": "object",
+          "properties": {
+            "tokens":     { "type": "array",  "description": "Token list with rank, price, volume, liquidity" },
+            "stats":      { "type": "object", "description": "totalVol24h, gainers, losers count" },
+            "commentary": { "type": "string", "description": "AI market commentary (holders only)" },
+            "_orlix":     { "type": "object" },
+            "timestamp":  { "type": "string" }
+          }
+        }
+      }
+    },
+    "wallet": {
+      "description": "Analyze any Base wallet — ETH balance, $ORLIX holdings + tier, and network stats. $ORLIX holders get recent swap activity + AI wallet profile.",
+      "price": "0.03",
+      "methods": ["GET"],
+      "schema": {
+        "input": {
+          "type": "object",
+          "properties": {
+            "address": { "type": "string", "description": "Wallet address to analyze (0x...)" },
+            "caller":  { "type": "string", "description": "Optional — your own wallet for $ORLIX holder tier check" }
+          },
+          "required": ["address"]
+        },
+        "output": {
+          "type": "object",
+          "properties": {
+            "address":     { "type": "string" },
+            "network":     { "type": "object", "description": "chainId, latestBlock, gasPriceGwei" },
+            "balances":    { "type": "object", "description": "ETH and ORLIX balances with tier" },
+            "recentSwaps": { "type": "array",  "description": "Recent token swaps (holders only)" },
+            "aiSummary":   { "type": "string", "description": "AI wallet profile (holders only)" },
+            "basescan":    { "type": "string" },
+            "_orlix":      { "type": "object" },
+            "timestamp":   { "type": "string" }
+          }
+        }
+      }
+    },
+    "search": {
+      "description": "Web search powered by Brave. Free tier: 5 results. $ORLIX holders get up to 50 results + AI synthesis of findings.",
+      "price": "0.005",
+      "methods": ["GET"],
+      "schema": {
+        "input": {
+          "type": "object",
+          "properties": {
+            "q":      { "type": "string", "description": "Search query" },
+            "wallet": { "type": "string", "description": "Optional — $ORLIX holder wallet for more results + AI synthesis" }
+          },
+          "required": ["q"]
+        },
+        "output": {
+          "type": "object",
+          "properties": {
+            "query":     { "type": "string" },
+            "count":     { "type": "number" },
+            "results":   { "type": "array",  "description": "title, url, description, published" },
+            "aiSummary": { "type": "string", "description": "AI synthesis of results (holders only)" },
+            "_orlix":    { "type": "object" },
+            "timestamp": { "type": "string" }
+          }
+        }
+      }
+    },
+    "music": {
+      "description": "Generate crypto-themed instrumental music via Mubert AI. Free tier: 30s tracks. $ORLIX holders get up to 60s tracks. Pass genre and optional token symbol.",
+      "price": "0.05",
+      "methods": ["POST"],
+      "schema": {
+        "input": {
+          "type": "object",
+          "properties": {
+            "genre":  { "type": "string", "description": "Music genre", "enum": ["trap","phonk","pop","drill","hype","ballad"] },
+            "token":  { "type": "string", "description": "Optional token symbol for themed music (e.g. ORLIX, DEGEN)" },
+            "wallet": { "type": "string", "description": "Optional — $ORLIX holder wallet for longer tracks" }
+          }
+        },
+        "output": {
+          "type": "object",
+          "properties": {
+            "audioUrl":  { "type": "string", "description": "Direct MP3 download URL" },
+            "genre":     { "type": "string" },
+            "duration":  { "type": "string" },
+            "_orlix":    { "type": "object" },
+            "timestamp": { "type": "string" }
+          }
+        }
+      }
+    },
+    "b20": {
+      "description": "B20 token standard info on Base — variants, features, live network stats (block, gas). $ORLIX holders get the full deployment guide with recommended config and gas estimate.",
+      "price": "0.01",
+      "methods": ["GET"],
+      "schema": {
+        "input": {
+          "type": "object",
+          "properties": {
+            "wallet": { "type": "string", "description": "Optional — $ORLIX holder wallet for deployment guide" }
+          }
+        },
+        "output": {
+          "type": "object",
+          "properties": {
+            "standard":    { "type": "object", "description": "B20 standard info + live Base network stats" },
+            "deployGuide": { "type": "object", "description": "Deployment guide with recommended config (holders only)" },
+            "_orlix":      { "type": "object" },
+            "timestamp":   { "type": "string" }
+          }
+        }
+      }
+    }
+  }
 }
