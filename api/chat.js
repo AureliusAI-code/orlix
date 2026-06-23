@@ -248,6 +248,25 @@ async function executeTool(name, input) {
 // ── Holder tier check ─────────────────────────────────────────────────────────
 const { getOrlixTier, withTier, canUseModel } = require('./_shared/holder');
 
+// ORLIX burn per tier per inference (in $1 credits — /api/burn converts to wei)
+const BURN_CREDITS = { NONE: 0, HOLDER: 0.1, POWER_HOLDER: 0.2, ELITE: 0.5 };
+
+// Fire-and-forget burn after successful inference
+function triggerBurn(req, tierKey) {
+  const credits = BURN_CREDITS[tierKey] || 0;
+  if (!credits || !process.env.BURN_SECRET) return;
+  const proto = req.headers['x-forwarded-proto'] || 'https';
+  const host  = req.headers.host || '';
+  if (!host) return;
+  const url   = `${proto}://${host}/api/burn`;
+  fetch(url, {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify({ credits, secret: process.env.BURN_SECRET }),
+    signal:  AbortSignal.timeout(15000),
+  }).catch(() => {});
+}
+
 // Model category mapping — controls tier-gating
 const MODEL_CATEGORY = {
   'mimo':      'basic',    // free for all
@@ -394,7 +413,9 @@ module.exports = async function handler(req, res) {
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
         body: JSON.stringify(body),
       });
-      return res.status(r.status).setHeader('Content-Type', 'application/json').send(await r.text());
+      const mimoText = await r.text();
+      if (r.ok) triggerBurn(req, tier.tier);
+      return res.status(r.status).setHeader('Content-Type', 'application/json').send(mimoText);
     } catch (e) { return res.status(502).json({ error: { message: 'Mimo error: ' + e.message } }); }
   }
 
@@ -473,6 +494,7 @@ module.exports = async function handler(req, res) {
         }
         data = JSON.parse(text);
       }
+      triggerBurn(req, tier.tier);
       return res.status(200).setHeader('Content-Type', 'application/json').send(JSON.stringify(data));
     } catch (e) {
       return res.status(502).json({ error: { message: 'Anthropic error: ' + e.message } });
@@ -492,7 +514,9 @@ module.exports = async function handler(req, res) {
         return pipeOpenAIStream(r, res);
       }
       const r = await callCompat('https://api.x.ai/v1/chat/completions', key);
-      return res.status(r.status).setHeader('Content-Type', 'application/json').send(await r.text());
+      const grokText = await r.text();
+      if (r.ok) triggerBurn(req, tier.tier);
+      return res.status(r.status).setHeader('Content-Type', 'application/json').send(grokText);
     } catch (e) { return res.status(502).json({ error: { message: 'xAI error: ' + e.message } }); }
   }
 
@@ -515,6 +539,7 @@ module.exports = async function handler(req, res) {
         try { msg = JSON.parse(text).error?.message || text; } catch {}
         return res.status(r.status).json({ error: { message: 'OpenAI: ' + msg } });
       }
+      if (r.ok) triggerBurn(req, tier.tier);
       return res.status(r.status).setHeader('Content-Type', 'application/json').send(text);
     } catch (e) { return res.status(502).json({ error: { message: 'OpenAI error: ' + e.message } }); }
   }
@@ -539,7 +564,9 @@ module.exports = async function handler(req, res) {
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
         body: JSON.stringify(body)
       });
-      return res.status(r.status).setHeader('Content-Type', 'application/json').send(await r.text());
+      const groqText = await r.text();
+      if (r.ok) triggerBurn(req, tier.tier);
+      return res.status(r.status).setHeader('Content-Type', 'application/json').send(groqText);
     } catch (e) { return res.status(502).json({ error: { message: 'Groq error: ' + e.message } }); }
   }
 
@@ -556,7 +583,9 @@ module.exports = async function handler(req, res) {
         return pipeOpenAIStream(r, res);
       }
       const r = await callCompat('https://api.deepseek.com/v1/chat/completions', key);
-      return res.status(r.status).setHeader('Content-Type', 'application/json').send(await r.text());
+      const dsText = await r.text();
+      if (r.ok) triggerBurn(req, tier.tier);
+      return res.status(r.status).setHeader('Content-Type', 'application/json').send(dsText);
     } catch (e) { return res.status(502).json({ error: { message: 'DeepSeek error: ' + e.message } }); }
   }
 
@@ -573,7 +602,9 @@ module.exports = async function handler(req, res) {
         return pipeOpenAIStream(r, res);
       }
       const r = await callCompat('https://generativelanguage.googleapis.com/v1beta/openai/chat/completions', key);
-      return res.status(r.status).setHeader('Content-Type', 'application/json').send(await r.text());
+      const gemText = await r.text();
+      if (r.ok) triggerBurn(req, tier.tier);
+      return res.status(r.status).setHeader('Content-Type', 'application/json').send(gemText);
     } catch (e) { return res.status(502).json({ error: { message: 'Gemini error: ' + e.message } }); }
   }
 
