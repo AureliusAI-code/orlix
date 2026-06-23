@@ -14,7 +14,7 @@ async function rpc(method, params = []) {
     method:  'POST',
     headers: { 'Content-Type': 'application/json' },
     body:    JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
-    signal:  AbortSignal.timeout(6000),
+    signal:  AbortSignal.timeout(8000),
   });
   const d = await r.json();
   if (d.error) throw new Error(d.error.message);
@@ -86,8 +86,8 @@ module.exports = async function handler(req, res) {
         discount:     tier.discount + '%',
       },
       staking: stakeInfo || {
-        status:  'Contract not yet deployed',
-        message: 'Staking launches Q3 2026',
+        status:  'Coming soon',
+        message: 'Set STAKING_CONTRACT env var after contract deployment to activate staking.',
       },
       ca: ORLIX_CONTRACT,
     });

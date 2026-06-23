@@ -5,9 +5,10 @@ const BASE_RPC = 'https://mainnet.base.org';
 
 async function rpc(method, params = []) {
   const r = await fetch(BASE_RPC, {
-    method: 'POST',
+    method:  'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
+    body:    JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
+    signal:  AbortSignal.timeout(8000),
   });
   const d = await r.json();
   if (d.error) throw new Error(d.error.message);
@@ -99,7 +100,7 @@ async function getDex(address) {
 
 async function aiVerdict(address, token, dex) {
   const key = process.env.ANTHROPIC_API_KEY || '';
-  if (!key) return '**AI analysis unavailable** — ANTHROPIC_API_KEY not set.';
+  if (!key) return '**AI analysis unavailable.** Please try again later.';
 
   const priceStr = dex?.priceUsd
     ? `$${Number(dex.priceUsd).toFixed(Number(dex.priceUsd) < 0.0001 ? 10 : Number(dex.priceUsd) < 0.01 ? 8 : 6)}`
@@ -142,6 +143,7 @@ When data suggests risk, be explicit. When data looks healthy, say so with reaso
     }),
   });
   const d = await r.json();
+  if (!r.ok) return '**AI analysis service error.** Please try again later.';
   return d.content?.[0]?.text || 'Analysis unavailable.';
 }
 
@@ -172,6 +174,7 @@ module.exports = async function handler(req, res) {
     const analysis = await aiVerdict(address, token, dex);
     return res.json(withTier({ address, tokenInfo: token, dexInfo: dex, analysis, timestamp: new Date().toISOString() }, tier));
   } catch (e) {
-    return res.status(502).json({ error: e.message });
+    console.error('[analyze] error:', e.message);
+    return res.status(502).json({ error: 'Analysis service error. Please try again.' });
   }
 };

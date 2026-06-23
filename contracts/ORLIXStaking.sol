@@ -66,7 +66,11 @@ contract ORLIXStaking {
         StakeInfo storage s = stakes[msg.sender];
         s.amount    += amount;
         s.stakedAt   = block.timestamp;
-        s.unlocksAt  = block.timestamp + LOCK_PERIOD;
+        // Only extend lock time if this is a fresh stake or existing lock already expired.
+        // Prevents re-staking from pushing back the unlock date of already-staked tokens.
+        if (s.unlocksAt == 0 || block.timestamp >= s.unlocksAt) {
+            s.unlocksAt = block.timestamp + LOCK_PERIOD;
+        }
         totalStaked += amount;
 
         emit Staked(msg.sender, amount, s.unlocksAt);
@@ -133,6 +137,6 @@ contract ORLIXStaking {
     // Emergency: recover any accidentally sent tokens (not ORLIX staked)
     function recoverToken(address token, uint256 amount) external onlyOwner {
         require(token != address(orlix), "Cannot recover staked ORLIX");
-        IERC20(token).transfer(owner, amount);
+        require(IERC20(token).transfer(owner, amount), "Transfer failed");
     }
 }

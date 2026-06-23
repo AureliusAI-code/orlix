@@ -1,92 +1,108 @@
-// POST /api/burn — Platform burn mechanic for $ORLIX
-// Burns ORLIX from platform treasury wallet proportional to AI credits consumed.
+// POST /api/burn — Admin-only ORLIX burn endpoint
+// Burns ORLIX from platform treasury to 0xdEaD.
+// BURN_SECRET must be passed as Authorization: Bearer <secret> header.
+// Rate limited: max 10 burns per hour globally.
 //
-// Required env vars:
-//   BURN_PRIVATE_KEY  — platform treasury wallet private key (holds ORLIX for burning)
-//   BURN_SECRET       — shared secret to authenticate calls from internal services
-//   STAKING_CONTRACT  — deployed ORLIXStaking contract address (optional, for event tracking)
-//
-// Body: { credits: 3, secret: "..." }   — credits = dollar value of AI used
-//   OR: { amount: "1000000000000000000", secret: "..." }  — raw wei amount to burn
-//
-// ORLIX burn rate: 1000 ORLIX per $1 of AI credits (adjustable via BURN_RATE env var)
+// Body: { credits: 3 }  OR  { amount: "1000000000000000000" }
 
-const { ethers }       = require('ethers');
-const ORLIX_CONTRACT   = '0x799c28BAC95B3E0B26534D1e9A586511895EcBA3';
-const BASE_RPC         = 'https://mainnet.base.org';
-const DEAD             = '0x000000000000000000000000000000000000dEaD';
+const { burnOrlix } = require('./_shared/burnOrlix');
+const { ethers }    = require('ethers');
 
-// ERC-20 transfer(address,uint256) ABI (minimal)
+const ORLIX_CONTRACT = '0x799c28BAC95B3E0B26534D1e9A586511895EcBA3';
+const BASE_RPC       = 'https://mainnet.base.org';
+const DEAD           = '0x000000000000000000000000000000000000dEaD';
+
 const ERC20_ABI = [
   'function transfer(address to, uint256 amount) returns (bool)',
   'function balanceOf(address account) view returns (uint256)',
 ];
 
+// In-process rate limiter: max 10 requests per hour
+const requestLog = [];
+const MAX_PER_HOUR = 10;
+
+function isRateLimited() {
+  const now    = Date.now();
+  const cutoff = now - 3_600_000;
+  while (requestLog.length && requestLog[0] < cutoff) requestLog.shift();
+  if (requestLog.length >= MAX_PER_HOUR) return true;
+  requestLog.push(now);
+  return false;
+}
+
 module.exports = async function handler(req, res) {
+  // No CORS — this endpoint is internal only
+  res.setHeader('Access-Control-Allow-Origin',  'same-origin');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  // Restrict to server-side calls only (no CORS for external origins)
-  res.setHeader('Access-Control-Allow-Origin', 'same-origin');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
   if (req.method === 'OPTIONS') return res.status(204).end();
   if (req.method !== 'POST')   return res.status(405).json({ error: 'POST only' });
 
-  const BURN_SECRET      = process.env.BURN_SECRET      || '';
-  const BURN_PRIVATE_KEY = process.env.BURN_PRIVATE_KEY || '';
-  const BURN_RATE        = BigInt(process.env.BURN_RATE || '1000'); // ORLIX per $1
+  // Auth via Authorization header only (not body — avoids logging secret in request body)
+  const BURN_SECRET = process.env.BURN_SECRET || '';
+  if (!BURN_SECRET) return res.status(503).json({ error: 'Burn endpoint not configured' });
 
-  if (!BURN_SECRET || !BURN_PRIVATE_KEY) {
-    return res.status(503).json({
-      error:   'Burn mechanic not configured',
-      missing: [!BURN_SECRET && 'BURN_SECRET', !BURN_PRIVATE_KEY && 'BURN_PRIVATE_KEY'].filter(Boolean),
-    });
-  }
-
-  const body = typeof req.body === 'object' ? req.body : JSON.parse(req.body || '{}');
-
-  if (body.secret !== BURN_SECRET) {
+  const authHeader = (req.headers.authorization || '').trim();
+  const token      = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
+  if (!token || token !== BURN_SECRET) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
-  let burnWei;
-  if (body.amount) {
-    burnWei = BigInt(body.amount);
-  } else if (body.credits != null) {
-    burnWei = BigInt(Math.ceil(body.credits)) * BURN_RATE * 10n ** 18n;
-  } else {
-    return res.status(400).json({ error: 'Provide "credits" (dollar amount) or "amount" (raw wei)' });
+  if (!process.env.BURN_PRIVATE_KEY) {
+    return res.status(503).json({ error: 'BURN_PRIVATE_KEY not configured' });
   }
 
-  if (burnWei <= 0n) return res.status(400).json({ error: 'Amount must be positive' });
+  if (isRateLimited()) {
+    return res.status(429).json({ error: 'Rate limit exceeded — max 10 burns per hour' });
+  }
+
+  const body = typeof req.body === 'object' ? req.body : (() => {
+    try { return JSON.parse(req.body || '{}'); } catch { return null; }
+  })();
+
+  if (!body) return res.status(400).json({ error: 'Invalid JSON body' });
 
   try {
-    const provider = new ethers.JsonRpcProvider(BASE_RPC);
-    const wallet   = new ethers.Wallet(BURN_PRIVATE_KEY, provider);
-    const orlix    = new ethers.Contract(ORLIX_CONTRACT, ERC20_ABI, wallet);
+    let result;
 
-    // Sanity check: platform wallet has enough ORLIX
-    const balance = await orlix.balanceOf(wallet.address);
-    if (balance < burnWei) {
-      return res.status(400).json({
-        error:          'Insufficient ORLIX in platform wallet',
-        walletBalance:  balance.toString(),
-        requested:      burnWei.toString(),
-      });
+    if (body.amount) {
+      // Raw wei amount — direct transfer (bypass burnOrlix helper)
+      const burnWei = BigInt(body.amount);
+      if (burnWei <= 0n) return res.status(400).json({ error: 'amount must be positive' });
+      if (burnWei > 10n ** 27n) return res.status(400).json({ error: 'amount too large' });
+
+      const provider = new ethers.JsonRpcProvider(BASE_RPC);
+      const wallet   = new ethers.Wallet(process.env.BURN_PRIVATE_KEY, provider);
+      const orlix    = new ethers.Contract(ORLIX_CONTRACT, ERC20_ABI, wallet);
+
+      const balance = await orlix.balanceOf(wallet.address);
+      if (balance < burnWei) {
+        return res.status(400).json({ error: 'Insufficient ORLIX balance' });
+      }
+
+      const tx = await orlix.transfer(DEAD, burnWei);
+      await tx.wait(1);
+
+      result = {
+        txHash:      tx.hash,
+        burnedWei:   burnWei.toString(),
+        burnedOrlix: (Number(burnWei / 10n ** 15n) / 1000).toFixed(0) + ' ORLIX',
+      };
+    } else if (body.credits != null) {
+      const credits = Number(body.credits);
+      if (!Number.isFinite(credits) || credits <= 0 || credits > 1000) {
+        return res.status(400).json({ error: 'credits must be between 0 and 1000' });
+      }
+      result = await burnOrlix(credits);
+    } else {
+      return res.status(400).json({ error: 'Provide "credits" or "amount"' });
     }
 
-    const tx = await orlix.transfer(DEAD, burnWei);
-    await tx.wait(1);
-
-    const burnedOrlix = (Number(burnWei / 10n ** 15n) / 1000).toFixed(0);
-
-    return res.status(200).json({
-      ok:          true,
-      txHash:      tx.hash,
-      burnedWei:   burnWei.toString(),
-      burnedOrlix: burnedOrlix + ' ORLIX',
-      burnerWallet: wallet.address,
-    });
+    return res.status(200).json({ ok: true, ...result });
   } catch (e) {
-    return res.status(500).json({ error: e.message });
+    // Don't expose internal error details
+    console.error('[burn] error:', e.message);
+    return res.status(500).json({ error: 'Burn failed — check server logs' });
   }
 };
