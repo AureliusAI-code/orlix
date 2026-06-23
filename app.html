@@ -1501,39 +1501,46 @@ document.getElementById('clearAll').addEventListener('click',()=>{
 });
 
 // ───────── PROVIDER / MODEL DATA ─────────
+// Model IDs use Bankr LLM Gateway canonical IDs (llm.bankr.bot)
 const PROVIDERS = [
   {name:'Anthropic',col:'#b9a4ff',icon:'◈',models:[
     {name:'Claude Sonnet 4.6', id:'claude-sonnet-4-6'},
     {name:'Claude Haiku 4.5',  id:'claude-haiku-4-5-20251001'},
     {name:'Claude Opus 4.8',   id:'claude-opus-4-8'},
     {name:'Claude Fable 5',    id:'claude-fable-5'},
-    {name:'Claude 3.5 Sonnet', id:'claude-3-5-sonnet-20241022'},
   ]},
   {name:'Mimo',col:'#7ee0a8',icon:'M',models:[
     {name:'Mimo 2.5 Pro UltraSpeed', id:'mimo-v2.5-pro-ultraspeed'},
   ]},
-  {name:'Groq',col:'#f97316',icon:'⚡',models:[
-    {name:'Llama 3.3 70B',  id:'groq-llama-3.3-70b-versatile'},
-    {name:'Mixtral 8x7B',   id:'groq-mixtral-8x7b-32768'},
-    {name:'Gemma 2 9B',     id:'groq-gemma2-9b-it'},
-    {name:'Llama 3.1 8B',   id:'groq-llama-3.1-8b-instant'},
-  ]},
   {name:'OpenAI',col:'#10a37f',icon:'○',models:[
-    {name:'GPT-4o',       id:'gpt-4o'},
-    {name:'GPT-4o Mini',  id:'gpt-4o-mini'},
-    {name:'o4 Mini',      id:'o4-mini'},
-  ]},
-  {name:'DeepSeek',col:'#4a9eff',icon:'◎',models:[
-    {name:'DeepSeek Chat',     id:'deepseek-chat'},
-    {name:'DeepSeek Reasoner', id:'deepseek-reasoner'},
+    {name:'GPT-5.4',      id:'gpt-5.4'},
+    {name:'GPT-5 Nano',   id:'gpt-5-nano'},
+    {name:'GPT-5.2 Codex',id:'gpt-5.2-codex'},
   ]},
   {name:'Google',col:'#4285f4',icon:'G',models:[
-    {name:'Gemini 2.5 Pro',   id:'gemini-2.5-pro-preview-06-05'},
-    {name:'Gemini 2.0 Flash', id:'gemini-2.0-flash-001'},
+    {name:'Gemini 3.1 Pro',  id:'gemini-3.1-pro'},
+    {name:'Gemini 3 Flash',  id:'gemini-3-flash'},
   ]},
   {name:'xAI',col:'#ff9a52',icon:'✕',models:[
-    {name:'Grok 4.3',      id:'grok-4.3'},
+    {name:'Grok 4.20',     id:'grok-4.20'},
     {name:'Grok 4.1 Fast', id:'grok-4.1-fast'},
+  ]},
+  {name:'DeepSeek',col:'#4a9eff',icon:'◎',models:[
+    {name:'DeepSeek V3.2', id:'deepseek-v3.2'},
+  ]},
+  {name:'Moonshot',col:'#a78bfa',icon:'K',models:[
+    {name:'Kimi K2.7 Code', id:'kimi-k2.7-code'},
+    {name:'Kimi K2.6',      id:'kimi-k2.6'},
+    {name:'Kimi K2.5',      id:'kimi-k2.5'},
+  ]},
+  {name:'Alibaba',col:'#ff6400',icon:'Q',models:[
+    {name:'Qwen3 Coder',       id:'qwen3-coder'},
+    {name:'Qwen3.7 Plus',      id:'qwen3.7-plus'},
+    {name:'Qwen3.6 Flash',     id:'qwen3.6-flash'},
+  ]},
+  {name:'Z.ai',col:'#64748b',icon:'Z',models:[
+    {name:'GLM-5.1',       id:'glm-5.1'},
+    {name:'GLM-5 Turbo',   id:'glm-5-turbo'},
   ]},
 ];
 
@@ -1723,30 +1730,16 @@ function banner(type, html){
 
 function updateBanner(){
   const selectedModel = ((document.getElementById('pgModelSel')||{}).value||'').toLowerCase();
-  const isMimoSel     = selectedModel.startsWith('mimo');
-  const isClaudeSel   = selectedModel.startsWith('claude');
-  const isGrokSel     = selectedModel.startsWith('grok') && !selectedModel.startsWith('groq');
-  const isOpenAISel   = selectedModel.startsWith('gpt-')||selectedModel.startsWith('o1')||selectedModel.startsWith('o3')||selectedModel.startsWith('o4');
-  const isGroqSel     = selectedModel.startsWith('groq-');
-  const isDeepSeekSel = selectedModel.startsWith('deepseek-');
-  const isGeminiSel   = selectedModel.startsWith('gemini-');
-  const serverKeyedSel = isMimoSel || isClaudeSel || isGrokSel || isOpenAISel || isGroqSel || isDeepSeekSel || isGeminiSel;
-  if(!getApiKey() && !serverKeyedSel){
-    banner('green','✓ <strong>Select a model</strong> to start chatting. Mimo, Claude, Grok, Groq, DeepSeek, and Gemini work without any API key.');
-  } else if(!getApiKey() && isMimoSel){
+  const isMimoSel    = selectedModel.startsWith('mimo');
+  const isClaudeSel  = selectedModel.startsWith('claude');
+  const isBankrSel   = !isMimoSel; // all non-Mimo models go through Bankr LLM gateway
+  const serverKeyedSel = true; // all models are server-keyed (Mimo or Bankr gateway)
+  if(!getApiKey() && isMimoSel){
     banner('green','✓ <strong>Mimo ready</strong> — primary engine active. Send a message to start.');
   } else if(!getApiKey() && isClaudeSel){
-    banner('green','✓ <strong>Claude ready</strong> — server Anthropic key active. <span style="color:#0052ff;background:rgba(0,82,255,.12);border:1px solid rgba(0,82,255,.3);padding:1px 7px;border-radius:4px;font-size:.7rem">Base MCP</span> tools active — ask about wallets, gas, transactions on Base.');
-  } else if(!getApiKey() && isGrokSel){
-    banner('green','✓ <strong>Grok ready</strong> — server xAI key active. Send a message to start.');
-  } else if(!getApiKey() && isOpenAISel){
-    banner('green','✓ <strong>OpenAI ready</strong> — server OpenAI key active. Send a message to start.');
-  } else if(!getApiKey() && isGroqSel){
-    banner('green','✓ <strong>Groq ready</strong> — server Groq key active. Ultra-fast inference. Send a message to start.');
-  } else if(!getApiKey() && isDeepSeekSel){
-    banner('green','✓ <strong>DeepSeek ready</strong> — server DeepSeek key active. Send a message to start.');
-  } else if(!getApiKey() && isGeminiSel){
-    banner('green','✓ <strong>Gemini ready</strong> — server Google key active. Send a message to start.');
+    banner('green','✓ <strong>Claude ready</strong> — Bankr LLM gateway active. <span style="color:#0052ff;background:rgba(0,82,255,.12);border:1px solid rgba(0,82,255,.3);padding:1px 7px;border-radius:4px;font-size:.7rem">Base MCP</span> tools active — ask about wallets, gas, transactions on Base.');
+  } else if(!getApiKey() && isBankrSel){
+    banner('green','✓ <strong>Ready</strong> — Bankr LLM gateway active. Send a message to start.');
   } else if(IS_LOCAL){
     banner('green','✓ <strong>Local mode</strong> — proxy active via localhost:3001. Ready.');
   } else if(getProxyUrl()){
@@ -1762,18 +1755,8 @@ async function apiFetch(key, bodyObj){
   const h = {'Content-Type':'application/json','x-api-key':key};
   const errors = [];
   const m = (bodyObj.model||'').toLowerCase();
-  const isMimo     = m.startsWith('mimo');
-  const isClaude   = m.startsWith('claude');
-  const isGrok     = m.startsWith('grok') && !m.startsWith('groq');
-  const isOpenAI   = m.startsWith('gpt-')||m.startsWith('o1')||m.startsWith('o3')||m.startsWith('o4');
-  const isGroq     = m.startsWith('groq-');
-  const isDeepSeek = m.startsWith('deepseek-');
-  const isGemini   = m.startsWith('gemini-');
-  const serverKeyed = isMimo || isClaude || isGrok || isOpenAI || isGroq || isDeepSeek || isGemini; // server has env var, no user key needed
-
-  if(!key && !serverKeyed){
-    throw new Error('No API key set. Select a Mimo, Claude, Grok, Groq, DeepSeek, or Gemini model — they work without a key.');
-  }
+  const isMimo = m.startsWith('mimo');
+  // all models are server-keyed: Mimo → MIMO_API_KEY, everything else → BANKR_LLM_KEY
 
   // 1. Same-origin /api/chat (Vercel serverless function — no CORS)
   // x-orlix-proxy header confirms our function ran (vs plain Vercel 404)
