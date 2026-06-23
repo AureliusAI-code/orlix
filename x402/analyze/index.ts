@@ -83,7 +83,7 @@ async function getDex(address: string) {
 }
 
 async function aiAnalysis(address: string, token: any, dex: any, maxTokens: number, holderTier: string) {
-  const key = process.env.BANKR_LLM_KEY || '';
+  const key = process.env.ORLIX_LLM_KEY || process.env.BANKR_LLM_KEY || '';
   if (!key) return 'AI analysis unavailable.';
 
   const priceStr = dex?.priceUsd

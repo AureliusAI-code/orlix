@@ -94,7 +94,7 @@ export default async function handler(req: Request) {
 
   // Only holders get AI commentary
   let commentary = '';
-  const llmKey = process.env.BANKR_LLM_KEY || '';
+  const llmKey = process.env.ORLIX_LLM_KEY || process.env.BANKR_LLM_KEY || '';
   if (tier.tier !== 'NONE' && llmKey && tokens.length > 0) {
     commentary = await aiCommentary(tokens, llmKey).catch(() => '');
   }

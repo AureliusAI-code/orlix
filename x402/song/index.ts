@@ -43,7 +43,7 @@ export default async function handler(req: Request) {
     }), { status: 400, headers: { 'Content-Type': 'application/json' } });
   }
 
-  const key = process.env.BANKR_LLM_KEY || '';
+  const key = process.env.ORLIX_LLM_KEY || process.env.BANKR_LLM_KEY || '';
   if (!key) return new Response(JSON.stringify({ error: 'BANKR_LLM_KEY not configured' }), { status: 503, headers: { 'Content-Type': 'application/json' } });
 
   const tier     = await getOrlixTier(wallet);

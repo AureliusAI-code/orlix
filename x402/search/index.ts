@@ -39,7 +39,7 @@ export default async function handler(req: Request) {
 
   // Holders with LLM key get AI synthesis of results
   let aiSummary = '';
-  const llmKey  = process.env.BANKR_LLM_KEY || '';
+  const llmKey  = process.env.ORLIX_LLM_KEY || process.env.BANKR_LLM_KEY || '';
   if (tier.tier !== 'NONE' && llmKey && results.length > 0) {
     const snippets = results.slice(0, 5).map((r: any, i: number) => `[${i+1}] ${r.title}: ${r.description}`).join('\n');
     const rr = await fetch('https://llm.bankr.bot/v1/messages', {

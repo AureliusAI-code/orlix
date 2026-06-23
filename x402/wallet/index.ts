@@ -79,7 +79,7 @@ export default async function handler(req: Request) {
 
   // Holders with LLM key get AI portfolio summary
   let aiSummary = '';
-  const llmKey  = process.env.BANKR_LLM_KEY || '';
+  const llmKey  = process.env.ORLIX_LLM_KEY || process.env.BANKR_LLM_KEY || '';
   if (tier.tier !== 'NONE' && llmKey) {
     const prompt = `Wallet ${target} on Base: ${ethBalance} ETH, ${orlixBalance} ORLIX. Holder tier: ${walletTier.label}. Block: ${blockNum}. Gas: ${gasPriceGwei} gwei. Write a 2-sentence wallet profile. Be specific. No emojis.`;
     const r      = await fetch('https://llm.bankr.bot/v1/messages', {

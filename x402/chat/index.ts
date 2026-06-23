@@ -50,7 +50,7 @@ export default async function handler(req: Request) {
   const isMimo      = model.startsWith('mimo');
   const maxTokens   = tier.maxTokens;
 
-  const bankrKey = process.env.BANKR_LLM_KEY || '';
+  const bankrKey = process.env.ORLIX_LLM_KEY || process.env.BANKR_LLM_KEY || '';
   if (!bankrKey) {
     return new Response(JSON.stringify({ error: 'BANKR_LLM_KEY not configured' }), { status: 503, headers: { 'Content-Type': 'application/json' } });
   }
