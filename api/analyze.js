@@ -96,8 +96,8 @@ async function getDex(address) {
 }
 
 async function aiVerdict(address, token, dex) {
-  const key = process.env.ANTHROPIC_API_KEY || '';
-  if (!key) return '**AI analysis unavailable** — ANTHROPIC_API_KEY not set.';
+  const key = process.env.BANKR_LLM_KEY || process.env.ANTHROPIC_API_KEY || '';
+  if (!key) return '**AI analysis unavailable** — BANKR_LLM_KEY not set.';
 
   const priceStr = dex?.priceUsd
     ? `$${Number(dex.priceUsd).toFixed(Number(dex.priceUsd) < 0.0001 ? 10 : Number(dex.priceUsd) < 0.01 ? 8 : 6)}`
@@ -123,9 +123,12 @@ async function aiVerdict(address, token, dex) {
     ].filter(Boolean).join('\n') : 'No DEX listing found (token not traded or very new).',
   ].join('\n');
 
-  const r = await fetch('https://api.anthropic.com/v1/messages', {
+  const isAnthropicKey = key.startsWith('sk-ant-');
+  const apiUrl = isAnthropicKey ? 'https://api.anthropic.com/v1/messages' : 'https://llm.bankr.bot/v1/messages';
+  const authHeader = isAnthropicKey ? { 'x-api-key': key, 'anthropic-version': '2023-06-01' } : { 'X-API-Key': key, 'anthropic-version': '2023-06-01' };
+  const r = await fetch(apiUrl, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01' },
+    headers: { 'Content-Type': 'application/json', ...authHeader },
     body: JSON.stringify({
       model: 'claude-sonnet-4-6',
       max_tokens: 1200,
