@@ -1,14 +1,10 @@
 // Vercel Serverless Function — /api/chat
-// Routes to the right provider based on model name:
-//   mimo-*            → api.xiaomimimo.com          (MIMO_API_KEY env var) — primary engine
-//   claude-*          → api.anthropic.com            (ANTHROPIC_API_KEY env var) + Base MCP tools
-//   grok-*            → api.x.ai                     (XAI_API_KEY env var)
-//   gpt-* / o1/o3/o4  → api.openai.com               (OPENAI_API_KEY env var)
-//   groq-*            → api.groq.com                  (GROQ_API_KEY env var) — ultra-fast inference
-//   deepseek-*        → api.deepseek.com              (DEEPSEEK_API_KEY env var)
-//   gemini-*          → generativelanguage.googleapis (GEMINI_API_KEY env var)
+// Routes to providers:
+//   mimo-*   → api.xiaomimimo.com   (MIMO_API_KEY)
+//   claude-* → llm.bankr.bot/v1/messages  (BANKR_LLM_KEY) — Anthropic format + Base MCP tools
+//   all else → llm.bankr.bot/v1/chat/completions (BANKR_LLM_KEY) — OpenAI-compatible
 
-// ── Tool definitions (Base MCP + Aeon agentic tools) ─────────────────────────
+// ── Tool definitions (Base MCP tools for Claude) ──────────────────────────────
 const ALL_TOOLS = [
   {
     name: 'base_get_eth_balance',
@@ -96,7 +92,7 @@ const ALL_TOOLS = [
   }
 ];
 
-// ── Base MCP: tool executor (via Base public RPC) ─────────────────────────────
+// ── Base MCP tool executor ────────────────────────────────────────────────────
 const BASE_RPC = 'https://mainnet.base.org';
 
 async function rpc(method, params = []) {
@@ -128,15 +124,15 @@ async function executeTool(name, input) {
         if (!tx) return { error: 'Transaction not found', tx_hash: input.tx_hash };
         const receipt = await rpc('eth_getTransactionReceipt', [input.tx_hash]).catch(() => null);
         return {
-          hash:        tx.hash,
-          from:        tx.from,
-          to:          tx.to,
-          value_eth:   (parseInt(tx.value, 16) / 1e18).toFixed(8),
+          hash:           tx.hash,
+          from:           tx.from,
+          to:             tx.to,
+          value_eth:      (parseInt(tx.value, 16) / 1e18).toFixed(8),
           gas_price_gwei: (parseInt(tx.gasPrice, 16) / 1e9).toFixed(6),
-          block_number: tx.blockNumber ? parseInt(tx.blockNumber, 16) : null,
-          status:      receipt ? (receipt.status === '0x1' ? 'success' : 'failed') : 'pending',
-          network:     'Base Mainnet',
-          chain_id:    8453
+          block_number:   tx.blockNumber ? parseInt(tx.blockNumber, 16) : null,
+          status:         receipt ? (receipt.status === '0x1' ? 'success' : 'failed') : 'pending',
+          network:        'Base Mainnet',
+          chain_id:       8453
         };
       }
       case 'base_get_latest_block': {
@@ -154,17 +150,16 @@ async function executeTool(name, input) {
         };
       }
       case 'base_get_token_balance': {
-        // ERC20 balanceOf(address) selector = 0x70a08231
         const data = '0x70a08231' + input.wallet_address.replace('0x', '').padStart(64, '0');
         const hex  = await rpc('eth_call', [{ to: input.token_address, data }, 'latest']);
         const raw  = parseInt(hex, 16);
         return {
-          wallet:       input.wallet_address,
-          token:        input.token_address,
-          balance_raw:  raw.toString(),
-          network:      'Base Mainnet',
-          chain_id:     8453,
-          note:         'Divide balance_raw by 10^decimals to get human-readable amount'
+          wallet:      input.wallet_address,
+          token:       input.token_address,
+          balance_raw: raw.toString(),
+          network:     'Base Mainnet',
+          chain_id:    8453,
+          note:        'Divide balance_raw by 10^decimals to get human-readable amount'
         };
       }
       case 'base_get_network_info': {
@@ -174,13 +169,13 @@ async function executeTool(name, input) {
           rpc('eth_chainId', []),
         ]);
         return {
-          chain_id:           parseInt(chainIdHex, 16),
-          network:            'Base Mainnet',
-          latest_block:       parseInt(blockHex, 16),
-          gas_price_gwei:     (parseInt(gasPriceHex, 16) / 1e9).toFixed(6),
-          rpc_endpoint:       BASE_RPC,
-          explorer:           'https://basescan.org',
-          bridge:             'https://bridge.base.org',
+          chain_id:       parseInt(chainIdHex, 16),
+          network:        'Base Mainnet',
+          latest_block:   parseInt(blockHex, 16),
+          gas_price_gwei: (parseInt(gasPriceHex, 16) / 1e9).toFixed(6),
+          rpc_endpoint:   BASE_RPC,
+          explorer:       'https://basescan.org',
+          bridge:         'https://bridge.base.org',
         };
       }
       case 'web_search': {
@@ -196,7 +191,6 @@ async function executeTool(name, input) {
           }));
           return { query: input.query, results, source: 'Brave Search' };
         }
-        // Fallback: DuckDuckGo instant answers
         const r = await fetch(`https://api.duckduckgo.com/?q=${encodeURIComponent(input.query)}&format=json&no_html=1&skip_disambig=1`);
         const data = await r.json();
         const results = [];
@@ -204,7 +198,7 @@ async function executeTool(name, input) {
         (data.RelatedTopics || []).slice(0, 4).forEach(t => {
           if (t.Text) results.push({ title: t.Text.split(' - ')[0], description: t.Text, url: t.FirstURL });
         });
-        return { query: input.query, results, source: 'DuckDuckGo (add BRAVE_API_KEY env var for full web search)' };
+        return { query: input.query, results, source: 'DuckDuckGo (add BRAVE_API_KEY for full web search)' };
       }
       case 'fetch_webpage': {
         const r = await fetch(input.url, {
@@ -245,6 +239,22 @@ async function executeTool(name, input) {
   }
 }
 
+// ── Helpers ───────────────────────────────────────────────────────────────────
+async function pipeStream(upstream, res) {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Transfer-Encoding', 'chunked');
+  const reader = upstream.body.getReader();
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      res.write(value);
+    }
+  } catch {}
+  res.end();
+}
+
 // ── Main handler ──────────────────────────────────────────────────────────────
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin',  '*');
@@ -261,71 +271,12 @@ module.exports = async function handler(req, res) {
   const model    = (bodyObj.model || '').toLowerCase();
   const isMimo   = model.startsWith('mimo');
   const isClaude = model.startsWith('claude');
-  const isGrok   = model.startsWith('grok');
-  const isOpenAI = model.startsWith('gpt-') || /^o[134]/.test(model);
 
-  async function callCompat(url, key) {
-    const body = { model: bodyObj.model, messages: bodyObj.messages || [], max_tokens: bodyObj.max_tokens || 4096 };
-    if (bodyObj.temperature != null) body.temperature = bodyObj.temperature;
-    return fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key }, body: JSON.stringify(body) });
-  }
-
-  // Pipe an OpenAI-compatible SSE stream from upstream to the client response
-  async function pipeOpenAIStream(upstream, res) {
-    res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Transfer-Encoding', 'chunked');
-    const reader = upstream.body.getReader();
-    try {
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        res.write(value);
-      }
-    } catch {}
-    res.end();
-  }
-
-  // Pipe an Anthropic SSE stream, converting to OpenAI SSE format
-  async function pipeAnthropicStream(upstream, res) {
-    res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Transfer-Encoding', 'chunked');
-    const reader = upstream.body.getReader();
-    const dec = new TextDecoder();
-    let buf = '';
-    try {
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buf += dec.decode(value, { stream: true });
-        const lines = buf.split('\n');
-        buf = lines.pop() || '';
-        for (const line of lines) {
-          if (!line.startsWith('data: ')) continue;
-          const raw = line.slice(6).trim();
-          if (!raw) continue;
-          try {
-            const ev = JSON.parse(raw);
-            if (ev.type === 'content_block_delta' && ev.delta?.type === 'text_delta') {
-              res.write(`data: ${JSON.stringify({ choices: [{ delta: { content: ev.delta.text }, finish_reason: null }] })}\n\n`);
-            } else if (ev.type === 'message_stop') {
-              res.write('data: [DONE]\n\n');
-            }
-          } catch {}
-        }
-      }
-    } catch {}
-    res.end();
-  }
-
-  // ── Mimo (primary engine) ────────────────────────────────────────────────
+  // ── Mimo ─────────────────────────────────────────────────────────────────
   if (isMimo) {
     const key = process.env.MIMO_API_KEY || '';
-    if (!key) return res.status(401).json({ error: { message: 'MIMO_API_KEY not set in Vercel Environment Variables. Add it and redeploy.' } });
+    if (!key) return res.status(401).json({ error: { message: 'MIMO_API_KEY not set in Vercel Environment Variables.' } });
     try {
-      // Inject a no-tool-call instruction into the system message so Mimo
-      // answers directly instead of outputting <tool_call> XML blocks
       const noToolInstruction = 'IMPORTANT: Answer every question directly in plain text. Do NOT output any XML tags whatsoever — no <tool_call>, no <invoke>, no <function_calls>, no <parameter>, no XML of any kind. Never use function-calling syntax. Use only your own knowledge to answer.';
       let msgs = bodyObj.messages || [];
       if (msgs.length && msgs[0].role === 'system') {
@@ -343,7 +294,7 @@ module.exports = async function handler(req, res) {
           body: JSON.stringify(body),
         });
         if (!r.ok) return res.status(r.status).json({ error: { message: 'Mimo error' } });
-        return pipeOpenAIStream(r, res);
+        return pipeStream(r, res);
       }
       const r = await fetch('https://api.xiaomimimo.com/v1/chat/completions', {
         method: 'POST',
@@ -354,17 +305,17 @@ module.exports = async function handler(req, res) {
     } catch (e) { return res.status(502).json({ error: { message: 'Mimo error: ' + e.message } }); }
   }
 
-  // ── Anthropic / Claude + Base MCP tools ──────────────────────────────────
+  // ── All other models → Bankr LLM Gateway ─────────────────────────────────
+  const lllKey = process.env.BANKR_LLM_KEY || '';
+  if (!lllKey) return res.status(401).json({ error: { message: 'BANKR_LLM_KEY not set in Vercel Environment Variables. Get a key at bankr.bot/api-keys with LLM Gateway enabled.' } });
+
+  const bankrHeaders = {
+    'Content-Type': 'application/json',
+    'X-API-Key':    lllKey,
+  };
+
+  // Claude → Anthropic format via Bankr gateway (keeps Base MCP tool loop)
   if (isClaude) {
-    const key = process.env.ANTHROPIC_API_KEY || process.env.CLAUDE_API_KEY || process.env.ANT_API_KEY || '';
-    if (!key) return res.status(401).json({ error: { message: 'ANTHROPIC_API_KEY not set in Vercel Environment Variables. Add it and redeploy.' } });
-
-    const anthropicHeaders = {
-      'Content-Type':      'application/json',
-      'x-api-key':         key,
-      'anthropic-version': '2023-06-01',
-    };
-
     function toAnthropicMessages(messages) {
       return messages.filter(m => m.role !== 'system').map(m => {
         if (!Array.isArray(m.content)) return m;
@@ -392,13 +343,13 @@ module.exports = async function handler(req, res) {
       if (bodyObj.system)      body.system      = bodyObj.system;
       if (bodyObj.temperature) body.temperature = bodyObj.temperature;
 
-      let r    = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: anthropicHeaders, body: JSON.stringify(body) });
+      let r    = await fetch('https://llm.bankr.bot/v1/messages', { method: 'POST', headers: bankrHeaders, body: JSON.stringify(body) });
       let text = await r.text();
 
       if (!r.ok) {
         let msg = text;
         try { msg = JSON.parse(text).error?.message || text; } catch {}
-        return res.status(r.status).json({ error: { message: 'Anthropic: ' + msg } });
+        return res.status(r.status).json({ error: { message: 'Claude (Bankr): ' + msg } });
       }
 
       let data = JSON.parse(text);
@@ -410,133 +361,65 @@ module.exports = async function handler(req, res) {
         const toolUseBlocks = data.content.filter(b => b.type === 'tool_use');
         const toolResults = await Promise.all(
           toolUseBlocks.map(async b => ({
-            type: 'tool_result',
+            type:        'tool_result',
             tool_use_id: b.id,
-            content: JSON.stringify(await executeTool(b.name, b.input)),
+            content:     JSON.stringify(await executeTool(b.name, b.input)),
           }))
         );
         body.messages = [
           ...body.messages,
           { role: 'assistant', content: data.content },
-          { role: 'user', content: toolResults },
+          { role: 'user',      content: toolResults },
         ];
-        r = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: anthropicHeaders, body: JSON.stringify(body) });
+        r    = await fetch('https://llm.bankr.bot/v1/messages', { method: 'POST', headers: bankrHeaders, body: JSON.stringify(body) });
         text = await r.text();
         if (!r.ok) {
           let msg = text;
           try { msg = JSON.parse(text).error?.message || text; } catch {}
-          return res.status(r.status).json({ error: { message: 'Anthropic (tool loop): ' + msg } });
+          return res.status(r.status).json({ error: { message: 'Claude tool loop (Bankr): ' + msg } });
         }
         data = JSON.parse(text);
       }
       return res.status(200).setHeader('Content-Type', 'application/json').send(JSON.stringify(data));
     } catch (e) {
-      return res.status(502).json({ error: { message: 'Anthropic error: ' + e.message } });
+      return res.status(502).json({ error: { message: 'Claude error: ' + e.message } });
     }
   }
 
-  // ── Grok / xAI ────────────────────────────────────────────────────────────
-  if (isGrok) {
-    const key = process.env.XAI_API_KEY || process.env.GROK_API_KEY || '';
-    if (!key) return res.status(401).json({ error: { message: 'XAI_API_KEY not set in Vercel Environment Variables.' } });
-    try {
-      if (bodyObj.stream) {
-        const streamBody = { model: bodyObj.model, messages: bodyObj.messages || [], max_tokens: bodyObj.max_tokens || 4096, stream: true };
-        if (bodyObj.temperature != null) streamBody.temperature = bodyObj.temperature;
-        const r = await fetch('https://api.x.ai/v1/chat/completions', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key }, body: JSON.stringify(streamBody) });
-        if (!r.ok) return res.status(r.status).json({ error: { message: 'Provider error' } });
-        return pipeOpenAIStream(r, res);
-      }
-      const r = await callCompat('https://api.x.ai/v1/chat/completions', key);
-      return res.status(r.status).setHeader('Content-Type', 'application/json').send(await r.text());
-    } catch (e) { return res.status(502).json({ error: { message: 'xAI error: ' + e.message } }); }
-  }
-
-  // ── OpenAI ────────────────────────────────────────────────────────────────
-  if (isOpenAI) {
-    const key = process.env.OPENAI_API_KEY || process.env.OPEN_AI_API_KEY || process.env.OPENAI_KEY || process.env.OPEN_AI_KEY || '';
-    if (!key) return res.status(401).json({ error: { message: 'OpenAI API key not found. Add OPENAI_API_KEY in Vercel → Settings → Environment Variables, then redeploy.' } });
-    try {
-      if (bodyObj.stream) {
-        const streamBody = { model: bodyObj.model, messages: bodyObj.messages || [], max_tokens: bodyObj.max_tokens || 4096, stream: true };
-        if (bodyObj.temperature != null) streamBody.temperature = bodyObj.temperature;
-        const r = await fetch('https://api.openai.com/v1/chat/completions', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key }, body: JSON.stringify(streamBody) });
-        if (!r.ok) return res.status(r.status).json({ error: { message: 'Provider error' } });
-        return pipeOpenAIStream(r, res);
-      }
-      const r    = await callCompat('https://api.openai.com/v1/chat/completions', key);
-      const text = await r.text();
-      if (!r.ok) {
-        let msg = text;
-        try { msg = JSON.parse(text).error?.message || text; } catch {}
-        return res.status(r.status).json({ error: { message: 'OpenAI: ' + msg } });
-      }
-      return res.status(r.status).setHeader('Content-Type', 'application/json').send(text);
-    } catch (e) { return res.status(502).json({ error: { message: 'OpenAI error: ' + e.message } }); }
-  }
-
-  // ── Groq ────────────────────────────────────────────────────────────────────
-  if (model.startsWith('groq-')) {
-    const key = process.env.GROQ_API_KEY || '';
-    if (!key) return res.status(401).json({ error: { message: 'GROQ_API_KEY not set in Vercel Environment Variables.' } });
-    try {
-      const actualModel = model.replace('groq-', '');
-      if (bodyObj.stream) {
-        const streamBody = { model: actualModel, messages: bodyObj.messages || [], max_tokens: bodyObj.max_tokens || 4096, stream: true };
-        if (bodyObj.temperature != null) streamBody.temperature = bodyObj.temperature;
-        const r = await fetch('https://api.groq.com/openai/v1/chat/completions', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key }, body: JSON.stringify(streamBody) });
-        if (!r.ok) return res.status(r.status).json({ error: { message: 'Provider error' } });
-        return pipeOpenAIStream(r, res);
-      }
-      const body = { model: actualModel, messages: bodyObj.messages || [], max_tokens: bodyObj.max_tokens || 4096 };
-      if (bodyObj.temperature != null) body.temperature = bodyObj.temperature;
-      const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
-        body: JSON.stringify(body)
+  // All non-Claude, non-Mimo models → OpenAI-compatible via Bankr gateway
+  try {
+    // Strip groq- prefix — Bankr gateway uses the base model name
+    const resolvedModel = model.startsWith('groq-') ? bodyObj.model.slice(5) : bodyObj.model;
+    const body = {
+      model:      resolvedModel,
+      messages:   bodyObj.messages || [],
+      max_tokens: bodyObj.max_tokens || 4096,
+    };
+    if (bodyObj.temperature != null) body.temperature = bodyObj.temperature;
+    if (bodyObj.stream) {
+      body.stream = true;
+      const r = await fetch('https://llm.bankr.bot/v1/chat/completions', {
+        method: 'POST', headers: bankrHeaders, body: JSON.stringify(body)
       });
-      return res.status(r.status).setHeader('Content-Type', 'application/json').send(await r.text());
-    } catch (e) { return res.status(502).json({ error: { message: 'Groq error: ' + e.message } }); }
-  }
-
-  // ── DeepSeek ─────────────────────────────────────────────────────────────────
-  if (model.startsWith('deepseek-')) {
-    const key = process.env.DEEPSEEK_API_KEY || '';
-    if (!key) return res.status(401).json({ error: { message: 'DEEPSEEK_API_KEY not set in Vercel Environment Variables.' } });
-    try {
-      if (bodyObj.stream) {
-        const streamBody = { model: bodyObj.model, messages: bodyObj.messages || [], max_tokens: bodyObj.max_tokens || 4096, stream: true };
-        if (bodyObj.temperature != null) streamBody.temperature = bodyObj.temperature;
-        const r = await fetch('https://api.deepseek.com/v1/chat/completions', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key }, body: JSON.stringify(streamBody) });
-        if (!r.ok) return res.status(r.status).json({ error: { message: 'Provider error' } });
-        return pipeOpenAIStream(r, res);
+      if (!r.ok) {
+        const errText = await r.text();
+        let msg = errText;
+        try { msg = JSON.parse(errText).error?.message || errText; } catch {}
+        return res.status(r.status).json({ error: { message: 'Bankr LLM: ' + msg } });
       }
-      const r = await callCompat('https://api.deepseek.com/v1/chat/completions', key);
-      return res.status(r.status).setHeader('Content-Type', 'application/json').send(await r.text());
-    } catch (e) { return res.status(502).json({ error: { message: 'DeepSeek error: ' + e.message } }); }
-  }
-
-  // ── Google Gemini (OpenAI-compat endpoint) ────────────────────────────────────
-  if (model.startsWith('gemini-')) {
-    const key = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || '';
-    if (!key) return res.status(401).json({ error: { message: 'GEMINI_API_KEY not set in Vercel Environment Variables.' } });
-    try {
-      if (bodyObj.stream) {
-        const streamBody = { model: bodyObj.model, messages: bodyObj.messages || [], max_tokens: bodyObj.max_tokens || 4096, stream: true };
-        if (bodyObj.temperature != null) streamBody.temperature = bodyObj.temperature;
-        const r = await fetch('https://generativelanguage.googleapis.com/v1beta/openai/chat/completions', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key }, body: JSON.stringify(streamBody) });
-        if (!r.ok) return res.status(r.status).json({ error: { message: 'Provider error' } });
-        return pipeOpenAIStream(r, res);
-      }
-      const r = await callCompat('https://generativelanguage.googleapis.com/v1beta/openai/chat/completions', key);
-      return res.status(r.status).setHeader('Content-Type', 'application/json').send(await r.text());
-    } catch (e) { return res.status(502).json({ error: { message: 'Gemini error: ' + e.message } }); }
-  }
-
-  // No provider matched — inform the user
-  return res.status(400).json({
-    error: {
-      message: 'Unsupported model. Select a Mimo (mimo-*), Claude (claude-*), Grok (grok-*), OpenAI (gpt-*/o1/o3/o4), Groq (groq-*), DeepSeek (deepseek-*), or Gemini (gemini-*) model.'
+      return pipeStream(r, res);
     }
-  });
+    const r    = await fetch('https://llm.bankr.bot/v1/chat/completions', {
+      method: 'POST', headers: bankrHeaders, body: JSON.stringify(body)
+    });
+    const text = await r.text();
+    if (!r.ok) {
+      let msg = text;
+      try { msg = JSON.parse(text).error?.message || text; } catch {}
+      return res.status(r.status).json({ error: { message: 'Bankr LLM: ' + msg } });
+    }
+    return res.status(200).setHeader('Content-Type', 'application/json').send(text);
+  } catch (e) {
+    return res.status(502).json({ error: { message: 'Bankr LLM error: ' + e.message } });
+  }
 };
