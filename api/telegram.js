@@ -2,8 +2,16 @@
 // Setup: set TELEGRAM_BOT_TOKEN env var, then:
 // GET https://api.telegram.org/bot{TOKEN}/setWebhook?url=https://orlixai.xyz/api/telegram
 
-const ANTHROPIC_KEY = () => process.env.ANTHROPIC_API_KEY || '';
+const ANTHROPIC_KEY = () => process.env.BANKR_LLM_KEY || process.env.ANTHROPIC_API_KEY || '';
 const TG_TOKEN      = () => process.env.TELEGRAM_BOT_TOKEN || '';
+
+function aiEndpoint(key) {
+  const isAnthropicKey = key.startsWith('sk-ant-');
+  return {
+    url:     isAnthropicKey ? 'https://api.anthropic.com/v1/messages' : 'https://llm.bankr.bot/v1/messages',
+    headers: { 'Content-Type': 'application/json', ...(isAnthropicKey ? { 'x-api-key': key } : { 'X-API-Key': key }), 'anthropic-version': '2023-06-01' },
+  };
+}
 const BASE_RPC      = 'https://mainnet.base.org';
 
 // ── Telegram helpers ──────────────────────────────────────────────────────────
@@ -204,9 +212,10 @@ async function cmdAnalyze(chatId, address, lang = 'en') {
     ].join('\n');
 
     try {
-      const r = await fetch('https://api.anthropic.com/v1/messages', {
+      const { url: aiUrl, headers: aiHdr } = aiEndpoint(key);
+      const r = await fetch(aiUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01' },
+        headers: aiHdr,
         body: JSON.stringify({
           model: 'claude-sonnet-4-6',
           max_tokens: 700,
@@ -332,9 +341,10 @@ async function cmdChat(chatId, text, lang) {
 
   const isID = lang === 'id';
 
-  const r = await fetch('https://api.anthropic.com/v1/messages', {
+  const { url: aiUrl2, headers: aiHdr2 } = aiEndpoint(key);
+  const r = await fetch(aiUrl2, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01' },
+    headers: aiHdr2,
     body: JSON.stringify({
       model: 'claude-sonnet-4-6',
       max_tokens: 2000,
@@ -545,9 +555,10 @@ module.exports = async function handler(req, res) {
     const ext  = fileRes.result.file_path.split('.').pop() || 'jpeg';
     const mime = ext === 'png' ? 'image/png' : ext === 'webp' ? 'image/webp' : 'image/jpeg';
     try {
-      const r = await fetch('https://api.anthropic.com/v1/messages', {
+      const { url: aiUrl3, headers: aiHdr3 } = aiEndpoint(ANTHROPIC_KEY());
+      const r = await fetch(aiUrl3, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-api-key': ANTHROPIC_KEY(), 'anthropic-version': '2023-06-01' },
+        headers: aiHdr3,
         body: JSON.stringify({
           model: 'claude-sonnet-4-6',
           max_tokens: 1500,

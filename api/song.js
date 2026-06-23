@@ -150,8 +150,12 @@ module.exports = async (req, res) => {
   if (!query?.trim()) { res.writeHead(400, CORS); return res.end(JSON.stringify({ error: 'Missing token query' })); }
   genre = genre || 'trap';
 
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  const apiKey = process.env.BANKR_LLM_KEY || process.env.ANTHROPIC_API_KEY || '';
   if (!apiKey) { res.writeHead(503, CORS); return res.end(JSON.stringify({ error: 'AI not configured' })); }
+
+  const isAnthropicKey = apiKey.startsWith('sk-ant-');
+  const aiUrl     = isAnthropicKey ? 'https://api.anthropic.com/v1/messages' : 'https://llm.bankr.bot/v1/messages';
+  const aiAuthHdr = isAnthropicKey ? { 'x-api-key': apiKey } : { 'X-API-Key': apiKey };
 
   // Fetch token data
   let token = null;
@@ -165,10 +169,10 @@ module.exports = async (req, res) => {
   const prompt = buildPrompt(token, genre);
 
   try {
-    const r = await fetch('https://api.anthropic.com/v1/messages', {
+    const r = await fetch(aiUrl, {
       method: 'POST',
       headers: {
-        'x-api-key': apiKey,
+        ...aiAuthHdr,
         'anthropic-version': '2023-06-01',
         'content-type': 'application/json',
       },

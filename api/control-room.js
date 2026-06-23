@@ -185,15 +185,19 @@ async function generateCommentary(tokens, apiKey) {
   if (commentaryCache.text && now - commentaryCache.ts < COMMENTARY_TTL) {
     return commentaryCache.text;
   }
+  const isAnthropicKey = apiKey.startsWith('sk-ant-');
+  const aiUrl     = isAnthropicKey ? 'https://api.anthropic.com/v1/messages' : 'https://llm.bankr.bot/v1/messages';
+  const aiAuthHdr = isAnthropicKey ? { 'x-api-key': apiKey } : { 'X-API-Key': apiKey };
+
   const top = tokens.filter(t => (t.volume1h || 0) > 0).slice(0, 3);
   const totalVol = tokens.reduce((s, t) => s + (t.volume1h || 0), 0);
   const prompt = `${tokens.length} active tokens on Base. Total 1h volume: ${fmtUsd(totalVol)}. ` +
     (top.length ? `Top: ${top.map(t => `$${t.symbol} (${t.priceChange1h != null ? (t.priceChange1h >= 0 ? '+' : '') + t.priceChange1h.toFixed(1) + '%' : '?'} 1h)`).join(', ')}.` : '') +
     ' Give a 1-2 sentence live market commentary on Base. Be specific. No emojis. No markdown.';
   try {
-    const r = await fetch('https://api.anthropic.com/v1/messages', {
+    const r = await fetch(aiUrl, {
       method: 'POST',
-      headers: { 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
+      headers: { ...aiAuthHdr, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001', max_tokens: 120,
         system: 'You are a live crypto analyst monitoring Base network. 1-2 sentences, direct, no emojis.',
@@ -227,7 +231,7 @@ module.exports = async (req, res) => {
 
   const liveActivity = allTokens;
   const trending = allTokens.slice(0, 15);
-  const commentary = await generateCommentary(allTokens, process.env.ANTHROPIC_API_KEY);
+  const commentary = await generateCommentary(allTokens, process.env.BANKR_LLM_KEY || process.env.ANTHROPIC_API_KEY || '');
 
   const data = { liveActivity, trending, stats, commentary };
   dataCache = { data, ts: now };
