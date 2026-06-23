@@ -289,8 +289,13 @@ module.exports = async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(204).end();
   if (req.method !== 'POST')   return res.status(405).json({ error: 'Method not allowed' });
 
-  const bodyObj = typeof req.body === 'object' && req.body !== null
-    ? req.body : JSON.parse(req.body || '{}');
+  let bodyObj;
+  try {
+    bodyObj = typeof req.body === 'object' && req.body !== null
+      ? req.body : JSON.parse(req.body || '{}');
+  } catch {
+    return res.status(400).json({ error: { message: 'Invalid JSON body' } });
+  }
 
   // ── Tier check ──────────────────────────────────────────────────────────────
   const wallet = (req.headers['x-wallet'] || bodyObj.wallet || '').trim();

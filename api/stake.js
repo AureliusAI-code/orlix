@@ -92,6 +92,7 @@ module.exports = async function handler(req, res) {
       ca: ORLIX_CONTRACT,
     });
   } catch (e) {
-    return res.status(500).json({ error: e.message });
+    console.error('[stake] error:', e.message);
+    return res.status(500).json({ error: 'Failed to fetch stake info. Please try again.' });
   }
 };

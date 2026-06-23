@@ -127,8 +127,9 @@ async function aiVerdict(address, token, dex) {
   ].join('\n');
 
   const r = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
+    method:  'POST',
     headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01' },
+    signal:  AbortSignal.timeout(30000),
     body: JSON.stringify({
       model: 'claude-sonnet-4-6',
       max_tokens: 1200,
@@ -142,8 +143,8 @@ When data suggests risk, be explicit. When data looks healthy, say so with reaso
       }],
     }),
   });
-  const d = await r.json();
   if (!r.ok) return '**AI analysis service error.** Please try again later.';
+  const d = await r.json();
   return d.content?.[0]?.text || 'Analysis unavailable.';
 }
 
