@@ -1,10 +1,10 @@
 {
   "network": "base",
-  "currency": "0x799c28BAC95B3E0B26534D1e9A586511895EcBA3",
+  "currency": "USDC",
   "services": {
     "analyze": {
       "description": "AI-powered security analysis for any Base token. Returns red flags, green flags, liquidity risk, and SAFE/CAUTION/HIGH RISK/SCAM LIKELY verdict. $ORLIX holders (pass ?wallet=) get deeper analysis with price action + whale risk sections.",
-      "price": "5000",
+      "price": "0.05",
       "methods": ["GET"],
       "schema": {
         "input": {
@@ -30,7 +30,7 @@
     },
     "chat": {
       "description": "Chat with 19 frontier AI models — Claude, GPT-5, Gemini, Grok, DeepSeek, Qwen, Kimi, GLM, Mimo. Free tier gets fast models only. $ORLIX holders unlock all models + higher token limits.",
-      "price": "1000",
+      "price": "0.002",
       "methods": ["POST"],
       "schema": {
         "input": {
@@ -57,7 +57,7 @@
     },
     "song": {
       "description": "Generate crypto song lyrics for any token. Pass a symbol or contract address, choose a genre (trap/phonk/pop/drill/hype/ballad), get a full song. $ORLIX holders get extended songs with bridge + outro.",
-      "price": "5000",
+      "price": "0.05",
       "methods": ["GET"],
       "schema": {
         "input": {
@@ -84,7 +84,7 @@
     },
     "market": {
       "description": "Live Base network market data — top tokens by volume with price, liquidity, and 24h stats. $ORLIX holders get more tokens + live AI market commentary.",
-      "price": "500",
+      "price": "0.01",
       "methods": ["GET"],
       "schema": {
         "input": {
@@ -107,7 +107,7 @@
     },
     "wallet": {
       "description": "Analyze any Base wallet — ETH balance, $ORLIX holdings + tier, and network stats. $ORLIX holders get recent swap activity + AI wallet profile.",
-      "price": "2000",
+      "price": "0.03",
       "methods": ["GET"],
       "schema": {
         "input": {
@@ -135,7 +135,7 @@
     },
     "search": {
       "description": "Web search powered by Brave. Free tier: 5 results. $ORLIX holders get up to 50 results + AI synthesis of findings.",
-      "price": "250",
+      "price": "0.005",
       "methods": ["GET"],
       "schema": {
         "input": {
@@ -161,7 +161,7 @@
     },
     "music": {
       "description": "Generate crypto-themed instrumental music via Mubert AI. Free tier: 30s tracks. $ORLIX holders get up to 60s tracks. Pass genre and optional token symbol.",
-      "price": "5000",
+      "price": "0.05",
       "methods": ["POST"],
       "schema": {
         "input": {
@@ -186,7 +186,7 @@
     },
     "b20": {
       "description": "B20 token standard info on Base — variants, features, live network stats (block, gas). $ORLIX holders get the full deployment guide with recommended config and gas estimate.",
-      "price": "500",
+      "price": "0.01",
       "methods": ["GET"],
       "schema": {
         "input": {
