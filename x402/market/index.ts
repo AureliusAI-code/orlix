@@ -49,7 +49,7 @@ async function fetchTop(limit: number) {
     )
   );
   const seen: Record<string, any> = {};
-  for (const r of results) {
+  for (const r of results as any[]) {
     for (const p of (r?.pairs || [])) {
       if (!isValid(p)) continue;
       const key = p.baseToken.address.toLowerCase();
