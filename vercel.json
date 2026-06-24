@@ -55,7 +55,6 @@
     { "source": "/gallery",      "destination": "/gallery.html" },
     { "source": "/token",        "destination": "/token.html" },
     { "source": "/song",         "destination": "/song.html" },
-    { "source": "/b20",          "destination": "/b20-studio.html" },
-    { "source": "/b20-promo",     "destination": "/b20-promo.html" }
+    { "source": "/b20",          "destination": "/b20-studio.html" }
   ]
 }
