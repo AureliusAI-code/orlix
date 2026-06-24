@@ -3,195 +3,261 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Orlix Gallery — Community Builds</title>
-<meta name="description" content="Explore apps, games, and tools built with Orlix AI.">
+<title>Gallery — Orlix AI</title>
+<meta name="description" content="Explore apps, games, and tools built with Orlix AI on Base.">
 <link rel="icon" type="image/x-icon" href="/favicon.ico">
 <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
 <link rel="manifest" href="/site.webmanifest">
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#09090B;--bg-panel:#111113;--bg-input:#161618;
-  --line:rgba(255,255,255,.06);--line-bright:rgba(255,255,255,.12);
-  --text:#A1A1AA;--bright:#FAFAFA;
-  --dim:#52525B;--dim-2:rgba(255,255,255,.2);
-  --amber:#F07830;--amber-soft:rgba(240,120,48,.1);
-  --violet:#A78BFA;--violet-soft:rgba(167,139,250,.1);
-  --red:#EF4444;--green:#4ADE80;
-  --mono:'JetBrains Mono',monospace;
-  --display:'Plus Jakarta Sans',sans-serif;
+  --bg:#09090B;
+  --bg-2:#111113;
+  --bg-3:#18181B;
+  --border:rgba(255,255,255,.06);
+  --border-hover:rgba(255,255,255,.12);
+  --text-1:#FAFAFA;
+  --text-2:#A1A1AA;
+  --text-3:#52525B;
+  --orange:#F07830;
+  --orange-dim:rgba(240,120,48,.1);
+  --orange-border:rgba(240,120,48,.25);
+  --purple:#A78BFA;
+  --purple-dim:rgba(167,139,250,.08);
+  --green:#4ADE80;
+  --font:'Plus Jakarta Sans',sans-serif;
+  --radius:10px;
+  --tr:.15s ease;
 }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{background:var(--bg);color:var(--text);min-height:100%}
-body{font-family:var(--display);font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased}
-a{color:var(--violet);text-decoration:none}
-a:hover{color:var(--bright)}
-button{font-family:var(--display);cursor:pointer}
-::selection{background:var(--amber);color:#fff}
+html,body{background:var(--bg);color:var(--text-2);min-height:100%;font-family:var(--font);font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased}
+a{text-decoration:none;color:inherit}
+button{font-family:var(--font);cursor:pointer}
+::selection{background:var(--orange);color:#fff}
 
-/* grid bg */
-body::after{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);background-size:44px 44px;pointer-events:none;z-index:0;animation:gridScroll 28s linear infinite}
-@keyframes gridScroll{0%{background-position:0 0}100%{background-position:44px 44px}}
-
-/* nav */
-nav{position:sticky;top:0;z-index:100;background:rgba(10,10,10,.94);backdrop-filter:blur(14px);border-bottom:1px solid var(--line);height:52px;display:flex;align-items:center;padding:0 24px;gap:16px;box-shadow:0 1px 0 rgba(255,255,255,.06),0 2px 20px rgba(0,0,0,.4)}
-.nav-brand{display:flex;align-items:center;gap:7px;font-family:var(--display);font-weight:700;font-size:.8rem;letter-spacing:.14em;color:var(--bright);text-transform:uppercase}
-.nav-sep{color:var(--line-bright);margin:0 2px}
-.nav-links{display:flex;align-items:center;gap:18px;margin-left:auto}
-.nav-links a{color:var(--dim);font-size:.75rem;transition:.15s}
-.nav-links a:hover{color:var(--amber)}
-.nav-links a.active{color:var(--amber)}
-.status-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);animation:blink 2.5s ease-in-out infinite}
+/* ── Nav ── */
+.nav{
+  position:sticky;top:0;z-index:100;
+  height:52px;display:flex;align-items:center;padding:0 24px;gap:12px;
+  background:rgba(9,9,11,.92);backdrop-filter:blur(16px);
+  border-bottom:1px solid var(--border);
+}
+.nav-brand{font-weight:800;font-size:1.1rem;letter-spacing:-.02em;color:var(--text-1)}
+.nav-sep{color:var(--border-hover);font-size:.85rem;margin:0 2px}
+.nav-section{font-size:.78rem;color:var(--text-3);font-weight:500}
+.nav-right{margin-left:auto;display:flex;align-items:center;gap:12px}
+.nav-link{font-size:.76rem;color:var(--text-3);transition:color var(--tr)}
+.nav-link:hover{color:var(--text-1)}
+.nav-dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);animation:blink 2.5s ease-in-out infinite;flex-shrink:0}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.4}}
+.btn{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:6px 14px;border-radius:8px;font-size:.76rem;font-weight:600;
+  border:1px solid var(--border-hover);background:none;color:var(--text-2);
+  transition:all var(--tr);cursor:pointer;
+}
+.btn:hover{border-color:var(--orange-border);color:var(--orange)}
+.btn.primary{background:var(--orange);border-color:var(--orange);color:#fff}
+.btn.primary:hover{background:#e06820;border-color:#e06820}
 
-/* layout */
-.page{position:relative;z-index:1;max-width:1080px;margin:0 auto;padding:40px 24px 80px}
+/* ── Page ── */
+.page{max-width:1080px;margin:0 auto;padding:40px 24px 80px}
 
-/* hero */
-.hero{margin-bottom:40px}
-.hero .eyebrow{color:var(--dim);font-size:.73rem;text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px}
-.hero h1{font-family:var(--display);font-size:2rem;font-weight:700;background:linear-gradient(100deg,var(--bright) 0%,rgba(167,139,250,.85) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:8px;line-height:1.2}
-.hero p{color:var(--dim);font-size:.82rem;max-width:480px;line-height:1.7}
-.hero-actions{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap}
+/* ── Hero ── */
+.hero{margin-bottom:36px}
+.hero-pre{font-size:.7rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--orange);margin-bottom:10px}
+.hero h1{font-size:2rem;font-weight:800;color:var(--text-1);letter-spacing:-.03em;line-height:1.15;margin-bottom:8px}
+.hero p{font-size:.85rem;color:var(--text-2);max-width:440px;line-height:1.7}
+.hero-actions{display:flex;gap:9px;margin-top:18px;flex-wrap:wrap}
 
-/* filter bar */
-.filter-bar{display:flex;gap:9px;margin-bottom:28px;flex-wrap:wrap;align-items:center}
-.filter-btn{padding:5px 14px;border-radius:20px;font-size:.74rem;border:1px solid var(--line-bright);background:none;color:var(--dim);cursor:pointer;transition:.15s;font-family:var(--display)}
-.filter-btn:hover{border-color:var(--amber);color:var(--amber)}
-.filter-btn.active{border-color:var(--amber);color:var(--amber);background:var(--amber-soft)}
-.search-inp{flex:1;max-width:280px;background:var(--bg-input);border:1px solid var(--line-bright);border-radius:20px;color:var(--text);font-size:.74rem;padding:5px 14px;outline:none;transition:.15s;font-family:var(--display)}
-.search-inp:focus{border-color:var(--amber)}
-.search-inp::placeholder{color:var(--dim-2)}
+/* ── Stats ── */
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:32px}
+.stat{
+  background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius);
+  padding:16px 18px;transition:border-color var(--tr);
+}
+.stat:hover{border-color:var(--border-hover)}
+.stat-val{font-size:1.6rem;font-weight:800;color:var(--orange);letter-spacing:-.02em;line-height:1}
+.stat-lbl{font-size:.69rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3);margin-top:5px}
 
-/* build count */
-.build-count{color:var(--dim-2);font-size:.73rem;margin-left:auto}
+/* ── Filter bar ── */
+.filter-bar{
+  display:flex;align-items:center;gap:8px;margin-bottom:24px;flex-wrap:wrap;
+}
+.filter-pill{
+  padding:5px 13px;border-radius:20px;font-size:.73rem;font-weight:600;
+  border:1px solid var(--border-hover);background:none;color:var(--text-3);
+  cursor:pointer;transition:all var(--tr);
+}
+.filter-pill:hover{border-color:var(--orange-border);color:var(--orange)}
+.filter-pill.active{border-color:var(--orange-border);color:var(--orange);background:var(--orange-dim)}
+.search-box{
+  flex:1;max-width:260px;
+  background:var(--bg-2);border:1px solid var(--border);border-radius:20px;
+  color:var(--text-1);font-size:.74rem;font-family:var(--font);
+  padding:5px 14px;outline:none;transition:border-color var(--tr);
+}
+.search-box:focus{border-color:var(--orange-border)}
+.search-box::placeholder{color:var(--text-3)}
+.count-label{margin-left:auto;font-size:.72rem;color:var(--text-3)}
 
-/* grid */
-.builds-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
-.build-card{background:var(--bg-panel);border:1px solid var(--line);border-radius:10px;overflow:hidden;transition:box-shadow .2s,border-color .2s,transform .18s;display:flex;flex-direction:column}
-.build-card:hover{border-color:rgba(240,120,48,.3);box-shadow:0 6px 28px rgba(0,0,0,.5),0 0 0 1px rgba(240,120,48,.12);transform:translateY(-3px)}
+/* ── Grid ── */
+.builds-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(295px,1fr));gap:14px}
 
-/* card preview area */
-.card-preview{height:160px;background:#0d0d0d;position:relative;overflow:hidden;border-bottom:1px solid var(--line);cursor:pointer}
+/* ── Card ── */
+.build-card{
+  background:var(--bg-2);border:1px solid var(--border);
+  border-radius:var(--radius);overflow:hidden;display:flex;flex-direction:column;
+  transition:border-color var(--tr),transform var(--tr),box-shadow var(--tr);
+}
+.build-card:hover{
+  border-color:var(--orange-border);
+  transform:translateY(-2px);
+  box-shadow:0 8px 32px rgba(0,0,0,.4),0 0 0 1px var(--orange-border);
+}
+.card-preview{
+  height:155px;background:#0d0d0f;position:relative;overflow:hidden;
+  border-bottom:1px solid var(--border);cursor:pointer;
+}
 .card-preview iframe{width:200%;height:200%;transform:scale(.5);transform-origin:top left;border:none;pointer-events:none}
-.card-preview-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.4);opacity:0;transition:.2s}
-.build-card:hover .card-preview-overlay{opacity:1}
-.preview-play{font-size:1.6rem;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,.6)}
+.card-overlay{
+  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  background:rgba(0,0,0,.45);opacity:0;transition:opacity var(--tr);
+}
+.build-card:hover .card-overlay{opacity:1}
+.play-icon{
+  width:40px;height:40px;border-radius:50%;
+  background:rgba(240,120,48,.9);backdrop-filter:blur(4px);
+  display:flex;align-items:center;justify-content:center;
+}
+.play-icon svg{width:16px;height:16px;fill:#fff;margin-left:2px}
+.card-body{padding:13px 15px;flex:1;display:flex;flex-direction:column;gap:5px}
+.card-title{font-size:.85rem;font-weight:700;color:var(--text-1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card-meta{display:flex;align-items:center;gap:7px;font-size:.69rem;color:var(--text-3)}
+.card-author{color:var(--orange)}
+.card-dot{width:3px;height:3px;border-radius:50%;background:var(--text-3);flex-shrink:0}
+.card-actions{display:flex;gap:6px;padding:10px 12px;border-top:1px solid var(--border)}
+.card-btn{
+  flex:1;padding:6px 8px;border-radius:6px;font-size:.72rem;font-weight:600;
+  border:1px solid var(--border-hover);background:none;color:var(--text-3);
+  cursor:pointer;transition:all var(--tr);
+}
+.card-btn:hover{border-color:var(--orange-border);color:var(--orange)}
+.card-btn.primary{background:var(--orange-dim);border-color:var(--orange-border);color:var(--orange)}
+.card-btn.primary:hover{background:rgba(240,120,48,.18)}
+.card-btn.danger:hover{border-color:rgba(239,68,68,.4);color:#ef4444}
 
-/* card body */
-.card-body{padding:14px 16px;flex:1;display:flex;flex-direction:column;gap:8px}
-.card-title{color:var(--bright);font-size:.84rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.card-meta{color:var(--dim-2);font-size:.69rem;display:flex;align-items:center;gap:8px}
-.card-author{color:var(--amber);font-size:.69rem}
+/* ── Empty state ── */
+.empty{text-align:center;padding:72px 24px;color:var(--text-3)}
+.empty-icon{
+  width:52px;height:52px;border-radius:14px;
+  background:var(--bg-2);border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;margin:0 auto 18px;
+}
+.empty-icon svg{width:22px;height:22px;stroke:var(--text-3);fill:none;stroke-width:1.6;stroke-linecap:round}
+.empty h3{font-size:.95rem;font-weight:700;color:var(--text-2);margin-bottom:7px}
+.empty p{font-size:.8rem;line-height:1.7;max-width:300px;margin:0 auto 20px}
 
-/* card actions */
-.card-actions{display:flex;gap:7px;padding:10px 14px;border-top:1px solid var(--line)}
-.card-btn{flex:1;padding:7px 10px;border-radius:5px;font-size:.73rem;border:1px solid var(--line-bright);background:none;color:var(--dim);cursor:pointer;transition:.15s;font-family:var(--display);text-align:center}
-.card-btn:hover{border-color:var(--amber);color:var(--amber)}
-.card-btn.primary{border-color:rgba(255,154,82,.4);color:var(--amber);background:var(--amber-soft)}
-.card-btn.primary:hover{background:rgba(255,154,82,.2)}
-
-/* empty state */
-.empty-state{text-align:center;padding:80px 24px;color:var(--dim)}
-.empty-state .em-icon{font-size:2.5rem;opacity:.3;margin-bottom:14px}
-.empty-state h3{color:var(--text);font-size:.9rem;margin-bottom:8px;font-family:var(--display)}
-.empty-state p{font-size:.78rem;line-height:1.7;max-width:320px;margin:0 auto 20px}
-
-/* btn */
-.btn{display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:6px;font-size:.76rem;border:1px solid var(--line-bright);background:none;color:var(--dim);transition:.15s;cursor:pointer;font-family:var(--display)}
-.btn:hover{border-color:var(--amber);color:var(--amber)}
-.btn.primary{border-color:rgba(255,154,82,.5);color:var(--amber);background:var(--amber-soft)}
-.btn.primary:hover{background:rgba(255,154,82,.2)}
-
-/* modal */
-.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:9000;padding:20px;flex-direction:column;gap:10px}
+/* ── Modal ── */
+.modal{
+  display:none;position:fixed;inset:0;z-index:9000;
+  background:rgba(0,0,0,.85);backdrop-filter:blur(8px);
+  padding:20px;flex-direction:column;gap:12px;
+}
 .modal.open{display:flex}
-.modal-inner{flex:1;background:#fff;border-radius:10px;overflow:hidden}
+.modal-bar{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.modal-title{font-size:.82rem;font-weight:600;color:var(--text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.modal-close{
+  background:rgba(255,255,255,.07);border:1px solid var(--border-hover);
+  color:var(--text-1);border-radius:7px;padding:5px 14px;
+  font-size:.76rem;font-weight:600;cursor:pointer;flex-shrink:0;transition:all var(--tr);
+}
+.modal-close:hover{background:rgba(255,255,255,.12)}
+.modal-inner{flex:1;background:#fff;border-radius:var(--radius);overflow:hidden}
 .modal-inner iframe{width:100%;height:100%;border:none;display:block}
-.modal-bar{display:flex;align-items:center;justify-content:space-between;gap:10px}
-.modal-title{color:var(--dim);font-size:.78rem;font-family:var(--display);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.modal-close{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);color:#fff;border-radius:6px;padding:5px 14px;cursor:pointer;font-size:.8rem;font-family:var(--display);flex-shrink:0;transition:.15s}
-.modal-close:hover{background:rgba(255,255,255,.18)}
 
-/* stats banner */
-.stats-banner{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:32px}
-.stat-item{background:var(--bg-panel);border:1px solid var(--line);border-radius:8px;padding:14px 16px;transition:.2s}
-.stat-item:hover{border-color:rgba(255,154,82,.25);box-shadow:0 4px 20px rgba(255,154,82,.1)}
-.stat-num{font-size:1.5rem;font-weight:700;color:var(--amber);font-family:var(--display);line-height:1}
-.stat-lbl{color:var(--dim-2);font-size:.69rem;text-transform:uppercase;letter-spacing:.07em;margin-top:5px}
-
-/* scrollbar */
+/* ── Scrollbar ── */
 ::-webkit-scrollbar{width:4px;height:4px}
 ::-webkit-scrollbar-track{background:transparent}
-::-webkit-scrollbar-thumb{background:var(--line-bright);border-radius:2px}
+::-webkit-scrollbar-thumb{background:var(--border-hover);border-radius:2px}
 
 @media(max-width:640px){
-  .hero h1{font-size:1.4rem}
-  .stats-banner{grid-template-columns:1fr 1fr}
-  .stats-banner>.stat-item:last-child{display:none}
-  .builds-grid{grid-template-columns:1fr}
+  .nav{padding:0 16px}
   .page{padding:24px 16px 60px}
+  .hero h1{font-size:1.5rem}
+  .stats{grid-template-columns:1fr 1fr}
+  .stats .stat:last-child{display:none}
+  .builds-grid{grid-template-columns:1fr}
+  .hero-actions .btn:not(.primary){display:none}
 }
 </style>
 </head>
 <body>
 
-<nav>
-  <a href="/" class="nav-brand"><span style="color:#e03030;font-size:.42rem">●</span> ORLIX</a>
+<nav class="nav">
+  <a href="/" class="nav-brand">ORLIX</a>
   <span class="nav-sep">/</span>
-  <span style="color:var(--dim);font-size:.75rem">gallery</span>
-  <div class="nav-links">
-    <span class="status-dot"></span>
-    <a href="/docs">docs</a>
-    <a href="/app" class="btn primary" style="padding:4px 12px;font-size:.72rem">launch app</a>
+  <span class="nav-section">gallery</span>
+  <div class="nav-right">
+    <div class="nav-dot"></div>
+    <a href="/docs" class="nav-link">docs</a>
+    <a href="/app" class="btn primary">launch app</a>
   </div>
 </nav>
 
 <div class="page">
+
   <div class="hero">
-    <div class="eyebrow">community builds</div>
-    <h1>What Orlix Builders<br>Ship in Minutes</h1>
-    <p>Games, apps, tools, and dashboards built with Mimo AI. Every build is fully interactive.</p>
+    <div class="hero-pre">Community Builds</div>
+    <h1>What builders ship<br>with Orlix AI</h1>
+    <p>Games, dashboards, tools, and apps — built in minutes using Mimo AI. Every build is fully interactive.</p>
     <div class="hero-actions">
-      <a href="/app" class="btn primary">▷ Build Something →</a>
-      <a href="/app" class="btn">View Leaderboard</a>
+      <a href="/app#playground" class="btn primary">
+        <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5,3 19,10 5,17"/></svg>
+        Build Something
+      </a>
+      <a href="/app" class="btn">Open App</a>
     </div>
   </div>
 
-  <div class="stats-banner">
-    <div class="stat-item">
-      <div class="stat-num" id="statTotal">0</div>
+  <div class="stats">
+    <div class="stat">
+      <div class="stat-val" id="statTotal">—</div>
       <div class="stat-lbl">Total Builds</div>
     </div>
-    <div class="stat-item">
-      <div class="stat-num" id="statBuilders">1</div>
+    <div class="stat">
+      <div class="stat-val" id="statBuilders">—</div>
       <div class="stat-lbl">Builders</div>
     </div>
-    <div class="stat-item">
-      <div class="stat-num">Mimo</div>
+    <div class="stat">
+      <div class="stat-val">Mimo</div>
       <div class="stat-lbl">Primary Engine</div>
     </div>
   </div>
 
   <div class="filter-bar">
-    <button class="filter-btn active" data-filter="all">All</button>
-    <button class="filter-btn" data-filter="mine">Mine</button>
-    <button class="filter-btn" data-filter="recent">Recent</button>
-    <input class="search-inp" id="searchInp" placeholder="search builds…">
-    <span class="build-count" id="buildCount"></span>
+    <button class="filter-pill active" data-filter="all">All</button>
+    <button class="filter-pill" data-filter="mine">Mine</button>
+    <button class="filter-pill" data-filter="recent">Recent</button>
+    <input class="search-box" id="searchInp" placeholder="Search builds…">
+    <span class="count-label" id="countLabel"></span>
   </div>
 
   <div class="builds-grid" id="buildsGrid"></div>
 
-  <div class="empty-state" id="emptyState" style="display:none">
-    <div class="em-icon">▷</div>
+  <div class="empty" id="emptyState" style="display:none">
+    <div class="empty-icon">
+      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+    </div>
     <h3>No builds yet</h3>
     <p>Go to Playground, ask Mimo to build something, then click "Publish to Gallery".</p>
-    <a href="/app" class="btn primary">Open Playground →</a>
+    <a href="/app#playground" class="btn primary">Open Playground</a>
   </div>
+
 </div>
 
-<!-- Preview Modal -->
+<!-- Modal -->
 <div class="modal" id="previewModal">
   <div class="modal-bar">
     <span class="modal-title" id="modalTitle">Preview</span>
@@ -203,161 +269,154 @@ nav{position:sticky;top:0;z-index:100;background:rgba(10,10,10,.94);backdrop-fil
 </div>
 
 <script>
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
 function getLocalBuilds(){
   try{ return JSON.parse(localStorage.getItem('orlix_gallery')||'[]'); }
   catch{ return []; }
 }
 
 async function fetchBuilds(){
-  // Try API first
   try{
     const r = await fetch('/api/gallery');
     if(r.ok){
-      const { builds, error } = await r.json();
-      if(error) throw new Error(error);
-      // Merge: API builds + local-only builds not yet in API
+      const { builds } = await r.json();
       const apiIds = new Set((builds||[]).map(b=>b.id));
       const localOnly = getLocalBuilds().filter(b=>!apiIds.has(b.id));
       return [...(builds||[]), ...localOnly];
     }
-  }catch(e){ console.warn('Gallery API unavailable, using localStorage:', e.message); }
-  // Fallback to localStorage
+  }catch(e){ console.warn('Gallery API unavailable:', e.message); }
   return getLocalBuilds();
 }
 
-let _builds = [];
-async function loadBuilds(){
-  _builds = await fetchBuilds();
-  document.getElementById('statBuilders').textContent = new Set(_builds.map(b=>b.author||'You')).size;
-  renderBuilds();
-}
-
 function timeAgo(ts){
-  const s=Math.floor((Date.now()-ts)/1000);
-  if(s<60) return 'just now';
-  if(s<3600) return Math.floor(s/60)+'m ago';
+  if(!ts) return '';
+  const s = Math.floor((Date.now()-ts)/1000);
+  if(s<60)    return 'just now';
+  if(s<3600)  return Math.floor(s/60)+'m ago';
   if(s<86400) return Math.floor(s/3600)+'h ago';
   return Math.floor(s/86400)+'d ago';
 }
 
-function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+let _builds = [];
+let _filter = 'all';
+let _search = '';
 
-let currentFilter='all';
-let currentSearch='';
+async function loadBuilds(){
+  _builds = await fetchBuilds();
+  document.getElementById('statTotal').textContent    = _builds.length;
+  document.getElementById('statBuilders').textContent = new Set(_builds.map(b=>b.owner||b.author||'anon')).size;
+  render();
+}
 
-function renderBuilds(){
-  const all = _builds;
-  let filtered = all;
-  if(currentFilter==='mine') filtered=all.filter(b=>b.author==='You'||!b.author);
-  if(currentFilter==='recent') filtered=[...all].sort((a,b)=>b.ts-a.ts).slice(0,12);
-  if(currentSearch) filtered=filtered.filter(b=>b.title.toLowerCase().includes(currentSearch.toLowerCase()));
+function render(){
+  let list = _builds;
+  if(_filter==='mine')   list = list.filter(b=> !b.owner || b.owner===getMyId());
+  if(_filter==='recent') list = [...list].sort((a,b)=>b.ts-a.ts).slice(0,12);
+  if(_search) list = list.filter(b=>b.title.toLowerCase().includes(_search.toLowerCase()));
 
-  document.getElementById('statTotal').textContent = all.length;
-  document.getElementById('buildCount').textContent = filtered.length+' build'+(filtered.length!==1?'s':'');
+  document.getElementById('countLabel').textContent = list.length+' build'+(list.length!==1?'s':'');
 
-  const grid=document.getElementById('buildsGrid');
-  const empty=document.getElementById('emptyState');
+  const grid  = document.getElementById('buildsGrid');
+  const empty = document.getElementById('emptyState');
 
-  if(filtered.length===0){
-    grid.innerHTML='';
-    empty.style.display='block';
-    return;
-  }
+  if(!list.length){ grid.innerHTML=''; empty.style.display='block'; return; }
   empty.style.display='none';
 
-  grid.innerHTML=filtered.map(b=>`
+  grid.innerHTML = list.map(b=>`
     <div class="build-card">
       <div class="card-preview" data-preview-id="${esc(b.id)}">
         <iframe srcdoc="${esc(b.code)}" sandbox="allow-scripts"></iframe>
-        <div class="card-preview-overlay"><div class="preview-play">▶</div></div>
+        <div class="card-overlay">
+          <div class="play-icon">
+            <svg viewBox="0 0 10 10"><polygon points="2,1 9,5 2,9"/></svg>
+          </div>
+        </div>
       </div>
       <div class="card-body">
         <div class="card-title" title="${esc(b.title)}">${esc(b.title)}</div>
         <div class="card-meta">
-          <span class="card-author">${esc(b.author||'You')}</span>
-          <span>·</span>
+          <span class="card-author">${esc(b.author||'Builder')}</span>
+          <span class="card-dot"></span>
           <span>${timeAgo(b.ts)}</span>
         </div>
       </div>
       <div class="card-actions">
         <button class="card-btn primary" data-preview-id="${esc(b.id)}">▶ Preview</button>
         <button class="card-btn" data-share-id="${esc(b.id)}" data-share-title="${esc(b.title)}">𝕏 Share</button>
-        <button class="card-btn" data-delete-id="${esc(b.id)}">✕</button>
+        <button class="card-btn danger" data-delete-id="${esc(b.id)}">✕</button>
       </div>
     </div>`).join('');
 }
 
+function getMyId(){
+  return localStorage.getItem('orlix_token') || localStorage.getItem('orlix_device_id') || '';
+}
+
 function openPreview(id){
-  const builds=_builds;
-  const b=builds.find(x=>x.id===id);
+  const b = _builds.find(x=>x.id===id);
   if(!b) return;
-  document.getElementById('modalTitle').textContent=b.title;
-  const iframe=document.getElementById('previewFrame');
-  const doc=iframe.contentDocument||iframe.contentWindow.document;
-  try{ doc.open('text/html','replace'); doc.write(b.code); doc.close(); }
-  catch{ iframe.srcdoc=b.code; }
+  document.getElementById('modalTitle').textContent = b.title;
+  const iframe = document.getElementById('previewFrame');
+  try{
+    const doc = iframe.contentDocument || iframe.contentWindow.document;
+    doc.open('text/html','replace'); doc.write(b.code); doc.close();
+  }catch{ iframe.srcdoc = b.code; }
   document.getElementById('previewModal').classList.add('open');
 }
 
 function closePreview(){
   document.getElementById('previewModal').classList.remove('open');
-  const iframe=document.getElementById('previewFrame');
-  try{ const doc=iframe.contentDocument||iframe.contentWindow.document; doc.open(); doc.write(''); doc.close(); }catch{}
+  const iframe = document.getElementById('previewFrame');
+  try{ const d=iframe.contentDocument||iframe.contentWindow.document; d.open();d.write('');d.close(); }catch{}
 }
 
 function shareOnX(id, title){
-  const tweet=`Just built "${title}" with @OrlixAI ⚡\n\norlixai.xyz/gallery\n\n#OrliAI #BuildWithAI`;
+  const tweet = `Just built "${title}" with @OrlixAI ⚡\n\norlixai.xyz/gallery\n\n#OrlixAI #BuildWithAI`;
   window.open('https://twitter.com/intent/tweet?text='+encodeURIComponent(tweet),'_blank','noopener');
 }
 
 async function deleteBuild(id){
-  if(!confirm('Remove this build from the gallery?')) return;
-  // Remove from localStorage
-  const local=getLocalBuilds().filter(b=>b.id!==id);
+  if(!confirm('Remove this build?')) return;
+  const local = getLocalBuilds().filter(b=>b.id!==id);
   localStorage.setItem('orlix_gallery',JSON.stringify(local));
-  // Remove from API
+  const myId = getMyId();
   try{
-    const delId = localStorage.getItem('orlix_token') || localStorage.getItem('orlix_device_id') || '';
     await fetch('/api/gallery',{
       method:'DELETE',
-      headers: {'Content-Type':'application/json', ...(delId ? {'Authorization':'Bearer '+delId} : {})},
+      headers:{'Content-Type':'application/json',...(myId?{'Authorization':'Bearer '+myId}:{})},
       body:JSON.stringify({id})
     });
   }catch(e){ console.warn('Delete API failed:',e.message); }
-  await loadBuilds();
+  _builds = _builds.filter(b=>b.id!==id);
+  document.getElementById('statTotal').textContent = _builds.length;
+  render();
 }
 
 // Event delegation
-document.addEventListener('click',function(e){
-  const previewEl=e.target.closest('[data-preview-id]');
-  const shareEl=e.target.closest('[data-share-id]');
-  const deleteEl=e.target.closest('[data-delete-id]');
-  if(previewEl) openPreview(previewEl.dataset.previewId);
-  if(shareEl) shareOnX(shareEl.dataset.shareId, shareEl.dataset.shareTitle);
-  if(deleteEl) deleteBuild(deleteEl.dataset.deleteId);
-});
-document.getElementById('modalClose').addEventListener('click',closePreview);
-document.getElementById('previewModal').addEventListener('click',function(e){
-  if(e.target===this) closePreview();
+document.addEventListener('click', function(e){
+  if(e.target.closest('[data-preview-id]')) openPreview(e.target.closest('[data-preview-id]').dataset.previewId);
+  if(e.target.closest('[data-share-id]'))   { const el=e.target.closest('[data-share-id]'); shareOnX(el.dataset.shareId,el.dataset.shareTitle); }
+  if(e.target.closest('[data-delete-id]'))  deleteBuild(e.target.closest('[data-delete-id]').dataset.deleteId);
 });
 
-// Filter buttons
-document.querySelectorAll('.filter-btn').forEach(btn=>{
+document.getElementById('modalClose').addEventListener('click',closePreview);
+document.getElementById('previewModal').addEventListener('click',function(e){ if(e.target===this) closePreview(); });
+
+document.querySelectorAll('.filter-pill').forEach(btn=>{
   btn.addEventListener('click',function(){
-    document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.filter-pill').forEach(b=>b.classList.remove('active'));
     this.classList.add('active');
-    currentFilter=this.dataset.filter;
-    renderBuilds();
+    _filter = this.dataset.filter;
+    render();
   });
 });
 
-// Search
 document.getElementById('searchInp').addEventListener('input',function(){
-  currentSearch=this.value;
-  renderBuilds();
+  _search = this.value;
+  render();
 });
 
-// Init
 loadBuilds();
 </script>
 </body>
