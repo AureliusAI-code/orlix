@@ -470,39 +470,61 @@ async function executeTool(name, input) {
         const ETH_ZERO = '0x0000000000000000000000000000000000000000';
         const isEthIn  = input.token_in  === ETH_ZERO || input.token_in?.toLowerCase()  === 'eth';
         const isEthOut = input.token_out === ETH_ZERO || input.token_out?.toLowerCase() === 'eth';
+        const tIn  = isEthIn  ? ETH_ZERO : input.token_in;
+        const tOut = isEthOut ? ETH_ZERO : input.token_out;
 
-        // Use Odos aggregator — best prices on Base, works for any token pair
-        const r = await fetch('https://api.odos.xyz/sor/quote/v2', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            chainId: 8453,
-            inputTokens:  [{ tokenAddress: isEthIn  ? ETH_ZERO : input.token_in,  amount: amountIn }],
-            outputTokens: [{ tokenAddress: isEthOut ? ETH_ZERO : input.token_out, proportion: 1 }],
-            userAddr: '0x0000000000000000000000000000000000000001',
-            slippageLimitPercent: 1,
-            referralCode: 0,
-            disableRFQs: false,
-            compact: false
-          }),
-          signal: AbortSignal.timeout(10000)
-        });
-        if (!r.ok) {
-          const err = await r.text().catch(() => '');
-          return { error: `Quote failed: ${r.status}`, detail: err.slice(0, 300) };
+        // Try Odos first (retry on 429), fall back to KyberSwap
+        for (let attempt = 0; attempt < 2; attempt++) {
+          if (attempt > 0) await new Promise(r => setTimeout(r, 1500));
+          try {
+            const r = await fetch('https://api.odos.xyz/sor/quote/v2', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                chainId: 8453,
+                inputTokens:  [{ tokenAddress: tIn,  amount: amountIn }],
+                outputTokens: [{ tokenAddress: tOut, proportion: 1 }],
+                userAddr: '0x0000000000000000000000000000000000000001',
+                slippageLimitPercent: 1, referralCode: 0, disableRFQs: false, compact: false
+              }),
+              signal: AbortSignal.timeout(9000)
+            });
+            if (r.status === 429) continue;
+            if (r.ok) {
+              const d = await r.json();
+              if (d.outTokens?.[0]?.amount) {
+                return {
+                  token_in: input.token_in, token_out: input.token_out, amount_in: input.amount_in,
+                  amount_out_raw: d.outTokens[0].amount,
+                  price_impact_percent: d.priceImpact ?? null, gas_estimate: d.gasEstimate ?? null,
+                  note: 'amount_out_raw in smallest unit. USDC=6 decimals, ETH/WETH=18.',
+                  source: 'Odos', chain: 'Base'
+                };
+              }
+            }
+          } catch {}
         }
-        const d = await r.json();
-        return {
-          token_in:             input.token_in,
-          token_out:            input.token_out,
-          amount_in:            input.amount_in,
-          amount_out_raw:       d.outTokens?.[0]?.amount ?? null,
-          price_impact_percent: d.priceImpact ?? null,
-          gas_estimate:         d.gasEstimate ?? null,
-          note:                 'amount_out_raw is in smallest unit. USDC=6 decimals, ETH/WETH=18. Divide by 10^decimals for human-readable.',
-          source:               'Odos (aggregates Aerodrome, Uniswap, BaseSwap and more)',
-          chain:                'Base'
-        };
+        // KyberSwap fallback
+        try {
+          const qs = new URLSearchParams({ tokenIn: tIn, tokenOut: tOut, amountIn, saveGas: 'false', gasInclude: 'true' });
+          const r = await fetch(`https://aggregator-api.kyberswap.com/base/api/v1/routes?${qs}`, {
+            headers: { 'x-client-id': 'orlix' }, signal: AbortSignal.timeout(9000)
+          });
+          if (r.ok) {
+            const d = await r.json();
+            const rs = d.data?.routeSummary;
+            if (rs?.amountOut) {
+              return {
+                token_in: input.token_in, token_out: input.token_out, amount_in: input.amount_in,
+                amount_out_raw: rs.amountOut,
+                price_impact_percent: rs.priceImpact ?? null, gas_estimate: rs.gas ?? null,
+                note: 'amount_out_raw in smallest unit. USDC=6 decimals, ETH/WETH=18.',
+                source: 'KyberSwap', chain: 'Base'
+              };
+            }
+          }
+        } catch {}
+        return { error: 'Quote unavailable — both Odos and KyberSwap failed. Check token addresses are valid Base contracts.' };
       }
       case 'moonwell_markets': {
         const url = input.asset
@@ -584,50 +606,91 @@ async function executeTool(name, input) {
         const tokenIn  = isEthIn  ? ETH_ZERO : input.token_in;
         const tokenOut = isEthOut ? ETH_ZERO : input.token_out;
 
-        // Step 1: Odos quote — finds best route across all DEXes on Base
-        const qr = await fetch('https://api.odos.xyz/sor/quote/v2', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            chainId: 8453,
-            inputTokens:  [{ tokenAddress: tokenIn,  amount: amountIn }],
-            outputTokens: [{ tokenAddress: tokenOut, proportion: 1 }],
-            userAddr: input.wallet_address,
-            slippageLimitPercent: 1,
-            referralCode: 0,
-            disableRFQs:  false,
-            compact:      false
-          }),
-          signal: AbortSignal.timeout(12000)
-        });
-        if (!qr.ok) {
-          const t = await qr.text();
-          return { error: `Swap quote failed (${qr.status}). Make sure token addresses are correct Base contract addresses.`, detail: t.slice(0, 200) };
-        }
-        const qd = await qr.json();
-        const pathId    = qd.pathId;
-        const outAmtRaw = qd.outTokens?.[0]?.amount ?? null;
-        if (!pathId) return { error: 'No swap route found for this pair on Base', _raw: JSON.stringify(qd).slice(0, 200) };
+        let tx = null, outAmtRaw = null, provider = '';
 
-        // Step 2: Odos assemble — returns complete, ready-to-sign transaction calldata
-        const ar = await fetch('https://api.odos.xyz/sor/assemble', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userAddr: input.wallet_address, pathId, simulate: false }),
-          signal: AbortSignal.timeout(15000)
-        });
-        if (!ar.ok) {
-          const t = await ar.text();
-          return { error: `Swap assembly failed: ${ar.status}`, detail: t.slice(0, 300) };
+        // ── Primary: Odos (3 attempts, 1.5 s wait on 429) ────────────────────
+        for (let attempt = 0; attempt < 3 && !tx; attempt++) {
+          if (attempt > 0) await new Promise(r => setTimeout(r, 1500));
+          try {
+            const qr = await fetch('https://api.odos.xyz/sor/quote/v2', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                chainId: 8453,
+                inputTokens:  [{ tokenAddress: tokenIn,  amount: amountIn }],
+                outputTokens: [{ tokenAddress: tokenOut, proportion: 1 }],
+                userAddr: input.wallet_address,
+                slippageLimitPercent: 1, referralCode: 0, disableRFQs: false, compact: false
+              }),
+              signal: AbortSignal.timeout(10000)
+            });
+            if (qr.status === 429) continue; // rate limited — retry after wait
+            if (!qr.ok) break;
+            const qd = await qr.json();
+            if (!qd.pathId) break;
+            outAmtRaw = qd.outTokens?.[0]?.amount ?? null;
+
+            const ar = await fetch('https://api.odos.xyz/sor/assemble', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ userAddr: input.wallet_address, pathId: qd.pathId, simulate: false }),
+              signal: AbortSignal.timeout(12000)
+            });
+            if (!ar.ok) break;
+            const ad = await ar.json();
+            if (ad.transaction?.to && ad.transaction?.data) {
+              tx = ad.transaction;
+              provider = 'Odos';
+            }
+          } catch {}
         }
-        const ad = await ar.json();
-        const tx = ad.transaction;
-        if (!tx?.to || !tx?.data) return { error: 'Odos returned no transaction', _raw: JSON.stringify(ad).slice(0, 200) };
+
+        // ── Fallback: KyberSwap ───────────────────────────────────────────────
+        if (!tx) {
+          try {
+            const qs = new URLSearchParams({
+              tokenIn, tokenOut, amountIn, saveGas: 'false', gasInclude: 'true', to: input.wallet_address
+            });
+            const rr = await fetch(`https://aggregator-api.kyberswap.com/base/api/v1/routes?${qs}`, {
+              headers: { 'x-client-id': 'orlix' }, signal: AbortSignal.timeout(10000)
+            });
+            if (rr.ok) {
+              const rd = await rr.json();
+              const routeSummary = rd.data?.routeSummary;
+              if (routeSummary) {
+                outAmtRaw = outAmtRaw ?? routeSummary.amountOut ?? null;
+                const br = await fetch('https://aggregator-api.kyberswap.com/base/api/v1/route/build', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json', 'x-client-id': 'orlix' },
+                  body: JSON.stringify({
+                    routeSummary,
+                    sender:            input.wallet_address,
+                    recipient:         input.wallet_address,
+                    slippageTolerance: 100,  // 1% in bps
+                    deadline:          Math.floor(Date.now() / 1000) + 1200,
+                    source:            'orlix'
+                  }),
+                  signal: AbortSignal.timeout(10000)
+                });
+                if (br.ok) {
+                  const bd = await br.json();
+                  const routerAddr = bd.data?.routerAddress;
+                  const calldata   = bd.data?.data;
+                  if (routerAddr && calldata) {
+                    tx = { to: routerAddr, data: calldata, value: isEthIn ? amountIn : '0', gas: 500000 };
+                    provider = 'KyberSwap';
+                  }
+                }
+              }
+            }
+          } catch {}
+        }
+
+        if (!tx) return { error: 'Swap unavailable right now — Odos and KyberSwap both failed. Try again in a few seconds.' };
 
         // Build transaction list: ERC20 approval first (if not ETH), then swap
         const transactions = [];
         if (!isEthIn) {
-          // approve(odosRouter, maxUint256) so router can pull the input token
           transactions.push({
             to:      input.token_in,
             data:    '0x095ea7b3' +
@@ -650,8 +713,8 @@ async function executeTool(name, input) {
         const txCount = transactions.length > 1 ? ' (2 txns: approve then swap — sign both)' : '';
         return {
           __action:       'sign_transaction',
-          protocol:       'Odos',
-          description:    `Swap ${input.amount_in} ${tokenInLabel} via Odos (Base)${txCount}`,
+          protocol:       provider,
+          description:    `Swap ${input.amount_in} ${tokenInLabel} via ${provider} (Base)${txCount}`,
           transactions,
           amount_out_raw: outAmtRaw,
           chain_id:       8453,
