@@ -606,16 +606,11 @@ async function executeTool(name, input) {
         });
         if (!qr.ok) { const t = await qr.text(); return { error: `Uniswap quote failed: ${qr.status}`, detail: t.slice(0, 400) }; }
         const quote = await qr.json();
-        // Build swap body: pass full quote, strip null permit fields, set swapper
-        const swapBody = JSON.parse(JSON.stringify(quote));
-        delete swapBody.permitData;
-        delete swapBody.permitTransaction;
-        delete swapBody.signature;
-        if (!swapBody.swapper) swapBody.swapper = input.wallet_address;
-        // Some API versions nest under quote.quote — flatten if needed
-        const swapPayload = swapBody.quote ? { ...swapBody.quote, ...swapBody } : swapBody;
-        delete swapPayload.quote;
-        swapPayload.swapper = input.wallet_address;
+        // /swap expects { quote: <full quote response>, permitData: null }
+        const swapPayload = {
+          quote:       quote,
+          permitData:  null,
+        };
         const sr = await fetch('https://trade-api.gateway.uniswap.org/v1/swap', {
           method: 'POST', headers: uniHeaders,
           body: JSON.stringify(swapPayload), signal: AbortSignal.timeout(12000)
