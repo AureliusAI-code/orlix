@@ -2255,6 +2255,7 @@ async function signTx(txId) {
       // Handle both gasLimit and gas field names from different protocols
       const gasRaw = step.gasLimit ?? step.gas ?? null;
       if (gasRaw) txParams.gas = gasRaw.toString().startsWith('0x') ? gasRaw : '0x' + parseInt(gasRaw).toString(16);
+      console.log('[signTx] sending tx:', JSON.stringify(txParams));
       lastHash = await window.ethereum.request({ method: 'eth_sendTransaction', params: [txParams] });
     }
 

@@ -597,8 +597,8 @@ async function executeTool(name, input) {
           tokenInChainId: 8453,
           tokenOutChainId: 8453,
           swapper: input.wallet_address,
-          autoSlippage: 'DEFAULT',
-          protocols: ['V4', 'V3', 'V2'],
+          slippageTolerance: 500,   // 5% in bps — prevents stale-quote reverts
+          protocols: ['V3', 'V2'],  // skip V4 (experimental on Base, causes reverts)
           routingPreference: 'BEST_PRICE'
         };
         const qr = await fetch('https://trade-api.gateway.uniswap.org/v1/quote', {
