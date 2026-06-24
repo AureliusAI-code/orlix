@@ -583,7 +583,13 @@ async function executeTool(name, input) {
         const amtFloat   = parseFloat(input.amount_in);
         if (isNaN(amtFloat) || amtFloat <= 0) return { error: 'Invalid amount_in' };
         const amountIn   = BigInt(Math.round(amtFloat * Math.pow(10, decimalsIn))).toString();
-        const quoteBody  = {
+        const uniHeaders = {
+          'Content-Type': 'application/json',
+          'x-api-key': 'NeoYO3V50_koJAipDEalYWbMO1XMaFPAQmpOm6_Npo0',
+          'x-permit2-disabled': 'true'
+        };
+        // Use real wallet as swapper so the quote is valid for this wallet
+        const quoteBody = {
           type: 'EXACT_INPUT',
           amount: amountIn,
           tokenIn: input.token_in,
@@ -595,27 +601,22 @@ async function executeTool(name, input) {
           protocols: ['V4', 'V3', 'V2'],
           routingPreference: 'BEST_PRICE'
         };
-        const uniHeaders = {
-          'Content-Type': 'application/json',
-          'x-api-key': 'NeoYO3V50_koJAipDEalYWbMO1XMaFPAQmpOm6_Npo0',
-          'x-permit2-disabled': 'true'
-        };
         const qr = await fetch('https://trade-api.gateway.uniswap.org/v1/quote', {
           method: 'POST', headers: uniHeaders,
           body: JSON.stringify(quoteBody), signal: AbortSignal.timeout(12000)
         });
         if (!qr.ok) { const t = await qr.text(); return { error: `Uniswap quote failed: ${qr.status}`, detail: t.slice(0, 400) }; }
         const quote = await qr.json();
-        // /swap expects { quote: <full quote response>, permitData: null }
-        const swapPayload = {
-          quote:       quote,
-          permitData:  null,
-        };
+        // /swap: send the full quote response as-is, only strip fields that are null/undefined
+        const swapPayload = { ...quote };
+        if (!swapPayload.permitData)        delete swapPayload.permitData;
+        if (!swapPayload.permitTransaction) delete swapPayload.permitTransaction;
+        if (!swapPayload.signature)         delete swapPayload.signature;
         const sr = await fetch('https://trade-api.gateway.uniswap.org/v1/swap', {
           method: 'POST', headers: uniHeaders,
           body: JSON.stringify(swapPayload), signal: AbortSignal.timeout(12000)
         });
-        if (!sr.ok) { const t = await sr.text(); return { error: `Uniswap swap prepare failed: ${sr.status}`, detail: t.slice(0, 400) }; }
+        if (!sr.ok) { const t = await sr.text(); return { error: `Uniswap swap prepare failed: ${sr.status}`, detail: t.slice(0, 500) }; }
         const swapData = await sr.json();
         return {
           __action:      'sign_transaction',
