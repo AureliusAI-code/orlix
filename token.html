@@ -184,6 +184,20 @@ main{padding-top:56px}
 .rm-desc{font-size:.72rem;color:var(--text-3)}
 .rm-item.done .rm-q{color:var(--green)}
 .rm-item.done .rm-label::before{content:'✓ ';color:var(--green)}
+.tier-card.t4{border-color:rgba(240,180,48,.6);background:linear-gradient(135deg,rgba(240,180,48,.1) 0%,var(--bg-2) 100%)}
+.tier-badge.elite{background:rgba(240,180,48,.18);color:#f0b830;border:1px solid rgba(240,180,48,.5)}
+.stake-section{margin-top:12px;background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius);padding:22px 24px}
+.stake-hd{font-size:.7rem;font-weight:700;color:var(--text-3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px}
+.stake-sub{font-size:.8rem;color:var(--text-3);margin-bottom:16px}
+.stake-rows{display:flex;flex-direction:column;gap:8px}
+.stake-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px;border:1px solid var(--border);border-radius:8px}
+.stake-amt{font-size:.82rem;font-weight:700;color:var(--text-1);font-family:var(--mono)}
+.stake-reward{font-size:.82rem;font-weight:700;color:var(--orange)}
+.stake-lock{font-size:.7rem;color:var(--text-3);margin-left:auto}
+.burn-bar{margin-top:12px;background:rgba(240,80,48,.05);border:1px solid rgba(240,80,48,.18);border-radius:var(--radius);padding:14px 20px;display:flex;align-items:center;gap:12px}
+.burn-icon{font-size:1.1rem;flex-shrink:0}
+.burn-text{font-size:.8rem;color:var(--text-2);line-height:1.5}
+.burn-text strong{color:var(--orange)}
 
 /* FOOTER */
 footer{border-top:1px solid var(--border);padding:40px 0 56px}
@@ -327,89 +341,114 @@ footer{border-top:1px solid var(--border);padding:40px 0 56px}
     <p class="utility-sub">$ORLIX gates access to the full Orlix platform. Hold more, unlock more.</p>
 
     <div class="tier-grid">
-      <!-- Tier 1 -->
+      <!-- Standard -->
       <div class="tier-card">
-        <div class="tier-badge free">Tier 1</div>
+        <div class="tier-badge free">Standard</div>
         <div class="tier-name">Free Access</div>
         <div class="tier-req">No $ORLIX required</div>
         <ul class="tier-features">
-          <li>5 AI models</li>
-          <li>20 requests / day</li>
+          <li>Mimo AI — fast conversational AI</li>
           <li>Basic token analysis</li>
-          <li class="dim">Telegram bot (limited)</li>
-          <li class="dim">B20 Studio access</li>
-          <li class="dim">API access</li>
+          <li class="dim">No daily AI credits</li>
+          <li class="dim">Premium models locked</li>
         </ul>
       </div>
 
-      <!-- Tier 2 -->
+      <!-- Holder -->
       <div class="tier-card t2">
-        <div class="tier-badge holder">⬡ Tier 2</div>
+        <div class="tier-badge holder">⬡ Holder</div>
         <div class="tier-name">Holder</div>
         <div class="tier-req">Hold <span>1,000,000 $ORLIX</span></div>
         <ul class="tier-features">
-          <li>All 19 AI models unlocked</li>
-          <li>200 requests / day</li>
+          <li>DeepSeek, Groq &amp; Gemini models</li>
+          <li>$3 / day AI credits</li>
+          <li>30% fee discount</li>
+          <li>4,096 max tokens</li>
           <li>Full token analyzer + AI verdict</li>
-          <li>Telegram bot unlimited</li>
-          <li>B20 Studio access</li>
-          <li>Priority support</li>
         </ul>
       </div>
 
-      <!-- Tier 3 -->
+      <!-- Power Holder -->
       <div class="tier-card t3">
-        <div class="tier-badge power">🔥 Tier 3</div>
+        <div class="tier-badge power">🔥 Power Holder</div>
         <div class="tier-name">Power Holder</div>
         <div class="tier-req">Hold <span>10,000,000 $ORLIX</span></div>
         <ul class="tier-features">
-          <li>Everything in Tier 2</li>
-          <li>API access for developers</li>
-          <li>Higher rate limits</li>
-          <li>Early access to new features</li>
-          <li>B20 deployment fee discount</li>
-          <li>Control Room advanced features</li>
+          <li>All 19 AI models — Claude, GPT, Grok &amp; more</li>
+          <li>$5 / day AI credits</li>
+          <li>65% fee discount</li>
+          <li>6,144 max tokens</li>
+          <li>Priority queue access</li>
+        </ul>
+      </div>
+
+      <!-- Elite -->
+      <div class="tier-card t4">
+        <div class="tier-badge elite">⚡ Elite</div>
+        <div class="tier-name">Elite</div>
+        <div class="tier-req">Hold <span>50,000,000 $ORLIX</span></div>
+        <ul class="tier-features">
+          <li>All 19 AI models + priority queue</li>
+          <li>100% fee waiver — use AI free</li>
+          <li>$10 / day AI credits</li>
+          <li>8,192 max tokens</li>
+          <li>Staking multiplier eligible</li>
         </ul>
       </div>
     </div>
 
-    <!-- Governance -->
-    <div class="governance-card">
-      <div class="gov-icon">🏛️</div>
-      <div class="gov-body">
-        <h4>Governance — All Holders</h4>
-        <p>Every $ORLIX holder has a voice in the direction of the platform.</p>
-        <div class="gov-tags">
-          <span class="gov-tag">Vote on new AI models</span>
-          <span class="gov-tag">Vote on product roadmap</span>
-          <span class="gov-tag">Vote on treasury decisions</span>
+    <!-- Staking -->
+    <div class="stake-section">
+      <div class="stake-hd">Staking Rewards · 30-day lock</div>
+      <p class="stake-sub">Stake $ORLIX to earn daily AI credits. Rewards stack on top of holder tier.</p>
+      <div class="stake-rows">
+        <div class="stake-row">
+          <span class="stake-amt">3,000,000 ORLIX</span>
+          <span class="stake-reward">$3 / day</span>
+          <span class="stake-lock">30-day lock</span>
+        </div>
+        <div class="stake-row">
+          <span class="stake-amt">10,000,000 ORLIX</span>
+          <span class="stake-reward">$5 / day</span>
+          <span class="stake-lock">30-day lock</span>
+        </div>
+        <div class="stake-row">
+          <span class="stake-amt">50,000,000 ORLIX</span>
+          <span class="stake-reward">$10 / day</span>
+          <span class="stake-lock">30-day lock</span>
         </div>
       </div>
+    </div>
+
+    <!-- Burn mechanic -->
+    <div class="burn-bar">
+      <span class="burn-icon">🔥</span>
+      <span class="burn-text">Every AI inference automatically burns $ORLIX to <strong>0x000…dEaD</strong>. Stakers earn credits. Every call reduces supply. <strong>Demand up, supply down.</strong></span>
     </div>
 
     <!-- Roadmap -->
     <div class="roadmap-card">
-      <div class="roadmap-title">Rollout Timeline</div>
+      <div class="roadmap-title">What's Live</div>
       <div class="roadmap-list">
         <div class="rm-item done">
-          <span class="rm-q">Now</span>
-          <span class="rm-label">Token Live</span>
-          <span class="rm-desc">$ORLIX live on Base · Uniswap v3</span>
+          <span class="rm-q">Live</span>
+          <span class="rm-label">Token</span>
+          <span class="rm-desc">$ORLIX on Base · Uniswap v3</span>
         </div>
-        <div class="rm-item">
-          <span class="rm-q">Q3 2026</span>
+        <div class="rm-item done">
+          <span class="rm-q">Live</span>
           <span class="rm-label">Tier System</span>
-          <span class="rm-desc">Holder benefits + access tiers activated</span>
+          <span class="rm-desc">Holder · Power Holder · Elite</span>
         </div>
-        <div class="rm-item">
-          <span class="rm-q">Q4 2026</span>
-          <span class="rm-label">API + Staking</span>
-          <span class="rm-desc">Developer API access · staking rewards</span>
+        <div class="rm-item done">
+          <span class="rm-q">Live</span>
+          <span class="rm-label">Staking</span>
+          <span class="rm-desc">30-day lock · daily AI credits</span>
         </div>
-        <div class="rm-item">
-          <span class="rm-q">2027</span>
-          <span class="rm-label">Full Governance</span>
-          <span class="rm-desc">On-chain voting · treasury allocation</span>
+        <div class="rm-item done">
+          <span class="rm-q">Live</span>
+          <span class="rm-label">Burn Mechanic</span>
+          <span class="rm-desc">Auto-burn on every AI inference</span>
         </div>
       </div>
     </div>
