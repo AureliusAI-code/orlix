@@ -74,7 +74,7 @@ input,select,textarea{font-family:var(--mono)}
 .status-dot{animation:blink 2.5s ease-in-out infinite}
 
 /* ── layout ── */
-.app-layout{display:flex;height:100vh;padding-top:52px}
+.app-layout{display:flex;height:100vh;height:100dvh;padding-top:52px}
 
 /* ── sidebar ── */
 .sidebar{
@@ -1037,7 +1037,8 @@ select.inp{cursor:pointer}
     <!-- ═══ PLAYGROUND ═══ -->
     <div class="view" id="view-playground">
       <div class="page-hd" style="margin-bottom:14px">
-        <h1 style="font-size:1.2rem;margin-bottom:0">Playground</h1>
+        <h1 style="font-size:1.2rem;margin-bottom:4px">Playground</h1>
+        <div class="sub">Chat dengan Mimo, Claude, Grok, dan model lain — tanpa API key.</div>
       </div>
       <div class="chat-controls">
         <select class="inp chat-model-sel" id="pgModelSel"></select>
