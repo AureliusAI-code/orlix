@@ -333,16 +333,30 @@ select.inp{cursor:pointer}
 .preview-bar span{color:var(--text-3);font-size:.78rem;font-family:var(--mono)}
 .preview-close{background:rgba(255,255,255,.08);border:1px solid var(--border);color:var(--text-2);border-radius:8px;padding:5px 14px;cursor:pointer;font-size:.8rem;transition:all var(--tr)}
 .preview-close:hover{background:rgba(255,255,255,.14);color:var(--text-1)}
-.chat-input-row{display:flex;gap:8px;align-items:flex-end}
-.chat-input-row textarea{
-  flex:1;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);
-  color:var(--text-1);font-size:.82rem;padding:10px 12px;outline:none;resize:none;
-  height:44px;max-height:160px;transition:border-color var(--tr),box-shadow var(--tr);
-  font-family:var(--font);line-height:1.55;
+.chat-input-row{
+  display:flex;gap:10px;align-items:center;
+  padding:10px 12px 10px;
+  background:var(--bg-2);border-top:1px solid var(--border);
+  margin:0 -32px;padding-left:32px;padding-right:32px;
 }
-.chat-input-row textarea:focus{border-color:rgba(240,120,48,.5);box-shadow:0 0 0 3px rgba(240,120,48,.1)}
+.chat-input-row textarea{
+  flex:1;background:var(--bg-3);border:1px solid var(--border);border-radius:22px;
+  color:var(--text-1);font-size:.82rem;padding:10px 16px;outline:none;resize:none;
+  height:44px;max-height:160px;transition:border-color var(--tr),box-shadow var(--tr);
+  font-family:var(--font);line-height:1.4;
+}
+.chat-input-row textarea:focus{border-color:rgba(240,120,48,.4);box-shadow:0 0 0 3px rgba(240,120,48,.08)}
 .chat-input-row textarea::placeholder{color:var(--text-3)}
 .chat-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:var(--text-3);gap:10px;font-size:.8rem}
+.chat-attach-btn{border-radius:12px!important}
+.chat-send-btn{
+  display:flex;align-items:center;justify-content:center;
+  width:44px;height:44px;border-radius:14px;border:none;flex-shrink:0;
+  background:var(--orange);color:#fff;cursor:pointer;
+  transition:background var(--tr),transform var(--tr);
+}
+.chat-send-btn:hover{background:#e06820}
+.chat-send-btn:active{transform:scale(.94)}
 .chat-empty-ico{opacity:.2}
 .typing-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--orange);animation:tdot .9s infinite}
 .typing-dot:nth-child(2){animation-delay:.2s}
@@ -465,7 +479,8 @@ select.inp{cursor:pointer}
   .agent-actions{display:none}
   .provider-grid{grid-template-columns:1fr}
   .main.pg-mode{padding-top:12px}
-  .chat-input-row textarea{height:40px}
+  .chat-input-row{margin:0 -14px;padding-left:14px;padding-right:14px;padding-bottom:max(10px,env(safe-area-inset-bottom))}
+  .chat-input-row textarea{height:40px;border-radius:20px}
 }
 
 /* ── transaction card (inline in chat) ── */
@@ -1059,12 +1074,12 @@ select.inp{cursor:pointer}
         <div id="imgPreviewBar"></div>
         <input type="file" id="imgFileInput" accept="image/*" style="display:none" multiple>
         <div class="chat-input-row">
-          <button class="btn-icon" id="imgBtn" title="Attach image">
-            <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4.5" width="15" height="11" rx="2"/><circle cx="7" cy="9" r="1.5"/><path d="M2.5 14l4.5-4 3 3 2.5-2.5 5 5"/></svg>
+          <button class="btn-icon chat-attach-btn" id="imgBtn" title="Attach image">
+            <svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4.5" width="15" height="11" rx="2"/><circle cx="7" cy="9" r="1.5"/><path d="M2.5 14l4.5-4 3 3 2.5-2.5 5 5"/></svg>
           </button>
           <textarea id="chatInput" placeholder="Message Orlix…"></textarea>
-          <button class="btn primary" id="chatSendBtn" style="height:44px;width:44px;padding:0;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-            <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="10" y1="16" x2="10" y2="4"/><polyline points="5,9 10,4 15,9"/></svg>
+          <button class="chat-send-btn" id="chatSendBtn">
+            <svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="10" y1="16" x2="10" y2="4"/><polyline points="5,9 10,4 15,9"/></svg>
           </button>
         </div>
       </div>
