@@ -42,10 +42,11 @@ async function dget(url) {
 
 // Fetch a large pool of Base pairs via multiple searches
 async function fetchBasePairPool() {
-  const queries = ['USDC', 'ETH', 'WETH', 'DAI', 'USDT'];
+  // Mix of stablecoin pairs + active Base tokens + Base-native DEX tokens
+  const queries = ['USDC', 'ETH', 'AERO', 'VIRTUAL', 'BASE'];
   const results = await Promise.allSettled(
     queries.map(q =>
-      dget(`https://api.dexscreener.com/latest/dex/search?q=${q}&chainIds=base`)
+      dget(`https://api.dexscreener.com/latest/dex/search?q=${encodeURIComponent(q)}`)
     )
   );
 
@@ -124,16 +125,16 @@ function deriveTrending(pairs) {
 
 function deriveWhales(pairs) {
   return pairs
-    .filter(p => (p.volume?.h1 || 0) > 5000)
+    .filter(p => (p.volume?.h1 || 0) > 1000)
     .sort((a, b) => (b.volume?.h1 || 0) - (a.volume?.h1 || 0))
     .slice(0, 15)
     .map(mapPair);
 }
 
-// Live activity: tokens with meaningful liq and any 1h action
+// Live activity: tokens with some liquidity and recent 1h volume
 function deriveLiveActivity(pairs) {
-  // First try strict: liq >= 10k, vol1h >= 200
-  let filtered = pairs.filter(p => (p.liquidity?.usd || 0) >= 10000 && (p.volume?.h1 || 0) >= 200);
+  // First try: liq >= 5k, vol1h >= 100
+  let filtered = pairs.filter(p => (p.liquidity?.usd || 0) >= 5000 && (p.volume?.h1 || 0) >= 100);
   // Fall back to looser: any liq, vol1h >= 50
   if (filtered.length < 5) {
     filtered = pairs.filter(p => (p.volume?.h1 || 0) >= 50);
@@ -151,6 +152,10 @@ async function generateCommentary(data, apiKey) {
     return commentaryCache.text;
   }
 
+  const isAnthropicKey = apiKey.startsWith('sk-ant-');
+  const aiUrl     = isAnthropicKey ? 'https://api.anthropic.com/v1/messages' : 'https://llm.bankr.bot/v1/messages';
+  const aiAuthHdr = isAnthropicKey ? { 'x-api-key': apiKey } : { 'X-API-Key': apiKey };
+
   const topWhale = data.whaleActivity?.[0];
   const topTrend = data.trending?.[0];
   const newCount = data.newTokens?.length || 0;
@@ -163,10 +168,10 @@ async function generateCommentary(data, apiKey) {
   ].filter(Boolean).join(' ');
 
   try {
-    const r = await fetch('https://api.anthropic.com/v1/messages', {
+    const r = await fetch(aiUrl, {
       method: 'POST',
       headers: {
-        'x-api-key': apiKey,
+        ...aiAuthHdr,
         'anthropic-version': '2023-06-01',
         'content-type': 'application/json',
       },
@@ -204,32 +209,44 @@ module.exports = async (req, res) => {
     return res.end(JSON.stringify(dataCache.data));
   }
 
-  const pairs = await fetchBasePairPool();
+  try {
+    const pairs = await fetchBasePairPool();
 
-  const newTokens     = deriveNewTokens(pairs);
-  const trending      = deriveTrending(pairs);
-  const whaleActivity = deriveWhales(pairs);
-  const liveActivity  = deriveLiveActivity(pairs);
+    const newTokens     = deriveNewTokens(pairs);
+    const trending      = deriveTrending(pairs);
+    const whaleActivity = deriveWhales(pairs);
+    const liveActivity  = deriveLiveActivity(pairs);
 
-  const totalVolume1h = liveActivity.reduce((s, w) => s + (w.volume1h || 0), 0);
-  const stats = {
-    newTokensCount: newTokens.length,
-    trendingCount: trending.length,
-    whaleCount: whaleActivity.length,
-    liveCount: liveActivity.length,
-    totalVolume1h,
-    pairsScanned: pairs.length,
-    ts: now,
-  };
+    const totalVolume1h = liveActivity.reduce((s, w) => s + (w.volume1h || 0), 0);
+    const stats = {
+      newTokensCount: newTokens.length,
+      trendingCount: trending.length,
+      whaleCount: whaleActivity.length,
+      liveCount: liveActivity.length,
+      totalVolume1h,
+      pairsScanned: pairs.length,
+      ts: now,
+    };
 
-  const commentary = await generateCommentary(
-    { newTokens, trending, whaleActivity },
-    process.env.ANTHROPIC_API_KEY
-  );
+    const commentary = await generateCommentary(
+      { newTokens, trending, whaleActivity },
+      process.env.BANKR_LLM_KEY || process.env.ANTHROPIC_API_KEY || ''
+    );
 
-  const data = { newTokens, trending, whaleActivity, liveActivity, stats, commentary };
-  dataCache = { data, ts: now };
+    const data = { newTokens, trending, whaleActivity, liveActivity, stats, commentary };
+    dataCache = { data, ts: now };
 
-  res.writeHead(200, CORS);
-  res.end(JSON.stringify(data));
+    res.writeHead(200, CORS);
+    res.end(JSON.stringify(data));
+  } catch (err) {
+    // Return last cached data if available, else empty structure
+    const fallback = dataCache.data || {
+      newTokens: [], trending: [], whaleActivity: [], liveActivity: [],
+      stats: { newTokensCount:0, trendingCount:0, whaleCount:0, liveCount:0, totalVolume1h:0, pairsScanned:0, ts: now },
+      commentary: '',
+      error: err.message,
+    };
+    res.writeHead(200, CORS);
+    res.end(JSON.stringify(fallback));
+  }
 };
