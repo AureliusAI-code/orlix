@@ -6,83 +6,92 @@
 <title>Orlix AI — Sign In</title>
 <link rel="icon" type="image/x-icon" href="/favicon.ico">
 <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#0a0a0a;--line:rgba(255,255,255,.09);--line-bright:rgba(255,255,255,.16);
-  --text:#c0b8b0;--bright:#f0ebe3;--dim:#665e58;
-  --amber:#ff9a52;--violet:#b9a4ff;--red:#e03030;--green:#7ee0a8;
-  --mono:'JetBrains Mono',monospace;--display:'Space Grotesk',sans-serif;
+  --bg:#09090B;--bg-2:#111113;--bg-3:#1A1A1E;
+  --border:rgba(255,255,255,.06);--border-bright:rgba(255,255,255,.12);
+  --text-1:#FAFAFA;--text-2:#A1A1AA;--text-3:#52525B;
+  --orange:#F07830;--orange-dim:rgba(240,120,48,.1);--orange-glow:rgba(240,120,48,.18);
+  --purple:#A78BFA;--purple-dim:rgba(167,139,250,.08);
+  --green:#4ADE80;--red:#F87171;
+  /* compat aliases */
+  --text:var(--text-2);--bright:var(--text-1);--dim:var(--text-3);
+  --amber:var(--orange);--amber-soft:var(--orange-dim);
+  --violet:var(--purple);--line:var(--border);--line-bright:var(--border-bright);
+  --mono:'JetBrains Mono',monospace;--font:'Plus Jakarta Sans',-apple-system,sans-serif;
 }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{background:var(--bg);color:var(--text);min-height:100%}
-body{font-family:var(--mono);font-size:13px;line-height:1.6;-webkit-font-smoothing:antialiased;
+html,body{background:var(--bg);color:var(--text-2);min-height:100%}
+body{font-family:var(--font);font-size:13px;line-height:1.6;-webkit-font-smoothing:antialiased;
   display:flex;align-items:center;justify-content:center;min-height:100vh}
 
 body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
-  background-image:linear-gradient(rgba(255,154,82,.03) 1px,transparent 1px),
-    linear-gradient(90deg,rgba(255,154,82,.03) 1px,transparent 1px);
-  background-size:36px 36px;animation:gridScroll 28s linear infinite}
-@keyframes gridScroll{to{background-position:36px 36px}}
+  background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);
+  background-size:40px 40px;animation:gridScroll 32s linear infinite}
+@keyframes gridScroll{to{background-position:40px 40px}}
 body::after{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
-  background:radial-gradient(ellipse 60% 50% at 50% 40%,rgba(185,164,255,.07) 0%,transparent 70%)}
+  background:radial-gradient(ellipse 60% 50% at 50% 40%,rgba(240,120,48,.05) 0%,transparent 70%)}
 
 /* ── login card ── */
 .card{position:relative;z-index:1;width:100%;max-width:360px;margin:20px;
-  background:rgba(17,17,17,.97);border:1px solid var(--line-bright);border-radius:14px;
-  padding:36px 32px 32px;box-shadow:0 0 60px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.04) inset}
-.brand{display:flex;align-items:center;gap:7px;font-family:var(--mono);font-weight:700;
-  font-size:.82rem;letter-spacing:.16em;color:var(--bright);text-transform:uppercase;margin-bottom:26px}
-.brand-dot{color:var(--red);font-size:.45rem}
-.login-title{font-family:var(--display);font-size:1.35rem;font-weight:700;color:var(--bright);margin-bottom:5px}
-.login-sub{color:var(--dim);font-size:.76rem;margin-bottom:28px;line-height:1.5}
-.divider{height:1px;background:var(--line);margin:20px 0}
-.footer{text-align:center;color:var(--dim);font-size:.69rem;line-height:1.75}
-.footer a{color:var(--dim);text-decoration:underline;text-underline-offset:3px}
+  background:rgba(17,17,23,.98);border:1px solid var(--border-bright);border-radius:16px;
+  padding:36px 32px 32px;box-shadow:0 0 0 1px rgba(255,255,255,.04) inset,0 24px 64px rgba(0,0,0,.7)}
+.brand{display:flex;align-items:center;gap:8px;font-family:var(--font);font-weight:800;
+  font-size:.88rem;letter-spacing:-.01em;color:var(--text-1);margin-bottom:28px}
+.brand img{width:22px;height:22px;border-radius:50%;object-fit:cover}
+.brand-dot{width:6px;height:6px;border-radius:50%;background:var(--orange);box-shadow:0 0 6px var(--orange-glow);flex-shrink:0}
+.login-title{font-family:var(--font);font-size:1.35rem;font-weight:800;letter-spacing:-.02em;color:var(--text-1);margin-bottom:6px}
+.login-sub{color:var(--text-3);font-size:.77rem;margin-bottom:28px;line-height:1.6}
+.divider{height:1px;background:var(--border);margin:20px 0}
+.footer{text-align:center;color:var(--text-3);font-size:.69rem;line-height:1.75}
+.footer a{color:var(--text-3);text-decoration:underline;text-underline-offset:3px;transition:color .15s}
+.footer a:hover{color:var(--text-2)}
 
 /* ── main button ── */
 .btn-main{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;
-  padding:14px 18px;border-radius:9px;font-size:.83rem;font-family:var(--mono);
-  font-weight:600;cursor:pointer;transition:.15s;border:none;letter-spacing:.02em;
-  background:linear-gradient(135deg,rgba(255,154,82,.18),rgba(185,164,255,.14));
-  border:1px solid rgba(255,154,82,.35);color:var(--bright)}
-.btn-main:hover{background:linear-gradient(135deg,rgba(255,154,82,.28),rgba(185,164,255,.22));
-  border-color:rgba(255,154,82,.6)}
+  padding:13px 18px;border-radius:10px;font-size:.83rem;font-family:var(--font);
+  font-weight:700;cursor:pointer;transition:.15s;letter-spacing:.01em;
+  background:var(--orange-dim);border:1px solid rgba(240,120,48,.35);color:var(--text-1)}
+.btn-main:hover{background:var(--orange);border-color:var(--orange);color:#fff}
 .btn-main:disabled{opacity:.4;cursor:not-allowed}
 
 /* ── msg ── */
 .msg{margin-top:14px;font-size:.74rem;text-align:center;line-height:1.5;display:none}
-.msg-err{color:var(--red)}.msg-ok{color:var(--dim)}
+.msg-err{color:var(--red)}.msg-ok{color:var(--text-3)}
 
 /* ── wallet modal overlay ── */
-.wm-overlay{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.72);
+.wm-overlay{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.75);
+  backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);
   display:none;align-items:center;justify-content:center;padding:20px}
 .wm-overlay.open{display:flex}
-.wm-box{background:#111;border:1px solid rgba(255,255,255,.12);border-radius:16px;
-  padding:26px 22px 22px;width:100%;max-width:320px;position:relative}
+.wm-box{background:#0F0F12;border:1px solid var(--border-bright);border-radius:16px;
+  padding:26px 22px 22px;width:100%;max-width:320px;position:relative;
+  box-shadow:0 24px 64px rgba(0,0,0,.7)}
 .wm-close{position:absolute;top:12px;right:14px;background:none;border:none;
-  color:rgba(255,255,255,.3);font-size:1.3rem;cursor:pointer;line-height:1;padding:2px 6px;
+  color:var(--text-3);font-size:1.3rem;cursor:pointer;line-height:1;padding:2px 6px;
   border-radius:4px;transition:.15s}
-.wm-close:hover{color:var(--bright);background:rgba(255,255,255,.07)}
-.wm-title{color:var(--bright);font-family:var(--display);font-size:1.05rem;font-weight:700;
-  margin-bottom:4px}
-.wm-sub{color:var(--dim);font-size:.72rem;margin-bottom:20px}
+.wm-close:hover{color:var(--text-1);background:rgba(255,255,255,.07)}
+.wm-title{color:var(--text-1);font-family:var(--font);font-size:1.05rem;font-weight:800;
+  letter-spacing:-.02em;margin-bottom:4px}
+.wm-sub{color:var(--text-3);font-size:.72rem;margin-bottom:20px}
 
 /* ── wallet option rows ── */
-.wo{display:flex;align-items:center;gap:13px;width:100%;padding:13px 14px;
-  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);border-radius:10px;
-  color:var(--bright);font-family:var(--mono);font-size:.82rem;font-weight:500;
+.wo{display:flex;align-items:center;gap:13px;width:100%;padding:12px 14px;
+  background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:10px;
+  color:var(--text-1);font-family:var(--font);font-size:.82rem;font-weight:500;
   cursor:pointer;transition:.15s;margin-bottom:8px;text-align:left}
 .wo:last-of-type{margin-bottom:0}
-.wo:hover{background:rgba(255,255,255,.09);border-color:rgba(255,255,255,.2)}
+.wo:hover{background:rgba(255,255,255,.07);border-color:var(--border-bright)}
 .wo:disabled{opacity:.4;cursor:not-allowed}
 .wo-icon{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:1.1rem}
 .wo-right{display:flex;flex-direction:column;gap:1px}
-.wo-name{color:var(--bright);font-size:.83rem;font-weight:600}
-.wo-desc{color:var(--dim);font-size:.68rem;font-weight:400}
+.wo-name{color:var(--text-1);font-size:.83rem;font-weight:600}
+.wo-desc{color:var(--text-3);font-size:.68rem;font-weight:400}
 
 .wm-msg{font-size:.73rem;text-align:center;margin-top:12px;line-height:1.5;display:none}
-.wm-msg-err{color:var(--red)}.wm-msg-ok{color:var(--dim)}
+.wm-msg-err{color:var(--red)}.wm-msg-ok{color:var(--text-3)}
 
 @keyframes spin{to{transform:rotate(360deg)}}
 .spin{display:inline-block;animation:spin .8s linear infinite}
