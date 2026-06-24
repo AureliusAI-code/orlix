@@ -244,6 +244,8 @@ async function doWalletLogin(provider) {
     const display = address.slice(0,6) + '…' + address.slice(-4);
     localStorage.setItem('orlix_token', 'wallet:' + address);
     localStorage.setItem('orlix_user',  JSON.stringify({ id: address, display, type: 'wallet', address }));
+    wmOk('Checking $ORLIX tier…');
+    await fetchOrlixTier(address);
     window.location.href = '/app';
   } catch (e) {
     wmErr(e.code === 4001 ? 'Request rejected.' : 'Wallet error: ' + e.message);
@@ -283,6 +285,15 @@ async function connectOther() {
     return;
   }
   await doWalletLogin(prov);
+}
+
+async function fetchOrlixTier(address) {
+  try {
+    const r = await fetch('/api/stake?wallet=' + address, { signal: AbortSignal.timeout(5000) });
+    if (!r.ok) return;
+    const data = await r.json();
+    if (data.holder) localStorage.setItem('orlix_tier', JSON.stringify(data.holder));
+  } catch {}
 }
 </script>
 
