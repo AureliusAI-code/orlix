@@ -46,17 +46,7 @@ button,input,select{font-family:var(--font)}
   padding:5px 10px;font-size:.7rem;font-weight:600;color:var(--t2);
 }
 .chain-dot{width:6px;height:6px;border-radius:50%;background:var(--blue);box-shadow:0 0 5px rgba(59,130,246,.6)}
-.wallet-btn{
-  display:flex;align-items:center;gap:7px;
-  background:var(--s2);border:1px solid var(--b1);border-radius:8px;
-  padding:6px 13px;font-size:.75rem;font-weight:600;color:var(--t2);
-  cursor:pointer;transition:all .15s;white-space:nowrap;
-}
-.wallet-btn:hover{border-color:var(--b2);color:var(--t1)}
-.wallet-btn.connected{border-color:rgba(240,120,48,.35);color:var(--t1);background:var(--orange-d)}
-.wallet-btn.connected:hover{border-color:var(--orange);background:rgba(240,120,48,.18)}
-.wallet-dot{width:6px;height:6px;border-radius:50%;background:var(--t3);flex-shrink:0;transition:.15s}
-.wallet-btn.connected .wallet-dot{background:#4ADE80;box-shadow:0 0 5px rgba(74,222,128,.5)}
+/* wallet widget styles are injected by /wallet-dist/wallet.js */
 
 /* ── LAYOUT ── */
 .layout{
@@ -414,9 +404,7 @@ input[type=range]:disabled{opacity:.4;cursor:not-allowed}
   </div>
   <div class="nav-right">
     <div class="chain-pill"><div class="chain-dot"></div>Base</div>
-    <button id="wallet-btn" class="wallet-btn" onclick="walletConnect()">
-      <span class="wallet-dot"></span>Connect Wallet
-    </button>
+    <div id="orlix-wallet" style="display:flex;align-items:center"></div>
   </div>
 </nav>
 
@@ -1009,65 +997,7 @@ function dismissFeatGate() {
   try { sessionStorage.setItem('fg_dismissed','1'); } catch {}
 }
 
-// ── wallet connect (native window.ethereum) ───────────────────────────────────
-function updateWalletBtn() {
-  const btn = document.getElementById('wallet-btn');
-  if (!btn) return;
-  if (walletAddress) {
-    btn.innerHTML = `<span class="wallet-dot"></span>${walletAddress.slice(0,6)}…${walletAddress.slice(-4)}`;
-    btn.classList.add('connected');
-  } else {
-    btn.innerHTML = '<span class="wallet-dot"></span>Connect Wallet';
-    btn.classList.remove('connected');
-  }
-}
-
-async function walletConnect() {
-  if (walletAddress) {
-    walletAddress = null;
-    updateWalletBtn();
-    window.dispatchEvent(new CustomEvent('orlix:wallet:disconnected'));
-    return;
-  }
-  if (!window.ethereum) {
-    alert('No wallet detected. Please install MetaMask or use a Web3 browser.');
-    return;
-  }
-  try {
-    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-    if (accounts[0]) {
-      walletAddress = accounts[0];
-      updateWalletBtn();
-      window.dispatchEvent(new CustomEvent('orlix:wallet:connected', { detail: { address: accounts[0] } }));
-    }
-  } catch (e) {
-    console.error('Wallet connect failed:', e);
-  }
-}
-
-// Sync if wallet already connected
-if (window.ethereum) {
-  window.ethereum.request({ method: 'eth_accounts' }).then(accounts => {
-    if (accounts[0]) {
-      walletAddress = accounts[0];
-      updateWalletBtn();
-      window.dispatchEvent(new CustomEvent('orlix:wallet:connected', { detail: { address: accounts[0] } }));
-    }
-  }).catch(()=>{});
-  window.ethereum.on('accountsChanged', accounts => {
-    if (accounts[0]) {
-      walletAddress = accounts[0];
-      updateWalletBtn();
-      window.dispatchEvent(new CustomEvent('orlix:wallet:connected', { detail: { address: accounts[0] } }));
-    } else {
-      walletAddress = null;
-      updateWalletBtn();
-      window.dispatchEvent(new CustomEvent('orlix:wallet:disconnected'));
-    }
-  });
-}
-
-// ── wallet events ─────────────────────────────────────────────────────────────
+// ── wallet events (dispatched by /wallet-dist/wallet.js) ─────────────────────
 window.addEventListener('orlix:wallet:connected', (e) => {
   const addr = e.detail?.address;
   if (!addr) return;
@@ -1094,6 +1024,6 @@ window.addEventListener('orlix:wallet:disconnected', () => {
 })();
 </script>
 
-
+<script src="/wallet-dist/wallet.js" defer></script>
 </body>
 </html>

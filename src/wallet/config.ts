@@ -10,35 +10,28 @@ import { base } from 'wagmi/chains'
 
 // ── WalletConnect Project ID ──────────────────────────────────────────────────
 // Required for WalletConnect QR / mobile deeplinks.
-// 1. Go to https://cloud.walletconnect.com and create a free project
-// 2. Add VITE_WALLETCONNECT_PROJECT_ID to your Vercel environment variables
+// 1. Go to https://cloud.walletconnect.com → create a free project
+// 2. Add VITE_WALLETCONNECT_PROJECT_ID to Vercel environment variables
 // MetaMask and Coinbase Wallet work even without this ID.
 const projectId = import.meta.env.VITE_WALLETCONNECT_PROJECT_ID ?? ''
 
-if (!projectId && import.meta.env.DEV) {
-  console.warn(
-    '[OrlixWallet] VITE_WALLETCONNECT_PROJECT_ID is not set.\n' +
-    'WalletConnect QR / mobile links will not work.\n' +
-    'Get a free ID at https://cloud.walletconnect.com'
-  )
-}
+const wallets = projectId
+  ? [
+      { groupName: 'Popular', wallets: [metaMaskWallet, coinbaseWallet, walletConnectWallet] },
+      { groupName: 'More',    wallets: [rainbowWallet, injectedWallet] },
+    ]
+  : [
+      { groupName: 'Popular', wallets: [metaMaskWallet, coinbaseWallet, injectedWallet] },
+      { groupName: 'More',    wallets: [rainbowWallet] },
+    ]
 
 export const wagmiConfig = getDefaultConfig({
   appName: 'Orlix AI',
   appDescription: 'AI-powered crypto assistant on Base',
-  appUrl: 'https://orlix.ai',
-  appIcon: 'https://orlix.ai/orlix-logo.jpeg',
-  projectId,
+  appUrl: 'https://www.orlixai.xyz',
+  appIcon: 'https://www.orlixai.xyz/orlix-logo.jpeg',
+  projectId: projectId || 'dummy', // wagmi requires a non-empty string; WalletConnect won't work without a real ID
   chains: [base],
-  wallets: [
-    {
-      groupName: 'Popular',
-      wallets: [metaMaskWallet, coinbaseWallet, walletConnectWallet],
-    },
-    {
-      groupName: 'More',
-      wallets: [rainbowWallet, injectedWallet],
-    },
-  ],
+  wallets,
   ssr: false,
 })
