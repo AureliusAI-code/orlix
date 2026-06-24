@@ -892,15 +892,6 @@ select.inp{cursor:pointer}
           <div class="skill-grid" id="skillGrid-prod"></div>
         </div>
       </div>
-      <div class="panel" style="border-color:rgba(96,165,250,.22);background:linear-gradient(135deg,var(--bg-panel) 0%,rgba(96,165,250,.04) 100%)">
-        <div class="panel-hd" style="border-color:rgba(96,165,250,.18)">
-          <span class="ttl">⬡ B20 Token Standard</span>
-          <span style="font-size:.68rem;color:#60A5FA;background:rgba(96,165,250,.1);border:1px solid rgba(96,165,250,.2);padding:2px 7px;border-radius:3px;margin-left:8px">Base Beryl · Coming Soon</span>
-        </div>
-        <div class="panel-body">
-          <div class="skill-grid" id="skillGrid-b20"></div>
-        </div>
-      </div>
     </div>
 
     <!-- ═══ AEON MEMORY ═══ -->
@@ -981,8 +972,7 @@ select.inp{cursor:pointer}
 
           <div style="border-top:1px solid rgba(255,255,255,.06);padding-top:18px;margin-top:4px">
             <div class="setting-label" style="margin-bottom:6px">Connection Diagnostic</div>
-            <button class="btn" id="testPingBtn" style="font-size:.78rem">Test /api/b20</button>
-            <button class="btn" id="testChatBtn" style="font-size:.78rem;margin-left:8px">Test /api/chat</button>
+            <button class="btn" id="testChatBtn" style="font-size:.78rem">Test /api/chat</button>
             <div id="diagResult" style="margin-top:10px;font-size:.74rem;font-family:'JetBrains Mono',monospace;line-height:1.6;white-space:pre-wrap;color:var(--dim)"></div>
           </div>
         </div>
@@ -1444,12 +1434,6 @@ const AEON_SKILLS = {
     { icon:'', name:'Summarizer', desc:'Summarize any URL or pasted text', tag:'fetch_webpage', prompt:'Summarize this in bullet points, highlighting the key takeaways:\n\n[URL or paste text here]' },
     { icon:'', name:'Goal Planner', desc:'Break down a goal into actionable steps', tag:'reasoning', prompt:'I want to achieve this goal. Create a detailed action plan with milestones:\n\nGoal: [YOUR GOAL]' },
     { icon:'', name:'Translate & Adapt', desc:'Translate and culturally adapt content', tag:'reasoning', prompt:'Translate this to [TARGET LANGUAGE] and culturally adapt it for that audience:\n\n[TEXT TO TRANSLATE]' },
-  ],
-  b20: [
-    { icon:'', name:'Deploy B20 Token', desc:'Step-by-step guide to deploy a B20 token on Base', tag:'b20 + web_search', prompt:'I want to deploy a B20 token on Base (Beryl upgrade). Guide me step by step:\n\nToken name: [NAME]\nSymbol: [SYMBOL]\nVariant: [Asset or Stablecoin]\nSupply cap: [AMOUNT or none]\nDecimals: [NUMBER]\n\nInclude: deployment steps, role setup, and how to verify on Basescan.' },
-    { icon:'', name:'B20 vs ERC-20', desc:'Compare B20 and ERC-20 — when to use which', tag:'web_search + fetch', prompt:'Compare B20 (Base native token standard) vs standard ERC-20. Search for the latest docs and explain: key differences, performance, compliance features, and when I should choose B20 over ERC-20.' },
-    { icon:'', name:'B20 Stablecoin Setup', desc:'Deploy a compliant fiat-backed stablecoin with B20', tag:'b20', prompt:'Walk me through deploying a B20 Stablecoin variant on Base:\n\nCurrency: [USD/EUR/etc]\nIssuer name: [NAME]\n\nInclude: freeze/seize setup, transfer policies, role assignments, and compliance checklist.' },
-    { icon:'', name:'Audit B20 Roles', desc:'Check role assignments and policies for a B20 token', tag:'base_call_contract + web_search', prompt:'Audit the roles and transfer policies for this B20 token on Base:\n\nToken address: [ADDRESS]\n\nCheck: who has mint/burn/pause roles, what transfer policies are active, and flag any security concerns.' },
   ],
 };
 
@@ -2099,18 +2083,6 @@ document.getElementById('bkSaveProxy').addEventListener('click',()=>{
   saved.style.display='';
   setTimeout(()=>saved.style.display='none',2500);
   updateBanner();
-});
-
-document.getElementById('testPingBtn').addEventListener('click', async()=>{
-  const el = document.getElementById('diagResult');
-  el.style.color='var(--dim)';
-  el.textContent = 'Testing /api/b20...';
-  try{
-    const r = await fetch('/api/b20?action=info');
-    const data = await r.json();
-    if(r.ok){ el.style.color='var(--green)'; el.textContent='✓ /api/b20 OK ('+r.status+')\nstandard: '+data.standard+', network: '+data.network+'\n\nVercel functions are deployed and working!'; }
-    else{ el.style.color='var(--amber)'; el.textContent='✗ /api/b20 returned '+r.status; }
-  }catch(e){ el.style.color='#ff6b6b'; el.textContent='✗ /api/b20 failed: '+e.message+'\n\nVercel function not deployed. Redeploy on Vercel dashboard.'; }
 });
 
 document.getElementById('testChatBtn').addEventListener('click', async()=>{
