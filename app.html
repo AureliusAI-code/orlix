@@ -2183,7 +2183,8 @@ function renderTxCard(id, tx) {
     rows += `<div class="tx-card-row"><span class="tx-card-label">Value</span><span class="tx-card-val">${ethVal} ETH</span></div>`;
   }
   if (tx.to) rows += `<div class="tx-card-row"><span class="tx-card-label">To</span><span class="tx-card-val">${esc(tx.to)}</span></div>`;
-  if (tx.gas_fee_usd) rows += `<div class="tx-card-row"><span class="tx-card-label">Gas fee</span><span class="tx-card-val">~$${esc(String(tx.gas_fee_usd))}</span></div>`;
+  if (tx.gas_fee_eth) rows += `<div class="tx-card-row"><span class="tx-card-label">Gas fee</span><span class="tx-card-val">~${esc(String(tx.gas_fee_eth))} ETH</span></div>`;
+  else if (tx.gas_fee_usd) rows += `<div class="tx-card-row"><span class="tx-card-label">Gas fee</span><span class="tx-card-val">~$${esc(String(tx.gas_fee_usd))}</span></div>`;
   rows += `<div class="tx-card-row"><span class="tx-card-label">Network</span><span class="tx-card-val">Base Mainnet (${chainId})</span></div>`;
   const stepCount = txList.length > 1 ? ` · ${txList.length} txns` : '';
 
@@ -2233,8 +2234,15 @@ async function signTx(txId) {
     for (let i = 0; i < txList.length; i++) {
       const step = txList[i];
       btn.textContent = txList.length > 1 ? `Signing ${i + 1}/${txList.length}…` : 'Sign in wallet…';
-      const txParams = { from, to: step.to, data: step.data || '0x', value: step.value || '0x0' };
-      if (step.gasLimit) txParams.gas = '0x' + parseInt(step.gasLimit).toString(16);
+      // Normalize value: Uniswap returns decimal strings, wallet needs hex
+      const rawVal = step.value || '0x0';
+      const hexVal = rawVal === '0x0' || rawVal === '0' || rawVal === '' ? '0x0'
+        : rawVal.startsWith('0x') ? rawVal
+        : '0x' + BigInt(rawVal).toString(16);
+      const txParams = { from, to: step.to, data: step.data || '0x', value: hexVal };
+      // Handle both gasLimit and gas field names from different protocols
+      const gasRaw = step.gasLimit ?? step.gas ?? null;
+      if (gasRaw) txParams.gas = gasRaw.toString().startsWith('0x') ? gasRaw : '0x' + parseInt(gasRaw).toString(16);
       lastHash = await window.ethereum.request({ method: 'eth_sendTransaction', params: [txParams] });
     }
 

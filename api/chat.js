@@ -618,13 +618,16 @@ async function executeTool(name, input) {
         });
         if (!sr.ok) { const t = await sr.text(); return { error: `Uniswap swap prepare failed: ${sr.status}`, detail: t.slice(0, 500) }; }
         const swapData = await sr.json();
+        // gasFee from Uniswap is in wei — convert to ETH for display
+        const gasFeeWei = swapData.gasFee ?? swapData.gasFeeUSD ?? null;
+        const gas_fee_eth = gasFeeWei ? (parseFloat(gasFeeWei) / 1e18).toFixed(6) : null;
         return {
           __action:      'sign_transaction',
           protocol:      'Uniswap',
           description:   `Swap ${input.amount_in} ${input.token_in === '0x0000000000000000000000000000000000000000' ? 'ETH' : input.token_in} on Uniswap (Base)`,
           transactions:  [swapData.swap ?? swapData.transaction ?? swapData].filter(Boolean),
           amount_out_raw: quote.output?.amount ?? quote.outputAmount ?? quote.quote?.outputAmount ?? null,
-          gas_fee_usd:   swapData.gasFee ?? swapData.gasFeeUSD ?? null,
+          gas_fee_eth,
           chain_id:      8453,
           wallet:        input.wallet_address
         };
