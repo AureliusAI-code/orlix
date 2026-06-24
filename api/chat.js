@@ -134,16 +134,16 @@ const ALL_TOOLS = [
   },
   {
     name: 'uniswap_quote',
-    description: 'Get a real swap quote from Uniswap on Base. Returns best price, estimated output amount, gas fee, and price impact for any token pair.',
+    description: 'Get a swap price quote on Base via Uniswap V3. Queries on-chain liquidity pools (all fee tiers: 0.01%, 0.05%, 0.3%, 1%). Supports single-hop and 2-hop routes through WETH.',
     input_schema: {
       type: 'object',
       properties: {
-        token_in:          { type: 'string', description: 'Input token address. Use 0x0000000000000000000000000000000000000000 for native ETH' },
-        token_out:         { type: 'string', description: 'Output token address (e.g. 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913 for USDC)' },
+        token_in:          { type: 'string', description: 'Input token contract address on Base. Use 0x0000000000000000000000000000000000000000 for native ETH. Always use the actual contract address, not a symbol.' },
+        token_out:         { type: 'string', description: 'Output token contract address on Base. Use 0x0000000000000000000000000000000000000000 for native ETH. Common: USDC=0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913, WETH=0x4200000000000000000000000000000000000006' },
         amount_in:         { type: 'string', description: 'Input amount in human-readable units, e.g. "0.1" for 0.1 ETH or "100" for 100 USDC' },
-        token_in_decimals: { type: 'number', description: 'Decimals of input token: 18 for ETH/WETH, 6 for USDC. Default 18.' }
+        token_in_decimals: { type: 'number', description: 'Decimals of input token. ETH/WETH/most tokens=18, USDC/USDT=6. REQUIRED for correct amounts — call base_erc20_info first if unsure.' }
       },
-      required: ['token_in', 'token_out', 'amount_in']
+      required: ['token_in', 'token_out', 'amount_in', 'token_in_decimals']
     }
   },
   {
@@ -181,17 +181,17 @@ const ALL_TOOLS = [
   },
   {
     name: 'uniswap_prepare_swap',
-    description: 'Prepare an unsigned swap transaction on Uniswap Base. Returns the exact calldata the user must sign with their wallet to execute the swap. Always call uniswap_quote first to confirm the price.',
+    description: 'Prepare a swap transaction via Uniswap V3 SwapRouter on Base. Finds the best fee tier automatically. Supports ETH, USDC, WETH, and any token with Uniswap V3 liquidity on Base. For ERC20 input tokens, returns 2 transactions (approve + swap) — user must sign BOTH.',
     input_schema: {
       type: 'object',
       properties: {
-        token_in:          { type: 'string', description: 'Input token address. Use 0x0000000000000000000000000000000000000000 for native ETH' },
-        token_out:         { type: 'string', description: 'Output token address' },
-        amount_in:         { type: 'string', description: 'Input amount in human-readable units, e.g. "0.1" for 0.1 ETH' },
-        token_in_decimals: { type: 'number', description: 'Decimals of input token: 18 for ETH/WETH, 6 for USDC. Default 18.' },
-        wallet_address:    { type: 'string', description: 'User wallet address that will sign and execute the swap (0x...)' }
+        token_in:          { type: 'string', description: 'Input token contract address on Base. Use 0x0000000000000000000000000000000000000000 for native ETH. Must be a real Base contract address.' },
+        token_out:         { type: 'string', description: 'Output token contract address on Base. Use 0x0000000000000000000000000000000000000000 for native ETH. Common: USDC=0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913, WETH=0x4200000000000000000000000000000000000006' },
+        amount_in:         { type: 'string', description: 'Input amount in human-readable units, e.g. "0.1" for 0.1 ETH or "100" for 100 USDC' },
+        token_in_decimals: { type: 'number', description: 'CRITICAL — decimals of input token. Wrong value = wrong amount sent. ETH/WETH/most tokens=18, USDC/USDT=6. Use base_erc20_info to check if unsure.' },
+        wallet_address:    { type: 'string', description: 'User wallet address that will sign the transaction (0x...)' }
       },
-      required: ['token_in', 'token_out', 'amount_in', 'wallet_address']
+      required: ['token_in', 'token_out', 'amount_in', 'token_in_decimals', 'wallet_address']
     }
   },
   {
@@ -462,52 +462,70 @@ async function executeTool(name, input) {
         return { tokens, count: tokens.length, source: 'Flaunch', chain: 'Base' };
       }
       case 'uniswap_quote': {
+        const WETH     = '0x4200000000000000000000000000000000000006';
+        const QUOTER   = '0x3d4e44Eb1374240CE5F1B871ab261CD16335B76a';
+        const ETH_ZERO = '0x0000000000000000000000000000000000000000';
+
         const decimalsIn = input.token_in_decimals ?? 18;
         const amtFloat   = parseFloat(input.amount_in);
         if (isNaN(amtFloat) || amtFloat <= 0) return { error: 'Invalid amount_in' };
         const amountIn   = BigInt(Math.round(amtFloat * Math.pow(10, decimalsIn))).toString();
-        const body = {
-          type: 'EXACT_INPUT',
-          amount: amountIn,
-          tokenIn: input.token_in,
-          tokenOut: input.token_out,
-          tokenInChainId: 8453,
-          tokenOutChainId: 8453,
-          swapper: '0x0000000000000000000000000000000000000000',
-          autoSlippage: 'DEFAULT',
-          protocols: ['V4', 'V3', 'V2'],
-          routingPreference: 'BEST_PRICE'
+
+        const isEthIn  = input.token_in  === ETH_ZERO || input.token_in?.toLowerCase()  === 'eth';
+        const isEthOut = input.token_out === ETH_ZERO || input.token_out?.toLowerCase() === 'eth';
+        const tIn  = isEthIn  ? WETH : input.token_in;
+        const tOut = isEthOut ? WETH : input.token_out;
+
+        const a32 = a => a.replace('0x','').toLowerCase().padStart(64,'0');
+        const n32 = n => BigInt(n).toString(16).padStart(64,'0');
+
+        // quoteExactInputSingle on QuoterV2
+        const quoteSingle = async (ti, to, fee) => {
+          const data = '0xc6a5026a' + a32(ti) + a32(to) + n32(amountIn) + n32(fee) + n32(0);
+          const res = await rpc('eth_call', [{ to: QUOTER, data }, 'latest']);
+          if (!res || res === '0x' || res.length < 66) return null;
+          const out = BigInt('0x' + res.slice(2, 66));
+          return out > 0n ? out.toString() : null;
         };
-        const r = await fetch('https://trade-api.gateway.uniswap.org/v1/quote', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-api-key': 'NeoYO3V50_koJAipDEalYWbMO1XMaFPAQmpOm6_Npo0',
-            'x-permit2-disabled': 'true'
-          },
-          body: JSON.stringify(body),
-          signal: AbortSignal.timeout(12000)
-        });
-        if (!r.ok) {
-          const err = await r.text().catch(() => '');
-          return { error: `Uniswap API ${r.status}`, detail: err.slice(0, 300) };
+
+        let bestOut = null;
+        for (const fee of [500, 3000, 10000, 100]) {
+          try {
+            const out = await quoteSingle(tIn, tOut, fee);
+            if (out && (!bestOut || BigInt(out) > BigInt(bestOut))) bestOut = out;
+          } catch {}
         }
-        const d = await r.json();
-        // Handle multiple possible response shapes from Uniswap API
-        const outAmt = d.output?.amount ?? d.outputAmount ?? d.quote?.outputAmount ?? d.quote?.output?.amount ?? null;
-        const gasFee = d.gasFeeUSD ?? d.gasFee?.usd ?? d.gasUseEstimateUSD ?? null;
-        const impact = d.priceImpact ?? d.quote?.priceImpact ?? null;
+
+        // 2-hop via WETH if no direct pool
+        if (!bestOut && tIn !== WETH && tOut !== WETH) {
+          for (const f1 of [500, 3000]) {
+            for (const f2 of [500, 3000]) {
+              try {
+                const path =
+                  tIn.replace('0x','').toLowerCase() + f1.toString(16).padStart(6,'0') +
+                  WETH.replace('0x','').toLowerCase() + f2.toString(16).padStart(6,'0') +
+                  tOut.replace('0x','').toLowerCase();
+                const data = '0xcdca1753' +
+                  '0000000000000000000000000000000000000000000000000000000000000040' +
+                  n32(amountIn) +
+                  '0000000000000000000000000000000000000000000000000000000000000042' +
+                  path.padEnd(Math.ceil(66/32)*64,'0');
+                const res = await rpc('eth_call', [{ to: QUOTER, data }, 'latest']);
+                if (res && res !== '0x' && res.length >= 66) {
+                  const out = BigInt('0x' + res.slice(2, 66));
+                  if (out > 0n && (!bestOut || out > BigInt(bestOut))) bestOut = out.toString();
+                }
+              } catch {}
+            }
+          }
+        }
+
+        if (!bestOut) return { error: 'No Uniswap V3 liquidity found for this token pair on Base.' };
         return {
-          token_in:       input.token_in,
-          token_out:      input.token_out,
-          amount_in:      input.amount_in,
-          amount_out_raw: outAmt,
-          route_type:     d.routeType ?? d.routing ?? null,
-          price_impact:   impact,
-          gas_fee_usd:    gasFee,
-          note:           'amount_out_raw is in the token\'s smallest unit. Divide by 10^decimals for human-readable. USDC has 6 decimals, ETH/WETH has 18.',
-          _raw_keys:      Object.keys(d).join(','),
-          chain:          'Base'
+          token_in: input.token_in, token_out: input.token_out, amount_in: input.amount_in,
+          amount_out_raw: bestOut,
+          note: 'amount_out_raw in smallest unit. USDC=6 decimals, ETH/WETH=18.',
+          source: 'Uniswap V3', chain: 'Base'
         };
       }
       case 'moonwell_markets': {
@@ -579,75 +597,124 @@ async function executeTool(name, input) {
         return result;
       }
       case 'uniswap_prepare_swap': {
+        const WETH     = '0x4200000000000000000000000000000000000006';
+        const QUOTER   = '0x3d4e44Eb1374240CE5F1B871ab261CD16335B76a';
+        const ROUTER   = '0x2626664c2603336E57B271c5C0b26F421741e481';
+        const ETH_ZERO = '0x0000000000000000000000000000000000000000';
+
         const decimalsIn = input.token_in_decimals ?? 18;
         const amtFloat   = parseFloat(input.amount_in);
         if (isNaN(amtFloat) || amtFloat <= 0) return { error: 'Invalid amount_in' };
         const amountIn   = BigInt(Math.round(amtFloat * Math.pow(10, decimalsIn))).toString();
 
-        const ETH_ZERO   = '0x0000000000000000000000000000000000000000';
-        const WETH_BASE  = '0x4200000000000000000000000000000000000006';
-        const isEthIn    = input.token_in === ETH_ZERO || input.token_in?.toLowerCase() === 'eth';
-        const tokenIn    = isEthIn ? WETH_BASE : input.token_in;
+        const isEthIn  = input.token_in  === ETH_ZERO || input.token_in?.toLowerCase()  === 'eth';
+        const isEthOut = input.token_out === ETH_ZERO || input.token_out?.toLowerCase() === 'eth';
+        const tokenIn  = isEthIn  ? WETH : input.token_in;
+        const tokenOut = isEthOut ? WETH : input.token_out;
 
-        // Step 1: get quote for expected output amount
-        const uniHeaders = { 'Content-Type': 'application/json', 'x-api-key': 'NeoYO3V50_koJAipDEalYWbMO1XMaFPAQmpOm6_Npo0' };
-        const qr = await fetch('https://trade-api.gateway.uniswap.org/v1/quote', {
-          method: 'POST', headers: uniHeaders,
-          body: JSON.stringify({
-            type: 'EXACT_INPUT', amount: amountIn,
-            tokenIn: input.token_in, tokenOut: input.token_out,  // keep zero address for ETH — Trade API expects it
-            tokenInChainId: 8453, tokenOutChainId: 8453,
-            swapper: input.wallet_address,
-            protocols: ['V4', 'V3', 'V2'], routingPreference: 'BEST_PRICE'
-          }),
-          signal: AbortSignal.timeout(12000)
-        });
-        if (!qr.ok) { const t = await qr.text(); return { error: `Uniswap quote failed: ${qr.status}`, detail: t.slice(0, 400) }; }
-        const quote = await qr.json();
-        // Try all known Uniswap API response shapes for output amount
-        const outAmt = quote.output?.amount
-          ?? quote.outputAmount
-          ?? quote.quote?.output?.amount
-          ?? quote.quote?.outputAmount
-          ?? null;
-        if (!outAmt) return { error: 'Quote returned no output amount', _raw_keys: Object.keys(quote), _quote_keys: Object.keys(quote.quote ?? {}) };
+        const a32 = a => a.replace('0x','').toLowerCase().padStart(64,'0');
+        const n32 = n => BigInt(n).toString(16).padStart(64,'0');
 
-        // Step 2: build SwapRouter02 calldata directly — bypasses /v1/swap reliability issues
-        // SwapRouter02 on Base: 0x2626664c2603336E57B271c5C0b26F421741e481
-        // exactInputSingle(tokenIn,tokenOut,fee,recipient,amountIn,amountOutMin,sqrtPriceLimit)
-        const ROUTER    = '0x2626664c2603336E57B271c5C0b26F421741e481';
-        // Extract fee tier from any known quote response shape; default 500 (0.05%) for ETH/USDC
-        const route0    = quote.route?.[0]?.[0] ?? quote.quote?.route?.[0]?.[0] ?? {};
-        const fee       = Number(route0.fee ?? route0.feeTier ?? 500);
-        const outMin    = BigInt(Math.floor(Number(outAmt) * 0.95)); // 5% slippage
-        const pad32     = h => h.replace('0x','').toLowerCase().padStart(64,'0');
-        const calldata  = '0x04e45aaf' +   // exactInputSingle selector
-          pad32(tokenIn) +
-          pad32(input.token_out) +
-          pad32(Number(fee).toString(16)) +
-          pad32(input.wallet_address) +
-          pad32(BigInt(amountIn).toString(16)) +
-          pad32(outMin.toString(16)) +
-          pad32('0');  // sqrtPriceLimitX96 = 0
-
-        const txObj = {
-          to:       ROUTER,
-          data:     calldata,
-          value:    isEthIn ? amountIn : '0',
-          gas:      '300000',
-          chainId:  8453
+        // Find best fee tier via QuoterV2
+        const quoteSingle = async (ti, to, fee) => {
+          const data = '0xc6a5026a' + a32(ti) + a32(to) + n32(amountIn) + n32(fee) + n32(0);
+          const res = await rpc('eth_call', [{ to: QUOTER, data }, 'latest']);
+          if (!res || res === '0x' || res.length < 66) return null;
+          const out = BigInt('0x' + res.slice(2, 66));
+          return out > 0n ? out.toString() : null;
         };
 
-        const tokenInLabel  = isEthIn ? 'ETH' : input.token_in;
+        let bestOut = null, bestFee = null, useHop = false, bestF1 = null, bestF2 = null;
+
+        for (const fee of [500, 3000, 10000, 100]) {
+          try {
+            const out = await quoteSingle(tokenIn, tokenOut, fee);
+            if (out && (!bestOut || BigInt(out) > BigInt(bestOut))) {
+              bestOut = out; bestFee = fee; useHop = false;
+            }
+          } catch {}
+        }
+
+        // 2-hop via WETH if no direct pool
+        if (!bestOut && tokenIn !== WETH && tokenOut !== WETH) {
+          for (const f1 of [500, 3000]) {
+            for (const f2 of [500, 3000]) {
+              try {
+                const path =
+                  tokenIn.replace('0x','').toLowerCase() + f1.toString(16).padStart(6,'0') +
+                  WETH.replace('0x','').toLowerCase()    + f2.toString(16).padStart(6,'0') +
+                  tokenOut.replace('0x','').toLowerCase();
+                const data = '0xcdca1753' +
+                  '0000000000000000000000000000000000000000000000000000000000000040' +
+                  n32(amountIn) +
+                  '0000000000000000000000000000000000000000000000000000000000000042' +
+                  path.padEnd(Math.ceil(66/32)*64,'0');
+                const res = await rpc('eth_call', [{ to: QUOTER, data }, 'latest']);
+                if (res && res !== '0x' && res.length >= 66) {
+                  const out = BigInt('0x' + res.slice(2, 66));
+                  if (out > 0n && (!bestOut || out > BigInt(bestOut))) {
+                    bestOut = out.toString(); useHop = true; bestF1 = f1; bestF2 = f2;
+                  }
+                }
+              } catch {}
+            }
+          }
+        }
+
+        if (!bestOut) return { error: 'No Uniswap V3 liquidity found for this token pair on Base.' };
+
+        const amountOutMin = (BigInt(bestOut) * 99n / 100n).toString();
+
+        // Build calldata for SwapRouter02
+        let calldata;
+        if (!useHop) {
+          // exactInputSingle (no deadline) — selector 0x04e45aaf
+          calldata = '0x04e45aaf' +
+            a32(tokenIn) + a32(tokenOut) + n32(bestFee) +
+            a32(input.wallet_address) +
+            n32(amountIn) + n32(amountOutMin) + n32(0);
+        } else {
+          // exactInput (no deadline) — selector 0xb858183f
+          const path =
+            tokenIn.replace('0x','').toLowerCase() + bestF1.toString(16).padStart(6,'0') +
+            WETH.replace('0x','').toLowerCase()    + bestF2.toString(16).padStart(6,'0') +
+            tokenOut.replace('0x','').toLowerCase();
+          calldata = '0xb858183f' +
+            '0000000000000000000000000000000000000000000000000000000000000020' +
+            '0000000000000000000000000000000000000000000000000000000000000080' +
+            a32(input.wallet_address) + n32(amountIn) + n32(amountOutMin) +
+            '0000000000000000000000000000000000000000000000000000000000000042' +
+            path.padEnd(Math.ceil(66/32)*64,'0');
+        }
+
+        const transactions = [];
+        if (!isEthIn) {
+          transactions.push({
+            to:      input.token_in,
+            data:    '0x095ea7b3' + ROUTER.replace('0x','').toLowerCase().padStart(64,'0') + 'f'.repeat(64),
+            value:   '0',
+            gas:     '100000',
+            chainId: 8453
+          });
+        }
+        transactions.push({
+          to:      ROUTER,
+          data:    calldata,
+          value:   isEthIn ? amountIn : '0',
+          gas:     useHop ? '350000' : '250000',
+          chainId: 8453
+        });
+
+        const tokenInLabel = isEthIn ? 'ETH' : input.token_in;
+        const txCount = transactions.length > 1 ? ' (2 txns: approve then swap — sign both)' : '';
         return {
           __action:       'sign_transaction',
-          protocol:       'Uniswap v3',
-          description:    `Swap ${input.amount_in} ${tokenInLabel} on Uniswap (Base)`,
-          transactions:   [txObj],
-          amount_out_raw: outAmt,
+          protocol:       'Uniswap V3',
+          description:    `Swap ${input.amount_in} ${tokenInLabel} via Uniswap V3 (Base)${txCount}`,
+          transactions,
+          amount_out_raw: bestOut,
           chain_id:       8453,
-          wallet:         input.wallet_address,
-          _debug:         { router: ROUTER, fee_tier: fee, out_min: outMin.toString(), value: txObj.value }
+          wallet:         input.wallet_address
         };
       }
       case 'flaunch_prepare_launch': {
