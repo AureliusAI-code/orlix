@@ -79,7 +79,7 @@ contract ORLIXStaking {
     function unstake() external {
         StakeInfo storage s = stakes[msg.sender];
         require(s.amount > 0,                    "Nothing staked");
-        require(block.timestamp >= s.unlocksAt,  "Still locked — 30 day lock active");
+        require(block.timestamp >= s.unlocksAt,  "Still locked - 30 day lock active");
 
         uint256 amount = s.amount;
         s.amount    = 0;
