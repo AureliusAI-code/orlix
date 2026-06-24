@@ -493,15 +493,20 @@ async function executeTool(name, input) {
           return { error: `Uniswap API ${r.status}`, detail: err.slice(0, 300) };
         }
         const d = await r.json();
+        // Handle multiple possible response shapes from Uniswap API
+        const outAmt = d.output?.amount ?? d.outputAmount ?? d.quote?.outputAmount ?? d.quote?.output?.amount ?? null;
+        const gasFee = d.gasFeeUSD ?? d.gasFee?.usd ?? d.gasUseEstimateUSD ?? null;
+        const impact = d.priceImpact ?? d.quote?.priceImpact ?? null;
         return {
           token_in:       input.token_in,
           token_out:      input.token_out,
           amount_in:      input.amount_in,
-          amount_out_raw: d.output?.amount,
-          route_type:     d.routeType,
-          price_impact:   d.priceImpact,
-          gas_fee_usd:    d.gasFeeUSD,
-          note:           'amount_out_raw is in the token\'s smallest unit (wei/base units). Divide by 10^decimals for human-readable.',
+          amount_out_raw: outAmt,
+          route_type:     d.routeType ?? d.routing ?? null,
+          price_impact:   impact,
+          gas_fee_usd:    gasFee,
+          note:           'amount_out_raw is in the token\'s smallest unit. Divide by 10^decimals for human-readable. USDC has 6 decimals, ETH/WETH has 18.',
+          _raw_keys:      Object.keys(d).join(','),
           chain:          'Base'
         };
       }
@@ -599,27 +604,31 @@ async function executeTool(name, input) {
           method: 'POST', headers: uniHeaders,
           body: JSON.stringify(quoteBody), signal: AbortSignal.timeout(12000)
         });
-        if (!qr.ok) { const t = await qr.text(); return { error: `Uniswap quote failed: ${qr.status}`, detail: t.slice(0, 200) }; }
+        if (!qr.ok) { const t = await qr.text(); return { error: `Uniswap quote failed: ${qr.status}`, detail: t.slice(0, 400) }; }
         const quote = await qr.json();
-        // Remove null permit fields before calling /swap
-        const swapBody = { ...quote };
+        // Build swap body: pass full quote, strip null permit fields, set swapper
+        const swapBody = JSON.parse(JSON.stringify(quote));
         delete swapBody.permitData;
         delete swapBody.permitTransaction;
         delete swapBody.signature;
-        swapBody.swapper = input.wallet_address;
+        if (!swapBody.swapper) swapBody.swapper = input.wallet_address;
+        // Some API versions nest under quote.quote — flatten if needed
+        const swapPayload = swapBody.quote ? { ...swapBody.quote, ...swapBody } : swapBody;
+        delete swapPayload.quote;
+        swapPayload.swapper = input.wallet_address;
         const sr = await fetch('https://trade-api.gateway.uniswap.org/v1/swap', {
           method: 'POST', headers: uniHeaders,
-          body: JSON.stringify(swapBody), signal: AbortSignal.timeout(12000)
+          body: JSON.stringify(swapPayload), signal: AbortSignal.timeout(12000)
         });
-        if (!sr.ok) { const t = await sr.text(); return { error: `Uniswap swap prepare failed: ${sr.status}`, detail: t.slice(0, 200) }; }
+        if (!sr.ok) { const t = await sr.text(); return { error: `Uniswap swap prepare failed: ${sr.status}`, detail: t.slice(0, 400) }; }
         const swapData = await sr.json();
         return {
           __action:      'sign_transaction',
           protocol:      'Uniswap',
           description:   `Swap ${input.amount_in} ${input.token_in === '0x0000000000000000000000000000000000000000' ? 'ETH' : input.token_in} on Uniswap (Base)`,
-          transactions:  [swapData.swap],
-          amount_out_raw: quote.output?.amount,
-          gas_fee_usd:   swapData.gasFee,
+          transactions:  [swapData.swap ?? swapData.transaction ?? swapData].filter(Boolean),
+          amount_out_raw: quote.output?.amount ?? quote.outputAmount ?? quote.quote?.outputAmount ?? null,
+          gas_fee_usd:   swapData.gasFee ?? swapData.gasFeeUSD ?? null,
           chain_id:      8453,
           wallet:        input.wallet_address
         };

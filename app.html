@@ -1858,7 +1858,9 @@ async function sendChat(){
   // Inject soul + goals into system prompt
   const userSoul  = localStorage.getItem('orlix_soul')  || '';
   const userGoals = localStorage.getItem('orlix_goals') || '';
+  const orlixUser = JSON.parse(localStorage.getItem('orlix_user') || 'null');
   let systemWithMemory = GROK_SYSTEM;
+  if (orlixUser?.address) systemWithMemory += `\n\n## User Wallet\nConnected wallet address: ${orlixUser.address}\nUse this as wallet_address in all onchain tool calls — do NOT ask the user for their address.`;
   if (userSoul)  systemWithMemory += '\n\n## Your Soul (Identity & Worldview)\n' + userSoul;
   if (userGoals) systemWithMemory += '\n\n## User Goals & Memory\n' + userGoals;
   systemWithMemory += buildSkillContext(text);
