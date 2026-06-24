@@ -1049,7 +1049,6 @@ select.inp{cursor:pointer}
           <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3,6 5,6 17,6"/><path d="M8 6V4h4v2"/><rect x="5" y="6" width="10" height="11" rx="1.5"/><path d="M8 10v4M12 10v4"/></svg>
         </button>
       </div>
-      <div id="pgModeBanner" class="pg-status"></div>
       <div class="chat-wrap">
         <div class="chat-messages" id="chatMessages">
           <div class="chat-empty" id="chatEmpty">
@@ -1653,8 +1652,8 @@ let totalTokens = 0;
 
 // Populate model selector
 function populateModelSel(){
-  pgModelSel.innerHTML = PROVIDERS.flatMap(p=>
-    p.models.map(m=>`<option value="${m.id}" data-provider="${p.name}">[${p.name}] ${m.name}</option>`)
+  pgModelSel.innerHTML = PROVIDERS.map(p=>
+    `<optgroup label="${p.name}">${p.models.map(m=>`<option value="${m.id}">${m.name}</option>`).join('')}</optgroup>`
   ).join('');
 }
 
@@ -1692,32 +1691,8 @@ const IS_LOCAL   = ['localhost','127.0.0.1'].includes(location.hostname);
 
 function getProxyUrl(){ return localStorage.getItem('bkProxyUrl')||''; }
 
-function banner(type, html){
-  const b=document.getElementById('pgModeBanner');
-  const dots={red:'var(--red)',green:'var(--green)',amber:'var(--amber)'};
-  b.innerHTML=`<span class="pg-dot" style="background:${dots[type]}"></span><span>${html}</span>`;
-}
-
-function updateBanner(){
-  const selectedModel = ((document.getElementById('pgModelSel')||{}).value||'').toLowerCase();
-  const isMimoSel    = selectedModel.startsWith('mimo');
-  const isClaudeSel  = selectedModel.startsWith('claude');
-  const isBankrSel   = !isMimoSel; // all non-Mimo models go through Bankr LLM gateway
-  const serverKeyedSel = true; // all models are server-keyed (Mimo or Bankr gateway)
-  if(!getApiKey() && isMimoSel){
-    banner('green','✓ <strong>Mimo ready</strong> — primary engine active. Send a message to start.');
-  } else if(!getApiKey() && isClaudeSel){
-    banner('green','✓ <strong>Claude ready</strong> — Bankr LLM gateway active. <span style="color:#0052ff;background:rgba(0,82,255,.12);border:1px solid rgba(0,82,255,.3);padding:1px 7px;border-radius:4px;font-size:.7rem">Base MCP</span> tools active — ask about wallets, gas, transactions on Base.');
-  } else if(!getApiKey() && isBankrSel){
-    banner('green','✓ <strong>Ready</strong> — Bankr LLM gateway active. Send a message to start.');
-  } else if(IS_LOCAL){
-    banner('green','✓ <strong>Local mode</strong> — proxy active via localhost:3001. Ready.');
-  } else if(getProxyUrl()){
-    banner('green','✓ <strong>Custom proxy active</strong> — requests routed via your Cloudflare Worker. Ready.');
-  } else {
-    banner('green','✓ <strong>Ready</strong> — API key set. Send a message to start.');
-  }
-}
+function banner(){}
+function updateBanner(){}
 updateBanner();
 
 async function apiFetch(key, bodyObj){
