@@ -317,12 +317,10 @@ async function deleteBuild(id){
   localStorage.setItem('orlix_gallery',JSON.stringify(local));
   // Remove from API
   try{
-    const delTok = localStorage.getItem('orlix_token') || '';
-    const delHdrs = {'Content-Type':'application/json'};
-    if (delTok) delHdrs['Authorization'] = 'Bearer ' + delTok;
+    const delId = localStorage.getItem('orlix_token') || localStorage.getItem('orlix_device_id') || '';
     await fetch('/api/gallery',{
       method:'DELETE',
-      headers: delHdrs,
+      headers: {'Content-Type':'application/json', ...(delId ? {'Authorization':'Bearer '+delId} : {})},
       body:JSON.stringify({id})
     });
   }catch(e){ console.warn('Delete API failed:',e.message); }

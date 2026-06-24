@@ -32,9 +32,9 @@ async function redisCmd(url, token, ...args) {
   return json.result ?? null;
 }
 
-function getAuthWallet(req) {
+function getAuthId(req) {
   const auth = req.headers['authorization'] || '';
-  if (auth.startsWith('Bearer wallet:0x')) return auth.slice(7); // 'wallet:0x...'
+  if (auth.startsWith('Bearer ') && auth.length > 10) return auth.slice(7);
   return null;
 }
 
@@ -65,10 +65,10 @@ module.exports = async function handler(req, res) {
 
   // ── POST — save a new build (requires auth) ──────────────────────────────────
   if (req.method === 'POST') {
-    const callerWallet = getAuthWallet(req);
-    if (!callerWallet) return res.status(401).json({ error: 'Authentication required' });
+    const callerId = getAuthId(req);
+    if (!callerId) return res.status(401).json({ error: 'Authentication required' });
 
-    const { id, code, title } = req.body || {};
+    const { id, code, title, author } = req.body || {};
     if (!id || !code || !title) {
       return res.status(400).json({ error: 'Missing id, code, or title' });
     }
@@ -82,7 +82,8 @@ module.exports = async function handler(req, res) {
         id:     String(id).slice(0, 64),
         title:  String(title).slice(0, 120),
         code:   String(code).slice(0, 300000),
-        owner:  callerWallet,
+        author: String(author || 'Builder').slice(0, 60),
+        owner:  callerId,
         ts:     Date.now(),
       };
       const updated = [newBuild, ...filtered].slice(0, MAX);
@@ -95,8 +96,8 @@ module.exports = async function handler(req, res) {
 
   // ── DELETE — remove build by id (requires auth + ownership) ──────────────────
   if (req.method === 'DELETE') {
-    const callerWallet = getAuthWallet(req);
-    if (!callerWallet) return res.status(401).json({ error: 'Authentication required' });
+    const callerId = getAuthId(req);
+    if (!callerId) return res.status(401).json({ error: 'Authentication required' });
 
     const { id } = req.body || {};
     if (!id) return res.status(400).json({ error: 'Missing id' });
@@ -105,7 +106,7 @@ module.exports = async function handler(req, res) {
       const builds = JSON.parse(raw || '[]');
       const target = builds.find(b => b.id === id);
       // Allow delete if: caller owns it, or entry has no owner (legacy)
-      if (target && target.owner && target.owner !== callerWallet) {
+      if (target && target.owner && target.owner !== callerId) {
         return res.status(403).json({ error: 'Not authorized to delete this entry' });
       }
       const updated = builds.filter(b => b.id !== id);

@@ -2656,13 +2656,17 @@ async function publishBuild(btn, id){
 
   // Also POST to Vercel KV for public/cross-device gallery
   try{
-    const galleryTok = localStorage.getItem('orlix_token') || '';
-    const galleryHdrs = {'Content-Type':'application/json'};
-    if (galleryTok) galleryHdrs['Authorization'] = 'Bearer ' + galleryTok;
+    // Use wallet token, or fall back to a stable device ID for this browser
+    let galleryId = localStorage.getItem('orlix_token') || localStorage.getItem('orlix_device_id');
+    if (!galleryId) {
+      galleryId = 'device:' + ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g,c=>(c^crypto.getRandomValues(new Uint8Array(1))[0]&15>>c/4).toString(16));
+      localStorage.setItem('orlix_device_id', galleryId);
+    }
+    const galleryHdrs = {'Content-Type':'application/json','Authorization':'Bearer '+galleryId};
     const r = await fetch('/api/gallery',{
       method:'POST',
       headers: galleryHdrs,
-      body:JSON.stringify({id, code, title})
+      body:JSON.stringify({id, code, title, author: localStorage.getItem('orlix_name') || 'Builder'})
     });
     const data = await r.json();
     if(data.error) throw new Error(data.error);
