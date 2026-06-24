@@ -300,17 +300,17 @@ select.inp{cursor:pointer}
 .code-actions .copy-btn:hover{background:var(--purple-dim);color:var(--purple)}
 .msg-preview-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin-top:10px;padding:10px 16px;background:var(--green-dim);border:1px solid rgba(74,222,128,.25);border-radius:8px;color:var(--green);font-family:var(--font);font-size:.8rem;font-weight:600;cursor:pointer;transition:all var(--tr)}
 .msg-preview-btn:hover{background:rgba(74,222,128,.15);border-color:var(--green)}
-.tx-card{margin:10px 0;background:var(--bg-2);border:1px solid rgba(240,120,48,.35);border-radius:10px;overflow:hidden}
-.tx-card-header{display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(240,120,48,.07);border-bottom:1px solid rgba(240,120,48,.2)}
-.tx-card-icon{font-size:1.1rem;flex-shrink:0}
-.tx-card-title{font-size:.78rem;font-weight:700;color:var(--text-1);flex:1}
-.tx-card-badge{font-size:.62rem;font-weight:700;font-family:var(--mono);color:var(--orange);background:rgba(240,120,48,.12);border:1px solid rgba(240,120,48,.25);border-radius:4px;padding:2px 7px;text-transform:uppercase}
-.tx-card-body{padding:12px 14px;display:flex;flex-direction:column;gap:6px}
-.tx-card-row{display:flex;gap:8px;font-size:.74rem}
-.tx-card-label{color:var(--text-3);flex-shrink:0;width:60px}
-.tx-card-val{color:var(--text-2);font-family:var(--mono);word-break:break-all}
-.tx-sign-btn{display:flex;align-items:center;justify-content:center;gap:8px;margin:10px 14px 14px;padding:10px 16px;background:rgba(240,120,48,.12);border:1px solid rgba(240,120,48,.4);border-radius:8px;color:var(--orange);font-family:var(--font);font-size:.82rem;font-weight:700;cursor:pointer;transition:all var(--tr)}
-.tx-sign-btn:hover{background:rgba(240,120,48,.22);border-color:var(--orange)}
+.tx-card{margin:12px 0;background:var(--bg-2);border:1px solid rgba(0,82,255,.3);border-radius:12px;overflow:hidden;box-shadow:0 2px 16px rgba(0,82,255,.08)}
+.tx-card-header{display:flex;align-items:center;gap:10px;padding:12px 16px;background:linear-gradient(90deg,rgba(0,82,255,.1) 0%,rgba(0,82,255,.04) 100%);border-bottom:1px solid rgba(0,82,255,.15)}
+.tx-card-icon{font-size:1.15rem;flex-shrink:0}
+.tx-card-title{font-size:.82rem;font-weight:700;color:var(--text-1);flex:1;letter-spacing:-.01em}
+.tx-card-badge{font-size:.61rem;font-weight:700;font-family:var(--mono);color:#5b9aff;background:rgba(0,82,255,.12);border:1px solid rgba(0,82,255,.25);border-radius:4px;padding:2px 8px;text-transform:uppercase;letter-spacing:.04em}
+.tx-card-body{padding:14px 16px;display:flex;flex-direction:column;gap:7px}
+.tx-card-row{display:flex;gap:10px;font-size:.74rem}
+.tx-card-label{color:var(--text-3);flex-shrink:0;width:68px;font-size:.7rem;padding-top:1px}
+.tx-card-val{color:var(--text-2);font-family:var(--mono);word-break:break-all;font-size:.74rem}
+.tx-sign-btn{display:flex;align-items:center;justify-content:center;gap:8px;margin:0 16px 16px;padding:11px 18px;background:linear-gradient(90deg,rgba(0,82,255,.18) 0%,rgba(0,100,255,.12) 100%);border:1px solid rgba(0,82,255,.45);border-radius:9px;color:#5b9aff;font-family:var(--font);font-size:.83rem;font-weight:700;cursor:pointer;transition:all var(--tr);letter-spacing:.01em}
+.tx-sign-btn:hover{background:linear-gradient(90deg,rgba(0,82,255,.28) 0%,rgba(0,100,255,.22) 100%);border-color:#5b9aff;color:#fff}
 .tx-sign-btn:disabled{opacity:.5;cursor:not-allowed}
 .tx-sign-btn.success{background:rgba(74,222,128,.1);border-color:var(--green);color:var(--green)}
 .tx-sign-btn.error{background:rgba(255,107,107,.1);border-color:var(--red);color:var(--red)}
@@ -861,36 +861,28 @@ select.inp{cursor:pointer}
           <div class="skill-grid" id="skillGrid-dev"></div>
         </div>
       </div>
-      <div class="panel" style="border-color:rgba(0,82,255,.22);background:linear-gradient(135deg,var(--bg-panel) 0%,rgba(0,82,255,.04) 100%)">
-        <div class="panel-hd" style="border-color:rgba(0,82,255,.18)">
+      <div class="panel" style="border-color:rgba(0,82,255,.28);background:linear-gradient(135deg,var(--bg-panel) 0%,rgba(0,82,255,.05) 100%)">
+        <div class="panel-hd" style="border-color:rgba(0,82,255,.2)">
           <span class="ttl" style="color:#5b9aff">⬡ Base MCP — Onchain Actions</span>
-          <span style="color:#5b9aff;font-size:.69rem;background:rgba(0,82,255,.1);border:1px solid rgba(0,82,255,.25);padding:2px 8px;border-radius:3px">LIVE</span>
+          <span style="color:#5b9aff;font-size:.65rem;font-weight:700;background:rgba(0,82,255,.12);border:1px solid rgba(0,82,255,.3);padding:2px 9px;border-radius:4px;letter-spacing:.04em">LIVE</span>
         </div>
         <div class="panel-body" style="padding-bottom:0">
-          <div style="display:flex;align-items:center;gap:10px;padding:10px 0 14px;border-bottom:1px solid rgba(0,82,255,.12);margin-bottom:14px;flex-wrap:wrap">
-            <span style="color:var(--text);font-size:.78rem;line-height:1.6;max-width:500px">Agent prepares transfers, swaps, lending &amp; borrowing across top Base apps. <strong style="color:#5b9aff">Every transaction approved by you</strong> before execution.</span>
+          <p style="color:var(--text-2);font-size:.78rem;line-height:1.65;margin-bottom:16px">Agent prepares transactions across top Base apps — swaps, lending, token launches, and more. <strong style="color:#5b9aff">Every transaction approved by you</strong> before execution.</p>
+
+          <!-- capability chips -->
+          <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:18px">
+            <span style="display:inline-flex;align-items:center;gap:5px;font-size:.7rem;font-weight:600;color:#5b9aff;background:rgba(0,82,255,.08);border:1px solid rgba(0,82,255,.2);border-radius:5px;padding:4px 10px">↗ Transfers</span>
+            <span style="display:inline-flex;align-items:center;gap:5px;font-size:.7rem;font-weight:600;color:#5b9aff;background:rgba(0,82,255,.08);border:1px solid rgba(0,82,255,.2);border-radius:5px;padding:4px 10px">⇄ Uniswap Swaps</span>
+            <span style="display:inline-flex;align-items:center;gap:5px;font-size:.7rem;font-weight:600;color:#5b9aff;background:rgba(0,82,255,.08);border:1px solid rgba(0,82,255,.2);border-radius:5px;padding:4px 10px">⬆ Moonwell Lending</span>
+            <span style="display:inline-flex;align-items:center;gap:5px;font-size:.7rem;font-weight:600;color:#5b9aff;background:rgba(0,82,255,.08);border:1px solid rgba(0,82,255,.2);border-radius:5px;padding:4px 10px">🚀 Flaunch Token Launch</span>
+            <span style="display:inline-flex;align-items:center;gap:5px;font-size:.7rem;font-weight:600;color:#5b9aff;background:rgba(0,82,255,.08);border:1px solid rgba(0,82,255,.2);border-radius:5px;padding:4px 10px">📊 DexScreener Data</span>
+            <span style="display:inline-flex;align-items:center;gap:5px;font-size:.7rem;font-weight:600;color:#5b9aff;background:rgba(0,82,255,.08);border:1px solid rgba(0,82,255,.2);border-radius:5px;padding:4px 10px">⛽ Gas Tracker</span>
           </div>
-          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px;margin-bottom:14px">
-            <div style="background:rgba(0,82,255,.06);border:1px solid rgba(0,82,255,.18);border-radius:6px;padding:10px 12px">
-              <div style="color:#5b9aff;font-size:.75rem;font-weight:600;margin-bottom:3px">↗ Transfers</div>
-              <div style="color:var(--dim);font-size:.7rem">ETH + ERC-20 to any address</div>
-            </div>
-            <div style="background:rgba(0,82,255,.06);border:1px solid rgba(0,82,255,.18);border-radius:6px;padding:10px 12px">
-              <div style="color:#5b9aff;font-size:.75rem;font-weight:600;margin-bottom:3px">⇄ Swaps</div>
-              <div style="color:var(--dim);font-size:.7rem">Best routes across Base DEXs</div>
-            </div>
-            <div style="background:rgba(0,82,255,.06);border:1px solid rgba(0,82,255,.18);border-radius:6px;padding:10px 12px">
-              <div style="color:#5b9aff;font-size:.75rem;font-weight:600;margin-bottom:3px">⬆ Lending</div>
-              <div style="color:var(--dim);font-size:.7rem">Supply to Aave, Moonwell, Compound</div>
-            </div>
-            <div style="background:rgba(0,82,255,.06);border:1px solid rgba(0,82,255,.18);border-radius:6px;padding:10px 12px">
-              <div style="color:#5b9aff;font-size:.75rem;font-weight:600;margin-bottom:3px">⬇ Borrowing</div>
-              <div style="color:var(--dim);font-size:.7rem">Borrow + monitor liquidation risk</div>
-            </div>
-          </div>
+
           <div class="skill-grid" id="skillGrid-crypto"></div>
-          <div style="display:flex;align-items:center;gap:8px;padding:10px 0 4px;font-size:.7rem;color:var(--dim);border-top:1px solid rgba(0,82,255,.1);margin-top:10px">
-            <span style="color:#5b9aff">🔐</span> Your keys, your rules — agent only prepares, you approve every tx
+
+          <div style="display:flex;align-items:center;gap:7px;padding:10px 0 6px;font-size:.69rem;color:var(--text-3);border-top:1px solid rgba(0,82,255,.12);margin-top:10px">
+            <span style="color:#5b9aff;font-size:.8rem">🔐</span> Your keys, your rules — agent only prepares, you sign every tx
           </div>
         </div>
       </div>
@@ -1434,10 +1426,18 @@ const AEON_SKILLS = {
     { icon:'', name:'Code Review', desc:'Review code for bugs, security, improvements', tag:'code', prompt:'Review this code for bugs, security issues, and improvements:\n\n```\n[PASTE CODE HERE]\n```' },
   ],
   crypto: [
-    { icon:'', name:'Wallet Balance', desc:'Check any wallet\'s ETH balance on Base', tag:'base_get_eth_balance', prompt:'Check the ETH balance and give me a summary for this wallet on Base network:\n\n[WALLET ADDRESS]' },
-    { icon:'', name:'Gas Tracker', desc:'Current gas price and network status on Base', tag:'base_get_gas_price + base_get_latest_block', prompt:'What is the current gas price on Base network? Also show me the latest block info.' },
-    { icon:'', name:'Tx Inspector', desc:'Look up any transaction on Base by hash', tag:'base_get_transaction', prompt:'Look up this transaction on Base and explain what happened:\n\n[TX HASH]' },
-    { icon:'', name:'Base Network Info', desc:'Full Base network status and statistics', tag:'base_get_network_info', prompt:'Give me a complete status report of the Base network right now — chain ID, latest block, gas price, and any notable info.' },
+    { icon:'', name:'Token Search', desc:'Search any Base token by name or symbol', tag:'dexscreener_search', prompt:'Search for this token on Base and show me price, liquidity, volume, and market cap:\n\n[TOKEN NAME OR SYMBOL]' },
+    { icon:'', name:'Market Data', desc:'Full market data for any Base token address', tag:'dexscreener_token', prompt:'Get full market data for this Base token — price, liquidity, 24h volume, buy/sell ratio:\n\n[TOKEN ADDRESS 0x...]' },
+    { icon:'', name:'Swap Tokens', desc:'Swap any token pair on Uniswap Base', tag:'uniswap_quote + uniswap_prepare_swap', prompt:'I want to swap [AMOUNT] ETH to USDC on Uniswap Base. Get me a quote and prepare the swap transaction.' },
+    { icon:'', name:'New Launches', desc:'Latest meme token launches on Flaunch', tag:'flaunch_new_tokens', prompt:'Show me the 10 newest token launches on Flaunch Base with price and market cap.' },
+    { icon:'', name:'Top Tokens', desc:'Top tokens by market cap on Flaunch', tag:'flaunch_top_tokens', prompt:'Show me the top 10 tokens by market cap on Flaunch Base.' },
+    { icon:'', name:'Lending Rates', desc:'Supply & borrow APY on Moonwell Base', tag:'moonwell_markets', prompt:'What are the current lending and borrowing rates on Moonwell Base? Show all assets with APY.' },
+    { icon:'', name:'Supply to Moonwell', desc:'Lend assets and earn yield on Moonwell', tag:'moonwell_prepare_supply', prompt:'I want to supply [AMOUNT] [USDC/WETH/ETH] to Moonwell on Base to earn yield. Show me the APY and prepare the supply transaction.' },
+    { icon:'', name:'Launch Token', desc:'Launch a new token on Flaunch (Base)', tag:'flaunch_prepare_launch', prompt:'Launch a new token on Flaunch Base:\n\nName: [TOKEN NAME]\nSymbol: [SYMBOL max 8 chars]\nDescription: [SHORT DESC]\nImage URL: [IMAGE URL]\n\nPrepare the launch transaction.' },
+    { icon:'', name:'Wallet Balance', desc:'Check ETH balance of any wallet on Base', tag:'base_get_eth_balance', prompt:'Check the ETH balance for this wallet on Base:\n\n[WALLET ADDRESS]' },
+    { icon:'', name:'Gas Tracker', desc:'Current gas price and network status', tag:'base_get_gas_price', prompt:'What is the current gas price on Base? Show me latest block info too.' },
+    { icon:'', name:'Tx Inspector', desc:'Look up any transaction on Base by hash', tag:'base_get_transaction', prompt:'Look up this transaction on Base and explain what happened:\n\n[TX HASH 0x...]' },
+    { icon:'', name:'Token Info', desc:'Name, symbol, decimals, supply of any ERC20', tag:'base_erc20_info', prompt:'Get token info for this ERC20 on Base — name, symbol, decimals, total supply:\n\n[TOKEN ADDRESS 0x...]' },
   ],
   prod: [
     { icon:'', name:'Content Writer', desc:'Write polished content on any topic', tag:'web_search', prompt:'Write high-quality content about:\n\n[TOPIC]\n\nTone: [professional/casual/technical]\nLength: [short/medium/long]' },
@@ -2194,7 +2194,8 @@ function renderTxCard(id, tx) {
       <span class="tx-card-badge">${esc(protocol || typeLabel)}${stepCount}</span>
     </div>
     <div class="tx-card-body">${rows}</div>
-    <button class="tx-sign-btn" id="sign-${txId}" onclick="signTx('${txId}')">Sign & Execute in Wallet</button>
+    <div style="font-size:.67rem;color:var(--text-3);padding:6px 16px 0;display:flex;align-items:center;gap:6px"><span style="color:rgba(0,82,255,.7)">⚠</span> Review all details. Blockchain transactions are irreversible.</div>
+    <button class="tx-sign-btn" id="sign-${txId}" onclick="signTx('${txId}')">⬡ Sign &amp; Execute on Base</button>
   </div>`;
 }
 
@@ -2726,32 +2727,31 @@ When asked to build/make/create any app, website, game, tool, or UI:
 ## Base Onchain Transactions
 When the user wants to transfer, swap, lend, borrow, launch a token, or any onchain action on Base:
 
-**ETH Transfer:**
-1. Check balance with base_get_eth_balance. Check gas with base_get_gas_price.
-2. Output in this EXACT format:
-\`\`\`transaction
-{"type":"transfer","description":"Send 0.01 ETH to 0x1234…","to":"0xRECIPIENT","value":"10000000000000000","data":"0x","gasLimit":"21000","chainId":8453}
-\`\`\`
+**IMPORTANT: Always use the user's connected wallet address (from ## User Wallet above). NEVER call get_wallets from Base MCP — that returns a different server-managed wallet, not the user's MetaMask.**
 
-**Preferred flow (Base MCP wallet — no MetaMask needed):**
-You have access to the Base MCP server (mcp.base.org). Use its tools directly:
-- get_wallets → get your Base Account wallet address
-- send_calls → execute any onchain action (swap, send, lend, mint, buy)
-- web_request → call plugin APIs (Uniswap, Flaunch, Moonwell, OpenSea, etc.)
-The Base MCP generates an approval link the user clicks to authorize. Always show this link.
-
-**Fallback flow (if Base MCP unavailable — use our prepare tools):**
-1. Call uniswap_prepare_swap / flaunch_prepare_launch / moonwell_prepare_supply.
-2. Output the full tool result as a transaction block:
+**Swap flow:**
+1. Call uniswap_quote with the user's wallet address.
+2. Call uniswap_prepare_swap with the same address.
+3. Output the full tool result as a transaction block:
 \`\`\`transaction
 {PASTE_FULL_TOOL_RESULT_HERE}
 \`\`\`
 
+**Supply/Lend flow:**
+1. Call moonwell_prepare_supply with the user's wallet address.
+2. Output the full tool result as a transaction block.
+
+**Launch token flow:**
+1. Call flaunch_prepare_launch with the user's wallet address.
+2. Output the full tool result as a transaction block.
+
 **ETH Transfer (no DeFi protocol):**
+1. Check balance with base_get_eth_balance. Check gas with base_get_gas_price.
+2. Output in this EXACT format:
 \`\`\`transaction
-{"type":"transfer","description":"Send 0.01 ETH to 0x1234…","to":"0xRECIPIENT","value":"10000000000000000","data":"0x","gasLimit":"21000","chainId":8453}
+{"type":"transfer","description":"Send 0.01 ETH to 0x1234\u2026","to":"0xRECIPIENT","value":"10000000000000000","data":"0x","gasLimit":"21000","chainId":8453}
 \`\`\`
-NEVER make up addresses. value must be in wei. NEVER invent calldata.`;
+NEVER make up addresses. value must be in wei. NEVER invent calldata.\`;
 
 // ── TOKEN ANALYZER ─────────
 async function runAnalysis() {
