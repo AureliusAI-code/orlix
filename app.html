@@ -1204,8 +1204,6 @@ function showView(name){
 }
 document.querySelectorAll('.sb-item').forEach(i=>i.addEventListener('click',()=>showView(i.dataset.view)));
 document.querySelectorAll('[data-nav]').forEach(b=>b.addEventListener('click',()=>showView(b.dataset.nav)));
-// Restore view from URL hash on load (or default to playground)
-(function(){const h=location.hash.slice(1)||'playground';if(document.getElementById('view-'+h))showView(h);})();
 
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 
@@ -2103,6 +2101,8 @@ populateModelSel();
 pgModelSel.addEventListener('change', updateBanner);
 refreshDashboard();
 renderHistoryList();
+// Restore view from URL hash — must run AFTER all vars/functions are initialized
+(function(){const h=location.hash.slice(1)||'playground';if(document.getElementById('view-'+h))showView(h);})();
 
 // ───────── CODE RENDERING + PREVIEW ─────────
 // Raw code stored by ID so copy/preview get the original, not HTML-escaped
