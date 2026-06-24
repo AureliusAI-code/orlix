@@ -56,7 +56,7 @@ module.exports = async (req, res) => {
 
   const key = process.env.ANTHROPIC_API_KEY;
   if (!key) {
-    res.writeHead(500, CORS); return res.end(JSON.stringify({ error: 'API key not configured' }));
+    res.writeHead(500, CORS); return res.end(JSON.stringify({ error: 'Service temporarily unavailable' }));
   }
 
   try {
