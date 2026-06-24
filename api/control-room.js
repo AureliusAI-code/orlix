@@ -117,7 +117,7 @@ function deriveNewTokens(pairs) {
 
 function deriveTrending(pairs) {
   return pairs
-    .filter(p => (p.volume?.h24 || 0) > 10)
+    .filter(p => (p.volume?.h24 || 0) > 100)
     .sort((a, b) => (b.volume?.h24 || 0) - (a.volume?.h24 || 0))
     .slice(0, 20)
     .map(mapPair); // mapPair already includes volume1h, buys1h, sells1h
@@ -133,16 +133,11 @@ function deriveWhales(pairs) {
 
 // Live activity: tokens with some liquidity and recent 1h volume
 function deriveLiveActivity(pairs) {
-  // First try: liq >= 5k, vol1h >= 100
-  let filtered = pairs.filter(p => (p.liquidity?.usd || 0) >= 5000 && (p.volume?.h1 || 0) >= 100);
-  // Fall back to looser: any liq, vol1h >= 50
-  if (filtered.length < 5) {
-    filtered = pairs.filter(p => (p.volume?.h1 || 0) >= 50);
-  }
-  return filtered
+  return pairs
+    .filter(p => (p.liquidity?.usd || 0) >= 5000 && (p.volume?.h1 || 0) >= 100)
     .sort((a, b) => (b.volume?.h1 || 0) - (a.volume?.h1 || 0))
     .slice(0, 50)
-    .map(p => ({ ...mapPair(p), risk: quickRisk(p.liquidity?.usd || 0) }));
+    .map(mapPair);
 }
 
 async function generateCommentary(data, apiKey) {
