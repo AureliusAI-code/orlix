@@ -90,7 +90,7 @@ input,select,textarea{font-family:var(--mono)}
 }
 .sb-item{
   display:flex;align-items:center;gap:9px;padding:7px 16px;
-  color:var(--text-3);font-size:.78rem;cursor:pointer;
+  color:var(--text-3);font-size:.78rem;cursor:pointer;text-decoration:none;
   border-left:2px solid transparent;transition:all var(--tr);user-select:none;
 }
 .sb-item:hover{color:var(--text-1);background:rgba(255,255,255,.04)}
@@ -660,10 +660,10 @@ select.inp{cursor:pointer}
       <span class="sb-label">crypto tools</span>
       <div class="sb-item" data-view="token-analyzer"><span class="ic"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="2.5,15 7,9.5 11.5,12.5 17.5,5"/><polyline points="13.5,5 17.5,5 17.5,9"/></svg></span>token analyzer</div>
       <div class="sb-item" data-view="wallet-watcher"><span class="ic"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M10 2.5a6 6 0 016 6c0 2.5.5 4 1.5 5H2.5c1-1 1.5-2.5 1.5-5a6 6 0 016-6z"/><path d="M8.5 17.5a1.5 1.5 0 003 0"/></svg></span>wallet watcher</div>
-      <a class="sb-item" href="/song" style="text-decoration:none;color:inherit;display:flex;align-items:center;gap:8px">
+      <a class="sb-item" href="/song">
         <span class="ic"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8 15V5l9-2v10"/><circle cx="6" cy="15" r="2"/><circle cx="15" cy="13" r="2"/></svg></span>token song
       </a>
-      <a class="sb-item" href="/gallery" style="text-decoration:none;color:inherit;display:flex;align-items:center;gap:8px">
+      <a class="sb-item" href="/gallery">
         <span class="ic"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="7" height="7" rx="1.5"/><rect x="11" y="2" width="7" height="7" rx="1.5"/><rect x="2" y="11" width="7" height="7" rx="1.5"/><rect x="11" y="11" width="7" height="7" rx="1.5"/></svg></span>gallery
       </a>
     </div>
