@@ -387,6 +387,15 @@ input[type=range]:disabled{opacity:.4;cursor:not-allowed}
   .nav-badge-label{display:none}
   .chain-pill{display:none}
 }
+/* fallback wallet button — visible until RainbowKit mounts */
+#wallet-fallback{
+  display:flex;align-items:center;gap:6px;
+  background:var(--s2);border:1px solid var(--b1);border-radius:7px;
+  padding:5px 12px;font-size:.74rem;font-weight:600;color:var(--t2);
+  cursor:pointer;transition:all .15s;white-space:nowrap;font-family:var(--font);
+}
+#wallet-fallback:hover{border-color:var(--b2);color:var(--t1)}
+#wallet-fallback .wf-dot{width:6px;height:6px;border-radius:50%;background:var(--t3);flex-shrink:0}
 </style>
 </head>
 <body>
@@ -404,7 +413,11 @@ input[type=range]:disabled{opacity:.4;cursor:not-allowed}
   </div>
   <div class="nav-right">
     <div class="chain-pill"><div class="chain-dot"></div>Base</div>
-    <div id="orlix-wallet" style="display:flex;align-items:center"></div>
+    <div id="orlix-wallet" style="display:flex;align-items:center">
+      <button id="wallet-fallback" onclick="walletFallback()">
+        <span class="wf-dot"></span>Connect Wallet
+      </button>
+    </div>
   </div>
 </nav>
 
@@ -996,6 +1009,25 @@ function dismissFeatGate() {
   setTimeout(() => el.style.display = 'none', 300);
   try { sessionStorage.setItem('fg_dismissed','1'); } catch {}
 }
+
+// ── wallet fallback (instant — works before wallet.js loads) ─────────────────
+async function walletFallback() {
+  if (!window.ethereum) { alert('Tidak ada wallet terdeteksi. Install MetaMask atau buka lewat browser wallet.'); return; }
+  try {
+    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+    if (accounts[0]) {
+      const addr = accounts[0];
+      const fb = document.getElementById('wallet-fallback');
+      if (fb) { fb.innerHTML = `<span class="wf-dot" style="background:#4ADE80;box-shadow:0 0 5px rgba(74,222,128,.5)"></span>${addr.slice(0,6)}…${addr.slice(-4)}`; fb.style.borderColor='rgba(74,222,128,.3)'; fb.style.color='#f1f1f3'; }
+      window.dispatchEvent(new CustomEvent('orlix:wallet:connected', { detail: { address: addr } }));
+    }
+  } catch(e) { console.warn('wallet fallback:', e); }
+}
+// Hide fallback once RainbowKit injects its own button
+new MutationObserver(() => {
+  const fb = document.getElementById('wallet-fallback');
+  if (fb && document.querySelector('.ow-btn')) fb.style.display = 'none';
+}).observe(document.getElementById('orlix-wallet') || document.body, { childList: true, subtree: true });
 
 // ── wallet events (dispatched by /wallet-dist/wallet.js) ─────────────────────
 window.addEventListener('orlix:wallet:connected', (e) => {
