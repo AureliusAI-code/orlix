@@ -582,8 +582,7 @@ async function handlePrepare(body, res) {
     warnings,
 
     links: {
-      studio:       'https://orlixai.xyz/b20',
-      control_room: 'https://orlixai.xyz/control-room',
+      studio: 'https://orlixai.xyz/b20',
     },
   }));
 }

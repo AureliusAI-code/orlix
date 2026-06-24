@@ -200,7 +200,6 @@ footer a:hover{color:var(--text-1)}
   <div class="nav-links">
     <a href="/docs">Docs</a>
     <a href="/docs/api" style="color:var(--text-1)">API</a>
-    <a href="/control-room">Control Room</a>
     <a href="/app">Playground</a>
   </div>
   <div class="nav-badge">Free · No Auth</div>
@@ -221,7 +220,6 @@ footer a:hover{color:var(--text-1)}
     <div class="sidebar-group">
       <div class="sidebar-label">Endpoints</div>
       <ul>
-        <li><a href="#control-room">GET /api/control-room</a></li>
         <li><a href="#token-search">GET /api/token-search</a></li>
       </ul>
     </div>
@@ -249,7 +247,7 @@ footer a:hover{color:var(--text-1)}
     <section id="intro">
       <div class="hero-badge"><span class="dot"></span> API Live</div>
       <h1>API Reference</h1>
-      <p class="hero-sub">Public REST API for live Base token data. No API key required. Free to use. Built on top of Orlix Control Room.</p>
+      <p class="hero-sub">Public REST API for live Base token data. No API key required. Free to use.</p>
 
       <div class="info-box green">
         <span class="info-icon">✓</span>
@@ -288,51 +286,6 @@ footer a:hover{color:var(--text-1)}
       <div class="info-box orange">
         <span class="info-icon">⚠</span>
         <span>Fair use applies. If you're building something with high traffic, consider caching responses on your end.</span>
-      </div>
-    </section>
-
-    <!-- /api/control-room -->
-    <section id="control-room">
-      <h2>GET /api/control-room</h2>
-      <p>Returns live Base token data — top 100 tokens sorted by 24h volume, trending tokens, market stats, and an AI-generated market commentary.</p>
-
-      <div class="endpoint">
-        <div class="endpoint-header">
-          <span class="method get">GET</span>
-          <span class="endpoint-path">https://orlixai.xyz/api/control-room</span>
-          <span class="endpoint-desc">No params required</span>
-        </div>
-        <div class="endpoint-body">
-          <h3>Response status</h3>
-          <div class="status-row"><span class="status-code ok">200</span> Success — returns JSON data</div>
-          <div class="status-row"><span class="status-code err">405</span> Method not allowed — only GET is supported</div>
-          <div class="status-row"><span class="status-code err">500</span> Upstream error — DexScreener API unavailable</div>
-        </div>
-      </div>
-
-      <!-- Try it: control-room -->
-      <div class="try-box">
-        <div class="try-header">
-          <span class="try-label">Try it live</span>
-          <button class="try-btn" onclick="tryCR()">▶ Run</button>
-        </div>
-        <div class="try-result" id="cr-result"><p class="try-empty">Click Run to hit the live endpoint.</p></div>
-      </div>
-
-      <h3>Response structure</h3>
-      <div class="code-block">
-        <div class="code-header"><span class="lang">JSON</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
-        <pre>{
-  <span class="s">"liveActivity"</span>: [ <span class="c">/* Token[] — all 100 tokens */</span> ],
-  <span class="s">"trending"</span>:     [ <span class="c">/* Token[] — top 15 by volume */</span> ],
-  <span class="s">"stats"</span>: {
-    <span class="s">"total"</span>:      <span class="v">100</span>,        <span class="c">// number of tokens returned</span>
-    <span class="s">"safeCount"</span>:  <span class="v">74</span>,         <span class="c">// tokens with liquidity ≥ $50k</span>
-    <span class="s">"totalVol1h"</span>: <span class="v">4820000</span>,    <span class="c">// total 1h volume across all tokens (USD)</span>
-    <span class="s">"ts"</span>:         <span class="v">1750000000000</span> <span class="c">// Unix timestamp ms when data was fetched</span>
-  },
-  <span class="s">"commentary"</span>: <span class="s">"BNKR up +8.3% on strong buy pressure as Bankr ecosystem activity surges..."</span>
-}</pre>
       </div>
     </section>
 
@@ -442,16 +395,12 @@ footer a:hover{color:var(--text-1)}
       <h3>JavaScript / TypeScript</h3>
       <div class="code-block">
         <div class="code-header"><span class="lang">JS</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
-        <pre><span class="k">const</span> res = <span class="k">await</span> fetch(<span class="s">'https://orlixai.xyz/api/control-room'</span>);
-<span class="k">const</span> { liveActivity, trending, stats, commentary } = <span class="k">await</span> res.json();
+        <pre><span class="k">const</span> res = <span class="k">await</span> fetch(<span class="s">'https://orlixai.xyz/api/token-search?q=BNKR'</span>);
+<span class="k">const</span> { tokens, total } = <span class="k">await</span> res.json();
 
-<span class="c">// Top 5 tokens by volume</span>
-trending.slice(<span class="v">0</span>, <span class="v">5</span>).forEach(t => {
-  console.log(<span class="s">`#<span class="n">${t.rank}</span> <span class="n">${t.symbol}</span> — $<span class="n">${t.priceUsd}</span> (<span class="n">${t.priceChange24h}</span>% 24h)`</span>);
-});
-
-<span class="c">// Market overview</span>
-console.log(<span class="s">`<span class="n">${stats.total}</span> tokens · <span class="n">${stats.safeCount}</span> safe · AI: <span class="n">${commentary}</span>`</span>);</pre>
+tokens.forEach(t => {
+  console.log(<span class="s">`<span class="n">${t.symbol}</span> — $<span class="n">${t.priceUsd}</span> (<span class="n">${t.priceChange24h}</span>% 24h)`</span>);
+});</pre>
       </div>
     </section>
 
@@ -461,10 +410,10 @@ console.log(<span class="s">`<span class="n">${stats.total}</span> tokens · <sp
         <div class="code-header"><span class="lang">PYTHON</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
         <pre><span class="k">import</span> requests
 
-data = requests.get(<span class="s">'https://orlixai.xyz/api/control-room'</span>).json()
+data = requests.get(<span class="s">'https://orlixai.xyz/api/token-search?q=BNKR'</span>).json()
 
-<span class="k">for</span> token <span class="k">in</span> data[<span class="s">'trending'</span>][:5]:
-    print(<span class="s">f"#{token['rank']} {token['symbol']} — ${token['priceUsd']} ({token['priceChange24h']}% 24h)"</span>)</pre>
+<span class="k">for</span> token <span class="k">in</span> data[<span class="s">'tokens'</span>]:
+    print(<span class="s">f"{token['symbol']} — ${token['priceUsd']} ({token['priceChange24h']}% 24h)"</span>)</pre>
       </div>
     </section>
 
@@ -472,7 +421,7 @@ data = requests.get(<span class="s">'https://orlixai.xyz/api/control-room'</span
       <h3>cURL</h3>
       <div class="code-block">
         <div class="code-header"><span class="lang">BASH</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
-        <pre>curl https://orlixai.xyz/api/control-room | jq <span class="s">'.trending[:5] | .[] | {rank, symbol, priceUsd, priceChange24h}'</span></pre>
+        <pre>curl 'https://orlixai.xyz/api/token-search?q=BNKR' | jq <span class="s">'.tokens[] | {symbol, priceUsd, priceChange24h}'</span></pre>
       </div>
 
       <div class="info-box blue">
@@ -485,40 +434,12 @@ data = requests.get(<span class="s">'https://orlixai.xyz/api/control-room'</span
 </div>
 
 <footer>
-  <a href="/">Orlix AI</a> · <a href="/docs">Docs</a> · <a href="/control-room">Control Room</a> · <a href="/app">Playground</a>
+  <a href="/">Orlix AI</a> · <a href="/docs">Docs</a> · <a href="/app">Playground</a>
   <br><br>
   <span>Data sourced from DexScreener public API · Refreshed every 30s</span>
 </footer>
 
 <script>
-async function tryCR(){
-  const box=document.getElementById('cr-result');
-  const btn=box.closest('.try-box').querySelector('.try-btn');
-  btn.disabled=true;
-  btn.innerHTML='<span class="try-spinner"></span>Fetching…';
-  box.innerHTML='';
-  try{
-    const t0=Date.now();
-    const r=await fetch('/api/control-room');
-    const ms=Date.now()-t0;
-    const data=await r.json();
-    const preview={
-      stats:data.stats,
-      commentary:data.commentary,
-      trending:data.trending?.slice(0,3).map(t=>({rank:t.rank,symbol:t.symbol,priceUsd:t.priceUsd,priceChange24h:t.priceChange24h})),
-      liveActivity:`[... ${data.liveActivity?.length||0} tokens total]`
-    };
-    box.innerHTML=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-      <span class="try-status ok">${r.status} OK</span>
-      <span style="font-size:11px;color:var(--text-3)">${ms}ms · showing preview (stats + top 3)</span>
-    </div><pre>${JSON.stringify(preview,null,2)}</pre>`;
-  }catch(e){
-    box.innerHTML=`<p class="try-error">Error: ${e.message}</p>`;
-  }
-  btn.disabled=false;
-  btn.innerHTML='▶ Run';
-}
-
 async function trySearch(){
   const q=document.getElementById('search-q').value.trim();
   if(!q) return;
