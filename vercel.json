@@ -8,7 +8,7 @@
     "api/gallery.js":      { "maxDuration": 10 },
     "api/analyze.js":      { "maxDuration": 60 },
     "api/control-room.js": { "maxDuration": 30 },
-    "api/music.js":        { "maxDuration": 60 },
+    "api/music.js":        { "maxDuration": 60 }
   },
   "redirects": [
     { "source": "/app.html",          "destination": "/app",          "permanent": true },
