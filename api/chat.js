@@ -595,7 +595,7 @@ async function executeTool(name, input) {
           method: 'POST', headers: uniHeaders,
           body: JSON.stringify({
             type: 'EXACT_INPUT', amount: amountIn,
-            tokenIn: tokenIn, tokenOut: input.token_out,
+            tokenIn: input.token_in, tokenOut: input.token_out,  // keep zero address for ETH — Trade API expects it
             tokenInChainId: 8453, tokenOutChainId: 8453,
             swapper: input.wallet_address,
             protocols: ['V4', 'V3', 'V2'], routingPreference: 'BEST_PRICE'
