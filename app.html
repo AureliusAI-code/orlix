@@ -2572,46 +2572,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function shortAddr(addr){ return addr?addr.slice(0,6)+'…'+addr.slice(-4):''; }
 
-// ── Render transaction approval card ──
-const TX_ICONS = {transfer:'↗',swap:'⇄',approve:'✓',lend:'⬆',borrow:'⬇',repay:'↩',withdraw:'⬇'};
-const TX_LABELS = {transfer:'Transfer',swap:'Swap',approve:'Token Approval',lend:'Supply / Lend',borrow:'Borrow',repay:'Repay',withdraw:'Withdraw'};
-
-function renderTxCard(id, tx){
-  const typeKey = (tx.type||'transfer').toLowerCase();
-  const icon    = TX_ICONS[typeKey]  || '◈';
-  const label   = TX_LABELS[typeKey] || tx.type || 'Transaction';
-  const ethVal  = tx.value ? (Number(BigInt(tx.value)) / 1e18).toFixed(6) : '0';
-  const gasEst  = tx.gasLimit ? parseInt(tx.gasLimit).toLocaleString()+' gas' : 'auto';
-
-  const rows = [];
-  if(tx.description) rows.push(['Action', tx.description]);
-  if(tx.to) rows.push(['To', shortAddr(tx.to)+'  <span style="color:var(--dim);font-size:.67rem">'+tx.to+'</span>']);
-  if(tx.value && tx.value!=='0') rows.push(['Value', ethVal+' ETH']);
-  if(tx.tokenSymbol && tx.tokenAmount) rows.push(['Amount', tx.tokenAmount+' '+tx.tokenSymbol]);
-  if(tx.protocol) rows.push(['Protocol', tx.protocol]);
-  rows.push(['Network', 'Base Mainnet']);
-  rows.push(['Gas', gasEst]);
-
-  return `<div class="tx-card" id="txcard-${id}">
-    <div class="tx-card-header">
-      <div class="tx-type-icon" style="color:#5b9aff">${icon}</div>
-      <div class="tx-title">${esc2(label)}</div>
-      <span class="tx-badge">BASE</span>
-    </div>
-    <div class="tx-body">
-      ${rows.map(([k,v])=>`<div class="tx-row"><span class="tx-label">${k}</span><span class="tx-value">${v}</span></div>`).join('')}
-    </div>
-    <div class="tx-warn">⚠ Review all details carefully before signing. Blockchain transactions are irreversible.</div>
-    <div class="tx-actions">
-      <button class="tx-sign-btn" id="txsign-${id}" data-tx-id="${id}">⬡ Sign &amp; Execute on Base</button>
-      <button class="tx-reject-btn" data-tx-reject="${id}">Reject</button>
-    </div>
-  </div>`;
-}
-
-async function signTransaction(id){
-  alert('Transaction signing is not available.');
-}
+async function signTransaction(id){ signTx(id); }
 
 // ───────── GALLERY & LEADERBOARD ─────────
 function getGalleryBuilds(){
