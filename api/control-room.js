@@ -42,10 +42,11 @@ async function dget(url) {
 
 // Fetch a large pool of Base pairs via multiple searches
 async function fetchBasePairPool() {
-  const queries = ['USDC', 'ETH', 'WETH', 'DAI', 'USDT'];
+  // Mix of stablecoin pairs + active Base tokens + Base-native DEX tokens
+  const queries = ['USDC', 'ETH', 'AERO', 'VIRTUAL', 'BASE'];
   const results = await Promise.allSettled(
     queries.map(q =>
-      dget(`https://api.dexscreener.com/latest/dex/search?q=${q}&chainIds=base`)
+      dget(`https://api.dexscreener.com/latest/dex/search?q=${encodeURIComponent(q)}`)
     )
   );
 
@@ -124,16 +125,16 @@ function deriveTrending(pairs) {
 
 function deriveWhales(pairs) {
   return pairs
-    .filter(p => (p.volume?.h1 || 0) > 5000)
+    .filter(p => (p.volume?.h1 || 0) > 1000)
     .sort((a, b) => (b.volume?.h1 || 0) - (a.volume?.h1 || 0))
     .slice(0, 15)
     .map(mapPair);
 }
 
-// Live activity: SAFE tokens (liq >= 20k) with any 1h action (>= 500)
+// Live activity: tokens with some liquidity and recent 1h volume
 function deriveLiveActivity(pairs) {
   return pairs
-    .filter(p => (p.liquidity?.usd || 0) >= 20000 && (p.volume?.h1 || 0) >= 500)
+    .filter(p => (p.liquidity?.usd || 0) >= 5000 && (p.volume?.h1 || 0) >= 100)
     .sort((a, b) => (b.volume?.h1 || 0) - (a.volume?.h1 || 0))
     .slice(0, 50)
     .map(mapPair);
@@ -203,32 +204,44 @@ module.exports = async (req, res) => {
     return res.end(JSON.stringify(dataCache.data));
   }
 
-  const pairs = await fetchBasePairPool();
+  try {
+    const pairs = await fetchBasePairPool();
 
-  const newTokens     = deriveNewTokens(pairs);
-  const trending      = deriveTrending(pairs);
-  const whaleActivity = deriveWhales(pairs);
-  const liveActivity  = deriveLiveActivity(pairs);
+    const newTokens     = deriveNewTokens(pairs);
+    const trending      = deriveTrending(pairs);
+    const whaleActivity = deriveWhales(pairs);
+    const liveActivity  = deriveLiveActivity(pairs);
 
-  const totalVolume1h = liveActivity.reduce((s, w) => s + (w.volume1h || 0), 0);
-  const stats = {
-    newTokensCount: newTokens.length,
-    trendingCount: trending.length,
-    whaleCount: whaleActivity.length,
-    liveCount: liveActivity.length,
-    totalVolume1h,
-    pairsScanned: pairs.length,
-    ts: now,
-  };
+    const totalVolume1h = liveActivity.reduce((s, w) => s + (w.volume1h || 0), 0);
+    const stats = {
+      newTokensCount: newTokens.length,
+      trendingCount: trending.length,
+      whaleCount: whaleActivity.length,
+      liveCount: liveActivity.length,
+      totalVolume1h,
+      pairsScanned: pairs.length,
+      ts: now,
+    };
 
-  const commentary = await generateCommentary(
-    { newTokens, trending, whaleActivity },
-    process.env.BANKR_LLM_KEY || process.env.ANTHROPIC_API_KEY || ''
-  );
+    const commentary = await generateCommentary(
+      { newTokens, trending, whaleActivity },
+      process.env.BANKR_LLM_KEY || process.env.ANTHROPIC_API_KEY || ''
+    );
 
-  const data = { newTokens, trending, whaleActivity, liveActivity, stats, commentary };
-  dataCache = { data, ts: now };
+    const data = { newTokens, trending, whaleActivity, liveActivity, stats, commentary };
+    dataCache = { data, ts: now };
 
-  res.writeHead(200, CORS);
-  res.end(JSON.stringify(data));
+    res.writeHead(200, CORS);
+    res.end(JSON.stringify(data));
+  } catch (err) {
+    // Return last cached data if available, else empty structure
+    const fallback = dataCache.data || {
+      newTokens: [], trending: [], whaleActivity: [], liveActivity: [],
+      stats: { newTokensCount:0, trendingCount:0, whaleCount:0, liveCount:0, totalVolume1h:0, pairsScanned:0, ts: now },
+      commentary: '',
+      error: err.message,
+    };
+    res.writeHead(200, CORS);
+    res.end(JSON.stringify(fallback));
+  }
 };
