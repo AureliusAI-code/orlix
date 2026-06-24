@@ -817,13 +817,6 @@ module.exports = async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(204).end();
   if (req.method !== 'POST')   return res.status(405).json({ error: 'Method not allowed' });
 
-  // ── Auth gate ─────────────────────────────────────────────────────────────
-  const authHeader = req.headers['authorization'] || '';
-  const isAuthenticated = authHeader.startsWith('Bearer wallet:0x');
-  if (!isAuthenticated) {
-    return res.status(401).json({ error: { message: 'Authentication required. Please log in at orlixai.xyz/login' } });
-  }
-
   const bodyObj = typeof req.body === 'object' && req.body !== null
     ? req.body : JSON.parse(req.body || '{}');
 

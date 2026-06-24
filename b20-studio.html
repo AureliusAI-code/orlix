@@ -5,7 +5,9 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>B20 Studio — Orlix AI</title>
 <meta name="description" content="Create and configure a B20 token on Base. Native precompile, role-based access, ERC-20 compatible. Powered by Orlix AI.">
-<link rel="icon" href="/favicon.ico">
+<link rel="icon" type="image/x-icon" href="/favicon.ico">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="manifest" href="/site.webmanifest">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -46,6 +48,48 @@ button,input,select{font-family:var(--font)}
   padding:5px 10px;font-size:.7rem;font-weight:600;color:var(--t2);
 }
 .chain-dot{width:6px;height:6px;border-radius:50%;background:var(--blue);box-shadow:0 0 5px rgba(59,130,246,.6)}
+/* ── AI AUTO-FILL ── */
+.ai-fill{background:linear-gradient(135deg,rgba(240,120,48,.05),rgba(167,139,250,.04));border:1px solid rgba(240,120,48,.18);border-radius:var(--radius);padding:14px 16px;margin-bottom:14px}
+.ai-fill-head{display:flex;align-items:center;gap:7px;margin-bottom:10px}
+.ai-fill-title{font-size:.68rem;font-weight:700;color:var(--orange);letter-spacing:.1em;text-transform:uppercase}
+.ai-fill-hint{margin-left:auto;font-size:.65rem;color:var(--t3)}
+.ai-fill-row{display:flex;gap:8px;align-items:flex-start}
+.ai-fill-ta{flex:1;background:var(--s2);border:1px solid var(--b1);border-radius:8px;padding:9px 12px;font-size:.8rem;color:var(--t1);font-family:var(--font);resize:none;outline:none;transition:border-color .15s;line-height:1.45;min-height:54px}
+.ai-fill-ta::placeholder{color:var(--t3)}
+.ai-fill-ta:focus{border-color:rgba(240,120,48,.4);box-shadow:0 0 0 3px rgba(240,120,48,.06)}
+.ai-fill-btn{padding:9px 14px;border-radius:8px;background:var(--orange);color:#fff;font-size:.76rem;font-weight:700;border:none;cursor:pointer;white-space:nowrap;transition:opacity .15s,transform .1s;font-family:var(--font);flex-shrink:0;margin-top:0}
+.ai-fill-btn:hover:not(:disabled){opacity:.88;transform:translateY(-1px)}
+.ai-fill-btn:disabled{opacity:.5;cursor:wait}
+.ai-status{margin-top:8px;font-size:.7rem;color:var(--t3);min-height:14px;transition:.2s}
+.ai-status.ok{color:#4ADE80}.ai-status.err{color:var(--red)}
+
+/* ── NEW LAUNCHED TAB ── */
+.launched-bar{display:flex;align-items:center;gap:8px;margin-bottom:20px;flex-wrap:wrap}
+.lchip{padding:4px 12px;border-radius:99px;border:1px solid var(--b1);background:none;color:var(--t3);font-size:.7rem;font-weight:600;cursor:pointer;transition:.15s;font-family:var(--font)}
+.lchip:hover{border-color:var(--b2);color:var(--t2)}
+.lchip.active{border-color:var(--orange);color:var(--orange);background:var(--orange-d)}
+.launched-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.lcard{background:var(--s1);border:1px solid var(--b1);border-radius:var(--radius);padding:16px;transition:border-color .15s,transform .2s;cursor:default}
+.lcard:hover{border-color:rgba(240,120,48,.3);transform:translateY(-2px)}
+.lcard-top{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.lcard-ico{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.82rem;font-weight:800;color:#fff;flex-shrink:0;letter-spacing:-.02em}
+.lcard-info{min-width:0}
+.lcard-name{font-size:.84rem;font-weight:700;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lcard-sym{font-size:.68rem;color:var(--t3);font-family:var(--mono);margin-top:1px}
+.lcard-badge{display:inline-flex;padding:2px 7px;border-radius:4px;font-size:.58rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;margin-left:auto;flex-shrink:0}
+.lbadge-asset{background:var(--orange-d);color:var(--orange);border:1px solid rgba(240,120,48,.2)}
+.lbadge-stable{background:rgba(74,222,128,.08);color:#4ADE80;border:1px solid rgba(74,222,128,.2)}
+.lcard-meta{display:flex;flex-direction:column;gap:3px;font-size:.68rem;color:var(--t3);margin-bottom:12px}
+.lcard-meta-row{display:flex;align-items:center;gap:6px}
+.lcard-actions{display:flex;gap:6px}
+.lcard-act{flex:1;padding:5px 8px;border-radius:6px;border:1px solid var(--b1);background:none;color:var(--t3);font-size:.68rem;cursor:pointer;transition:.15s;font-family:var(--font);text-align:center;text-decoration:none;display:flex;align-items:center;justify-content:center}
+.lcard-act:hover{border-color:var(--b2);color:var(--t1)}
+.launched-empty{text-align:center;padding:64px 20px}
+.le-ico{font-size:2.2rem;margin-bottom:14px;opacity:.25}
+.le-title{font-size:.92rem;font-weight:700;color:var(--t1);margin-bottom:6px}
+.le-sub{font-size:.78rem;color:var(--t3);line-height:1.65;max-width:300px;margin:0 auto 18px}
+.launched-spin{text-align:center;padding:40px;color:var(--t3);font-size:.78rem}
+
 /* wallet widget styles are injected by /wallet-dist/wallet.js */
 
 /* ── LAYOUT ── */
@@ -77,8 +121,9 @@ button,input,select{font-family:var(--font)}
 }
 .sb-link:hover{color:var(--t2);background:rgba(255,255,255,.03)}
 .sb-link.active{color:var(--t1);background:var(--orange-d);border-left-color:var(--orange)}
-.sb-ico{font-size:.82rem;width:16px;text-align:center;flex-shrink:0;opacity:.7}
-.sb-link.active .sb-ico{opacity:1}
+.sb-ico{display:flex;align-items:center;justify-content:center;width:16px;flex-shrink:0;opacity:.65}
+.sb-ico svg{display:block}
+.sb-link.active .sb-ico,.sb-link:hover .sb-ico{opacity:1}
 
 /* ── CONTENT ── */
 .content{padding:28px 26px 80px;min-width:0;overflow-x:hidden}
@@ -353,17 +398,18 @@ input[type=range]:disabled{opacity:.4;cursor:not-allowed}
   display:none;position:fixed;bottom:0;left:0;right:0;z-index:100;
   background:rgba(10,10,14,.97);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
   border-top:1px solid var(--b1);
-  display:none;grid-template-columns:repeat(4,1fr);
+  display:none;grid-template-columns:repeat(5,1fr);
 }
 .bn-item{
   display:flex;flex-direction:column;align-items:center;justify-content:center;
-  gap:3px;padding:9px 4px 10px;cursor:pointer;
+  gap:4px;padding:10px 4px 11px;cursor:pointer;
   border:none;background:none;color:var(--t3);
-  text-decoration:none;transition:color .15s;
+  text-decoration:none;transition:color .18s;
 }
 .bn-item.active,.bn-item:hover{color:var(--orange)}
-.bn-ico{font-size:.95rem;line-height:1}
-.bn-lbl{font-size:.6rem;font-weight:600;letter-spacing:.02em}
+.bn-ico{display:flex;align-items:center;justify-content:center;height:20px}
+.bn-ico svg{display:block}
+.bn-lbl{font-size:.58rem;font-weight:600;letter-spacing:.03em;text-transform:uppercase}
 
 /* ── RESPONSIVE ── */
 @media(max-width:1100px){
@@ -387,6 +433,15 @@ input[type=range]:disabled{opacity:.4;cursor:not-allowed}
   .nav-badge-label{display:none}
   .chain-pill{display:none}
 }
+/* fallback wallet button — visible until RainbowKit mounts */
+#wallet-fallback{
+  display:flex;align-items:center;gap:6px;
+  background:var(--s2);border:1px solid var(--b1);border-radius:7px;
+  padding:5px 12px;font-size:.74rem;font-weight:600;color:var(--t2);
+  cursor:pointer;transition:all .15s;white-space:nowrap;font-family:var(--font);
+}
+#wallet-fallback:hover{border-color:var(--b2);color:var(--t1)}
+#wallet-fallback .wf-dot{width:6px;height:6px;border-radius:50%;background:var(--t3);flex-shrink:0}
 </style>
 </head>
 <body>
@@ -404,7 +459,11 @@ input[type=range]:disabled{opacity:.4;cursor:not-allowed}
   </div>
   <div class="nav-right">
     <div class="chain-pill"><div class="chain-dot"></div>Base</div>
-    <div id="orlix-wallet" style="display:flex;align-items:center"></div>
+    <div id="orlix-wallet" style="display:flex;align-items:center">
+      <button id="wallet-fallback" onclick="walletFallback()">
+        <span class="wf-dot"></span>Connect Wallet
+      </button>
+    </div>
   </div>
 </nav>
 
@@ -414,18 +473,21 @@ input[type=range]:disabled{opacity:.4;cursor:not-allowed}
 <aside class="sidebar">
   <div class="sb-sect">Studio</div>
   <a class="sb-link active" id="sbCreate" onclick="showTab('create',this)">
-    <span class="sb-ico">+</span> Create
+    <span class="sb-ico"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="10" cy="10" r="7.5"/><path d="M10 6.5v7M6.5 10h7"/></svg></span> Create
+  </a>
+  <a class="sb-link" id="sbNew" onclick="showTab('new',this)">
+    <span class="sb-ico"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="2.5,15 7,9.5 11.5,12.5 17.5,5"/><polyline points="13.5,5 17.5,5 17.5,9"/></svg></span> New Launched
   </a>
   <a class="sb-link" id="sbTokens" onclick="showTab('tokens',this)">
-    <span class="sb-ico">◈</span> My Tokens
+    <span class="sb-ico"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><ellipse cx="10" cy="6.5" rx="5.5" ry="2"/><path d="M4.5 6.5v3c0 1.1 2.5 2 5.5 2s5.5-.9 5.5-2v-3"/><path d="M4.5 9.5v3c0 1.1 2.5 2 5.5 2s5.5-.9 5.5-2v-3"/></svg></span> My Tokens
   </a>
   <a class="sb-link" id="sbManage" onclick="showTab('manage',this)">
-    <span class="sb-ico">⚙</span> Manage
+    <span class="sb-ico"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 5h14"/><circle cx="7" cy="5" r="2"/><path d="M3 10h14"/><circle cx="13" cy="10" r="2"/><path d="M3 15h14"/><circle cx="7" cy="15" r="2"/></svg></span> Manage
   </a>
   <div class="sb-sect">Orlix</div>
-  <a class="sb-link" href="/app"><span class="sb-ico">✦</span> Use in Orlix</a>
-  <a class="sb-link" href="/docs/api"><span class="sb-ico">🔌</span> API Docs</a>
-  <a class="sb-link" href="/docs"><span class="sb-ico">📄</span> Docs</a>
+  <a class="sb-link" href="/app#playground"><span class="sb-ico"><svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path d="M10 2c-.35 3-1.6 5.5-4 6.8 2.4 1.3 3.65 3.8 4 6.8.35-3 1.6-5.5 4-6.8-2.4-1.3-3.65-3.8-4-6.8z"/></svg></span> Use in Orlix</a>
+  <a class="sb-link" href="/docs/api"><span class="sb-ico"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 6.5L3 10l3.5 3.5"/><path d="M13.5 6.5L17 10l-3.5 3.5"/><path d="M11.5 4.5l-3 11"/></svg></span> API Docs</a>
+  <a class="sb-link" href="/docs"><span class="sb-ico"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="4" y="2.5" width="12" height="15" rx="1.5"/><path d="M7 7h6M7 10.5h6M7 14h4"/></svg></span> Docs</a>
 </aside>
 
 <!-- MAIN CONTENT -->
@@ -436,6 +498,22 @@ input[type=range]:disabled{opacity:.4;cursor:not-allowed}
     <div class="pg-label">Create</div>
     <h1 class="pg-title">Create a B20 Token</h1>
     <p class="pg-sub">Deploy a native Base token. Role-gated, ERC-20 compatible, precompile-backed.</p>
+
+    <!-- AI AUTO-FILL -->
+    <div class="ai-fill">
+      <div class="ai-fill-head">
+        <span style="color:var(--orange);font-size:.9rem">✦</span>
+        <span class="ai-fill-title">AI Auto-Fill</span>
+        <span class="ai-fill-hint">Describe your token, we fill the form</span>
+      </div>
+      <div class="ai-fill-row">
+        <textarea class="ai-fill-ta" id="aiDesc" rows="2"
+          placeholder="e.g. a deflationary gaming reward token called GAMEFI with 500M supply and burn mechanic"
+          onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();aiAutoFill()}"></textarea>
+        <button class="ai-fill-btn" id="aiFillBtn" onclick="aiAutoFill()">✦ Generate</button>
+      </div>
+      <div class="ai-status" id="aiStatus"></div>
+    </div>
 
     <div class="card">
 
@@ -578,7 +656,7 @@ input[type=range]:disabled{opacity:.4;cursor:not-allowed}
         </div>
       </div>
       <div class="use-grid">
-        <a class="use-card" href="/app">
+        <a class="use-card" href="/app#playground">
           <div class="use-ico">✦</div>
           <div class="use-cname">Ask AI</div>
           <div class="use-cdesc">Role audits, compliance setup, deploy guides via Orlix AI.</div>
@@ -616,6 +694,22 @@ input[type=range]:disabled{opacity:.4;cursor:not-allowed}
       <div class="empty-ico">⚙</div>
       <div class="empty-t">No token selected</div>
       Deploy a token first, then manage it here.
+    </div>
+  </div>
+
+  <!-- NEW LAUNCHED TAB -->
+  <div id="tabNew" style="display:none">
+    <div class="pg-label">Explore</div>
+    <h1 class="pg-title">New Launched</h1>
+    <p class="pg-sub">B20 tokens deployed on Base — live as they hit the chain.</p>
+    <div class="launched-bar">
+      <button class="lchip active" id="lchipAll"    onclick="filterLaunched('all',this)">All</button>
+      <button class="lchip"        id="lchipAsset"  onclick="filterLaunched('asset',this)">Asset</button>
+      <button class="lchip"        id="lchipStable" onclick="filterLaunched('stablecoin',this)">Stablecoin</button>
+      <button onclick="loadLaunched()" style="margin-left:auto;background:none;border:1px solid var(--b1);border-radius:7px;color:var(--t3);padding:4px 11px;font-size:.72rem;cursor:pointer;font-family:var(--font);transition:.15s" onmouseover="this.style.color='var(--t1)'" onmouseout="this.style.color='var(--t3)'">↻ Refresh</button>
+    </div>
+    <div id="launchedGrid" class="launched-grid">
+      <div class="launched-spin">Loading…</div>
     </div>
   </div>
 
@@ -676,19 +770,23 @@ input[type=range]:disabled{opacity:.4;cursor:not-allowed}
 <!-- MOBILE BOTTOM NAV -->
 <nav class="bottom-nav" id="bottomNav">
   <button class="bn-item active" id="bnCreate" onclick="showTab('create',this,true)">
-    <span class="bn-ico">+</span>
+    <span class="bn-ico"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="10" cy="10" r="7.5"/><path d="M10 6.5v7M6.5 10h7"/></svg></span>
     <span class="bn-lbl">Create</span>
   </button>
+  <button class="bn-item" id="bnNew" onclick="showTab('new',this,true)">
+    <span class="bn-ico"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polyline points="2.5,15 7,9.5 11.5,12.5 17.5,5"/><polyline points="13.5,5 17.5,5 17.5,9"/></svg></span>
+    <span class="bn-lbl">New</span>
+  </button>
   <button class="bn-item" id="bnTokens" onclick="showTab('tokens',this,true)">
-    <span class="bn-ico">◈</span>
+    <span class="bn-ico"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><ellipse cx="10" cy="6.5" rx="5.5" ry="2"/><path d="M4.5 6.5v3c0 1.1 2.5 2 5.5 2s5.5-.9 5.5-2v-3"/><path d="M4.5 9.5v3c0 1.1 2.5 2 5.5 2s5.5-.9 5.5-2v-3"/></svg></span>
     <span class="bn-lbl">My Tokens</span>
   </button>
   <button class="bn-item" id="bnManage" onclick="showTab('manage',this,true)">
-    <span class="bn-ico">⚙</span>
+    <span class="bn-ico"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M3 5h14"/><circle cx="7" cy="5" r="2"/><path d="M3 10h14"/><circle cx="13" cy="10" r="2"/><path d="M3 15h14"/><circle cx="7" cy="15" r="2"/></svg></span>
     <span class="bn-lbl">Manage</span>
   </button>
-  <a class="bn-item" href="/app">
-    <span class="bn-ico">✦</span>
+  <a class="bn-item" href="/app#playground">
+    <span class="bn-ico"><svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor"><path d="M10 2c-.35 3-1.6 5.5-4 6.8 2.4 1.3 3.65 3.8 4 6.8.35-3 1.6-5.5 4-6.8-2.4-1.3-3.65-3.8-4-6.8z"/></svg></span>
     <span class="bn-lbl">Orlix AI</span>
   </a>
 </nav>
@@ -791,19 +889,22 @@ function onPolicyChange() {
 
 // ── tabs ──────────────────────────────────────────────────────────────────────
 function showTab(name, el, isMobile) {
-  ['tabCreate','tabTokens','tabManage'].forEach(id => {
+  ['tabCreate','tabTokens','tabManage','tabNew'].forEach(id => {
     document.getElementById(id).style.display = (id === 'tab' + cap1(name)) ? '' : 'none';
   });
-  ['sbCreate','sbTokens','sbManage'].forEach(id => {
+  ['sbCreate','sbTokens','sbManage','sbNew'].forEach(id => {
     const e2 = document.getElementById(id); if (e2) e2.classList.remove('active');
   });
-  const sbEl = document.getElementById({create:'sbCreate',tokens:'sbTokens',manage:'sbManage'}[name]);
+  const sbMap = {create:'sbCreate',tokens:'sbTokens',manage:'sbManage',new:'sbNew'};
+  const sbEl = document.getElementById(sbMap[name]);
   if (sbEl) sbEl.classList.add('active');
-  ['bnCreate','bnTokens','bnManage'].forEach(id => {
+  ['bnCreate','bnTokens','bnManage','bnNew'].forEach(id => {
     const e2 = document.getElementById(id); if (e2) e2.classList.remove('active');
   });
-  const bnEl = document.getElementById({create:'bnCreate',tokens:'bnTokens',manage:'bnManage'}[name]);
+  const bnMap = {create:'bnCreate',tokens:'bnTokens',manage:'bnManage',new:'bnNew'};
+  const bnEl = document.getElementById(bnMap[name]);
   if (bnEl) bnEl.classList.add('active');
+  if (name === 'new') loadLaunched();
   if (isMobile) window.scrollTo({top:0,behavior:'smooth'});
 }
 function cap1(s) { return s[0].toUpperCase() + s.slice(1); }
@@ -989,6 +1090,116 @@ async function onDeploy() {
   }
 }
 
+// ── AI auto-fill ──────────────────────────────────────────────────────────────
+async function aiAutoFill() {
+  const desc = (document.getElementById('aiDesc').value || '').trim();
+  if (!desc) return;
+  const btn = document.getElementById('aiFillBtn');
+  const status = document.getElementById('aiStatus');
+  btn.disabled = true; btn.textContent = '⏳ Generating…';
+  status.className = 'ai-status'; status.textContent = 'Asking AI…';
+  try {
+    const r = await fetch(`${location.origin}/api/b20-ai`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ description: desc })
+    });
+    if (!r.ok) { const e = await r.json().catch(()=>({error:'Error '+r.status})); throw new Error(e.error||'Error '+r.status); }
+    const d = await r.json();
+    if (d.name)   document.getElementById('fName').value = d.name;
+    if (d.symbol) document.getElementById('fSym').value = d.symbol.toUpperCase().slice(0,11);
+    if (d.variant) setVariant(d.variant);
+    if (d.decimals !== undefined) { document.getElementById('fDec').value = d.decimals; onDecChange(); }
+    if (d.uncapped !== undefined) { document.getElementById('fUncapped').checked = !!d.uncapped; onCapToggle(); }
+    if (d.supply && !d.uncapped) document.getElementById('fCap').value = Number(d.supply).toLocaleString();
+    if (d.allowlist !== undefined) document.getElementById('fAllow').checked = !!d.allowlist;
+    if (d.blocklist !== undefined) document.getElementById('fBlock').checked = !!d.blocklist;
+    if (d.freeze   !== undefined) document.getElementById('fFreeze').checked  = !!d.freeze;
+    onFormChange(); onPolicyChange();
+    status.className = 'ai-status ok';
+    status.textContent = '✓ Form filled — review and adjust before deploying';
+  } catch(e) {
+    status.className = 'ai-status err';
+    status.textContent = '✗ ' + (e.message || 'Failed to generate');
+  }
+  btn.disabled = false; btn.textContent = '✦ Generate';
+}
+
+// ── new launched ──────────────────────────────────────────────────────────────
+let _launchedAll = [], _launchedFilter = 'all', _launchedLoaded = false;
+
+const TOKEN_COLORS = ['#F07830','#A78BFA','#22C55E','#3B82F6','#F59E0B','#EF4444','#06B6D4','#EC4899'];
+function tokenColor(sym) { let h=0; for(const c of (sym||'?')) h=(h*31+c.charCodeAt(0))&0xffff; return TOKEN_COLORS[h % TOKEN_COLORS.length]; }
+
+function renderLaunchedGrid() {
+  const grid = document.getElementById('launchedGrid');
+  const items = _launchedFilter === 'all' ? _launchedAll : _launchedAll.filter(t => t.variant === _launchedFilter);
+  if (!items.length) {
+    grid.innerHTML = `<div class="launched-empty" style="grid-column:1/-1">
+      <div class="le-ico">🚀</div>
+      <div class="le-title">${_launchedAll.length ? 'No tokens match this filter' : 'No B20 tokens deployed yet'}</div>
+      <div class="le-sub">${_launchedAll.length ? 'Try a different filter.' : 'B20 Studio goes live with Base Beryl. Be the first to deploy a token.'}</div>
+      ${!_launchedAll.length ? `<button onclick="showTab('create',document.getElementById('sbCreate'))" style="margin-top:2px;padding:8px 18px;border-radius:8px;background:var(--orange);color:#fff;border:none;cursor:pointer;font-size:.78rem;font-weight:700;font-family:var(--font)">+ Create First Token</button>` : ''}
+    </div>`;
+    return;
+  }
+  grid.innerHTML = items.map(t => {
+    const ago = _timeAgo(t.deployedAt);
+    const col = tokenColor(t.symbol);
+    const initials = (t.symbol||'?').slice(0,3);
+    return `<div class="lcard">
+      <div class="lcard-top">
+        <div class="lcard-ico" style="background:${col}">${initials}</div>
+        <div class="lcard-info">
+          <div class="lcard-name">${_esc(t.name||'Unknown')}</div>
+          <div class="lcard-sym">${_esc(t.symbol||'???')}</div>
+        </div>
+        <span class="lcard-badge ${t.variant==='stablecoin'?'lbadge-stable':'lbadge-asset'}">${t.variant||'asset'}</span>
+      </div>
+      <div class="lcard-meta">
+        <div class="lcard-meta-row"><span style="opacity:.5">⏱</span>${ago}</div>
+        <div class="lcard-meta-row"><span style="opacity:.5">👤</span>${t.deployer?t.deployer.slice(0,6)+'…'+t.deployer.slice(-4):'unknown'}</div>
+        ${t.supply?`<div class="lcard-meta-row"><span style="opacity:.5">◎</span>${Number(t.supply).toLocaleString()} supply</div>`:''}
+      </div>
+      <div class="lcard-actions">
+        ${t.txHash?`<a class="lcard-act" href="https://basescan.org/tx/${t.txHash}" target="_blank" rel="noopener">Basescan ↗</a>`:''}
+        <button class="lcard-act" onclick="showTab('manage',document.getElementById('sbManage'))">Manage</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function filterLaunched(type, el) {
+  _launchedFilter = type;
+  ['lchipAll','lchipAsset','lchipStable'].forEach(id => { const e = document.getElementById(id); if(e) e.classList.remove('active'); });
+  if (el) el.classList.add('active');
+  renderLaunchedGrid();
+}
+
+async function loadLaunched() {
+  if (_launchedLoaded) { renderLaunchedGrid(); return; }
+  document.getElementById('launchedGrid').innerHTML = '<div class="launched-spin">Fetching from Base…</div>';
+  try {
+    const r = await fetch(`${location.origin}/api/b20-tokens`);
+    if (r.ok) {
+      const d = await r.json();
+      _launchedAll = d.tokens || [];
+    }
+  } catch(_) {}
+  _launchedLoaded = true;
+  renderLaunchedGrid();
+}
+
+function _timeAgo(ms) {
+  if (!ms) return 'just now';
+  const s = Math.floor((Date.now() - ms) / 1000);
+  if (s < 60) return s + 's ago';
+  if (s < 3600) return Math.floor(s/60) + 'm ago';
+  if (s < 86400) return Math.floor(s/3600) + 'h ago';
+  return Math.floor(s/86400) + 'd ago';
+}
+function _esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
 // ── feature gated toast ───────────────────────────────────────────────────────
 function dismissFeatGate() {
   const el = document.getElementById('featGate');
@@ -997,7 +1208,26 @@ function dismissFeatGate() {
   try { sessionStorage.setItem('fg_dismissed','1'); } catch {}
 }
 
-// ── wallet events (from /wallet-dist/wallet.js) ───────────────────────────────
+// ── wallet fallback (instant — works before wallet.js loads) ─────────────────
+async function walletFallback() {
+  if (!window.ethereum) { alert('Tidak ada wallet terdeteksi. Install MetaMask atau buka lewat browser wallet.'); return; }
+  try {
+    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+    if (accounts[0]) {
+      const addr = accounts[0];
+      const fb = document.getElementById('wallet-fallback');
+      if (fb) { fb.innerHTML = `<span class="wf-dot" style="background:#4ADE80;box-shadow:0 0 5px rgba(74,222,128,.5)"></span>${addr.slice(0,6)}…${addr.slice(-4)}`; fb.style.borderColor='rgba(74,222,128,.3)'; fb.style.color='#f1f1f3'; }
+      window.dispatchEvent(new CustomEvent('orlix:wallet:connected', { detail: { address: addr } }));
+    }
+  } catch(e) { console.warn('wallet fallback:', e); }
+}
+// Hide fallback once RainbowKit injects its own button
+new MutationObserver(() => {
+  const fb = document.getElementById('wallet-fallback');
+  if (fb && document.querySelector('.ow-btn')) fb.style.display = 'none';
+}).observe(document.getElementById('orlix-wallet') || document.body, { childList: true, subtree: true });
+
+// ── wallet events (dispatched by /wallet-dist/wallet.js) ─────────────────────
 window.addEventListener('orlix:wallet:connected', (e) => {
   const addr = e.detail?.address;
   if (!addr) return;
@@ -1024,7 +1254,6 @@ window.addEventListener('orlix:wallet:disconnected', () => {
 })();
 </script>
 
-<!-- Orlix Wallet Widget — wagmi + RainbowKit (MetaMask, Coinbase, WalletConnect) -->
 <script src="/wallet-dist/wallet.js" defer></script>
 </body>
 </html>

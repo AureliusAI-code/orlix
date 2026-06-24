@@ -1,16 +1,14 @@
 import { useEffect, useRef } from 'react'
 import { useAccount } from 'wagmi'
 
-// Syncs wagmi wallet state to localStorage (orlix_user / orlix_token)
-// and dispatches custom DOM events so vanilla-JS pages can react.
+// Syncs wagmi wallet state → localStorage + custom DOM events.
+// Vanilla-JS pages listen to orlix:wallet:connected / orlix:wallet:disconnected.
 export function useWalletSession() {
   const { address, isConnected, status } = useAccount()
-
-  // Track previous address to avoid duplicate dispatches
   const prevAddr = useRef<string | undefined>(undefined)
 
   useEffect(() => {
-    // Skip transient states — wait for settled connected/disconnected
+    // Skip transient states — wait for settled connected / disconnected
     if (status === 'connecting' || status === 'reconnecting') return
 
     if (isConnected && address) {
@@ -28,7 +26,7 @@ export function useWalletSession() {
         localStorage.setItem('orlix_user', JSON.stringify(userData))
         localStorage.setItem('orlix_token', `wallet:${address}`)
       } catch {
-        // localStorage blocked (e.g. private browsing with strict settings)
+        // localStorage blocked in strict private browsing
       }
 
       window.dispatchEvent(
@@ -48,4 +46,19 @@ export function useWalletSession() {
       window.dispatchEvent(new CustomEvent('orlix:wallet:disconnected'))
     }
   }, [isConnected, address, status])
+
+  // On first mount: if wagmi has already reconnected from a persisted session,
+  // fire the connected event immediately so the page reflects the right state.
+  useEffect(() => {
+    if (status === 'connected' && address && prevAddr.current === undefined) {
+      prevAddr.current = address
+      const display = `${address.slice(0, 6)}…${address.slice(-4)}`
+      try {
+        localStorage.setItem('orlix_user', JSON.stringify({ id: address, address, display, type: 'wallet' }))
+        localStorage.setItem('orlix_token', `wallet:${address}`)
+      } catch {}
+      window.dispatchEvent(new CustomEvent('orlix:wallet:connected', { detail: { address, display } }))
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 }

@@ -74,7 +74,7 @@ input,select,textarea{font-family:var(--mono)}
 .status-dot{animation:blink 2.5s ease-in-out infinite}
 
 /* ── layout ── */
-.app-layout{display:flex;height:100vh;padding-top:52px}
+.app-layout{display:flex;height:100vh;height:100dvh;padding-top:52px}
 
 /* ── sidebar ── */
 .sidebar{
@@ -95,7 +95,8 @@ input,select,textarea{font-family:var(--mono)}
 }
 .sb-item:hover{color:var(--text-1);background:rgba(255,255,255,.04)}
 .sb-item.active{color:var(--orange);border-left-color:var(--orange);background:var(--orange-dim)}
-.sb-item .ic{font-size:.8rem;width:15px;text-align:center;flex-shrink:0}
+.sb-item .ic{display:flex;align-items:center;justify-content:center;width:15px;flex-shrink:0}
+.sb-item .ic svg{display:block}
 .sb-item .badge{
   margin-left:auto;background:var(--orange-dim);color:var(--orange);
   font-size:.62rem;padding:1px 7px;border-radius:10px;line-height:1.5;
@@ -106,8 +107,10 @@ input,select,textarea{font-family:var(--mono)}
 
 /* ── main area ── */
 .main{flex:1;overflow-y:auto;padding:28px 32px;min-width:0;background:var(--bg)}
+.main.pg-mode{overflow:hidden;padding-top:14px;padding-bottom:0}
 .view{display:none}
 .view.active{display:block}
+#view-playground.active{height:100%;display:flex;flex-direction:column;overflow:hidden}
 @keyframes boot-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 .view.active{animation:boot-in .2s ease}
 
@@ -272,13 +275,19 @@ select.inp{cursor:pointer}
 .model-try:hover{border-color:var(--orange);color:var(--orange)}
 
 /* ── playground ── */
-.chat-wrap{display:flex;flex-direction:column;height:calc(100vh - 160px);min-height:300px}
-.chat-controls{display:flex;gap:9px;margin-bottom:14px;flex-wrap:wrap;align-items:center}
-.chat-model-sel{flex:1;min-width:200px}
+.chat-wrap{display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden}
+.chat-controls{display:flex;gap:8px;margin-bottom:8px;align-items:center}
+.chat-model-sel{flex:1;min-width:0}
+.pg-status{font-size:.72rem;color:var(--text-3);display:flex;align-items:center;gap:5px;margin-bottom:10px;min-height:16px}
+.pg-status:empty{margin-bottom:0}
+.pg-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;display:inline-block}
+.btn-icon{display:flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:8px;border:1px solid var(--border);background:none;color:var(--text-3);cursor:pointer;transition:all var(--tr);flex-shrink:0}
+.btn-icon:hover{color:var(--text-1);border-color:var(--border-hover);background:rgba(255,255,255,.04)}
+.btn-icon.active{color:var(--orange);border-color:rgba(240,120,48,.3);background:var(--orange-dim)}
 .chat-messages{
-  flex:1;overflow-y:auto;background:var(--bg);
+  flex:1;min-height:0;overflow-y:auto;background:var(--bg);
   border:1px solid var(--border);border-radius:var(--radius);
-  padding:16px;display:flex;flex-direction:column;gap:12px;margin-bottom:12px;
+  padding:16px;display:flex;flex-direction:column;gap:12px;margin-bottom:10px;
 }
 .msg{display:flex;flex-direction:column;gap:4px;max-width:88%}
 .msg.user{align-self:flex-end;align-items:flex-end}
@@ -324,16 +333,31 @@ select.inp{cursor:pointer}
 .preview-bar span{color:var(--text-3);font-size:.78rem;font-family:var(--mono)}
 .preview-close{background:rgba(255,255,255,.08);border:1px solid var(--border);color:var(--text-2);border-radius:8px;padding:5px 14px;cursor:pointer;font-size:.8rem;transition:all var(--tr)}
 .preview-close:hover{background:rgba(255,255,255,.14);color:var(--text-1)}
-.chat-input-row{display:flex;gap:9px}
-.chat-input-row textarea{
-  flex:1;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);
-  color:var(--text-1);font-size:.79rem;padding:9px 12px;outline:none;resize:none;
-  height:68px;transition:all var(--tr);font-family:var(--mono);line-height:1.55;
+.chat-input-row{
+  display:flex;gap:10px;align-items:center;
+  padding:10px 12px 10px;
+  background:var(--bg-2);border-top:1px solid var(--border);
+  margin:0 -32px;padding-left:32px;padding-right:32px;
 }
-.chat-input-row textarea:focus{border-color:rgba(240,120,48,.5);box-shadow:0 0 0 3px rgba(240,120,48,.1)}
+.chat-input-row textarea{
+  flex:1;background:var(--bg-3);border:1px solid var(--border);border-radius:22px;
+  color:var(--text-1);font-size:.82rem;padding:10px 16px;outline:none;resize:none;
+  height:44px;max-height:160px;transition:border-color var(--tr),box-shadow var(--tr);
+  font-family:var(--font);line-height:1.4;
+}
+.chat-input-row textarea:focus{border-color:rgba(240,120,48,.4);box-shadow:0 0 0 3px rgba(240,120,48,.08)}
 .chat-input-row textarea::placeholder{color:var(--text-3)}
-.chat-send{display:flex;flex-direction:column;gap:7px}
-.chat-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:var(--text-3);gap:8px;font-size:.8rem}
+.chat-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:var(--text-3);gap:10px;font-size:.8rem}
+.chat-attach-btn{border-radius:12px!important}
+.chat-send-btn{
+  display:flex;align-items:center;justify-content:center;
+  width:44px;height:44px;border-radius:14px;border:none;flex-shrink:0;
+  background:var(--orange);color:#fff;cursor:pointer;
+  transition:background var(--tr),transform var(--tr);
+}
+.chat-send-btn:hover{background:#e06820}
+.chat-send-btn:active{transform:scale(.94)}
+.chat-empty-ico{opacity:.2}
 .typing-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--orange);animation:tdot .9s infinite}
 .typing-dot:nth-child(2){animation-delay:.2s}
 .typing-dot:nth-child(3){animation-delay:.4s}
@@ -370,19 +394,6 @@ select.inp{cursor:pointer}
   border-radius:var(--radius);margin-bottom:18px;
 }
 
-/* ── leaderboard ── */
-.lb-row{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid rgba(255,255,255,.05);transition:all var(--tr)}
-.lb-row:last-child{border-bottom:none}
-.lb-row:hover{background:rgba(255,255,255,.025);margin:0 -8px;padding:11px 8px;border-radius:7px}
-.lb-rank{color:var(--text-3);font-size:.78rem;min-width:26px;text-align:center;font-weight:700}
-.lb-rank.g1{color:#FBBF24;font-size:.95rem}
-.lb-rank.g2{color:#9CA3AF}
-.lb-rank.g3{color:#B87C4C}
-.lb-avatar{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:.95rem;flex-shrink:0;background:var(--bg-3);border:1px solid var(--border)}
-.lb-name{flex:1;color:var(--text-1);font-size:.8rem;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500}
-.lb-score{color:var(--orange);font-size:.82rem;font-weight:700;min-width:50px;text-align:right}
-.lb-badge{font-size:.62rem;padding:2px 7px;border-radius:10px;background:var(--orange-dim);color:var(--orange);border:1px solid rgba(240,120,48,.22);margin-left:7px;font-weight:600}
-.lb-you{background:rgba(240,120,48,.06) !important;border-left:2px solid var(--orange) !important}
 
 /* ── share/publish/preview ── */
 .msg-action-row{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
@@ -467,7 +478,9 @@ select.inp{cursor:pointer}
   .stat-grid{grid-template-columns:1fr 1fr}
   .agent-actions{display:none}
   .provider-grid{grid-template-columns:1fr}
-  .chat-wrap{height:calc(100vh - 200px)}
+  .main.pg-mode{padding-top:12px}
+  .chat-input-row{margin:0 -14px;padding-left:14px;padding-right:14px;padding-bottom:max(10px,env(safe-area-inset-bottom))}
+  .chat-input-row textarea{height:40px;border-radius:20px}
 }
 
 /* ── transaction card (inline in chat) ── */
@@ -620,36 +633,35 @@ select.inp{cursor:pointer}
     </div>
     <div class="sb-sect">
       <span class="sb-label">system</span>
-      <div class="sb-item active" data-view="overview"><span class="ic">◈</span>overview</div>
+      <div class="sb-item active" data-view="overview"><span class="ic"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="2.5" width="6.5" height="6.5" rx="1.5"/><rect x="11" y="2.5" width="6.5" height="6.5" rx="1.5"/><rect x="2.5" y="11" width="6.5" height="6.5" rx="1.5"/><rect x="11" y="11" width="6.5" height="6.5" rx="1.5"/></svg></span>overview</div>
     </div>
     <div class="sb-sect">
       <span class="sb-label">data</span>
-      <div class="sb-item" data-view="memory"><span class="ic">◉</span>memory<span class="badge" id="bdg-mem">12</span></div>
-      <div class="sb-item" data-view="goals"><span class="ic">◎</span>goals<span class="badge" id="bdg-goals">5</span></div>
+      <div class="sb-item" data-view="memory"><span class="ic"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 10l8 4.5 8-4.5"/><path d="M2 13.5l8 4.5 8-4.5"/><path d="M10 2L2 6.5 10 11 18 6.5z"/></svg></span>memory<span class="badge" id="bdg-mem">12</span></div>
+      <div class="sb-item" data-view="goals"><span class="ic"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="10" cy="10" r="7.5"/><circle cx="10" cy="10" r="3.5"/><circle cx="10" cy="10" r="1" fill="currentColor" stroke="none"/></svg></span>goals<span class="badge" id="bdg-goals">5</span></div>
     </div>
     <div class="sb-sect">
       <span class="sb-label">governance</span>
-      <div class="sb-item" data-view="policies"><span class="ic">⊡</span>policies<span class="badge" id="bdg-pol">8</span></div>
-      <div class="sb-item" data-view="audit"><span class="ic">≡</span>audit log</div>
+      <div class="sb-item" data-view="policies"><span class="ic"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2L3 5.5v5c0 3.7 3 7 7 8 4-1 7-4.3 7-8v-5z"/></svg></span>policies<span class="badge" id="bdg-pol">8</span></div>
+      <div class="sb-item" data-view="audit"><span class="ic"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h12M4 10h12M4 14h7"/></svg></span>audit log</div>
     </div>
     <div class="sb-sect">
       <span class="sb-label">integrations</span>
-      <div class="sb-item" data-view="agents"><span class="ic">A</span>Agents<span class="badge">Aeon</span></div>
-      <div class="sb-item" data-view="aeon-memory"><span class="ic">M</span>Memory</div>
-      <div class="sb-item" data-view="models"><span class="ic">◫</span>models<span class="badge">19</span></div>
-      <div class="sb-item" data-view="playground"><span class="ic">▷</span>playground</div>
-      <div class="sb-item" data-view="leaderboard"><span class="ic">⊞</span>leaderboard</div>
+      <div class="sb-item" data-view="agents"><span class="ic"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="8" cy="7" r="3"/><path d="M2 17c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="15" cy="7" r="2.5"/><path d="M18 17c0-2.8-1.8-5-4-5.5"/></svg></span>Agents<span class="badge">Aeon</span></div>
+      <div class="sb-item" data-view="aeon-memory"><span class="ic"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><ellipse cx="10" cy="5.5" rx="5.5" ry="2"/><path d="M4.5 5.5v4c0 1.1 2.5 2 5.5 2s5.5-.9 5.5-2v-4"/><path d="M4.5 9.5v4c0 1.1 2.5 2 5.5 2s5.5-.9 5.5-2v-4"/></svg></span>Memory</div>
+      <div class="sb-item" data-view="models"><span class="ic"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="5" width="10" height="10" rx="1.5"/><path d="M8 5V3M12 5V3M8 17v-2M12 17v-2M5 8H3M5 12H3M15 8h2M15 12h2"/></svg></span>models<span class="badge">19</span></div>
+      <div class="sb-item" data-view="playground"><span class="ic"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="3.5" width="15" height="13" rx="2"/><path d="M6 8l3 3-3 3M11 14h3"/></svg></span>playground</div>
     </div>
     <div class="sb-sect">
       <span class="sb-label">config</span>
-      <div class="sb-item" data-view="settings"><span class="ic">S</span>settings</div>
+      <div class="sb-item" data-view="settings"><span class="ic"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 5h14"/><circle cx="7" cy="5" r="2"/><path d="M3 10h14"/><circle cx="13" cy="10" r="2"/><path d="M3 15h14"/><circle cx="7" cy="15" r="2"/></svg></span>settings</div>
     </div>
     <div class="sb-sect">
       <span class="sb-label">crypto tools</span>
-      <div class="sb-item" data-view="token-analyzer"><span class="ic">🪙</span>token analyzer</div>
-      <div class="sb-item" data-view="wallet-watcher"><span class="ic">🔔</span>wallet watcher</div>
+      <div class="sb-item" data-view="token-analyzer"><span class="ic"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="2.5,15 7,9.5 11.5,12.5 17.5,5"/><polyline points="13.5,5 17.5,5 17.5,9"/></svg></span>token analyzer</div>
+      <div class="sb-item" data-view="wallet-watcher"><span class="ic"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M10 2.5a6 6 0 016 6c0 2.5.5 4 1.5 5H2.5c1-1 1.5-2.5 1.5-5a6 6 0 016-6z"/><path d="M8.5 17.5a1.5 1.5 0 003 0"/></svg></span>wallet watcher</div>
       <a class="sb-item" href="/song" style="text-decoration:none;color:inherit;display:flex;align-items:center;gap:8px">
-        <span class="ic">🎵</span>token song
+        <span class="ic"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8 15V5l9-2v10"/><circle cx="6" cy="15" r="2"/><circle cx="15" cy="13" r="2"/></svg></span>token song
       </a>
     </div>
     <div class="sb-footer">
@@ -1039,76 +1051,41 @@ select.inp{cursor:pointer}
 
     <!-- ═══ PLAYGROUND ═══ -->
     <div class="view" id="view-playground">
-      <div class="page-hd">
-        <div class="file">$ orlix playground --interactive</div>
-        <h1>Playground</h1>
-        <div class="sub">Mimo is the default engine. Claude and Grok also available — no API key required.</div>
+      <div class="page-hd" style="margin-bottom:14px">
+        <h1 style="font-size:1.2rem;margin-bottom:4px">Playground</h1>
+        <div class="sub">Mimo, Claude, Grok and more — no API key required.</div>
       </div>
-      <div id="pgModeBanner" style="margin-bottom:12px;padding:8px 13px;border-radius:6px;font-size:.74rem;border:1px solid var(--line)"></div>
       <div class="chat-controls">
         <select class="inp chat-model-sel" id="pgModelSel"></select>
-        <button class="btn sm" id="pgClearBtn">clear chat</button>
-        <button class="search-toggle" id="searchToggle" title="Enable web search (requires BRAVE_SEARCH_API_KEY)">🔍 <span>web search</span></button>
-        <span id="pgKeyWarn" style="color:var(--red);font-size:.74rem;display:none">⚠ set API key in Settings first</span>
+        <button class="btn-icon" id="searchToggle" title="Web search">
+          <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="8.5" cy="8.5" r="5.5"/><path d="M17 17l-4-4"/></svg>
+        </button>
+        <button class="btn-icon" id="pgClearBtn" title="Clear chat">
+          <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3,6 5,6 17,6"/><path d="M8 6V4h4v2"/><rect x="5" y="6" width="10" height="11" rx="1.5"/><path d="M8 10v4M12 10v4"/></svg>
+        </button>
       </div>
       <div class="chat-wrap">
         <div class="chat-messages" id="chatMessages">
           <div class="chat-empty" id="chatEmpty">
-            <div style="font-size:1.4rem;opacity:.3">▷</div>
-            <div>Select a model and start chatting</div>
-            <div style="font-size:.74rem;color:var(--dim-2)">Select a model above and start chatting</div>
+            <div class="chat-empty-ico"><svg width="32" height="32" viewBox="0 0 20 20" fill="currentColor"><path d="M10 2c-.35 3-1.6 5.5-4 6.8 2.4 1.3 3.65 3.8 4 6.8.35-3 1.6-5.5 4-6.8-2.4-1.3-3.65-3.8-4-6.8z"/></svg></div>
+            <div>Choose a model and send a message</div>
           </div>
         </div>
         <div id="imgPreviewBar"></div>
         <input type="file" id="imgFileInput" accept="image/*" style="display:none" multiple>
         <div class="chat-input-row">
-          <textarea id="chatInput" placeholder="Type a message… (Enter to send, Shift+Enter for newline)"></textarea>
-          <div class="chat-send">
-            <button class="btn primary" id="chatSendBtn">send</button>
-            <button class="img-btn" id="imgBtn" title="Attach image">🖼</button>
-            <div style="color:var(--dim-2);font-size:.66rem;text-align:center;line-height:1.4">tokens<br><span id="pgTokens">—</span></div>
-          </div>
+          <button class="btn-icon chat-attach-btn" id="imgBtn" title="Attach image">
+            <svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4.5" width="15" height="11" rx="2"/><circle cx="7" cy="9" r="1.5"/><path d="M2.5 14l4.5-4 3 3 2.5-2.5 5 5"/></svg>
+          </button>
+          <textarea id="chatInput" placeholder="Message Orlix…"></textarea>
+          <button class="chat-send-btn" id="chatSendBtn">
+            <svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="10" y1="16" x2="10" y2="4"/><polyline points="5,9 10,4 15,9"/></svg>
+          </button>
         </div>
       </div>
     </div>
 
     <!-- ═══ LEADERBOARD ═══ -->
-    <div class="view" id="view-leaderboard">
-      <div class="page-hd">
-        <div class="file">$ orlix leaderboard --global</div>
-        <h1>Leaderboard</h1>
-        <div class="sub">Top Orlix builders worldwide. Publish builds in Playground to climb the ranks.</div>
-      </div>
-      <div class="stat-grid" style="margin-bottom:20px">
-        <div class="stat-card c-amber">
-          <div class="s-label">Your Builds</div>
-          <div class="s-val" id="lb-my-builds">0</div>
-          <div class="s-sub">published</div>
-        </div>
-        <div class="stat-card c-violet">
-          <div class="s-label">Global Rank</div>
-          <div class="s-val" id="lb-my-rank">—</div>
-          <div class="s-sub">builders worldwide</div>
-        </div>
-        <div class="stat-card c-green">
-          <div class="s-label">Avg Quality</div>
-          <div class="s-val" id="lb-my-quality">—</div>
-          <div class="s-sub">your score</div>
-        </div>
-      </div>
-      <div class="panel" style="margin-bottom:14px">
-        <div class="panel-hd">
-          <span class="ttl">🏆 top builders — this week</span>
-          <a href="/gallery" style="color:var(--violet);font-size:.72rem;text-decoration:none">view gallery →</a>
-        </div>
-        <div class="panel-body" id="lb-builders"></div>
-      </div>
-      <div class="panel">
-        <div class="panel-hd"><span class="ttl">⭐ highest quality scores</span></div>
-        <div class="panel-body" id="lb-quality"></div>
-      </div>
-    </div>
-
     <div class="view" id="view-token-analyzer">
       <div class="page-hd">
         <div class="file">$ orlix analyze --token</div>
@@ -1217,12 +1194,15 @@ function showView(name){
   document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id==='view-'+name));
   document.querySelectorAll('.sb-item').forEach(i=>i.classList.toggle('active',i.dataset.view===name));
   document.getElementById('sidebar').classList.remove('open');
+  document.querySelector('.main').classList.toggle('pg-mode', name==='playground');
+  history.replaceState(null,'','#'+name);
   if(name==='overview') refreshDashboard();
   if(name==='aeon-memory') refreshMemoryView();
-  if(name==='leaderboard') renderLeaderboard();
 }
 document.querySelectorAll('.sb-item').forEach(i=>i.addEventListener('click',()=>showView(i.dataset.view)));
 document.querySelectorAll('[data-nav]').forEach(b=>b.addEventListener('click',()=>showView(b.dataset.nav)));
+// Restore view from URL hash on load (or default to playground)
+(function(){const h=location.hash.slice(1)||'playground';if(document.getElementById('view-'+h))showView(h);})();
 
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 
@@ -1652,7 +1632,7 @@ function newChat(){
   chatHistory = [];
   localStorage.removeItem('orlix_active_chat');
   const cm = document.getElementById('chatMessages');
-  cm.innerHTML = '<div class="chat-empty" id="chatEmpty"><div style="font-size:1.4rem;margin-bottom:12px">◈</div><div>Select a model and start chatting</div><div style="font-size:.74rem;color:var(--dim-2);margin-top:4px">Mimo, Claude, Grok, Groq, DeepSeek and Gemini work without any API key.</div></div>';
+  cm.innerHTML = '<div class="chat-empty" id="chatEmpty"><div class="chat-empty-ico"><svg width="32" height="32" viewBox="0 0 20 20" fill="currentColor"><path d="M10 2c-.35 3-1.6 5.5-4 6.8 2.4 1.3 3.65 3.8 4 6.8.35-3 1.6-5.5 4-6.8-2.4-1.3-3.65-3.8-4-6.8z"/></svg></div><div>Choose a model and send a message</div></div>';
   renderHistoryList();
   showView('playground');
 }
@@ -1687,8 +1667,8 @@ let totalTokens = 0;
 
 // Populate model selector
 function populateModelSel(){
-  pgModelSel.innerHTML = PROVIDERS.flatMap(p=>
-    p.models.map(m=>`<option value="${m.id}" data-provider="${p.name}">[${p.name}] ${m.name}</option>`)
+  pgModelSel.innerHTML = PROVIDERS.map(p=>
+    `<optgroup label="${p.name}">${p.models.map(m=>`<option value="${m.id}">${m.name}</option>`).join('')}</optgroup>`
   ).join('');
 }
 
@@ -1726,37 +1706,8 @@ const IS_LOCAL   = ['localhost','127.0.0.1'].includes(location.hostname);
 
 function getProxyUrl(){ return localStorage.getItem('bkProxyUrl')||''; }
 
-function banner(type, html){
-  const b=document.getElementById('pgModeBanner');
-  const styles={
-    red:  'border:1px solid rgba(255,107,107,.3);background:rgba(255,107,107,.08);color:var(--red)',
-    green:'border:1px solid rgba(126,224,168,.25);background:rgba(126,224,168,.08);color:var(--green)',
-    amber:'border:1px solid rgba(255,154,82,.3);background:rgba(255,154,82,.08);color:var(--amber)',
-  };
-  b.style.cssText=`margin-bottom:12px;padding:8px 13px;border-radius:6px;font-size:.74rem;${styles[type]}`;
-  b.innerHTML=html;
-}
-
-function updateBanner(){
-  const selectedModel = ((document.getElementById('pgModelSel')||{}).value||'').toLowerCase();
-  const isMimoSel    = selectedModel.startsWith('mimo');
-  const isClaudeSel  = selectedModel.startsWith('claude');
-  const isBankrSel   = !isMimoSel; // all non-Mimo models go through Bankr LLM gateway
-  const serverKeyedSel = true; // all models are server-keyed (Mimo or Bankr gateway)
-  if(!getApiKey() && isMimoSel){
-    banner('green','✓ <strong>Mimo ready</strong> — primary engine active. Send a message to start.');
-  } else if(!getApiKey() && isClaudeSel){
-    banner('green','✓ <strong>Claude ready</strong> — Bankr LLM gateway active. <span style="color:#0052ff;background:rgba(0,82,255,.12);border:1px solid rgba(0,82,255,.3);padding:1px 7px;border-radius:4px;font-size:.7rem">Base MCP</span> tools active — ask about wallets, gas, transactions on Base.');
-  } else if(!getApiKey() && isBankrSel){
-    banner('green','✓ <strong>Ready</strong> — Bankr LLM gateway active. Send a message to start.');
-  } else if(IS_LOCAL){
-    banner('green','✓ <strong>Local mode</strong> — proxy active via localhost:3001. Ready.');
-  } else if(getProxyUrl()){
-    banner('green','✓ <strong>Custom proxy active</strong> — requests routed via your Cloudflare Worker. Ready.');
-  } else {
-    banner('green','✓ <strong>Ready</strong> — API key set. Send a message to start.');
-  }
-}
+function banner(){}
+function updateBanner(){}
 updateBanner();
 
 async function apiFetch(key, bodyObj){
@@ -1981,7 +1932,7 @@ async function sendChat(){
             const u = parsed.usage;
             const usage = u ? ` · ${u.input_tokens||u.prompt_tokens||0}in / ${u.output_tokens||u.completion_tokens||0}out` : '';
             totalTokens += (u?.input_tokens||u?.prompt_tokens||0)+(u?.output_tokens||u?.completion_tokens||0);
-            document.getElementById('pgTokens').textContent = totalTokens||'—';
+            const pgTok=document.getElementById('pgTokens'); if(pgTok) pgTok.textContent = totalTokens||'—';
             const msgEl = addMsg('assistant', parsed.text, model+usage+' · '+new Date().toLocaleTimeString());
             if(typeof logAudit==='function') logAudit('chat','Orlix','replied ('+pgModelSel.value+')');
             saveCurrentChat();
@@ -2008,8 +1959,7 @@ chatInput.addEventListener('keydown',e=>{
 document.getElementById('pgClearBtn').addEventListener('click',()=>{
   chatHistory=[];totalTokens=0;
   pendingImages=[];renderImgPreview();
-  document.getElementById('pgTokens').textContent='—';
-  chatMessages.innerHTML=`<div class="chat-empty" id="chatEmpty"><div style="font-size:1.4rem;opacity:.3">▷</div><div>Select a model and start chatting</div><div style="font-size:.74rem;color:var(--dim-2)">Select a model above and start chatting</div></div>`;
+  chatMessages.innerHTML='<div class="chat-empty" id="chatEmpty"><div class="chat-empty-ico"><svg width="32" height="32" viewBox="0 0 20 20" fill="currentColor"><path d="M10 2c-.35 3-1.6 5.5-4 6.8 2.4 1.3 3.65 3.8 4 6.8.35-3 1.6-5.5 4-6.8-2.4-1.3-3.65-3.8-4-6.8z"/></svg></div><div>Choose a model and send a message</div></div>';
 });
 
 // ── IMAGE UPLOAD ─────────
@@ -2156,6 +2106,75 @@ const _codeStore = {};
 let _codeIdx = 0;
 
 function esc2(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function renderMd(raw) {
+  function inl(s) {
+    return s
+      .replace(/`([^`\n]+)`/g,'<code style="background:rgba(255,255,255,.08);padding:1px 5px;border-radius:4px;font-family:var(--mono);font-size:.85em">$1</code>')
+      .replace(/\*\*([^*\n]+)\*\*/g,'<strong>$1</strong>')
+      .replace(/\*([^*\n]+)\*/g,'<em>$1</em>');
+  }
+  const lines = raw.split('\n');
+  let out = '', i = 0, inUl = false, inOl = false;
+  function closeLists() {
+    if(inUl){ out += '</ul>'; inUl = false; }
+    if(inOl){ out += '</ol>'; inOl = false; }
+  }
+  while(i < lines.length) {
+    const line = lines[i];
+    const t = line.trim();
+    // Markdown table: header row followed by separator row
+    if(t.startsWith('|') && i+1 < lines.length && /^\|[\s\-:|]+\|/.test(lines[i+1].trim())) {
+      closeLists();
+      const headers = t.split('|').slice(1,-1).map(c=>c.trim());
+      i += 2;
+      const rows = [];
+      while(i < lines.length && lines[i].trim().startsWith('|')) {
+        rows.push(lines[i].trim().split('|').slice(1,-1).map(c=>c.trim()));
+        i++;
+      }
+      out += '<table style="border-collapse:collapse;width:100%;margin:10px 0;font-size:.82rem">';
+      out += '<thead><tr>' + headers.map(h=>`<th style="text-align:left;padding:6px 12px;border-bottom:1px solid rgba(255,255,255,.12);color:var(--text-1);font-weight:600;white-space:nowrap">${inl(esc2(h))}</th>`).join('') + '</tr></thead>';
+      out += '<tbody>' + rows.map(r=>'<tr>'+r.map(c=>`<td style="padding:5px 12px;border-bottom:1px solid rgba(255,255,255,.05);color:var(--text-2)">${inl(esc2(c))}</td>`).join('')+'</tr>').join('') + '</tbody></table>';
+      continue;
+    }
+    // Headings
+    const hm = /^(#{1,3})\s+(.+)$/.exec(t);
+    if(hm) {
+      closeLists();
+      const sz = ['1.05rem','1rem','.92rem'][hm[1].length-1];
+      out += `<div style="font-size:${sz};font-weight:700;color:var(--text-1);margin:10px 0 4px">${inl(esc2(hm[2]))}</div>`;
+      i++; continue;
+    }
+    // HR
+    if(/^[-*_]{3,}$/.test(t)) {
+      closeLists();
+      out += '<hr style="border:none;border-top:1px solid rgba(255,255,255,.08);margin:10px 0">';
+      i++; continue;
+    }
+    // Bullet list
+    const bm = /^[-*+] (.+)$/.exec(t);
+    if(bm) {
+      if(inOl){ out += '</ol>'; inOl=false; }
+      if(!inUl){ out += '<ul style="margin:4px 0;padding:0;list-style:none">'; inUl=true; }
+      out += `<li style="padding:2px 0 2px 14px;color:var(--text-2);position:relative"><span style="position:absolute;left:0;color:var(--orange)">·</span>${inl(esc2(bm[1]))}</li>`;
+      i++; continue;
+    }
+    // Numbered list
+    const nm = /^\d+\. (.+)$/.exec(t);
+    if(nm) {
+      if(inUl){ out += '</ul>'; inUl=false; }
+      if(!inOl){ out += '<ol style="margin:4px 0;padding-left:20px;color:var(--text-2)">'; inOl=true; }
+      out += `<li style="padding:2px 0">${inl(esc2(nm[1]))}</li>`;
+      i++; continue;
+    }
+    closeLists();
+    out += t === '' ? '<br>' : inl(esc2(line)) + '<br>';
+    i++;
+  }
+  closeLists();
+  return out;
+}
 
 function isHtmlContent(lang, code){
   if(/^htm/i.test(lang)) return true;
@@ -2317,7 +2336,7 @@ function renderContent(text){
 
   while((match = RE.exec(text)) !== null){
     const before = text.slice(last, match.index);
-    if(before) result += esc2(before).replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>');
+    if(before) result += renderMd(before);
     last = match.index + match[0].length;
 
     const lang  = match[1] || '';
@@ -2358,7 +2377,7 @@ function renderContent(text){
       const lang2 = openFence[1] || '';
       const code2 = openFence[2];
       const before2 = tail.slice(0, openFence.index);
-      if(before2) result += esc2(before2).replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>');
+      if(before2) result += renderMd(before2);
       const id2 = 'c'+(++_codeIdx);
       _codeStore[id2] = code2;
       if(isHtmlContent(lang2, code2)) lastHtmlId = id2;
@@ -2373,7 +2392,7 @@ function renderContent(text){
         <pre><code>${esc2(code2)}</code></pre>
       </div>`;
     } else {
-      result += esc2(tail).replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>');
+      result += renderMd(tail);
     }
   }
 
@@ -2395,7 +2414,7 @@ function renderContent(text){
 </div>`;
   }
 
-  return result || esc2(text).replace(/\n/g,'<br>');
+  return result || renderMd(text);
 }
 
 function copyCode(id){
@@ -2666,54 +2685,6 @@ function shareOnX(id){
   window.open('https://twitter.com/intent/tweet?text='+encodeURIComponent(tweet),'_blank','noopener');
 }
 
-function renderLeaderboard(){
-  const myBuilds = getGalleryBuilds().length;
-  const runs = getRunLog ? getRunLog() : [];
-  const rated = runs.filter(r=>r.quality>0);
-  const myAvgQ = rated.length ? (rated.reduce((s,r)=>s+r.quality,0)/rated.length).toFixed(1) : '—';
-
-  document.getElementById('lb-my-builds').textContent = myBuilds;
-  document.getElementById('lb-my-quality').textContent = myAvgQ;
-
-  // Seeded global leaderboard (realistic demo data)
-  const seed = [
-    {name:'0x_sato',   em:'🦊', builds:47, q:'4.9'},
-    {name:'mimo_max',  em:'⚡', builds:38, q:'4.7'},
-    {name:'aeon_dev',  em:'🚀', builds:31, q:'4.6'},
-    {name:'base_coder',em:'🔵', builds:24, q:'4.5'},
-    {name:'orlix_chad',em:'🤖', builds:18, q:'4.3'},
-    {name:'web3_buildr',em:'💎',builds:14, q:'4.1'},
-    {name:'nft_wizard', em:'🪄',builds: 9, q:'3.9'},
-  ];
-
-  // Insert user into the list
-  const me = {name:'You', em:'★', builds:myBuilds, q:myAvgQ==='—'?0:+myAvgQ, isYou:true};
-  const builders = [...seed, me].sort((a,b)=>b.builds-a.builds);
-  const myRank = builders.findIndex(b=>b.isYou)+1;
-  document.getElementById('lb-my-rank').textContent = myRank ? '#'+myRank : '—';
-
-  const rankIcons = ['🥇','🥈','🥉'];
-  function rankClass(i){ return i===0?'g1':i===1?'g2':i===2?'g3':''; }
-
-  document.getElementById('lb-builders').innerHTML = builders.map((b,i)=>`
-    <div class="lb-row${b.isYou?' lb-you':''}">
-      <div class="lb-rank ${rankClass(i)}">${i<3?rankIcons[i]:'#'+(i+1)}</div>
-      <div class="lb-avatar" style="${b.isYou?'background:var(--amber-soft)':''}">${b.em}</div>
-      <div class="lb-name">${b.name}${b.isYou?`<span class="lb-badge">you</span>`:''}</div>
-      <div class="lb-score">${b.builds} <span style="color:var(--dim);font-weight:400;font-size:.7rem">builds</span></div>
-    </div>`).join('');
-
-  const qualList = [...seed.map(b=>({...b,q:+b.q})), {...me,q:myAvgQ==='—'?0:+myAvgQ}]
-    .filter(b=>b.q>0).sort((a,b)=>b.q-a.q);
-
-  document.getElementById('lb-quality').innerHTML = qualList.map((b,i)=>`
-    <div class="lb-row${b.isYou?' lb-you':''}">
-      <div class="lb-rank ${rankClass(i)}">${i<3?rankIcons[i]:'#'+(i+1)}</div>
-      <div class="lb-avatar" style="${b.isYou?'background:var(--amber-soft)':''}">${b.em}</div>
-      <div class="lb-name">${b.name}${b.isYou?`<span class="lb-badge">you</span>`:''}</div>
-      <div class="lb-score">${b.q} <span style="color:var(--dim);font-weight:400;font-size:.7rem">avg</span></div>
-    </div>`).join('');
-}
 
 // ───────── SYSTEM PROMPT & GROK ─────────
 const GROK_SYSTEM = `You are Orlix — an autonomous AI OS powered by Mimo as its primary reasoning engine. You have a soul.

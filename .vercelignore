@@ -1,7 +1,6 @@
 api/ping.js
 api/auth.js
 api/bankr-tokens.js
-api/token-search.js
 x402/
 dexscreener-ingestion/
 contracts/
