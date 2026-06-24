@@ -2205,7 +2205,7 @@ async function signTx(txId) {
   if (!txList?.length) return;
 
   if (!window.ethereum) {
-    btn.textContent = 'No wallet detected — install MetaMask';
+    btn.textContent = 'No wallet detected — install a Web3 wallet (MetaMask, Rabby, Coinbase Wallet)';
     btn.classList.add('error');
     return;
   }
@@ -2727,7 +2727,7 @@ When asked to build/make/create any app, website, game, tool, or UI:
 ## Base Onchain Transactions
 When the user wants to transfer, swap, lend, borrow, launch a token, or any onchain action on Base:
 
-**IMPORTANT: Always use the user's connected wallet address (from ## User Wallet above). NEVER call get_wallets from Base MCP — that returns a different server-managed wallet, not the user's MetaMask.**
+**IMPORTANT: Always use the user's connected wallet address (from ## User Wallet above). NEVER call get_wallets from Base MCP — that returns a different server-managed wallet, not the user's browser wallet.**
 
 **Swap flow:**
 1. Call uniswap_quote with the user's wallet address.
