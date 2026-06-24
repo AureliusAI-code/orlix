@@ -663,6 +663,9 @@ select.inp{cursor:pointer}
       <a class="sb-item" href="/song" style="text-decoration:none;color:inherit;display:flex;align-items:center;gap:8px">
         <span class="ic"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8 15V5l9-2v10"/><circle cx="6" cy="15" r="2"/><circle cx="15" cy="13" r="2"/></svg></span>token song
       </a>
+      <a class="sb-item" href="/gallery" style="text-decoration:none;color:inherit;display:flex;align-items:center;gap:8px">
+        <span class="ic"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="7" height="7" rx="1.5"/><rect x="11" y="2" width="7" height="7" rx="1.5"/><rect x="2" y="11" width="7" height="7" rx="1.5"/><rect x="11" y="11" width="7" height="7" rx="1.5"/></svg></span>gallery
+      </a>
     </div>
     <div class="sb-footer">
 <div class="sb-ver"><span class="sb-status"></span>Mimo engine active<br>orlix v0.6.0 · local-first</div>
@@ -2656,13 +2659,17 @@ async function publishBuild(btn, id){
 
   // Also POST to Vercel KV for public/cross-device gallery
   try{
-    const galleryTok = localStorage.getItem('orlix_token') || '';
-    const galleryHdrs = {'Content-Type':'application/json'};
-    if (galleryTok) galleryHdrs['Authorization'] = 'Bearer ' + galleryTok;
+    // Use wallet token, or fall back to a stable device ID for this browser
+    let galleryId = localStorage.getItem('orlix_token') || localStorage.getItem('orlix_device_id');
+    if (!galleryId) {
+      galleryId = 'device:' + ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g,c=>(c^crypto.getRandomValues(new Uint8Array(1))[0]&15>>c/4).toString(16));
+      localStorage.setItem('orlix_device_id', galleryId);
+    }
+    const galleryHdrs = {'Content-Type':'application/json','Authorization':'Bearer '+galleryId};
     const r = await fetch('/api/gallery',{
       method:'POST',
       headers: galleryHdrs,
-      body:JSON.stringify({id, code, title})
+      body:JSON.stringify({id, code, title, author: localStorage.getItem('orlix_name') || 'Builder'})
     });
     const data = await r.json();
     if(data.error) throw new Error(data.error);
