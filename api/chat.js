@@ -807,6 +807,12 @@ module.exports = async function handler(req, res) {
         messages:   toAnthropicMessages(bodyObj.messages || []),
         max_tokens: bodyObj.max_tokens || 4096,
         tools:      ALL_TOOLS,
+        // Base MCP remote server — gives Claude a Base Account wallet with
+        // send_calls, swap, get_wallets, and 20+ DeFi plugin tools.
+        // User approves via Base Account approval link (no MetaMask needed).
+        mcp_servers: [
+          { type: 'url', url: 'https://mcp.base.org/sse', name: 'base' }
+        ],
       };
       if (bodyObj.system)      body.system      = bodyObj.system;
       if (bodyObj.temperature) body.temperature = bodyObj.temperature;

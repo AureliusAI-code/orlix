@@ -2772,26 +2772,25 @@ When the user wants to transfer, swap, lend, borrow, launch a token, or any onch
 {"type":"transfer","description":"Send 0.01 ETH to 0x1234…","to":"0xRECIPIENT","value":"10000000000000000","data":"0x","gasLimit":"21000","chainId":8453}
 \`\`\`
 
-**Swap (Uniswap):**
-1. Call uniswap_quote first to show the price.
-2. Call uniswap_prepare_swap with the user's wallet address.
-3. The tool returns {__action, transactions, description, protocol, ...} — pass it directly as the transaction block:
+**Preferred flow (Base MCP wallet — no MetaMask needed):**
+You have access to the Base MCP server (mcp.base.org). Use its tools directly:
+- get_wallets → get your Base Account wallet address
+- send_calls → execute any onchain action (swap, send, lend, mint, buy)
+- web_request → call plugin APIs (Uniswap, Flaunch, Moonwell, OpenSea, etc.)
+The Base MCP generates an approval link the user clicks to authorize. Always show this link.
+
+**Fallback flow (if Base MCP unavailable — use our prepare tools):**
+1. Call uniswap_prepare_swap / flaunch_prepare_launch / moonwell_prepare_supply.
+2. Output the full tool result as a transaction block:
 \`\`\`transaction
 {PASTE_FULL_TOOL_RESULT_HERE}
 \`\`\`
 
-**Token Launch (Flaunch):**
-1. Gather: name, symbol (≤8 chars), description, image URL, creator wallet.
-2. Call flaunch_prepare_launch.
-3. Pass the full result as the transaction block.
-
-**Lending (Moonwell):**
-1. Call moonwell_markets to show current APY.
-2. Call moonwell_prepare_supply for supply actions.
-3. Pass full result as transaction block.
-
-Type values: "transfer" | "swap" | "lend" | "borrow" | "repay" | "withdraw" | "approve"
-NEVER make up addresses. value must be in wei. NEVER invent transaction data.`;
+**ETH Transfer (no DeFi protocol):**
+\`\`\`transaction
+{"type":"transfer","description":"Send 0.01 ETH to 0x1234…","to":"0xRECIPIENT","value":"10000000000000000","data":"0x","gasLimit":"21000","chainId":8453}
+\`\`\`
+NEVER make up addresses. value must be in wei. NEVER invent calldata.`;
 
 // ── TOKEN ANALYZER ─────────
 async function runAnalysis() {
