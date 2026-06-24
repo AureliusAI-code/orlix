@@ -1,4 +1,12 @@
-// Orlix Control Room — Base top-100 via DexScreener public search API
+// Orlix Control Room — live Base network intelligence
+// Stablecoins and wrapped assets to exclude from all panels
+const EXCLUDE_SYMBOLS = new Set([
+  'USDT','USDC','DAI','WETH','WBTC','CBETH','USDBC','USDB',
+  'EURC','CRVUSD','LUSD','FRAX','SUSD','BUSD','GUSD','TUSD',
+  'RETH','STETH','WSTETH',
+  // AERO intentionally NOT excluded — it's a real Base-native token
+]);
+
 const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, OPTIONS',
@@ -6,53 +14,17 @@ const CORS = {
   'Content-Type': 'application/json',
 };
 
-const EXCLUDE_SYMBOLS = new Set([
-  'USDT','USDC','DAI','WETH','WBTC','CBETH','USDBC','USDB',
-  'EURC','CRVUSD','LUSD','FRAX','SUSD','BUSD','GUSD','TUSD',
-  'RETH','STETH','WSTETH','ETH','USDPLUS','USD+','WSTETH',
-]);
-
-// Token addresses that are always included regardless of liquidity filter
-const PINNED_ADDRESSES = [
-  '0x22aF33FE49fD1Fa80c7149773dDe5890D3c76F3b', // BNKR
-];
-
-// 80+ well-known Base ecosystem tokens — no random promoted tokens
-const BASE_SEARCHES = [
-  // Tier 1 — core Base native (always top 20)
-  'BRETT','VIRTUAL','AERO','DEGEN','TOSHI','HIGHER',
-  'MOG','WELL','NORMIE','BASED','MOCHI','TURBO',
-  'ODOS','CBBTC','ZORA','ENJOY','MFER','PRIME',
-  // Tier 2 — established Base memes
-  'MIGGLES','KEYCAT','BALD','TYBG','HAM','ANDY',
-  'ANON','MOON','WEN','BCT','SEAM','FRENPET',
-  'MOXIE','BUILD','CLANKER','TALENT','SMOL',
-  // DeFi on Base
-  'SNX','AAVE','SUSHI','GMX','RDNT','COMP',
-  'TAROT','GNS','PERP','YFI','BSWAP','MORPHO','EXTRA',
-  // Cross-chain tokens active on Base
-  'PEPE','BONK','FLOKI','APE','SHIB','WAIFU','KNINE',
-  'BLUR','ENS','LDO','RPL',
-  // AI/Agent tokens on Base
-  'AIXBT','VADER','LUNA','AGNT',
-  // More Base memes
-  'BILLY','PURR','DOOMER','BASENJI','CHOMP','GIGA',
-  'COPE','WOJAK','PONKE','POPCAT','WIF','BOME',
-  'BRIUN','SMURFCAT','CRASH','LEET','POKE',
-  // Additional ecosystem
-  'CYBER','TAO','GODS','PIXEL','FARM','DARK',
-  'MORPHO','COIN','DEGEN','TOSHI',
-  // Bankr ecosystem
-  'BNKR','BANKR',
-];
-
 let dataCache = { data: null, ts: 0 };
 let commentaryCache = { text: '', ts: 0 };
 const DATA_TTL = 30_000;
 const COMMENTARY_TTL = 300_000;
 
+function shortenAddr(a) {
+  return a ? `${a.slice(0, 6)}…${a.slice(-4)}` : '?';
+}
+
 function fmtUsd(n) {
-  if (!n && n !== 0) return null;
+  if (!n && n !== 0) return '—';
   if (n >= 1e9) return `$${(n / 1e9).toFixed(2)}B`;
   if (n >= 1e6) return `$${(n / 1e6).toFixed(2)}M`;
   if (n >= 1e3) return `$${(n / 1e3).toFixed(1)}K`;
@@ -61,146 +33,142 @@ function fmtUsd(n) {
 
 async function dget(url) {
   const r = await fetch(url, {
-    headers: {
-      'Accept': 'application/json',
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/125.0 Safari/537.36',
-    },
-    signal: AbortSignal.timeout(8000),
+    headers: { Accept: 'application/json', 'User-Agent': 'Orlix/1.0' },
+    signal: AbortSignal.timeout(9000),
   });
   if (!r.ok) throw new Error(`HTTP ${r.status}`);
   return r.json();
 }
 
-function isValidPair(p) {
-  if (p.chainId !== 'base') return false;
-  if (!p.baseToken?.address) return false;
-  const sym = (p.baseToken.symbol || '').toUpperCase();
-  if (EXCLUDE_SYMBOLS.has(sym)) return false;
-  // Only require $5k liquidity — generous enough to catch all real tokens
-  if ((p.liquidity?.usd || 0) < 5000) return false;
-  return true;
-}
-
-function mapPair(p, rank) {
-  return {
-    rank,
-    address: p.baseToken.address.toLowerCase(),
-    name: p.baseToken.name || 'Unknown',
-    symbol: p.baseToken.symbol || '???',
-    priceUsd: p.priceUsd || null,
-    priceChange5m: p.priceChange?.m5 ?? null,
-    priceChange1h: p.priceChange?.h1 ?? null,
-    priceChange6h: p.priceChange?.h6 ?? null,
-    priceChange24h: p.priceChange?.h24 ?? null,
-    volume1h: p.volume?.h1 || 0,
-    volume6h: p.volume?.h6 || 0,
-    volume24h: p.volume?.h24 || 0,
-    liquidity: p.liquidity?.usd || 0,
-    marketCap: p.marketCap || p.fdv || 0,
-    fdv: p.fdv || 0,
-    buys1h: p.txns?.h1?.buys || 0,
-    sells1h: p.txns?.h1?.sells || 0,
-    buys24h: p.txns?.h24?.buys || 0,
-    sells24h: p.txns?.h24?.sells || 0,
-    pairAddress: p.pairAddress || null,
-    pairCreatedAt: p.pairCreatedAt || null,
-    pairUrl: p.url || `https://dexscreener.com/base/${p.baseToken.address}`,
-    dexId: p.dexId || 'unknown',
-    pairName: `${p.baseToken.symbol}/${p.quoteToken?.symbol || '?'}`,
-    _logo: null,
-  };
-}
-
-async function fetchTop100() {
-  // Run all keyword searches in parallel
-  const searchResults = await Promise.all(
-    BASE_SEARCHES.map(q =>
-      dget(`https://api.dexscreener.com/latest/dex/search?q=${encodeURIComponent(q)}`)
-        .catch(() => null)
+// Fetch a large pool of Base pairs via multiple searches
+async function fetchBasePairPool() {
+  const queries = ['USDC', 'ETH', 'WETH', 'DAI', 'USDT'];
+  const results = await Promise.allSettled(
+    queries.map(q =>
+      dget(`https://api.dexscreener.com/latest/dex/search?q=${q}&chainIds=base`)
     )
   );
 
-  // Collect all valid Base pairs
-  const rawPairs = [];
-  for (const r of searchResults) {
-    if (r?.pairs) rawPairs.push(...r.pairs);
-  }
-
-  // Deduplicate by token address — keep pair with priceUsd + highest liquidity
-  const tokenMap = {};
-  for (const p of rawPairs) {
-    if (!isValidPair(p)) continue;
-    const key = p.baseToken.address.toLowerCase();
-    const cur = tokenMap[key];
-    if (!cur) { tokenMap[key] = p; continue; }
-    const newLiq = p.liquidity?.usd || 0;
-    const curLiq = cur.liquidity?.usd || 0;
-    const newHasPrice = !!p.priceUsd;
-    const curHasPrice = !!cur.priceUsd;
-    if ((!curHasPrice && newHasPrice) || (newHasPrice && newLiq > curLiq)) {
-      tokenMap[key] = p;
-    }
-  }
-
-  // Secondary dedup by symbol — if two tokens share a symbol, keep the one
-  // with highest volume24h (fake/scam tokens have near-zero real volume)
-  const symMap = {};
-  for (const p of Object.values(tokenMap)) {
-    const sym = (p.baseToken.symbol || '').toUpperCase();
-    const cur = symMap[sym];
-    if (!cur || (p.volume?.h24 || 0) > (cur.volume?.h24 || 0)) {
-      symMap[sym] = p;
-    }
-  }
-
-  // Fetch pinned addresses by exact address — always included
-  const pinnedRes = await dget(
-    `https://api.dexscreener.com/latest/dex/tokens/${PINNED_ADDRESSES.join(',')}`
-  ).catch(() => null);
-  if (pinnedRes?.pairs) {
-    for (const p of pinnedRes.pairs) {
-      if (p.chainId !== 'base' || !p.baseToken?.address) continue;
-      const addrKey = p.baseToken.address.toLowerCase();
-      const isPinned = PINNED_ADDRESSES.some(a => a.toLowerCase() === addrKey);
-      if (!isPinned) continue;
-      const sym = (p.baseToken.symbol || '').toUpperCase();
-      // Add to symMap if not already present, or replace if this pair has higher liquidity
-      const cur = symMap[sym];
-      if (!cur || (p.liquidity?.usd || 0) > (cur.liquidity?.usd || 0)) {
-        symMap[sym] = p;
+  const seen = new Set();
+  const pairs = [];
+  for (const r of results) {
+    if (r.status !== 'fulfilled') continue;
+    for (const p of r.value.pairs || []) {
+      const sym = (p.baseToken?.symbol || '').toUpperCase();
+      if (
+        p.chainId === 'base' &&
+        p.baseToken?.address &&
+        !seen.has(p.pairAddress) &&
+        !EXCLUDE_SYMBOLS.has(sym)
+      ) {
+        seen.add(p.pairAddress);
+        pairs.push(p);
       }
     }
   }
-
-  // Sort by 24h volume — closest public proxy to DexScreener trending rank
-  const sorted = Object.values(symMap)
-    .sort((a, b) => (b.volume?.h24 || 0) - (a.volume?.h24 || 0));
-
-  return sorted.slice(0, 100).map((p, i) => mapPair(p, i + 1));
+  return pairs;
 }
 
-async function generateCommentary(tokens, apiKey) {
+function mapPair(p) {
+  return {
+    address: p.baseToken?.address,
+    name: p.baseToken?.name || 'Unknown',
+    symbol: p.baseToken?.symbol || '???',
+    priceUsd: p.priceUsd || null,
+    priceChange1h: p.priceChange?.h1 ?? null,
+    priceChange24h: p.priceChange?.h24 ?? null,
+    volume1h: p.volume?.h1 || 0,
+    volume24h: p.volume?.h24 || 0,
+    liquidity: p.liquidity?.usd || 0,
+    buys1h: p.txns?.h1?.buys || 0,
+    sells1h: p.txns?.h1?.sells || 0,
+    pairCreatedAt: p.pairCreatedAt || null,
+    pairUrl: p.url || `https://dexscreener.com/base/${p.baseToken?.address}`,
+    dexId: p.dexId || 'unknown',
+  };
+}
+
+function quickRisk(liq) {
+  if (liq <= 0)      return 'UNKNOWN';
+  if (liq < 10000)   return 'HIGH RISK';
+  if (liq < 50000)   return 'CAUTION';
+  return 'SAFE';
+}
+
+function deriveNewTokens(pairs) {
+  const now = Date.now();
+  const thirtyDays = 30 * 86400 * 1000;
+
+  const withDate = pairs
+    .filter(p => p.pairCreatedAt)
+    .sort((a, b) => (b.pairCreatedAt || 0) - (a.pairCreatedAt || 0));
+
+  // Prefer last-30-day tokens; fall back to all sorted by newest
+  const recent = withDate.filter(p => (now - p.pairCreatedAt) < thirtyDays);
+  const pool = recent.length >= 5 ? recent : withDate;
+
+  return pool.slice(0, 20).map(p => ({
+    ...mapPair(p),
+    pairAgeMs: now - (p.pairCreatedAt || now),
+    risk: quickRisk(p.liquidity?.usd || 0),
+  }));
+}
+
+function deriveTrending(pairs) {
+  return pairs
+    .filter(p => (p.volume?.h24 || 0) > 100)
+    .sort((a, b) => (b.volume?.h24 || 0) - (a.volume?.h24 || 0))
+    .slice(0, 20)
+    .map(mapPair); // mapPair already includes volume1h, buys1h, sells1h
+}
+
+function deriveWhales(pairs) {
+  return pairs
+    .filter(p => (p.volume?.h1 || 0) > 5000)
+    .sort((a, b) => (b.volume?.h1 || 0) - (a.volume?.h1 || 0))
+    .slice(0, 15)
+    .map(mapPair);
+}
+
+// Live activity: SAFE tokens (liq >= 20k) with any 1h action (>= 500)
+function deriveLiveActivity(pairs) {
+  return pairs
+    .filter(p => (p.liquidity?.usd || 0) >= 20000 && (p.volume?.h1 || 0) >= 500)
+    .sort((a, b) => (b.volume?.h1 || 0) - (a.volume?.h1 || 0))
+    .slice(0, 50)
+    .map(mapPair);
+}
+
+async function generateCommentary(data, apiKey) {
   if (!apiKey) return '';
   const now = Date.now();
   if (commentaryCache.text && now - commentaryCache.ts < COMMENTARY_TTL) {
     return commentaryCache.text;
   }
-  const isAnthropicKey = apiKey.startsWith('sk-ant-');
-  const aiUrl     = isAnthropicKey ? 'https://api.anthropic.com/v1/messages' : 'https://llm.bankr.bot/v1/messages';
-  const aiAuthHdr = isAnthropicKey ? { 'x-api-key': apiKey } : { 'X-API-Key': apiKey };
 
-  const top = tokens.filter(t => (t.volume1h || 0) > 0).slice(0, 3);
-  const totalVol = tokens.reduce((s, t) => s + (t.volume1h || 0), 0);
-  const prompt = `${tokens.length} active tokens on Base. Total 1h volume: ${fmtUsd(totalVol)}. ` +
-    (top.length ? `Top: ${top.map(t => `$${t.symbol} (${t.priceChange1h != null ? (t.priceChange1h >= 0 ? '+' : '') + t.priceChange1h.toFixed(1) + '%' : '?'} 1h)`).join(', ')}.` : '') +
-    ' Give a 1-2 sentence live market commentary on Base. Be specific. No emojis. No markdown.';
+  const topWhale = data.whaleActivity?.[0];
+  const topTrend = data.trending?.[0];
+  const newCount = data.newTokens?.length || 0;
+
+  const prompt = [
+    `${newCount} new token pairs on Base (last 7 days).`,
+    topTrend ? `Top trending: $${topTrend.symbol} (${topTrend.priceChange24h != null ? (topTrend.priceChange24h >= 0 ? '+' : '') + topTrend.priceChange24h.toFixed(1) : '?'}% 24h, ${fmtUsd(topTrend.volume24h)} vol).` : '',
+    topWhale ? `Highest 1h swap volume: $${topWhale.symbol} with ${fmtUsd(topWhale.volume1h)}, ${topWhale.buys1h} buys vs ${topWhale.sells1h} sells.` : '',
+    'Provide 1-2 sentences of live market commentary on Base network right now. Be specific and insightful.',
+  ].filter(Boolean).join(' ');
+
   try {
-    const r = await fetch(aiUrl, {
+    const r = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
-      headers: { ...aiAuthHdr, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
+      headers: {
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json',
+      },
       body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001', max_tokens: 120,
-        system: 'You are a live crypto analyst monitoring Base network. 1-2 sentences, direct, no emojis.',
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 150,
+        system: 'You are a live crypto market analyst monitoring Base network. Respond with 1-2 sentences of direct, insightful commentary. No emojis. No markdown.',
         messages: [{ role: 'user', content: prompt }],
       }),
       signal: AbortSignal.timeout(12000),
@@ -210,12 +178,20 @@ async function generateCommentary(tokens, apiKey) {
     const text = resp.content?.[0]?.text || '';
     if (text) commentaryCache = { text, ts: now };
     return text;
-  } catch { return commentaryCache.text || ''; }
+  } catch {
+    return commentaryCache.text || '';
+  }
 }
 
 module.exports = async (req, res) => {
-  if (req.method === 'OPTIONS') { res.writeHead(204, CORS); return res.end(); }
-  if (req.method !== 'GET') { res.writeHead(405, CORS); return res.end(JSON.stringify({ error: 'Method not allowed' })); }
+  if (req.method === 'OPTIONS') {
+    res.writeHead(204, CORS);
+    return res.end();
+  }
+  if (req.method !== 'GET') {
+    res.writeHead(405, CORS);
+    return res.end(JSON.stringify({ error: 'Method not allowed' }));
+  }
 
   const now = Date.now();
   if (dataCache.data && now - dataCache.ts < DATA_TTL) {
@@ -223,17 +199,30 @@ module.exports = async (req, res) => {
     return res.end(JSON.stringify(dataCache.data));
   }
 
-  const allTokens = await fetchTop100();
+  const pairs = await fetchBasePairPool();
 
-  const totalVol1h = allTokens.reduce((s, t) => s + (t.volume1h || 0), 0);
-  const safeCount = allTokens.filter(t => (t.liquidity || 0) >= 50000).length;
-  const stats = { total: allTokens.length, safeCount, totalVol1h, ts: now };
+  const newTokens     = deriveNewTokens(pairs);
+  const trending      = deriveTrending(pairs);
+  const whaleActivity = deriveWhales(pairs);
+  const liveActivity  = deriveLiveActivity(pairs);
 
-  const liveActivity = allTokens;
-  const trending = allTokens.slice(0, 15);
-  const commentary = await generateCommentary(allTokens, process.env.BANKR_LLM_KEY || process.env.ANTHROPIC_API_KEY || '');
+  const totalVolume1h = liveActivity.reduce((s, w) => s + (w.volume1h || 0), 0);
+  const stats = {
+    newTokensCount: newTokens.length,
+    trendingCount: trending.length,
+    whaleCount: whaleActivity.length,
+    liveCount: liveActivity.length,
+    totalVolume1h,
+    pairsScanned: pairs.length,
+    ts: now,
+  };
 
-  const data = { liveActivity, trending, stats, commentary };
+  const commentary = await generateCommentary(
+    { newTokens, trending, whaleActivity },
+    process.env.ANTHROPIC_API_KEY
+  );
+
+  const data = { newTokens, trending, whaleActivity, liveActivity, stats, commentary };
   dataCache = { data, ts: now };
 
   res.writeHead(200, CORS);

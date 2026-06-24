@@ -1,26 +1,20 @@
 {
   "version": 2,
   "framework": null,
-  "buildCommand": "npm run build:wallet",
+  "buildCommand": null,
   "outputDirectory": ".",
   "functions": {
     "api/chat.js":         { "maxDuration": 60 },
+    "api/ping.js":         { "maxDuration": 10 },
     "api/gallery.js":      { "maxDuration": 10 },
+    "api/auth.js":         { "maxDuration": 10 },
     "api/analyze.js":      { "maxDuration": 60 },
     "api/control-room.js": { "maxDuration": 30 },
-    "api/token-search.js": { "maxDuration": 15 },
-    "api/song.js":         { "maxDuration": 45 },
-    "api/music.js":        { "maxDuration": 60 },
-    "api/bankr-tokens.js": { "maxDuration": 20 },
-    "api/b20.js":          { "maxDuration": 15 },
-    "api/b20-skill.js":    { "maxDuration": 10 },
-    "api/search.js":       { "maxDuration": 10 },
-    "api/telegram.js":     { "maxDuration": 60 }
+    "api/music.js":        { "maxDuration": 60 }
   },
   "redirects": [
     { "source": "/app.html",          "destination": "/app",          "permanent": true },
     { "source": "/docs.html",         "destination": "/docs",         "permanent": true },
-    { "source": "/api-docs.html",     "destination": "/docs/api",     "permanent": true },
     { "source": "/changelog.html",    "destination": "/changelog",    "permanent": true },
     { "source": "/privacy.html",      "destination": "/privacy",      "permanent": true },
     { "source": "/terms.html",        "destination": "/terms",        "permanent": true },
@@ -28,18 +22,11 @@
     { "source": "/login.html",        "destination": "/login",        "permanent": true },
     { "source": "/token.html",        "destination": "/token",        "permanent": true },
     { "source": "/control-room.html", "destination": "/control-room", "permanent": true },
-    { "source": "/song.html",         "destination": "/song",         "permanent": true },
-    { "source": "/bankr.html",        "destination": "/control-room", "permanent": true },
-    { "source": "/b20-demo.html",     "destination": "/b20-demo",     "permanent": true },
-    { "source": "/b20-studio.html",   "destination": "/b20",           "permanent": true }
+    { "source": "/song.html",         "destination": "/song",         "permanent": true }
   ],
   "rewrites": [
-    { "source": "/skills/b20",        "destination": "/b20-skills/SKILL.md" },
-    { "source": "/skills/orlix",      "destination": "/bankr-skill/SKILL.md" },
-    { "source": "/b20-skills/SKILL.md","destination": "/b20-skills/SKILL.md" },
     { "source": "/app",          "destination": "/app.html" },
     { "source": "/docs",         "destination": "/docs.html" },
-    { "source": "/docs/api",     "destination": "/api-docs.html" },
     { "source": "/changelog",    "destination": "/changelog.html" },
     { "source": "/privacy",      "destination": "/privacy.html" },
     { "source": "/terms",        "destination": "/terms.html" },
@@ -47,9 +34,6 @@
     { "source": "/login",        "destination": "/login.html" },
     { "source": "/token",        "destination": "/token.html" },
     { "source": "/control-room", "destination": "/control-room.html" },
-    { "source": "/song",         "destination": "/song.html" },
-    { "source": "/bankr",        "destination": "/control-room" },
-    { "source": "/b20-demo",     "destination": "/b20-demo.html" },
-    { "source": "/b20",          "destination": "/b20-studio.html" }
+    { "source": "/song",         "destination": "/song.html" }
   ]
 }
