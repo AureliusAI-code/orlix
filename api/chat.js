@@ -604,14 +604,21 @@ async function executeTool(name, input) {
         });
         if (!qr.ok) { const t = await qr.text(); return { error: `Uniswap quote failed: ${qr.status}`, detail: t.slice(0, 400) }; }
         const quote = await qr.json();
-        const outAmt = quote.output?.amount ?? quote.outputAmount ?? quote.quote?.outputAmount ?? null;
-        if (!outAmt) return { error: 'Quote returned no output amount', _raw_keys: Object.keys(quote) };
+        // Try all known Uniswap API response shapes for output amount
+        const outAmt = quote.output?.amount
+          ?? quote.outputAmount
+          ?? quote.quote?.output?.amount
+          ?? quote.quote?.outputAmount
+          ?? null;
+        if (!outAmt) return { error: 'Quote returned no output amount', _raw_keys: Object.keys(quote), _quote_keys: Object.keys(quote.quote ?? {}) };
 
         // Step 2: build SwapRouter02 calldata directly — bypasses /v1/swap reliability issues
         // SwapRouter02 on Base: 0x2626664c2603336E57B271c5C0b26F421741e481
         // exactInputSingle(tokenIn,tokenOut,fee,recipient,amountIn,amountOutMin,sqrtPriceLimit)
         const ROUTER    = '0x2626664c2603336E57B271c5C0b26F421741e481';
-        const fee       = quote.route?.[0]?.[0]?.fee ?? 500; // use quoted fee tier, default 0.05%
+        // Extract fee tier from any known quote response shape; default 500 (0.05%) for ETH/USDC
+        const route0    = quote.route?.[0]?.[0] ?? quote.quote?.route?.[0]?.[0] ?? {};
+        const fee       = Number(route0.fee ?? route0.feeTier ?? 500);
         const outMin    = BigInt(Math.floor(Number(outAmt) * 0.95)); // 5% slippage
         const pad32     = h => h.replace('0x','').toLowerCase().padStart(64,'0');
         const calldata  = '0x04e45aaf' +   // exactInputSingle selector
