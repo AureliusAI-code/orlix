@@ -2743,8 +2743,8 @@ Use these tools proactively — never wait to be asked:
 - dexscreener_token: full market data (price, liq, vol, txns) for a token address
 - flaunch_new_tokens: newest meme token launches on Flaunch/Base
 - flaunch_top_tokens: top tokens by market cap on Flaunch
-- uniswap_quote: get real swap quote (price, output amount, gas) from Uniswap on Base
-- uniswap_prepare_swap: prepare unsigned swap tx for user to sign — ALWAYS call uniswap_quote first
+- uniswap_quote: get best swap price on Base via Odos (works for any token pair)
+- uniswap_prepare_swap: prepare complete swap transaction(s) via Odos — returns approve+swap for ERC20 inputs, single tx for ETH input
 - flaunch_prepare_launch: prepare unsigned tx to launch a new token on Flaunch
 - moonwell_markets: lending/borrow APY for all assets on Moonwell Base
 - moonwell_user_position: user's supply/borrow positions + health factor on Moonwell
@@ -2771,13 +2771,16 @@ When the user wants to transfer, swap, lend, borrow, launch a token, or any onch
 **IMPORTANT: Always use the user's connected wallet address (from ## User Wallet above). NEVER call get_wallets from Base MCP — that returns a different server-managed wallet, not the user's browser wallet.**
 
 **Swap flow:**
-1. Call uniswap_quote with the user's wallet address.
-2. Call uniswap_prepare_swap with the same address.
-3. Output the full tool result as a transaction block:
+1. If token addresses are unknown, use dexscreener_search to find them first.
+2. ALWAYS check token_in_decimals: ETH/WETH/most tokens=18, USDC/USDT=6. Use base_erc20_info if unsure. Wrong decimals = wrong amount.
+3. Call uniswap_quote to show the user the expected output.
+4. Call uniswap_prepare_swap with token_in_decimals explicitly set.
+5. Output the full tool result:
 \`\`\`transaction
 {PASTE_FULL_TOOL_RESULT_HERE}
 \`\`\`
-Note: for ERC20 input (non-ETH), the result contains 2 transactions — an approve and a swap. Tell the user to sign both in order.
+For ERC20 inputs (non-ETH): result has 2 transactions — approve then swap. Tell user to sign BOTH in order when the card shows "2 txns".
+Common Base addresses: ETH=0x0000000000000000000000000000000000000000, USDC=0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913, WETH=0x4200000000000000000000000000000000000006
 
 **Supply/Lend flow:**
 1. Call moonwell_prepare_supply with the user's wallet address.

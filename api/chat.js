@@ -134,16 +134,16 @@ const ALL_TOOLS = [
   },
   {
     name: 'uniswap_quote',
-    description: 'Get a real swap quote from Uniswap on Base. Returns best price, estimated output amount, gas fee, and price impact for any token pair.',
+    description: 'Get a swap price quote on Base. Uses Odos aggregator for best prices across all DEXes (Aerodrome, Uniswap, BaseSwap, etc.). Works for any token pair.',
     input_schema: {
       type: 'object',
       properties: {
-        token_in:          { type: 'string', description: 'Input token address. Use 0x0000000000000000000000000000000000000000 for native ETH' },
-        token_out:         { type: 'string', description: 'Output token address (e.g. 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913 for USDC)' },
+        token_in:          { type: 'string', description: 'Input token contract address on Base. Use 0x0000000000000000000000000000000000000000 for native ETH. Always use the actual contract address, not a symbol.' },
+        token_out:         { type: 'string', description: 'Output token contract address on Base. Use 0x0000000000000000000000000000000000000000 for native ETH. Common: USDC=0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913, WETH=0x4200000000000000000000000000000000000006' },
         amount_in:         { type: 'string', description: 'Input amount in human-readable units, e.g. "0.1" for 0.1 ETH or "100" for 100 USDC' },
-        token_in_decimals: { type: 'number', description: 'Decimals of input token: 18 for ETH/WETH, 6 for USDC. Default 18.' }
+        token_in_decimals: { type: 'number', description: 'Decimals of input token. ETH/WETH/most tokens=18, USDC/USDT=6. REQUIRED for correct amounts — call base_erc20_info first if unsure.' }
       },
-      required: ['token_in', 'token_out', 'amount_in']
+      required: ['token_in', 'token_out', 'amount_in', 'token_in_decimals']
     }
   },
   {
@@ -181,17 +181,17 @@ const ALL_TOOLS = [
   },
   {
     name: 'uniswap_prepare_swap',
-    description: 'Prepare an unsigned swap transaction on Uniswap Base. Returns the exact calldata the user must sign with their wallet to execute the swap. Always call uniswap_quote first to confirm the price.',
+    description: 'Prepare a swap transaction via Odos aggregator on Base. Works for ANY token pair — ETH, USDC, AERO, BRETT, or any ERC20. Returns complete transaction(s) ready to sign. For ERC20 input tokens, returns 2 transactions (approve + swap) — user must sign BOTH.',
     input_schema: {
       type: 'object',
       properties: {
-        token_in:          { type: 'string', description: 'Input token address. Use 0x0000000000000000000000000000000000000000 for native ETH' },
-        token_out:         { type: 'string', description: 'Output token address' },
-        amount_in:         { type: 'string', description: 'Input amount in human-readable units, e.g. "0.1" for 0.1 ETH' },
-        token_in_decimals: { type: 'number', description: 'Decimals of input token: 18 for ETH/WETH, 6 for USDC. Default 18.' },
-        wallet_address:    { type: 'string', description: 'User wallet address that will sign and execute the swap (0x...)' }
+        token_in:          { type: 'string', description: 'Input token contract address on Base. Use 0x0000000000000000000000000000000000000000 for native ETH. Must be a real Base contract address.' },
+        token_out:         { type: 'string', description: 'Output token contract address on Base. Use 0x0000000000000000000000000000000000000000 for native ETH. Common: USDC=0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913, WETH=0x4200000000000000000000000000000000000006' },
+        amount_in:         { type: 'string', description: 'Input amount in human-readable units, e.g. "0.1" for 0.1 ETH or "100" for 100 USDC' },
+        token_in_decimals: { type: 'number', description: 'CRITICAL — decimals of input token. Wrong value = wrong amount sent. ETH/WETH/most tokens=18, USDC/USDT=6. Use base_erc20_info to check if unsure.' },
+        wallet_address:    { type: 'string', description: 'User wallet address that will sign the transaction (0x...)' }
       },
-      required: ['token_in', 'token_out', 'amount_in', 'wallet_address']
+      required: ['token_in', 'token_out', 'amount_in', 'token_in_decimals', 'wallet_address']
     }
   },
   {
@@ -466,48 +466,42 @@ async function executeTool(name, input) {
         const amtFloat   = parseFloat(input.amount_in);
         if (isNaN(amtFloat) || amtFloat <= 0) return { error: 'Invalid amount_in' };
         const amountIn   = BigInt(Math.round(amtFloat * Math.pow(10, decimalsIn))).toString();
-        const body = {
-          type: 'EXACT_INPUT',
-          amount: amountIn,
-          tokenIn: input.token_in,
-          tokenOut: input.token_out,
-          tokenInChainId: 8453,
-          tokenOutChainId: 8453,
-          swapper: '0x0000000000000000000000000000000000000000',
-          autoSlippage: 'DEFAULT',
-          protocols: ['V4', 'V3', 'V2'],
-          routingPreference: 'BEST_PRICE'
-        };
-        const r = await fetch('https://trade-api.gateway.uniswap.org/v1/quote', {
+
+        const ETH_ZERO = '0x0000000000000000000000000000000000000000';
+        const isEthIn  = input.token_in  === ETH_ZERO || input.token_in?.toLowerCase()  === 'eth';
+        const isEthOut = input.token_out === ETH_ZERO || input.token_out?.toLowerCase() === 'eth';
+
+        // Use Odos aggregator — best prices on Base, works for any token pair
+        const r = await fetch('https://api.odos.xyz/sor/quote/v2', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-api-key': 'NeoYO3V50_koJAipDEalYWbMO1XMaFPAQmpOm6_Npo0',
-            'x-permit2-disabled': 'true'
-          },
-          body: JSON.stringify(body),
-          signal: AbortSignal.timeout(12000)
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chainId: 8453,
+            inputTokens:  [{ tokenAddress: isEthIn  ? ETH_ZERO : input.token_in,  amount: amountIn }],
+            outputTokens: [{ tokenAddress: isEthOut ? ETH_ZERO : input.token_out, proportion: 1 }],
+            userAddr: '0x0000000000000000000000000000000000000001',
+            slippageLimitPercent: 1,
+            referralCode: 0,
+            disableRFQs: false,
+            compact: false
+          }),
+          signal: AbortSignal.timeout(10000)
         });
         if (!r.ok) {
           const err = await r.text().catch(() => '');
-          return { error: `Uniswap API ${r.status}`, detail: err.slice(0, 300) };
+          return { error: `Quote failed: ${r.status}`, detail: err.slice(0, 300) };
         }
         const d = await r.json();
-        // Handle multiple possible response shapes from Uniswap API
-        const outAmt = d.output?.amount ?? d.outputAmount ?? d.quote?.outputAmount ?? d.quote?.output?.amount ?? null;
-        const gasFee = d.gasFeeUSD ?? d.gasFee?.usd ?? d.gasUseEstimateUSD ?? null;
-        const impact = d.priceImpact ?? d.quote?.priceImpact ?? null;
         return {
-          token_in:       input.token_in,
-          token_out:      input.token_out,
-          amount_in:      input.amount_in,
-          amount_out_raw: outAmt,
-          route_type:     d.routeType ?? d.routing ?? null,
-          price_impact:   impact,
-          gas_fee_usd:    gasFee,
-          note:           'amount_out_raw is in the token\'s smallest unit. Divide by 10^decimals for human-readable. USDC has 6 decimals, ETH/WETH has 18.',
-          _raw_keys:      Object.keys(d).join(','),
-          chain:          'Base'
+          token_in:             input.token_in,
+          token_out:            input.token_out,
+          amount_in:            input.amount_in,
+          amount_out_raw:       d.outTokens?.[0]?.amount ?? null,
+          price_impact_percent: d.priceImpact ?? null,
+          gas_estimate:         d.gasEstimate ?? null,
+          note:                 'amount_out_raw is in smallest unit. USDC=6 decimals, ETH/WETH=18. Divide by 10^decimals for human-readable.',
+          source:               'Odos (aggregates Aerodrome, Uniswap, BaseSwap and more)',
+          chain:                'Base'
         };
       }
       case 'moonwell_markets': {
@@ -584,124 +578,84 @@ async function executeTool(name, input) {
         if (isNaN(amtFloat) || amtFloat <= 0) return { error: 'Invalid amount_in' };
         const amountIn   = BigInt(Math.round(amtFloat * Math.pow(10, decimalsIn))).toString();
 
-        const ETH_ZERO  = '0x0000000000000000000000000000000000000000';
-        const WETH_BASE = '0x4200000000000000000000000000000000000006';
-        const ROUTER    = '0x2626664c2603336E57B271c5C0b26F421741e481';
-        const isEthIn   = input.token_in === ETH_ZERO || input.token_in?.toLowerCase() === 'eth';
-        const tokenInAddr = isEthIn ? WETH_BASE : input.token_in;
+        const ETH_ZERO = '0x0000000000000000000000000000000000000000';
+        const isEthIn  = input.token_in  === ETH_ZERO || input.token_in?.toLowerCase()  === 'eth';
+        const isEthOut = input.token_out === ETH_ZERO || input.token_out?.toLowerCase() === 'eth';
+        const tokenIn  = isEthIn  ? ETH_ZERO : input.token_in;
+        const tokenOut = isEthOut ? ETH_ZERO : input.token_out;
 
-        const uniHeaders = {
-          'Content-Type': 'application/json',
-          'x-api-key': 'NeoYO3V50_koJAipDEalYWbMO1XMaFPAQmpOm6_Npo0',
-          'x-permit2-disabled': 'true'
-        };
-        const quoteBody = {
-          type: 'EXACT_INPUT', amount: amountIn,
-          tokenIn: input.token_in, tokenOut: input.token_out,
-          tokenInChainId: 8453, tokenOutChainId: 8453,
-          swapper: input.wallet_address,
-          protocols: ['V4', 'V3', 'V2'], routingPreference: 'BEST_PRICE'
-        };
-
-        // Step 1: get quote for output amount and route
-        const qr = await fetch('https://trade-api.gateway.uniswap.org/v1/quote', {
-          method: 'POST', headers: uniHeaders,
-          body: JSON.stringify(quoteBody),
+        // Step 1: Odos quote — finds best route across all DEXes on Base
+        const qr = await fetch('https://api.odos.xyz/sor/quote/v2', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chainId: 8453,
+            inputTokens:  [{ tokenAddress: tokenIn,  amount: amountIn }],
+            outputTokens: [{ tokenAddress: tokenOut, proportion: 1 }],
+            userAddr: input.wallet_address,
+            slippageLimitPercent: 1,
+            referralCode: 0,
+            disableRFQs:  false,
+            compact:      false
+          }),
           signal: AbortSignal.timeout(12000)
         });
-        if (!qr.ok) { const t = await qr.text(); return { error: `Uniswap quote failed: ${qr.status}`, detail: t.slice(0, 400) }; }
-        const quote = await qr.json();
-        const outAmt = quote.output?.amount ?? quote.outputAmount ?? quote.quote?.output?.amount ?? quote.quote?.outputAmount ?? null;
-        if (!outAmt) return { error: 'Quote returned no output amount', _raw_keys: Object.keys(quote) };
-        // Use BigInt arithmetic to avoid precision loss on large raw amounts
-        const outMin = BigInt(outAmt) * 98n / 100n; // 2% slippage
-
-        // Step 2: try /v1/swap for ready-made calldata (handles V4, multi-hop, all protocols)
-        let swapCalldata = null, swapTo = ROUTER;
-        try {
-          const sr = await fetch('https://trade-api.gateway.uniswap.org/v1/swap', {
-            method: 'POST', headers: uniHeaders,
-            body: JSON.stringify({ ...quoteBody, slippageTolerance: '2' }),
-            signal: AbortSignal.timeout(15000)
-          });
-          if (sr.ok) {
-            const sd = await sr.json();
-            const c = sd.swap?.calldata ?? sd.swap?.data ?? sd.calldata ?? sd.data ?? null;
-            const t = sd.swap?.to ?? sd.to ?? null;
-            if (c && t) { swapCalldata = c; swapTo = t; }
-          }
-        } catch {}
-
-        // Step 3: build SwapRouter02 calldata manually if /v1/swap failed
-        // Supports both single-hop (exactInputSingle) and multi-hop (exactInput with packed path)
-        if (!swapCalldata) {
-          const pad32 = h => h.replace('0x','').toLowerCase().padStart(64,'0');
-          const routeHops = quote.route?.[0] ?? quote.quote?.route?.[0] ?? [];
-
-          if (routeHops.length <= 1) {
-            // Single-hop: exactInputSingle — selector 0x04e45aaf
-            const fee = Number(routeHops[0]?.fee ?? routeHops[0]?.feeTier ?? 3000);
-            swapCalldata = '0x04e45aaf' +
-              pad32(tokenInAddr) + pad32(input.token_out) +
-              pad32(fee.toString(16)) + pad32(input.wallet_address) +
-              pad32(BigInt(amountIn).toString(16)) + pad32(outMin.toString(16)) +
-              pad32('0'); // sqrtPriceLimitX96 = 0
-          } else {
-            // Multi-hop: exactInput with ABI-encoded (bytes path, address recipient, uint amountIn, uint amountOutMin)
-            // Path packed as: tokenIn(20B) + fee(3B) + tokenMid(20B) + ... + tokenOut(20B)
-            let hexPath = tokenInAddr.toLowerCase().replace('0x', '');
-            for (const hop of routeHops) {
-              const fee = Number(hop.fee ?? hop.feeTier ?? 3000);
-              const out = (hop.tokenOut?.address ?? hop.tokenOut?.id ?? '').toLowerCase().replace('0x', '');
-              hexPath += fee.toString(16).padStart(6, '0') + out;
-            }
-            const pathLen    = hexPath.length / 2;
-            const pathPadded = hexPath.padEnd(Math.ceil(pathLen / 32) * 32 * 2, '0');
-            // ABI encode the tuple: outer offset(0x20) + inner head(path offset 0x80, recipient, amountIn, outMin) + path tail
-            swapCalldata = '0xb858183f' +        // exactInput selector
-              pad32('20') +                       // offset to tuple param
-              pad32('80') +                       // offset to `path` within tuple (4 static slots × 32)
-              pad32(input.wallet_address) +       // recipient
-              pad32(BigInt(amountIn).toString(16)) +
-              pad32(outMin.toString(16)) +
-              pad32(pathLen.toString(16)) +       // bytes length
-              pathPadded;                         // bytes data (padded to 32-byte boundary)
-          }
+        if (!qr.ok) {
+          const t = await qr.text();
+          return { error: `Swap quote failed (${qr.status}). Make sure token addresses are correct Base contract addresses.`, detail: t.slice(0, 200) };
         }
+        const qd = await qr.json();
+        const pathId    = qd.pathId;
+        const outAmtRaw = qd.outTokens?.[0]?.amount ?? null;
+        if (!pathId) return { error: 'No swap route found for this pair on Base', _raw: JSON.stringify(qd).slice(0, 200) };
 
-        // Build transaction list: ERC20 approval first (if needed), then swap
+        // Step 2: Odos assemble — returns complete, ready-to-sign transaction calldata
+        const ar = await fetch('https://api.odos.xyz/sor/assemble', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userAddr: input.wallet_address, pathId, simulate: false }),
+          signal: AbortSignal.timeout(15000)
+        });
+        if (!ar.ok) {
+          const t = await ar.text();
+          return { error: `Swap assembly failed: ${ar.status}`, detail: t.slice(0, 300) };
+        }
+        const ad = await ar.json();
+        const tx = ad.transaction;
+        if (!tx?.to || !tx?.data) return { error: 'Odos returned no transaction', _raw: JSON.stringify(ad).slice(0, 200) };
+
+        // Build transaction list: ERC20 approval first (if not ETH), then swap
         const transactions = [];
         if (!isEthIn) {
-          // approve(spender, maxUint256)
+          // approve(odosRouter, maxUint256) so router can pull the input token
           transactions.push({
             to:      input.token_in,
             data:    '0x095ea7b3' +
-                     swapTo.replace('0x','').toLowerCase().padStart(64,'0') +
+                     tx.to.replace('0x','').toLowerCase().padStart(64,'0') +
                      'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
             value:   '0',
-            gas:     '65000',
+            gas:     '100000',
             chainId: 8453
           });
         }
         transactions.push({
-          to:      swapTo,
-          data:    swapCalldata,
-          value:   isEthIn ? amountIn : '0',
-          gas:     '400000',
+          to:      tx.to,
+          data:    tx.data,
+          value:   tx.value != null ? String(tx.value) : '0',
+          gas:     String(Math.max(Number(tx.gas) || 0, 500000)),
           chainId: 8453
         });
 
         const tokenInLabel = isEthIn ? 'ETH' : input.token_in;
-        const txCount = transactions.length > 1 ? ` (${transactions.length} txns: approve + swap)` : '';
+        const txCount = transactions.length > 1 ? ' (2 txns: approve then swap — sign both)' : '';
         return {
           __action:       'sign_transaction',
-          protocol:       'Uniswap',
-          description:    `Swap ${input.amount_in} ${tokenInLabel} on Uniswap (Base)${txCount}`,
+          protocol:       'Odos',
+          description:    `Swap ${input.amount_in} ${tokenInLabel} via Odos (Base)${txCount}`,
           transactions,
-          amount_out_raw: outAmt,
+          amount_out_raw: outAmtRaw,
           chain_id:       8453,
-          wallet:         input.wallet_address,
-          _debug:         { router: swapTo, out_min: outMin.toString() }
+          wallet:         input.wallet_address
         };
       }
       case 'flaunch_prepare_launch': {
