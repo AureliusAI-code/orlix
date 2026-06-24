@@ -654,6 +654,25 @@ nav {
   transform: translateY(-5px);
 }
 
+.bento-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(
+    500px circle at var(--mx, -9999px) var(--my, -9999px),
+    rgba(240,120,48,0.13),
+    transparent 55%
+  );
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+  z-index: 0;
+}
+.bento-card:hover::before {
+  opacity: 1;
+}
+
 /* Card placements */
 .card-chat {
   grid-column: 1 / 8;
@@ -2716,6 +2735,17 @@ document.querySelectorAll('a[href^="#"]').forEach(function(anchor) {
     }
   });
 });
+
+// Cursor spotlight on bento cards
+(function() {
+  document.querySelectorAll('.bento-card').forEach(function(card) {
+    card.addEventListener('mousemove', function(e) {
+      var r = card.getBoundingClientRect();
+      card.style.setProperty('--mx', (e.clientX - r.left) + 'px');
+      card.style.setProperty('--my', (e.clientY - r.top) + 'px');
+    });
+  });
+})();
 
 // Nav shrink on scroll
 (function() {
