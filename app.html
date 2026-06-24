@@ -2777,6 +2777,7 @@ When the user wants to transfer, swap, lend, borrow, launch a token, or any onch
 \`\`\`transaction
 {PASTE_FULL_TOOL_RESULT_HERE}
 \`\`\`
+Note: for ERC20 input (non-ETH), the result contains 2 transactions — an approve and a swap. Tell the user to sign both in order.
 
 **Supply/Lend flow:**
 1. Call moonwell_prepare_supply with the user's wallet address.

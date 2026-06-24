@@ -584,70 +584,124 @@ async function executeTool(name, input) {
         if (isNaN(amtFloat) || amtFloat <= 0) return { error: 'Invalid amount_in' };
         const amountIn   = BigInt(Math.round(amtFloat * Math.pow(10, decimalsIn))).toString();
 
-        const ETH_ZERO   = '0x0000000000000000000000000000000000000000';
-        const WETH_BASE  = '0x4200000000000000000000000000000000000006';
-        const isEthIn    = input.token_in === ETH_ZERO || input.token_in?.toLowerCase() === 'eth';
-        const tokenIn    = isEthIn ? WETH_BASE : input.token_in;
+        const ETH_ZERO  = '0x0000000000000000000000000000000000000000';
+        const WETH_BASE = '0x4200000000000000000000000000000000000006';
+        const ROUTER    = '0x2626664c2603336E57B271c5C0b26F421741e481';
+        const isEthIn   = input.token_in === ETH_ZERO || input.token_in?.toLowerCase() === 'eth';
+        const tokenInAddr = isEthIn ? WETH_BASE : input.token_in;
 
-        // Step 1: get quote for expected output amount
-        const uniHeaders = { 'Content-Type': 'application/json', 'x-api-key': 'NeoYO3V50_koJAipDEalYWbMO1XMaFPAQmpOm6_Npo0' };
+        const uniHeaders = {
+          'Content-Type': 'application/json',
+          'x-api-key': 'NeoYO3V50_koJAipDEalYWbMO1XMaFPAQmpOm6_Npo0',
+          'x-permit2-disabled': 'true'
+        };
+        const quoteBody = {
+          type: 'EXACT_INPUT', amount: amountIn,
+          tokenIn: input.token_in, tokenOut: input.token_out,
+          tokenInChainId: 8453, tokenOutChainId: 8453,
+          swapper: input.wallet_address,
+          protocols: ['V4', 'V3', 'V2'], routingPreference: 'BEST_PRICE'
+        };
+
+        // Step 1: get quote for output amount and route
         const qr = await fetch('https://trade-api.gateway.uniswap.org/v1/quote', {
           method: 'POST', headers: uniHeaders,
-          body: JSON.stringify({
-            type: 'EXACT_INPUT', amount: amountIn,
-            tokenIn: input.token_in, tokenOut: input.token_out,  // keep zero address for ETH — Trade API expects it
-            tokenInChainId: 8453, tokenOutChainId: 8453,
-            swapper: input.wallet_address,
-            protocols: ['V4', 'V3', 'V2'], routingPreference: 'BEST_PRICE'
-          }),
+          body: JSON.stringify(quoteBody),
           signal: AbortSignal.timeout(12000)
         });
         if (!qr.ok) { const t = await qr.text(); return { error: `Uniswap quote failed: ${qr.status}`, detail: t.slice(0, 400) }; }
         const quote = await qr.json();
-        // Try all known Uniswap API response shapes for output amount
-        const outAmt = quote.output?.amount
-          ?? quote.outputAmount
-          ?? quote.quote?.output?.amount
-          ?? quote.quote?.outputAmount
-          ?? null;
-        if (!outAmt) return { error: 'Quote returned no output amount', _raw_keys: Object.keys(quote), _quote_keys: Object.keys(quote.quote ?? {}) };
+        const outAmt = quote.output?.amount ?? quote.outputAmount ?? quote.quote?.output?.amount ?? quote.quote?.outputAmount ?? null;
+        if (!outAmt) return { error: 'Quote returned no output amount', _raw_keys: Object.keys(quote) };
+        // Use BigInt arithmetic to avoid precision loss on large raw amounts
+        const outMin = BigInt(outAmt) * 98n / 100n; // 2% slippage
 
-        // Step 2: build SwapRouter02 calldata directly — bypasses /v1/swap reliability issues
-        // SwapRouter02 on Base: 0x2626664c2603336E57B271c5C0b26F421741e481
-        // exactInputSingle(tokenIn,tokenOut,fee,recipient,amountIn,amountOutMin,sqrtPriceLimit)
-        const ROUTER    = '0x2626664c2603336E57B271c5C0b26F421741e481';
-        // Extract fee tier from any known quote response shape; default 500 (0.05%) for ETH/USDC
-        const route0    = quote.route?.[0]?.[0] ?? quote.quote?.route?.[0]?.[0] ?? {};
-        const fee       = Number(route0.fee ?? route0.feeTier ?? 500);
-        const outMin    = BigInt(Math.floor(Number(outAmt) * 0.95)); // 5% slippage
-        const pad32     = h => h.replace('0x','').toLowerCase().padStart(64,'0');
-        const calldata  = '0x04e45aaf' +   // exactInputSingle selector
-          pad32(tokenIn) +
-          pad32(input.token_out) +
-          pad32(Number(fee).toString(16)) +
-          pad32(input.wallet_address) +
-          pad32(BigInt(amountIn).toString(16)) +
-          pad32(outMin.toString(16)) +
-          pad32('0');  // sqrtPriceLimitX96 = 0
+        // Step 2: try /v1/swap for ready-made calldata (handles V4, multi-hop, all protocols)
+        let swapCalldata = null, swapTo = ROUTER;
+        try {
+          const sr = await fetch('https://trade-api.gateway.uniswap.org/v1/swap', {
+            method: 'POST', headers: uniHeaders,
+            body: JSON.stringify({ ...quoteBody, slippageTolerance: '2' }),
+            signal: AbortSignal.timeout(15000)
+          });
+          if (sr.ok) {
+            const sd = await sr.json();
+            const c = sd.swap?.calldata ?? sd.swap?.data ?? sd.calldata ?? sd.data ?? null;
+            const t = sd.swap?.to ?? sd.to ?? null;
+            if (c && t) { swapCalldata = c; swapTo = t; }
+          }
+        } catch {}
 
-        const txObj = {
-          to:       ROUTER,
-          data:     calldata,
-          value:    isEthIn ? amountIn : '0',
-          gas:      '300000',
-          chainId:  8453
-        };
+        // Step 3: build SwapRouter02 calldata manually if /v1/swap failed
+        // Supports both single-hop (exactInputSingle) and multi-hop (exactInput with packed path)
+        if (!swapCalldata) {
+          const pad32 = h => h.replace('0x','').toLowerCase().padStart(64,'0');
+          const routeHops = quote.route?.[0] ?? quote.quote?.route?.[0] ?? [];
 
-        const tokenInLabel  = isEthIn ? 'ETH' : input.token_in;
+          if (routeHops.length <= 1) {
+            // Single-hop: exactInputSingle — selector 0x04e45aaf
+            const fee = Number(routeHops[0]?.fee ?? routeHops[0]?.feeTier ?? 3000);
+            swapCalldata = '0x04e45aaf' +
+              pad32(tokenInAddr) + pad32(input.token_out) +
+              pad32(fee.toString(16)) + pad32(input.wallet_address) +
+              pad32(BigInt(amountIn).toString(16)) + pad32(outMin.toString(16)) +
+              pad32('0'); // sqrtPriceLimitX96 = 0
+          } else {
+            // Multi-hop: exactInput with ABI-encoded (bytes path, address recipient, uint amountIn, uint amountOutMin)
+            // Path packed as: tokenIn(20B) + fee(3B) + tokenMid(20B) + ... + tokenOut(20B)
+            let hexPath = tokenInAddr.toLowerCase().replace('0x', '');
+            for (const hop of routeHops) {
+              const fee = Number(hop.fee ?? hop.feeTier ?? 3000);
+              const out = (hop.tokenOut?.address ?? hop.tokenOut?.id ?? '').toLowerCase().replace('0x', '');
+              hexPath += fee.toString(16).padStart(6, '0') + out;
+            }
+            const pathLen    = hexPath.length / 2;
+            const pathPadded = hexPath.padEnd(Math.ceil(pathLen / 32) * 32 * 2, '0');
+            // ABI encode the tuple: outer offset(0x20) + inner head(path offset 0x80, recipient, amountIn, outMin) + path tail
+            swapCalldata = '0xb858183f' +        // exactInput selector
+              pad32('20') +                       // offset to tuple param
+              pad32('80') +                       // offset to `path` within tuple (4 static slots × 32)
+              pad32(input.wallet_address) +       // recipient
+              pad32(BigInt(amountIn).toString(16)) +
+              pad32(outMin.toString(16)) +
+              pad32(pathLen.toString(16)) +       // bytes length
+              pathPadded;                         // bytes data (padded to 32-byte boundary)
+          }
+        }
+
+        // Build transaction list: ERC20 approval first (if needed), then swap
+        const transactions = [];
+        if (!isEthIn) {
+          // approve(spender, maxUint256)
+          transactions.push({
+            to:      input.token_in,
+            data:    '0x095ea7b3' +
+                     swapTo.replace('0x','').toLowerCase().padStart(64,'0') +
+                     'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+            value:   '0',
+            gas:     '65000',
+            chainId: 8453
+          });
+        }
+        transactions.push({
+          to:      swapTo,
+          data:    swapCalldata,
+          value:   isEthIn ? amountIn : '0',
+          gas:     '400000',
+          chainId: 8453
+        });
+
+        const tokenInLabel = isEthIn ? 'ETH' : input.token_in;
+        const txCount = transactions.length > 1 ? ` (${transactions.length} txns: approve + swap)` : '';
         return {
           __action:       'sign_transaction',
-          protocol:       'Uniswap v3',
-          description:    `Swap ${input.amount_in} ${tokenInLabel} on Uniswap (Base)`,
-          transactions:   [txObj],
+          protocol:       'Uniswap',
+          description:    `Swap ${input.amount_in} ${tokenInLabel} on Uniswap (Base)${txCount}`,
+          transactions,
           amount_out_raw: outAmt,
           chain_id:       8453,
           wallet:         input.wallet_address,
-          _debug:         { router: ROUTER, fee_tier: fee, out_min: outMin.toString(), value: txObj.value }
+          _debug:         { router: swapTo, out_min: outMin.toString() }
         };
       }
       case 'flaunch_prepare_launch': {
