@@ -89,6 +89,95 @@ const ALL_TOOLS = [
       },
       required: ['owner', 'repo']
     }
+  },
+  {
+    name: 'dexscreener_search',
+    description: 'Search for tokens on DexScreener by name or symbol. Returns price, liquidity, volume, and market data for Base tokens.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        query: { type: 'string', description: 'Token name, symbol, or contract address to search for (e.g. "ORLIX", "pepe", "0x...")' }
+      },
+      required: ['query']
+    }
+  },
+  {
+    name: 'dexscreener_token',
+    description: 'Get full market data for a specific token on Base: price, liquidity, volume, price changes 1h/6h/24h, buy/sell txns, market cap, FDV',
+    input_schema: {
+      type: 'object',
+      properties: {
+        address: { type: 'string', description: 'Token contract address on Base (0x...)' }
+      },
+      required: ['address']
+    }
+  },
+  {
+    name: 'flaunch_new_tokens',
+    description: 'Get the newest token launches on Flaunch on Base mainnet. Returns recently launched meme tokens with price and market cap.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        limit: { type: 'number', description: 'Number of tokens to return, default 10, max 20' }
+      }
+    }
+  },
+  {
+    name: 'flaunch_top_tokens',
+    description: 'Get top tokens by market cap on Flaunch (Base). Returns ranked tokens with price, volume, and market data.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        limit: { type: 'number', description: 'Number of tokens to return, default 10, max 20' }
+      }
+    }
+  },
+  {
+    name: 'uniswap_quote',
+    description: 'Get a real swap quote from Uniswap on Base. Returns best price, estimated output amount, gas fee, and price impact for any token pair.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        token_in:          { type: 'string', description: 'Input token address. Use 0x0000000000000000000000000000000000000000 for native ETH' },
+        token_out:         { type: 'string', description: 'Output token address (e.g. 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913 for USDC)' },
+        amount_in:         { type: 'string', description: 'Input amount in human-readable units, e.g. "0.1" for 0.1 ETH or "100" for 100 USDC' },
+        token_in_decimals: { type: 'number', description: 'Decimals of input token: 18 for ETH/WETH, 6 for USDC. Default 18.' }
+      },
+      required: ['token_in', 'token_out', 'amount_in']
+    }
+  },
+  {
+    name: 'moonwell_markets',
+    description: 'Get lending and borrowing markets on Moonwell (Base). Returns supply APY, borrow APY, total supply, total borrows, and liquidity for each asset.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        asset: { type: 'string', description: 'Optional: specific asset to query, e.g. "USDC", "WETH", "ETH". Omit to get all markets.' }
+      }
+    }
+  },
+  {
+    name: 'moonwell_user_position',
+    description: 'Get a user\'s lending/borrowing position on Moonwell Base. Returns what they have supplied, borrowed, and their account health factor.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        wallet_address: { type: 'string', description: 'User wallet address (0x...)' }
+      },
+      required: ['wallet_address']
+    }
+  },
+  {
+    name: 'base_erc20_info',
+    description: 'Get ERC20 token details on Base: name, symbol, decimals, total supply. Optionally check a wallet\'s balance of that token.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        token_address:  { type: 'string', description: 'ERC20 token contract address on Base (0x...)' },
+        wallet_address: { type: 'string', description: 'Optional: wallet address to check token balance for' }
+      },
+      required: ['token_address']
+    }
   }
 ];
 
@@ -230,6 +319,213 @@ async function executeTool(name, input) {
           created: d.created_at, updated: d.updated_at,
           url: d.html_url, homepage: d.homepage
         };
+      }
+      case 'dexscreener_search': {
+        const r = await fetch(`https://api.dexscreener.com/latest/dex/search?q=${encodeURIComponent(input.query)}`, {
+          signal: AbortSignal.timeout(8000)
+        });
+        if (!r.ok) return { error: `DexScreener error: ${r.status}` };
+        const data = await r.json();
+        const pairs = (data.pairs || [])
+          .filter(p => p.chainId === 'base')
+          .slice(0, 8)
+          .map(p => ({
+            name:             p.baseToken?.name,
+            symbol:           p.baseToken?.symbol,
+            address:          p.baseToken?.address,
+            price_usd:        p.priceUsd,
+            liquidity_usd:    p.liquidity?.usd,
+            volume_24h:       p.volume?.h24,
+            price_change_24h: p.priceChange?.h24,
+            market_cap:       p.marketCap,
+            pair_url:         p.url
+          }));
+        return { query: input.query, results: pairs, chain: 'Base', source: 'DexScreener' };
+      }
+      case 'dexscreener_token': {
+        const r = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${input.address}`, {
+          signal: AbortSignal.timeout(8000)
+        });
+        if (!r.ok) return { error: `DexScreener error: ${r.status}` };
+        const data = await r.json();
+        const basePairs = (data.pairs || []).filter(p => p.chainId === 'base');
+        if (!basePairs.length) return { error: 'Token not found on Base', address: input.address };
+        const best = basePairs.sort((a, b) => (b.liquidity?.usd || 0) - (a.liquidity?.usd || 0))[0];
+        const age  = best.pairCreatedAt ? Math.floor((Date.now() - best.pairCreatedAt) / 86400000) + ' days' : null;
+        const buys = best.txns?.h24?.buys || 0;
+        const sells = best.txns?.h24?.sells || 0;
+        return {
+          name:             best.baseToken?.name,
+          symbol:           best.baseToken?.symbol,
+          address:          input.address,
+          price_usd:        best.priceUsd,
+          price_change_1h:  best.priceChange?.h1,
+          price_change_6h:  best.priceChange?.h6,
+          price_change_24h: best.priceChange?.h24,
+          liquidity_usd:    best.liquidity?.usd,
+          volume_1h:        best.volume?.h1,
+          volume_6h:        best.volume?.h6,
+          volume_24h:       best.volume?.h24,
+          buys_24h:         buys,
+          sells_24h:        sells,
+          buy_sell_ratio:   sells > 0 ? (buys / sells).toFixed(2) : buys > 0 ? 'inf' : '0',
+          market_cap:       best.marketCap,
+          fdv:              best.fdv,
+          dex:              best.dexId,
+          pair_age:         age,
+          pair_url:         best.url,
+          chain:            'Base'
+        };
+      }
+      case 'flaunch_new_tokens': {
+        const limit = Math.min(input.limit || 10, 20);
+        const r = await fetch('https://mcp.flaunch.gg/v1/base/coins/new', {
+          signal: AbortSignal.timeout(8000)
+        });
+        if (!r.ok) return { error: `Flaunch error: ${r.status}` };
+        const data = await r.json();
+        const list = Array.isArray(data) ? data : (data.tokens || data.coins || []);
+        const tokens = list.slice(0, limit).map(t => ({
+          name:           t.name,
+          symbol:         t.symbol,
+          address:        t.tokenAddress || t.address,
+          price_usd:      t.priceUSD,
+          market_cap_usd: t.marketCapUSD,
+          volume_24h:     t.volume24h,
+          change_24h:     t.twentyFourHourChangePercentage
+        }));
+        return { tokens, count: tokens.length, source: 'Flaunch', chain: 'Base' };
+      }
+      case 'flaunch_top_tokens': {
+        const limit = Math.min(input.limit || 10, 20);
+        const r = await fetch('https://mcp.flaunch.gg/v1/base/coins/market-cap', {
+          signal: AbortSignal.timeout(8000)
+        });
+        if (!r.ok) return { error: `Flaunch error: ${r.status}` };
+        const data = await r.json();
+        const list = Array.isArray(data) ? data : (data.tokens || data.coins || []);
+        const tokens = list.slice(0, limit).map(t => ({
+          name:           t.name,
+          symbol:         t.symbol,
+          address:        t.tokenAddress || t.address,
+          price_usd:      t.priceUSD,
+          market_cap_usd: t.marketCapUSD,
+          volume_24h:     t.volume24h,
+          change_24h:     t.twentyFourHourChangePercentage
+        }));
+        return { tokens, count: tokens.length, source: 'Flaunch', chain: 'Base' };
+      }
+      case 'uniswap_quote': {
+        const decimalsIn = input.token_in_decimals ?? 18;
+        const amtFloat   = parseFloat(input.amount_in);
+        if (isNaN(amtFloat) || amtFloat <= 0) return { error: 'Invalid amount_in' };
+        const amountIn   = BigInt(Math.round(amtFloat * Math.pow(10, decimalsIn))).toString();
+        const body = {
+          type: 'EXACT_INPUT',
+          amount: amountIn,
+          tokenIn: input.token_in,
+          tokenOut: input.token_out,
+          tokenInChainId: 8453,
+          tokenOutChainId: 8453,
+          swapper: '0x0000000000000000000000000000000000000000',
+          autoSlippage: 'DEFAULT',
+          protocols: ['V4', 'V3', 'V2'],
+          routingPreference: 'BEST_PRICE'
+        };
+        const r = await fetch('https://trade-api.gateway.uniswap.org/v1/quote', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': 'NeoYO3V50_koJAipDEalYWbMO1XMaFPAQmpOm6_Npo0',
+            'x-permit2-disabled': 'true'
+          },
+          body: JSON.stringify(body),
+          signal: AbortSignal.timeout(12000)
+        });
+        if (!r.ok) {
+          const err = await r.text().catch(() => '');
+          return { error: `Uniswap API ${r.status}`, detail: err.slice(0, 300) };
+        }
+        const d = await r.json();
+        return {
+          token_in:       input.token_in,
+          token_out:      input.token_out,
+          amount_in:      input.amount_in,
+          amount_out_raw: d.output?.amount,
+          route_type:     d.routeType,
+          price_impact:   d.priceImpact,
+          gas_fee_usd:    d.gasFeeUSD,
+          note:           'amount_out_raw is in the token\'s smallest unit (wei/base units). Divide by 10^decimals for human-readable.',
+          chain:          'Base'
+        };
+      }
+      case 'moonwell_markets': {
+        const url = input.asset
+          ? `https://api.moonwell.fi/v1/markets/${input.asset.toUpperCase()}?chain=base`
+          : 'https://api.moonwell.fi/v1/markets?chain=base';
+        const r = await fetch(url, { signal: AbortSignal.timeout(8000) });
+        if (!r.ok) return { error: `Moonwell API error: ${r.status}` };
+        const data = await r.json();
+        const markets = Array.isArray(data) ? data : (data.markets || [data]);
+        return {
+          markets: markets.slice(0, 15).map(m => ({
+            asset:          m.symbol || m.asset,
+            supply_apy:     m.supplyApy || m.supplyAPY,
+            borrow_apy:     m.borrowApy || m.borrowAPY,
+            total_supply:   m.totalSupply,
+            total_borrows:  m.totalBorrows,
+            liquidity:      m.liquidity,
+            price_usd:      m.underlyingPrice || m.price
+          })),
+          source: 'Moonwell',
+          chain: 'Base'
+        };
+      }
+      case 'moonwell_user_position': {
+        const r = await fetch(`https://api.moonwell.fi/v1/positions/${input.wallet_address}?chain=base`, {
+          signal: AbortSignal.timeout(8000)
+        });
+        if (!r.ok) return { error: `Moonwell API error: ${r.status}` };
+        const data = await r.json();
+        return { wallet: input.wallet_address, position: data, source: 'Moonwell', chain: 'Base' };
+      }
+      case 'base_erc20_info': {
+        function decodeStrLocal(hex) {
+          try {
+            if (!hex || hex === '0x') return '';
+            const raw = hex.slice(2);
+            if (raw.length < 128) return '';
+            const len = parseInt(raw.slice(64, 128), 16);
+            return Buffer.from(raw.slice(128, 128 + len * 2), 'hex').toString('utf8').replace(/\0/g, '');
+          } catch { return ''; }
+        }
+        const [nameHex, symHex, decHex, supHex] = await Promise.allSettled([
+          rpc('eth_call', [{ to: input.token_address, data: '0x06fdde03' }, 'latest']),
+          rpc('eth_call', [{ to: input.token_address, data: '0x95d89b41' }, 'latest']),
+          rpc('eth_call', [{ to: input.token_address, data: '0x313ce567' }, 'latest']),
+          rpc('eth_call', [{ to: input.token_address, data: '0x18160ddd' }, 'latest']),
+        ]);
+        const decimals  = decHex.status === 'fulfilled' ? (parseInt(decHex.value, 16) || 18) : 18;
+        const supplyRaw = supHex.status === 'fulfilled' && supHex.value && supHex.value !== '0x' ? BigInt(supHex.value) : 0n;
+        const result = {
+          address:      input.token_address,
+          name:         nameHex.status === 'fulfilled' ? decodeStrLocal(nameHex.value) : 'Unknown',
+          symbol:       symHex.status  === 'fulfilled' ? decodeStrLocal(symHex.value)  : '?',
+          decimals,
+          total_supply: supplyRaw > 0n ? (Number(supplyRaw) / Math.pow(10, decimals)).toLocaleString() : 'Unknown',
+          chain:        'Base',
+          chain_id:     8453
+        };
+        if (input.wallet_address) {
+          const balData = '0x70a08231' + input.wallet_address.replace('0x', '').padStart(64, '0');
+          const balHex  = await rpc('eth_call', [{ to: input.token_address, data: balData }, 'latest']).catch(() => null);
+          if (balHex) {
+            const raw = parseInt(balHex, 16);
+            result.wallet_balance     = (raw / Math.pow(10, decimals)).toLocaleString();
+            result.wallet_balance_raw = raw.toString();
+          }
+        }
+        return result;
       }
       default:
         return { error: `Unknown tool: ${name}` };
