@@ -194,6 +194,8 @@ main{padding-top:56px}
 .stake-amt{font-size:.82rem;font-weight:700;color:var(--text-1);font-family:var(--mono)}
 .stake-reward{font-size:.82rem;font-weight:700;color:var(--orange)}
 .stake-lock{font-size:.7rem;color:var(--text-3);margin-left:auto}
+.stake-example{margin-top:12px;font-size:.75rem;color:var(--text-3);background:rgba(240,120,48,.06);border:1px dashed rgba(240,120,48,.25);border-radius:6px;padding:8px 12px;line-height:1.5}
+.stake-example strong{color:var(--orange)}
 .burn-bar{margin-top:12px;background:rgba(240,80,48,.05);border:1px solid rgba(240,80,48,.18);border-radius:var(--radius);padding:14px 20px;display:flex;align-items:center;gap:12px}
 .burn-icon{font-size:1.1rem;flex-shrink:0}
 .burn-text{font-size:.8rem;color:var(--text-2);line-height:1.5}
@@ -400,24 +402,25 @@ footer{border-top:1px solid var(--border);padding:40px 0 56px}
     <!-- Staking -->
     <div class="stake-section">
       <div class="stake-hd">Staking Rewards · 30-day lock</div>
-      <p class="stake-sub">Stake $ORLIX to earn daily AI credits. Rewards stack on top of holder tier.</p>
+      <p class="stake-sub">Lock $ORLIX for 30 days to earn extra daily AI credits. <strong style="color:var(--orange)">Credits add on top of your holder tier — not a replacement.</strong></p>
       <div class="stake-rows">
         <div class="stake-row">
           <span class="stake-amt">3,000,000 ORLIX</span>
-          <span class="stake-reward">$3 / day</span>
+          <span class="stake-reward">+$3 / day</span>
           <span class="stake-lock">30-day lock</span>
         </div>
         <div class="stake-row">
           <span class="stake-amt">10,000,000 ORLIX</span>
-          <span class="stake-reward">$5 / day</span>
+          <span class="stake-reward">+$5 / day</span>
           <span class="stake-lock">30-day lock</span>
         </div>
         <div class="stake-row">
           <span class="stake-amt">50,000,000 ORLIX</span>
-          <span class="stake-reward">$10 / day</span>
+          <span class="stake-reward">+$10 / day</span>
           <span class="stake-lock">30-day lock</span>
         </div>
       </div>
+      <div class="stake-example">Example: Elite holder (50M) + stake 50M → $10 hold + $10 stake = <strong>$20 / day</strong></div>
     </div>
 
     <!-- Burn mechanic -->
