@@ -95,7 +95,8 @@ input,select,textarea{font-family:var(--mono)}
 }
 .sb-item:hover{color:var(--text-1);background:rgba(255,255,255,.04)}
 .sb-item.active{color:var(--orange);border-left-color:var(--orange);background:var(--orange-dim)}
-.sb-item .ic{font-size:.8rem;width:15px;text-align:center;flex-shrink:0}
+.sb-item .ic{display:flex;align-items:center;justify-content:center;width:15px;flex-shrink:0}
+.sb-item .ic svg{display:block}
 .sb-item .badge{
   margin-left:auto;background:var(--orange-dim);color:var(--orange);
   font-size:.62rem;padding:1px 7px;border-radius:10px;line-height:1.5;
@@ -620,36 +621,36 @@ select.inp{cursor:pointer}
     </div>
     <div class="sb-sect">
       <span class="sb-label">system</span>
-      <div class="sb-item active" data-view="overview"><span class="ic">◈</span>overview</div>
+      <div class="sb-item active" data-view="overview"><span class="ic"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="2.5" width="6.5" height="6.5" rx="1.5"/><rect x="11" y="2.5" width="6.5" height="6.5" rx="1.5"/><rect x="2.5" y="11" width="6.5" height="6.5" rx="1.5"/><rect x="11" y="11" width="6.5" height="6.5" rx="1.5"/></svg></span>overview</div>
     </div>
     <div class="sb-sect">
       <span class="sb-label">data</span>
-      <div class="sb-item" data-view="memory"><span class="ic">◉</span>memory<span class="badge" id="bdg-mem">12</span></div>
-      <div class="sb-item" data-view="goals"><span class="ic">◎</span>goals<span class="badge" id="bdg-goals">5</span></div>
+      <div class="sb-item" data-view="memory"><span class="ic"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 10l8 4.5 8-4.5"/><path d="M2 13.5l8 4.5 8-4.5"/><path d="M10 2L2 6.5 10 11 18 6.5z"/></svg></span>memory<span class="badge" id="bdg-mem">12</span></div>
+      <div class="sb-item" data-view="goals"><span class="ic"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="10" cy="10" r="7.5"/><circle cx="10" cy="10" r="3.5"/><circle cx="10" cy="10" r="1" fill="currentColor" stroke="none"/></svg></span>goals<span class="badge" id="bdg-goals">5</span></div>
     </div>
     <div class="sb-sect">
       <span class="sb-label">governance</span>
-      <div class="sb-item" data-view="policies"><span class="ic">⊡</span>policies<span class="badge" id="bdg-pol">8</span></div>
-      <div class="sb-item" data-view="audit"><span class="ic">≡</span>audit log</div>
+      <div class="sb-item" data-view="policies"><span class="ic"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2L3 5.5v5c0 3.7 3 7 7 8 4-1 7-4.3 7-8v-5z"/></svg></span>policies<span class="badge" id="bdg-pol">8</span></div>
+      <div class="sb-item" data-view="audit"><span class="ic"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h12M4 10h12M4 14h7"/></svg></span>audit log</div>
     </div>
     <div class="sb-sect">
       <span class="sb-label">integrations</span>
-      <div class="sb-item" data-view="agents"><span class="ic">A</span>Agents<span class="badge">Aeon</span></div>
-      <div class="sb-item" data-view="aeon-memory"><span class="ic">M</span>Memory</div>
-      <div class="sb-item" data-view="models"><span class="ic">◫</span>models<span class="badge">19</span></div>
-      <div class="sb-item" data-view="playground"><span class="ic">▷</span>playground</div>
-      <div class="sb-item" data-view="leaderboard"><span class="ic">⊞</span>leaderboard</div>
+      <div class="sb-item" data-view="agents"><span class="ic"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="8" cy="7" r="3"/><path d="M2 17c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="15" cy="7" r="2.5"/><path d="M18 17c0-2.8-1.8-5-4-5.5"/></svg></span>Agents<span class="badge">Aeon</span></div>
+      <div class="sb-item" data-view="aeon-memory"><span class="ic"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><ellipse cx="10" cy="5.5" rx="5.5" ry="2"/><path d="M4.5 5.5v4c0 1.1 2.5 2 5.5 2s5.5-.9 5.5-2v-4"/><path d="M4.5 9.5v4c0 1.1 2.5 2 5.5 2s5.5-.9 5.5-2v-4"/></svg></span>Memory</div>
+      <div class="sb-item" data-view="models"><span class="ic"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="5" width="10" height="10" rx="1.5"/><path d="M8 5V3M12 5V3M8 17v-2M12 17v-2M5 8H3M5 12H3M15 8h2M15 12h2"/></svg></span>models<span class="badge">19</span></div>
+      <div class="sb-item" data-view="playground"><span class="ic"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="3.5" width="15" height="13" rx="2"/><path d="M6 8l3 3-3 3M11 14h3"/></svg></span>playground</div>
+      <div class="sb-item" data-view="leaderboard"><span class="ic"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="10" width="3.5" height="7.5" rx="1"/><rect x="8.25" y="5.5" width="3.5" height="12" rx="1"/><rect x="14" y="8" width="3.5" height="9.5" rx="1"/></svg></span>leaderboard</div>
     </div>
     <div class="sb-sect">
       <span class="sb-label">config</span>
-      <div class="sb-item" data-view="settings"><span class="ic">S</span>settings</div>
+      <div class="sb-item" data-view="settings"><span class="ic"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 5h14"/><circle cx="7" cy="5" r="2"/><path d="M3 10h14"/><circle cx="13" cy="10" r="2"/><path d="M3 15h14"/><circle cx="7" cy="15" r="2"/></svg></span>settings</div>
     </div>
     <div class="sb-sect">
       <span class="sb-label">crypto tools</span>
-      <div class="sb-item" data-view="token-analyzer"><span class="ic">🪙</span>token analyzer</div>
-      <div class="sb-item" data-view="wallet-watcher"><span class="ic">🔔</span>wallet watcher</div>
+      <div class="sb-item" data-view="token-analyzer"><span class="ic"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="2.5,15 7,9.5 11.5,12.5 17.5,5"/><polyline points="13.5,5 17.5,5 17.5,9"/></svg></span>token analyzer</div>
+      <div class="sb-item" data-view="wallet-watcher"><span class="ic"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M10 2.5a6 6 0 016 6c0 2.5.5 4 1.5 5H2.5c1-1 1.5-2.5 1.5-5a6 6 0 016-6z"/><path d="M8.5 17.5a1.5 1.5 0 003 0"/></svg></span>wallet watcher</div>
       <a class="sb-item" href="/song" style="text-decoration:none;color:inherit;display:flex;align-items:center;gap:8px">
-        <span class="ic">🎵</span>token song
+        <span class="ic"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8 15V5l9-2v10"/><circle cx="6" cy="15" r="2"/><circle cx="15" cy="13" r="2"/></svg></span>token song
       </a>
     </div>
     <div class="sb-footer">
@@ -1217,12 +1218,15 @@ function showView(name){
   document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id==='view-'+name));
   document.querySelectorAll('.sb-item').forEach(i=>i.classList.toggle('active',i.dataset.view===name));
   document.getElementById('sidebar').classList.remove('open');
+  history.replaceState(null,'','#'+name);
   if(name==='overview') refreshDashboard();
   if(name==='aeon-memory') refreshMemoryView();
   if(name==='leaderboard') renderLeaderboard();
 }
 document.querySelectorAll('.sb-item').forEach(i=>i.addEventListener('click',()=>showView(i.dataset.view)));
 document.querySelectorAll('[data-nav]').forEach(b=>b.addEventListener('click',()=>showView(b.dataset.nav)));
+// Restore view from URL hash on load
+(function(){const h=location.hash.slice(1);if(h&&document.getElementById('view-'+h))showView(h);})();
 
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 
