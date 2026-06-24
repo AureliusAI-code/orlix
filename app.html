@@ -300,6 +300,20 @@ select.inp{cursor:pointer}
 .code-actions .copy-btn:hover{background:var(--purple-dim);color:var(--purple)}
 .msg-preview-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin-top:10px;padding:10px 16px;background:var(--green-dim);border:1px solid rgba(74,222,128,.25);border-radius:8px;color:var(--green);font-family:var(--font);font-size:.8rem;font-weight:600;cursor:pointer;transition:all var(--tr)}
 .msg-preview-btn:hover{background:rgba(74,222,128,.15);border-color:var(--green)}
+.tx-card{margin:10px 0;background:var(--bg-2);border:1px solid rgba(240,120,48,.35);border-radius:10px;overflow:hidden}
+.tx-card-header{display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(240,120,48,.07);border-bottom:1px solid rgba(240,120,48,.2)}
+.tx-card-icon{font-size:1.1rem;flex-shrink:0}
+.tx-card-title{font-size:.78rem;font-weight:700;color:var(--text-1);flex:1}
+.tx-card-badge{font-size:.62rem;font-weight:700;font-family:var(--mono);color:var(--orange);background:rgba(240,120,48,.12);border:1px solid rgba(240,120,48,.25);border-radius:4px;padding:2px 7px;text-transform:uppercase}
+.tx-card-body{padding:12px 14px;display:flex;flex-direction:column;gap:6px}
+.tx-card-row{display:flex;gap:8px;font-size:.74rem}
+.tx-card-label{color:var(--text-3);flex-shrink:0;width:60px}
+.tx-card-val{color:var(--text-2);font-family:var(--mono);word-break:break-all}
+.tx-sign-btn{display:flex;align-items:center;justify-content:center;gap:8px;margin:10px 14px 14px;padding:10px 16px;background:rgba(240,120,48,.12);border:1px solid rgba(240,120,48,.4);border-radius:8px;color:var(--orange);font-family:var(--font);font-size:.82rem;font-weight:700;cursor:pointer;transition:all var(--tr)}
+.tx-sign-btn:hover{background:rgba(240,120,48,.22);border-color:var(--orange)}
+.tx-sign-btn:disabled{opacity:.5;cursor:not-allowed}
+.tx-sign-btn.success{background:rgba(74,222,128,.1);border-color:var(--green);color:var(--green)}
+.tx-sign-btn.error{background:rgba(255,107,107,.1);border-color:var(--red);color:var(--red)}
 .code-block pre{margin:0;padding:14px;overflow-x:auto;white-space:pre;line-height:1.6}
 .code-block pre code{color:#e0ddd8;font-family:var(--mono)}
 .preview-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9000;padding:24px}
@@ -2141,6 +2155,97 @@ function isHtmlContent(lang, code){
   return false;
 }
 
+const _txStore = {};
+let _txIdx = 0;
+
+function renderTxCard(id, tx) {
+  const txId = 'tx' + (++_txIdx);
+  // Support both single tx and multi-tx (transactions array)
+  const txList = tx.transactions || [tx];
+  _txStore[txId] = { txList, tx };
+
+  const typeMap = { transfer:'Send', swap:'Swap', lend:'Supply', borrow:'Borrow', repay:'Repay', withdraw:'Withdraw', approve:'Approve' };
+  const typeLabel = typeMap[tx.type] || tx.type || 'Transaction';
+  const protocol = tx.protocol || tx.type || '';
+  const desc = tx.description || `${typeLabel} on Base`;
+  const chainId = tx.chainId || tx.chain_id || 8453;
+  const wallet = tx.wallet || '';
+
+  let rows = '';
+  if (tx.type) rows += `<div class="tx-card-row"><span class="tx-card-label">Type</span><span class="tx-card-val">${esc(typeLabel)}</span></div>`;
+  if (wallet) rows += `<div class="tx-card-row"><span class="tx-card-label">Wallet</span><span class="tx-card-val">${esc(wallet.slice(0,10))}…${esc(wallet.slice(-6))}</span></div>`;
+  if (tx.tokenSymbol) rows += `<div class="tx-card-row"><span class="tx-card-label">Token</span><span class="tx-card-val">${esc(tx.tokenSymbol)}</span></div>`;
+  if (tx.tokenAmount) rows += `<div class="tx-card-row"><span class="tx-card-label">Amount</span><span class="tx-card-val">${esc(tx.tokenAmount)}</span></div>`;
+  else if (tx.value && tx.value !== '0x' && tx.value !== '0' && tx.value !== '0x0') {
+    const ethVal = (parseInt(tx.value) / 1e18).toFixed(8);
+    rows += `<div class="tx-card-row"><span class="tx-card-label">Value</span><span class="tx-card-val">${ethVal} ETH</span></div>`;
+  }
+  if (tx.to) rows += `<div class="tx-card-row"><span class="tx-card-label">To</span><span class="tx-card-val">${esc(tx.to)}</span></div>`;
+  if (tx.gas_fee_usd) rows += `<div class="tx-card-row"><span class="tx-card-label">Gas fee</span><span class="tx-card-val">~$${esc(String(tx.gas_fee_usd))}</span></div>`;
+  rows += `<div class="tx-card-row"><span class="tx-card-label">Network</span><span class="tx-card-val">Base Mainnet (${chainId})</span></div>`;
+  const stepCount = txList.length > 1 ? ` · ${txList.length} txns` : '';
+
+  return `<div class="tx-card" id="card-${txId}">
+    <div class="tx-card-header">
+      <span class="tx-card-icon">⛓</span>
+      <span class="tx-card-title">${esc(desc)}</span>
+      <span class="tx-card-badge">${esc(protocol || typeLabel)}${stepCount}</span>
+    </div>
+    <div class="tx-card-body">${rows}</div>
+    <button class="tx-sign-btn" id="sign-${txId}" onclick="signTx('${txId}')">Sign & Execute in Wallet</button>
+  </div>`;
+}
+
+async function signTx(txId) {
+  const btn = document.getElementById('sign-' + txId);
+  const { txList } = _txStore[txId] || {};
+  if (!txList?.length) return;
+
+  if (!window.ethereum) {
+    btn.textContent = 'No wallet detected — install MetaMask';
+    btn.classList.add('error');
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Requesting wallet…';
+
+  try {
+    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+    const from = accounts[0];
+
+    // Switch to Base Mainnet (chainId 8453 = 0x2105)
+    try {
+      await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x2105' }] });
+    } catch (swErr) {
+      if (swErr.code === 4902) {
+        await window.ethereum.request({
+          method: 'wallet_addEthereumChain',
+          params: [{ chainId: '0x2105', chainName: 'Base', nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 }, rpcUrls: ['https://mainnet.base.org'], blockExplorerUrls: ['https://basescan.org'] }]
+        });
+      }
+    }
+
+    let lastHash = null;
+    for (let i = 0; i < txList.length; i++) {
+      const step = txList[i];
+      btn.textContent = txList.length > 1 ? `Signing ${i + 1}/${txList.length}…` : 'Sign in wallet…';
+      const txParams = { from, to: step.to, data: step.data || '0x', value: step.value || '0x0' };
+      if (step.gasLimit) txParams.gas = '0x' + parseInt(step.gasLimit).toString(16);
+      lastHash = await window.ethereum.request({ method: 'eth_sendTransaction', params: [txParams] });
+    }
+
+    btn.classList.add('success');
+    btn.textContent = `Submitted ✓ — ${lastHash ? lastHash.slice(0, 12) + '…' : 'view on BaseScan'}`;
+    btn.onclick = () => window.open(`https://basescan.org/tx/${lastHash}`, '_blank');
+    btn.disabled = false;
+  } catch (e) {
+    btn.disabled = false;
+    btn.classList.add('error');
+    btn.textContent = e.code === 4001 ? 'Rejected' : 'Error: ' + (e.message || '').slice(0, 60);
+  }
+}
+
 function renderContent(text){
   // Strip Hermes-style tool call XML that leaked through (backend should handle these, but just in case)
   // Strip Mimo/Hermes tool_call XML — handles both closed (<tool_call>...</tool_call>)
@@ -2628,7 +2733,17 @@ Use these tools proactively — never wait to be asked:
 - web_search: live internet search
 - fetch_webpage: read any public URL
 - github_repo_info: GitHub metadata and stats
-- base_get_eth_balance / base_get_gas_price / base_get_transaction / base_get_latest_block / base_get_token_balance / base_get_network_info: Base blockchain tools
+- base_get_eth_balance / base_get_gas_price / base_get_transaction / base_get_latest_block / base_get_token_balance / base_get_network_info / base_erc20_info: Base blockchain tools
+- dexscreener_search: search any token on Base by name/symbol
+- dexscreener_token: full market data (price, liq, vol, txns) for a token address
+- flaunch_new_tokens: newest meme token launches on Flaunch/Base
+- flaunch_top_tokens: top tokens by market cap on Flaunch
+- uniswap_quote: get real swap quote (price, output amount, gas) from Uniswap on Base
+- uniswap_prepare_swap: prepare unsigned swap tx for user to sign — ALWAYS call uniswap_quote first
+- flaunch_prepare_launch: prepare unsigned tx to launch a new token on Flaunch
+- moonwell_markets: lending/borrow APY for all assets on Moonwell Base
+- moonwell_user_position: user's supply/borrow positions + health factor on Moonwell
+- moonwell_prepare_supply: prepare unsigned supply tx for Moonwell lending
 
 Never say "I can't browse" or "I don't have real-time data." Use the tools.
 
@@ -2646,26 +2761,35 @@ When asked to build/make/create any app, website, game, tool, or UI:
 - After the code block you may add 1-2 lines of explanation max.
 
 ## Base Onchain Transactions
-When the user wants to transfer, swap, lend, borrow, or do anything onchain on Base:
-1. Use base_get_eth_balance to check balance first. Use base_get_gas_price for gas.
-2. Gather: recipient address, amount, token (if not ETH), protocol (for DeFi).
-3. Prepare the transaction and output it in this EXACT format:
+When the user wants to transfer, swap, lend, borrow, launch a token, or any onchain action on Base:
+
+**ETH Transfer:**
+1. Check balance with base_get_eth_balance. Check gas with base_get_gas_price.
+2. Output in this EXACT format:
 \`\`\`transaction
-{
-  "type": "transfer",
-  "description": "Send 0.01 ETH to 0x1234…",
-  "to": "0xRECIPIENT_ADDRESS",
-  "value": "10000000000000000",
-  "data": "0x",
-  "gasLimit": "21000",
-  "chainId": 8453
-}
+{"type":"transfer","description":"Send 0.01 ETH to 0x1234…","to":"0xRECIPIENT","value":"10000000000000000","data":"0x","gasLimit":"21000","chainId":8453}
 \`\`\`
+
+**Swap (Uniswap):**
+1. Call uniswap_quote first to show the price.
+2. Call uniswap_prepare_swap with the user's wallet address.
+3. The tool returns {__action, transactions, description, protocol, ...} — pass it directly as the transaction block:
+\`\`\`transaction
+{PASTE_FULL_TOOL_RESULT_HERE}
+\`\`\`
+
+**Token Launch (Flaunch):**
+1. Gather: name, symbol (≤8 chars), description, image URL, creator wallet.
+2. Call flaunch_prepare_launch.
+3. Pass the full result as the transaction block.
+
+**Lending (Moonwell):**
+1. Call moonwell_markets to show current APY.
+2. Call moonwell_prepare_supply for supply actions.
+3. Pass full result as transaction block.
+
 Type values: "transfer" | "swap" | "lend" | "borrow" | "repay" | "withdraw" | "approve"
-For ERC-20 transfers or DeFi, also include: "tokenSymbol", "tokenAmount", "protocol", "tokenAddress"
-value field must be in wei (ETH×10^18). data field for contract calls (0x for plain ETH transfer).
-4. After the transaction block, explain in 1-2 sentences what will happen.
-NEVER make up addresses. If you don't have the recipient address, ask for it.`;
+NEVER make up addresses. value must be in wei. NEVER invent transaction data.`;
 
 // ── TOKEN ANALYZER ─────────
 async function runAnalysis() {

@@ -178,6 +178,52 @@ const ALL_TOOLS = [
       },
       required: ['token_address']
     }
+  },
+  {
+    name: 'uniswap_prepare_swap',
+    description: 'Prepare an unsigned swap transaction on Uniswap Base. Returns the exact calldata the user must sign with their wallet to execute the swap. Always call uniswap_quote first to confirm the price.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        token_in:          { type: 'string', description: 'Input token address. Use 0x0000000000000000000000000000000000000000 for native ETH' },
+        token_out:         { type: 'string', description: 'Output token address' },
+        amount_in:         { type: 'string', description: 'Input amount in human-readable units, e.g. "0.1" for 0.1 ETH' },
+        token_in_decimals: { type: 'number', description: 'Decimals of input token: 18 for ETH/WETH, 6 for USDC. Default 18.' },
+        wallet_address:    { type: 'string', description: 'User wallet address that will sign and execute the swap (0x...)' }
+      },
+      required: ['token_in', 'token_out', 'amount_in', 'wallet_address']
+    }
+  },
+  {
+    name: 'flaunch_prepare_launch',
+    description: 'Prepare an unsigned transaction to launch a new meme token on Flaunch (Base). Returns calldata the user signs to deploy and launch the token. Image must be a valid URL or base64.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        name:           { type: 'string', description: 'Token full name, e.g. "Doge on Base"' },
+        symbol:         { type: 'string', description: 'Token symbol, max 8 chars alphanumeric, e.g. "DOGEB"' },
+        description:    { type: 'string', description: 'Short description of the token' },
+        image_url:      { type: 'string', description: 'Image URL for the token logo' },
+        wallet_address: { type: 'string', description: 'Creator wallet address (0x...)' },
+        twitter_url:    { type: 'string', description: 'Optional: Twitter/X URL' },
+        telegram_url:   { type: 'string', description: 'Optional: Telegram URL' },
+        website_url:    { type: 'string', description: 'Optional: Website URL' }
+      },
+      required: ['name', 'symbol', 'description', 'image_url', 'wallet_address']
+    }
+  },
+  {
+    name: 'moonwell_prepare_supply',
+    description: 'Prepare unsigned transactions to supply (deposit) an asset into Moonwell lending on Base. Returns calldata the user signs to earn lending yield.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        asset:          { type: 'string', description: 'Asset symbol to supply, e.g. "USDC", "WETH", "ETH"' },
+        amount:         { type: 'string', description: 'Amount to supply in human-readable units, e.g. "100" for 100 USDC' },
+        wallet_address: { type: 'string', description: 'User wallet address (0x...)' }
+      },
+      required: ['asset', 'amount', 'wallet_address']
+    }
   }
 ];
 
@@ -526,6 +572,123 @@ async function executeTool(name, input) {
           }
         }
         return result;
+      }
+      case 'uniswap_prepare_swap': {
+        const decimalsIn = input.token_in_decimals ?? 18;
+        const amtFloat   = parseFloat(input.amount_in);
+        if (isNaN(amtFloat) || amtFloat <= 0) return { error: 'Invalid amount_in' };
+        const amountIn   = BigInt(Math.round(amtFloat * Math.pow(10, decimalsIn))).toString();
+        const quoteBody  = {
+          type: 'EXACT_INPUT',
+          amount: amountIn,
+          tokenIn: input.token_in,
+          tokenOut: input.token_out,
+          tokenInChainId: 8453,
+          tokenOutChainId: 8453,
+          swapper: input.wallet_address,
+          autoSlippage: 'DEFAULT',
+          protocols: ['V4', 'V3', 'V2'],
+          routingPreference: 'BEST_PRICE'
+        };
+        const uniHeaders = {
+          'Content-Type': 'application/json',
+          'x-api-key': 'NeoYO3V50_koJAipDEalYWbMO1XMaFPAQmpOm6_Npo0',
+          'x-permit2-disabled': 'true'
+        };
+        const qr = await fetch('https://trade-api.gateway.uniswap.org/v1/quote', {
+          method: 'POST', headers: uniHeaders,
+          body: JSON.stringify(quoteBody), signal: AbortSignal.timeout(12000)
+        });
+        if (!qr.ok) { const t = await qr.text(); return { error: `Uniswap quote failed: ${qr.status}`, detail: t.slice(0, 200) }; }
+        const quote = await qr.json();
+        // Remove null permit fields before calling /swap
+        const swapBody = { ...quote };
+        delete swapBody.permitData;
+        delete swapBody.permitTransaction;
+        delete swapBody.signature;
+        swapBody.swapper = input.wallet_address;
+        const sr = await fetch('https://trade-api.gateway.uniswap.org/v1/swap', {
+          method: 'POST', headers: uniHeaders,
+          body: JSON.stringify(swapBody), signal: AbortSignal.timeout(12000)
+        });
+        if (!sr.ok) { const t = await sr.text(); return { error: `Uniswap swap prepare failed: ${sr.status}`, detail: t.slice(0, 200) }; }
+        const swapData = await sr.json();
+        return {
+          __action:      'sign_transaction',
+          protocol:      'Uniswap',
+          description:   `Swap ${input.amount_in} ${input.token_in === '0x0000000000000000000000000000000000000000' ? 'ETH' : input.token_in} on Uniswap (Base)`,
+          transactions:  [swapData.swap],
+          amount_out_raw: quote.output?.amount,
+          gas_fee_usd:   swapData.gasFee,
+          chain_id:      8453,
+          wallet:        input.wallet_address
+        };
+      }
+      case 'flaunch_prepare_launch': {
+        // Upload image to Flaunch IPFS first if it's a URL
+        let imageIpfs = input.image_url;
+        if (!imageIpfs.startsWith('Qm') && !imageIpfs.startsWith('baf')) {
+          // It's a URL, not an IPFS hash — Flaunch needs us to fetch & upload
+          const imgFetch = await fetch(input.image_url, { signal: AbortSignal.timeout(8000) });
+          if (!imgFetch.ok) return { error: 'Could not fetch image URL' };
+          const imgBuf    = await imgFetch.arrayBuffer();
+          const b64       = Buffer.from(imgBuf).toString('base64');
+          const mimeMatch = (await imgFetch.headers.get('content-type') || 'image/png');
+          const uploadR   = await fetch('https://mcp.flaunch.gg/v1/upload-image', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ base64Image: `data:${mimeMatch};base64,${b64}` }),
+            signal: AbortSignal.timeout(15000)
+          });
+          if (!uploadR.ok) return { error: `Flaunch image upload failed: ${uploadR.status}` };
+          const uploadData = await uploadR.json();
+          imageIpfs = uploadData.ipfsHash || uploadData.tokenUri || imageIpfs;
+        }
+        const launchPayload = {
+          name:           input.name,
+          symbol:         input.symbol.slice(0, 8).toUpperCase(),
+          description:    input.description,
+          imageIpfs,
+          creatorAddress: input.wallet_address,
+          ...(input.website_url  ? { websiteUrl:  input.website_url  } : {}),
+          ...(input.twitter_url  ? { twitterUrl:  input.twitter_url  } : {}),
+          ...(input.telegram_url ? { telegramUrl: input.telegram_url } : {})
+        };
+        const lr = await fetch('https://mcp.flaunch.gg/v1/base/launch/prepare', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(launchPayload),
+          signal: AbortSignal.timeout(15000)
+        });
+        if (!lr.ok) { const t = await lr.text(); return { error: `Flaunch prepare failed: ${lr.status}`, detail: t.slice(0, 200) }; }
+        const launchData = await lr.json();
+        return {
+          __action:     'sign_transaction',
+          protocol:     'Flaunch',
+          description:  `Launch token ${input.name} (${input.symbol}) on Flaunch (Base)`,
+          transactions: Array.isArray(launchData) ? launchData : [launchData],
+          token_name:   input.name,
+          token_symbol: input.symbol,
+          chain_id:     8453,
+          wallet:       input.wallet_address
+        };
+      }
+      case 'moonwell_prepare_supply': {
+        const url = `https://api.moonwell.fi/v1/prepare/supply?chain=base&asset=${encodeURIComponent(input.asset.toUpperCase())}&amountDecimal=${input.amount}&from=${input.wallet_address}`;
+        const r   = await fetch(url, { signal: AbortSignal.timeout(8000) });
+        if (!r.ok) { const t = await r.text(); return { error: `Moonwell prepare failed: ${r.status}`, detail: t.slice(0, 200) }; }
+        const data = await r.json();
+        const txs  = data.data?.transactions || data.transactions || [];
+        return {
+          __action:     'sign_transaction',
+          protocol:     'Moonwell',
+          description:  `Supply ${input.amount} ${input.asset} to Moonwell on Base`,
+          transactions: txs,
+          asset:        input.asset,
+          amount:       input.amount,
+          chain_id:     8453,
+          wallet:       input.wallet_address
+        };
       }
       default:
         return { error: `Unknown tool: ${name}` };
