@@ -597,8 +597,7 @@ async function executeTool(name, input) {
           tokenInChainId: 8453,
           tokenOutChainId: 8453,
           swapper: input.wallet_address,
-          slippageTolerance: 500,          // 5% in bps — prevents stale-quote reverts
-          protocols: ['V4', 'V3', 'V2'],  // V4 needed for small amounts on Base
+          protocols: ['V4', 'V3', 'V2'],
           routingPreference: 'BEST_PRICE'
         };
         const qr = await fetch('https://trade-api.gateway.uniswap.org/v1/quote', {
@@ -607,8 +606,8 @@ async function executeTool(name, input) {
         });
         if (!qr.ok) { const t = await qr.text(); return { error: `Uniswap quote failed: ${qr.status}`, detail: t.slice(0, 400) }; }
         const quote = await qr.json();
-        // /swap: send the full quote response as-is, only strip fields that are null/undefined
-        const swapPayload = { ...quote };
+        // /swap: send the full quote response + slippageTolerance (5%) for calldata generation
+        const swapPayload = { ...quote, slippageTolerance: 500 };
         if (!swapPayload.permitData)        delete swapPayload.permitData;
         if (!swapPayload.permitTransaction) delete swapPayload.permitTransaction;
         if (!swapPayload.signature)         delete swapPayload.signature;
