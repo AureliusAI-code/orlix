@@ -1050,6 +1050,9 @@ select.inp{cursor:pointer}
 
     <!-- ═══ PLAYGROUND ═══ -->
     <div class="view" id="view-playground">
+      <div class="page-hd" style="margin-bottom:14px">
+        <h1 style="font-size:1.2rem;margin-bottom:0">Playground</h1>
+      </div>
       <div class="chat-controls">
         <select class="inp chat-model-sel" id="pgModelSel"></select>
         <button class="btn-icon" id="searchToggle" title="Web search">
@@ -1064,6 +1067,7 @@ select.inp{cursor:pointer}
         <div class="chat-messages" id="chatMessages">
           <div class="chat-empty" id="chatEmpty">
             <div class="chat-empty-ico"><svg width="32" height="32" viewBox="0 0 20 20" fill="currentColor"><path d="M10 2c-.35 3-1.6 5.5-4 6.8 2.4 1.3 3.65 3.8 4 6.8.35-3 1.6-5.5 4-6.8-2.4-1.3-3.65-3.8-4-6.8z"/></svg></div>
+            <div>Choose a model and send a message</div>
           </div>
         </div>
         <div id="imgPreviewBar"></div>
@@ -1664,7 +1668,7 @@ function newChat(){
   chatHistory = [];
   localStorage.removeItem('orlix_active_chat');
   const cm = document.getElementById('chatMessages');
-  cm.innerHTML = '<div class="chat-empty" id="chatEmpty"><div class="chat-empty-ico"><svg width="32" height="32" viewBox="0 0 20 20" fill="currentColor"><path d="M10 2c-.35 3-1.6 5.5-4 6.8 2.4 1.3 3.65 3.8 4 6.8.35-3 1.6-5.5 4-6.8-2.4-1.3-3.65-3.8-4-6.8z"/></svg></div></div>';
+  cm.innerHTML = '<div class="chat-empty" id="chatEmpty"><div class="chat-empty-ico"><svg width="32" height="32" viewBox="0 0 20 20" fill="currentColor"><path d="M10 2c-.35 3-1.6 5.5-4 6.8 2.4 1.3 3.65 3.8 4 6.8.35-3 1.6-5.5 4-6.8-2.4-1.3-3.65-3.8-4-6.8z"/></svg></div><div>Choose a model and send a message</div></div>';
   renderHistoryList();
   showView('playground');
 }
@@ -2015,7 +2019,7 @@ chatInput.addEventListener('keydown',e=>{
 document.getElementById('pgClearBtn').addEventListener('click',()=>{
   chatHistory=[];totalTokens=0;
   pendingImages=[];renderImgPreview();
-  chatMessages.innerHTML='<div class="chat-empty" id="chatEmpty"><div class="chat-empty-ico"><svg width="32" height="32" viewBox="0 0 20 20" fill="currentColor"><path d="M10 2c-.35 3-1.6 5.5-4 6.8 2.4 1.3 3.65 3.8 4 6.8.35-3 1.6-5.5 4-6.8-2.4-1.3-3.65-3.8-4-6.8z"/></svg></div></div>';
+  chatMessages.innerHTML='<div class="chat-empty" id="chatEmpty"><div class="chat-empty-ico"><svg width="32" height="32" viewBox="0 0 20 20" fill="currentColor"><path d="M10 2c-.35 3-1.6 5.5-4 6.8 2.4 1.3 3.65 3.8 4 6.8.35-3 1.6-5.5 4-6.8-2.4-1.3-3.65-3.8-4-6.8z"/></svg></div><div>Choose a model and send a message</div></div>';
 });
 
 // ── IMAGE UPLOAD ─────────
