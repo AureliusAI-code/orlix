@@ -2219,6 +2219,7 @@ async function signTx(txId) {
     const from = accounts[0];
 
     // Switch to Base Mainnet (chainId 8453 = 0x2105)
+    btn.textContent = 'Switching to Base…';
     try {
       await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x2105' }] });
     } catch (swErr) {
@@ -2227,7 +2228,18 @@ async function signTx(txId) {
           method: 'wallet_addEthereumChain',
           params: [{ chainId: '0x2105', chainName: 'Base', nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 }, rpcUrls: ['https://mainnet.base.org'], blockExplorerUrls: ['https://basescan.org'] }]
         });
+      } else {
+        throw new Error('Please manually switch your wallet to Base network, then try again.');
       }
+    }
+
+    // Verify we are actually on Base before sending
+    const currentChain = await window.ethereum.request({ method: 'eth_chainId' });
+    if (currentChain !== '0x2105') {
+      btn.disabled = false;
+      btn.textContent = `Wrong network (${currentChain}) — please switch to Base in your wallet, then click again`;
+      btn.classList.add('error');
+      return;
     }
 
     let lastHash = null;
