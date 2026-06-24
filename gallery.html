@@ -196,7 +196,7 @@ nav{position:sticky;top:0;z-index:100;background:rgba(10,10,10,.94);backdrop-fil
     <button class="modal-close" id="modalClose">✕ Close</button>
   </div>
   <div class="modal-inner">
-    <iframe id="previewFrame" sandbox="allow-scripts allow-same-origin allow-forms allow-modals"></iframe>
+    <iframe id="previewFrame" sandbox="allow-scripts allow-forms allow-modals"></iframe>
   </div>
 </div>
 
@@ -266,7 +266,7 @@ function renderBuilds(){
   grid.innerHTML=filtered.map(b=>`
     <div class="build-card">
       <div class="card-preview" data-preview-id="${esc(b.id)}">
-        <iframe srcdoc="${esc(b.code)}" sandbox="allow-scripts allow-same-origin"></iframe>
+        <iframe srcdoc="${esc(b.code)}" sandbox="allow-scripts"></iframe>
         <div class="card-preview-overlay"><div class="preview-play">▶</div></div>
       </div>
       <div class="card-body">
@@ -315,9 +315,12 @@ async function deleteBuild(id){
   localStorage.setItem('orlix_gallery',JSON.stringify(local));
   // Remove from API
   try{
+    const delTok = localStorage.getItem('orlix_token') || '';
+    const delHdrs = {'Content-Type':'application/json'};
+    if (delTok) delHdrs['Authorization'] = 'Bearer ' + delTok;
     await fetch('/api/gallery',{
       method:'DELETE',
-      headers:{'Content-Type':'application/json'},
+      headers: delHdrs,
       body:JSON.stringify({id})
     });
   }catch(e){ console.warn('Delete API failed:',e.message); }

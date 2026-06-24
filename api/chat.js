@@ -744,14 +744,24 @@ async function pipeStream(upstream, res) {
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin',  '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-api-key');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-api-key, Authorization');
   res.setHeader('x-orlix-proxy', '1');
 
   if (req.method === 'OPTIONS') return res.status(204).end();
   if (req.method !== 'POST')   return res.status(405).json({ error: 'Method not allowed' });
 
+  // ── Auth gate ─────────────────────────────────────────────────────────────
+  const authHeader = req.headers['authorization'] || '';
+  const isAuthenticated = authHeader.startsWith('Bearer wallet:0x');
+  if (!isAuthenticated) {
+    return res.status(401).json({ error: { message: 'Authentication required. Please log in at orlixai.xyz/login' } });
+  }
+
   const bodyObj = typeof req.body === 'object' && req.body !== null
     ? req.body : JSON.parse(req.body || '{}');
+
+  // ── Server-side caps (ignore client values that exceed these) ─────────────
+  bodyObj.max_tokens = Math.min(Number(bodyObj.max_tokens) || 4096, 4096);
 
   const model    = (bodyObj.model || '').toLowerCase();
   const isMimo   = model.startsWith('mimo');
@@ -760,7 +770,7 @@ module.exports = async function handler(req, res) {
   // ── Mimo ─────────────────────────────────────────────────────────────────
   if (isMimo) {
     const key = process.env.MIMO_API_KEY || '';
-    if (!key) return res.status(401).json({ error: { message: 'MIMO_API_KEY not set in Vercel Environment Variables.' } });
+    if (!key) return res.status(503).json({ error: { message: 'Service temporarily unavailable.' } });
     try {
       const noToolInstruction = 'IMPORTANT: Answer every question directly in plain text. Do NOT output any XML tags whatsoever — no <tool_call>, no <invoke>, no <function_calls>, no <parameter>, no XML of any kind. Never use function-calling syntax. Use only your own knowledge to answer.';
       let msgs = bodyObj.messages || [];
@@ -792,7 +802,7 @@ module.exports = async function handler(req, res) {
 
   // ── All other models → Bankr LLM Gateway ─────────────────────────────────
   const lllKey = process.env.BANKR_LLM_KEY || '';
-  if (!lllKey) return res.status(401).json({ error: { message: 'BANKR_LLM_KEY not set in Vercel Environment Variables. Get a key at bankr.bot/api-keys with LLM Gateway enabled.' } });
+  if (!lllKey) return res.status(503).json({ error: { message: 'Service temporarily unavailable.' } });
 
   const bankrHeaders = {
     'Content-Type': 'application/json',
