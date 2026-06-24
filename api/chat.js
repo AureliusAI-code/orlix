@@ -597,8 +597,8 @@ async function executeTool(name, input) {
           tokenInChainId: 8453,
           tokenOutChainId: 8453,
           swapper: input.wallet_address,
-          slippageTolerance: 500,   // 5% in bps — prevents stale-quote reverts
-          protocols: ['V3', 'V2'],  // skip V4 (experimental on Base, causes reverts)
+          slippageTolerance: 500,          // 5% in bps — prevents stale-quote reverts
+          protocols: ['V4', 'V3', 'V2'],  // V4 needed for small amounts on Base
           routingPreference: 'BEST_PRICE'
         };
         const qr = await fetch('https://trade-api.gateway.uniswap.org/v1/quote', {
@@ -631,7 +631,7 @@ async function executeTool(name, input) {
           gas_fee_eth,
           chain_id:      8453,
           wallet:        input.wallet_address,
-          _debug: { swap_keys: Object.keys(swapData), tx_keys: txObj ? Object.keys(txObj) : null, value_raw: txObj?.value, gas_raw: txObj?.gas ?? txObj?.gasLimit }
+          _debug: { swap_keys: Object.keys(swapData), tx_keys: txObj ? Object.keys(txObj) : null, value_raw: txObj?.value, gas_raw: txObj?.gas ?? txObj?.gasLimit, to: txObj?.to, data_prefix: txObj?.data?.slice(0,10) }
         };
       }
       case 'flaunch_prepare_launch': {
