@@ -524,33 +524,7 @@ async function executeTool(name, input) {
             }
           }
         } catch {}
-        // LI.FI fallback — supports Aerodrome and long-tail tokens
-        try {
-          const params = new URLSearchParams({
-            fromChain: 'BASE', toChain: 'BASE',
-            fromToken: tIn, toToken: tOut,
-            fromAmount: amountIn,
-            fromAddress: '0x0000000000000000000000000000000000000001',
-            slippage: '0.01'
-          });
-          const lr = await fetch(`https://li.quest/v1/quote?${params}`, {
-            signal: AbortSignal.timeout(12000)
-          });
-          if (lr.ok) {
-            const ld = await lr.json();
-            const toAmt = ld.estimate?.toAmount ?? ld.action?.toAmount ?? null;
-            if (toAmt) {
-              return {
-                token_in: input.token_in, token_out: input.token_out, amount_in: input.amount_in,
-                amount_out_raw: toAmt,
-                price_impact_percent: ld.estimate?.priceImpact ?? null, gas_estimate: ld.estimate?.gasCosts?.[0]?.estimate ?? null,
-                note: 'amount_out_raw in smallest unit. USDC=6 decimals, ETH/WETH=18.',
-                source: 'LI.FI', chain: 'Base'
-              };
-            }
-          }
-        } catch {}
-        return { error: 'Quote unavailable — Odos, KyberSwap, and LI.FI all failed. Check token addresses are valid Base contracts.' };
+        return { error: 'Quote unavailable — both Odos and KyberSwap failed. Check token addresses are valid Base contracts.' };
       }
       case 'moonwell_markets': {
         const url = input.asset
@@ -712,32 +686,7 @@ async function executeTool(name, input) {
           } catch {}
         }
 
-        // ── Fallback: LI.FI (supports Aerodrome + long-tail tokens) ──────────
-        if (!tx) {
-          try {
-            const params = new URLSearchParams({
-              fromChain: 'BASE', toChain: 'BASE',
-              fromToken: tokenIn, toToken: tokenOut,
-              fromAmount: amountIn,
-              fromAddress: input.wallet_address,
-              slippage: '0.01'
-            });
-            const lr = await fetch(`https://li.quest/v1/quote?${params}`, {
-              signal: AbortSignal.timeout(12000)
-            });
-            if (lr.ok) {
-              const ld = await lr.json();
-              const step = ld.transactionRequest;
-              if (step?.to && step?.data) {
-                outAmtRaw = outAmtRaw ?? ld.estimate?.toAmount ?? ld.action?.toAmount ?? null;
-                tx = { to: step.to, data: step.data, value: step.value ?? '0', gas: step.gasLimit ?? 500000 };
-                provider = 'LI.FI';
-              }
-            }
-          } catch {}
-        }
-
-        if (!tx) return { error: 'Swap unavailable — Odos, KyberSwap, and LI.FI all failed. The token may not be tradeable on any aggregator yet.' };
+        if (!tx) return { error: 'Swap unavailable right now — Odos and KyberSwap both failed. Try again in a few seconds.' };
 
         // Build transaction list: ERC20 approval first (if not ETH), then swap
         const transactions = [];
