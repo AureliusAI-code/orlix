@@ -448,11 +448,14 @@ async function trySearch(){
   btn.disabled=true;
   btn.innerHTML='<span class="try-spinner"></span>Fetching…';
   box.innerHTML='';
+  // Use absolute URL — Safari Mobile throws DOMException with relative paths in some cases
+  const url=`${location.origin}/api/token-search?q=${encodeURIComponent(q)}`;
   try{
     const t0=Date.now();
-    const r=await fetch(`/api/token-search?q=${encodeURIComponent(q)}`);
+    const r=await fetch(url);
     const ms=Date.now()-t0;
-    const data=await r.json();
+    let data;
+    try{ data=await r.json(); } catch(_){ data={error:'Response was not JSON'}; }
     if(!r.ok){
       box.innerHTML=`<div style="margin-bottom:8px"><span class="try-status err">${r.status}</span></div><p class="try-error">${data.error||'Unknown error'}</p>`;
     } else {
@@ -463,7 +466,7 @@ async function trySearch(){
       </div><pre>${JSON.stringify(preview,null,2)}</pre>`;
     }
   }catch(e){
-    box.innerHTML=`<p class="try-error">Error: ${e.message}</p>`;
+    box.innerHTML=`<p class="try-error">Fetch failed: ${e.message||e}<br><small style="opacity:.6">${url}</small></p>`;
   }
   btn.disabled=false;
   btn.innerHTML='▶ Run';

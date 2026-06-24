@@ -9,7 +9,8 @@
     "api/analyze.js":   { "maxDuration": 60 },
     "api/music.js":     { "maxDuration": 60 },
     "api/b20.js":       { "maxDuration": 15 },
-    "api/b20-skill.js": { "maxDuration": 30 }
+    "api/b20-skill.js":    { "maxDuration": 30 },
+    "api/token-search.js": { "maxDuration": 15 }
   },
   "redirects": [
     { "source": "/app.html",          "destination": "/app",          "permanent": true },
