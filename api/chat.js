@@ -621,15 +621,17 @@ async function executeTool(name, input) {
         // gasFee from Uniswap is in wei — convert to ETH for display
         const gasFeeWei = swapData.gasFee ?? swapData.gasFeeUSD ?? null;
         const gas_fee_eth = gasFeeWei ? (parseFloat(gasFeeWei) / 1e18).toFixed(6) : null;
+        const txObj = swapData.swap ?? swapData.transaction ?? null;
         return {
           __action:      'sign_transaction',
           protocol:      'Uniswap',
           description:   `Swap ${input.amount_in} ${input.token_in === '0x0000000000000000000000000000000000000000' ? 'ETH' : input.token_in} on Uniswap (Base)`,
-          transactions:  [swapData.swap ?? swapData.transaction ?? swapData].filter(Boolean),
+          transactions:  txObj ? [txObj] : [],
           amount_out_raw: quote.output?.amount ?? quote.outputAmount ?? quote.quote?.outputAmount ?? null,
           gas_fee_eth,
           chain_id:      8453,
-          wallet:        input.wallet_address
+          wallet:        input.wallet_address,
+          _debug: { swap_keys: Object.keys(swapData), tx_keys: txObj ? Object.keys(txObj) : null, value_raw: txObj?.value, gas_raw: txObj?.gas ?? txObj?.gasLimit }
         };
       }
       case 'flaunch_prepare_launch': {
