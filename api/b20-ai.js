@@ -78,7 +78,9 @@ module.exports = async (req, res) => {
 
     if (!r.ok) throw new Error(`Anthropic ${r.status}`);
     const data = await r.json();
-    const text = (data.content?.[0]?.text || '').trim();
+    const raw = (data.content?.[0]?.text || '').trim();
+    // Strip markdown code fences if model wraps response
+    const text = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
     const params = JSON.parse(text);
 
     // Sanitize output
