@@ -146,6 +146,10 @@ async function generateCommentary(data, apiKey) {
     return commentaryCache.text;
   }
 
+  const isAnthropicKey = apiKey.startsWith('sk-ant-');
+  const aiUrl     = isAnthropicKey ? 'https://api.anthropic.com/v1/messages' : 'https://llm.bankr.bot/v1/messages';
+  const aiAuthHdr = isAnthropicKey ? { 'x-api-key': apiKey } : { 'X-API-Key': apiKey };
+
   const topWhale = data.whaleActivity?.[0];
   const topTrend = data.trending?.[0];
   const newCount = data.newTokens?.length || 0;
@@ -158,10 +162,10 @@ async function generateCommentary(data, apiKey) {
   ].filter(Boolean).join(' ');
 
   try {
-    const r = await fetch('https://api.anthropic.com/v1/messages', {
+    const r = await fetch(aiUrl, {
       method: 'POST',
       headers: {
-        'x-api-key': apiKey,
+        ...aiAuthHdr,
         'anthropic-version': '2023-06-01',
         'content-type': 'application/json',
       },
@@ -219,7 +223,7 @@ module.exports = async (req, res) => {
 
   const commentary = await generateCommentary(
     { newTokens, trending, whaleActivity },
-    process.env.ANTHROPIC_API_KEY
+    process.env.BANKR_LLM_KEY || process.env.ANTHROPIC_API_KEY || ''
   );
 
   const data = { newTokens, trending, whaleActivity, liveActivity, stats, commentary };
