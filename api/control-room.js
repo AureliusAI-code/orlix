@@ -42,8 +42,8 @@ async function dget(url) {
 
 // Fetch a large pool of Base pairs via multiple searches
 async function fetchBasePairPool() {
-  // Mix of stablecoin pairs + active Base tokens + Base-native DEX tokens
-  const queries = ['USDC', 'ETH', 'AERO', 'VIRTUAL', 'BASE'];
+  // Wide net: stablecoin quote pairs + top Base-native tokens
+  const queries = ['USDC', 'ETH', 'AERO', 'VIRTUAL', 'BASE', 'BRETT', 'TOSHI', 'DEGEN', 'HIGHER', 'CBBTC'];
   const results = await Promise.allSettled(
     queries.map(q =>
       dget(`https://api.dexscreener.com/latest/dex/search?q=${encodeURIComponent(q)}`)
@@ -117,27 +117,37 @@ function deriveNewTokens(pairs) {
 
 function deriveTrending(pairs) {
   return pairs
-    .filter(p => (p.volume?.h24 || 0) > 100)
+    .filter(p => (p.volume?.h24 || 0) > 10)
     .sort((a, b) => (b.volume?.h24 || 0) - (a.volume?.h24 || 0))
     .slice(0, 20)
-    .map(mapPair); // mapPair already includes volume1h, buys1h, sells1h
+    .map(mapPair);
 }
 
 function deriveWhales(pairs) {
   return pairs
-    .filter(p => (p.volume?.h1 || 0) > 1000)
+    .filter(p => (p.volume?.h1 || 0) > 100)
     .sort((a, b) => (b.volume?.h1 || 0) - (a.volume?.h1 || 0))
     .slice(0, 15)
     .map(mapPair);
 }
 
-// Live activity: tokens with some liquidity and recent 1h volume
+// Live activity: tokens with any liquidity and recent 1h volume
 function deriveLiveActivity(pairs) {
-  return pairs
-    .filter(p => (p.liquidity?.usd || 0) >= 5000 && (p.volume?.h1 || 0) >= 100)
+  // Primary filter: reasonable liquidity + 1h activity
+  let active = pairs
+    .filter(p => (p.liquidity?.usd || 0) >= 1000 && (p.volume?.h1 || 0) >= 10)
     .sort((a, b) => (b.volume?.h1 || 0) - (a.volume?.h1 || 0))
-    .slice(0, 50)
-    .map(mapPair);
+    .slice(0, 50);
+
+  // Fallback: if very few pass, use any token with 24h volume
+  if (active.length < 5) {
+    active = pairs
+      .filter(p => (p.volume?.h24 || 0) > 0)
+      .sort((a, b) => (b.volume?.h24 || 0) - (a.volume?.h24 || 0))
+      .slice(0, 30);
+  }
+
+  return active.map(mapPair);
 }
 
 async function generateCommentary(data, apiKey) {
