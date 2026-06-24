@@ -9,8 +9,6 @@
     "api/analyze.js":      { "maxDuration": 60 },
     "api/control-room.js": { "maxDuration": 30 },
     "api/music.js":        { "maxDuration": 60 },
-    "api/stake.js":        { "maxDuration": 15 },
-    "api/burn.js":         { "maxDuration": 30 }
   },
   "redirects": [
     { "source": "/app.html",          "destination": "/app",          "permanent": true },

@@ -103,13 +103,6 @@ input,select,textarea{font-family:var(--mono)}
 }
 .sb-footer{margin-top:auto;padding:14px 16px;border-top:1px solid var(--border)}
 .sb-ver{color:var(--text-3);font-size:.69rem;line-height:1.75}
-.sb-tier{display:flex;align-items:center;gap:7px;margin-bottom:10px;padding:7px 10px;border-radius:6px;background:var(--bg-3);border:1px solid var(--border);cursor:default}
-.sb-tier-label{font-size:.62rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;font-family:var(--mono);flex-shrink:0}
-.sb-tier-label.t-elite{color:#f0b830}
-.sb-tier-label.t-power{color:var(--orange)}
-.sb-tier-label.t-holder{color:var(--orange);opacity:.8}
-.sb-tier-label.t-none{color:var(--text-3)}
-.sb-tier-addr{font-size:.61rem;color:var(--text-3);font-family:var(--mono);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0}
 
 /* ── main area ── */
 .main{flex:1;overflow-y:auto;padding:28px 32px;min-width:0;background:var(--bg)}
@@ -649,11 +642,7 @@ select.inp{cursor:pointer}
       </a>
     </div>
     <div class="sb-footer">
-      <div id="sbTierBadge" class="sb-tier" style="display:none">
-        <span id="sbTierLabel" class="sb-tier-label t-none">Standard</span>
-        <span id="sbTierAddr" class="sb-tier-addr"></span>
-      </div>
-      <div class="sb-ver"><span class="sb-status"></span>Mimo engine active<br>orlix v0.6.0 · local-first</div>
+<div class="sb-ver"><span class="sb-status"></span>Mimo engine active<br>orlix v0.6.0 · local-first</div>
     </div>
   </nav>
 
@@ -1762,8 +1751,6 @@ updateBanner();
 async function apiFetch(key, bodyObj){
   const bodyStr = JSON.stringify(bodyObj);
   const h = {'Content-Type':'application/json','x-api-key':key};
-  const _u = JSON.parse(localStorage.getItem('orlix_user')||'null');
-  if(_u?.address) h['x-wallet'] = _u.address;
   const errors = [];
   const m = (bodyObj.model||'').toLowerCase();
   const isMimo = m.startsWith('mimo');
@@ -3038,36 +3025,6 @@ async function getAITxExplanation(tx, ethVal, typeLabel, isIn, isOut) {
   }
 }
 
-async function loadOrlixTier() {
-  const user = JSON.parse(localStorage.getItem('orlix_user') || 'null');
-  if (!user?.address) return;
-  const cached = JSON.parse(localStorage.getItem('orlix_tier') || 'null');
-  if (cached) showTierBadge(cached, user.display);
-  try {
-    const r = await fetch('/api/stake?wallet=' + user.address, { signal: AbortSignal.timeout(6000) });
-    if (!r.ok) return;
-    const data = await r.json();
-    if (data.holder) {
-      localStorage.setItem('orlix_tier', JSON.stringify(data.holder));
-      showTierBadge(data.holder, user.display);
-    }
-  } catch {}
-}
-
-function showTierBadge(holder, display) {
-  const badge = document.getElementById('sbTierBadge');
-  const label = document.getElementById('sbTierLabel');
-  const addr  = document.getElementById('sbTierAddr');
-  if (!badge) return;
-  const classMap = { ELITE: 't-elite', POWER_HOLDER: 't-power', HOLDER: 't-holder', NONE: 't-none' };
-  const iconMap  = { ELITE: '⚡ ELITE', POWER_HOLDER: '🔥 POWER', HOLDER: '◈ HOLDER', NONE: 'STANDARD' };
-  label.className = 'sb-tier-label ' + (classMap[holder.tier] || 't-none');
-  label.textContent = iconMap[holder.tier] || 'STANDARD';
-  addr.textContent = display || (holder.balance ? Number(holder.balance).toLocaleString() + ' ORLIX' : '');
-  badge.style.display = 'flex';
-}
-
-loadOrlixTier();
 
 </script>
 
