@@ -274,12 +274,18 @@ select.inp{cursor:pointer}
 
 /* ── playground ── */
 .chat-wrap{display:flex;flex-direction:column;height:calc(100vh - 160px);min-height:300px}
-.chat-controls{display:flex;gap:9px;margin-bottom:14px;flex-wrap:wrap;align-items:center}
-.chat-model-sel{flex:1;min-width:200px}
+.chat-controls{display:flex;gap:8px;margin-bottom:8px;align-items:center}
+.chat-model-sel{flex:1;min-width:0}
+.pg-status{font-size:.72rem;color:var(--text-3);display:flex;align-items:center;gap:5px;margin-bottom:10px;min-height:16px}
+.pg-status:empty{margin-bottom:0}
+.pg-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;display:inline-block}
+.btn-icon{display:flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:8px;border:1px solid var(--border);background:none;color:var(--text-3);cursor:pointer;transition:all var(--tr);flex-shrink:0}
+.btn-icon:hover{color:var(--text-1);border-color:var(--border-hover);background:rgba(255,255,255,.04)}
+.btn-icon.active{color:var(--orange);border-color:rgba(240,120,48,.3);background:var(--orange-dim)}
 .chat-messages{
   flex:1;overflow-y:auto;background:var(--bg);
   border:1px solid var(--border);border-radius:var(--radius);
-  padding:16px;display:flex;flex-direction:column;gap:12px;margin-bottom:12px;
+  padding:16px;display:flex;flex-direction:column;gap:12px;margin-bottom:10px;
 }
 .msg{display:flex;flex-direction:column;gap:4px;max-width:88%}
 .msg.user{align-self:flex-end;align-items:flex-end}
@@ -325,16 +331,17 @@ select.inp{cursor:pointer}
 .preview-bar span{color:var(--text-3);font-size:.78rem;font-family:var(--mono)}
 .preview-close{background:rgba(255,255,255,.08);border:1px solid var(--border);color:var(--text-2);border-radius:8px;padding:5px 14px;cursor:pointer;font-size:.8rem;transition:all var(--tr)}
 .preview-close:hover{background:rgba(255,255,255,.14);color:var(--text-1)}
-.chat-input-row{display:flex;gap:9px}
+.chat-input-row{display:flex;gap:8px;align-items:flex-end}
 .chat-input-row textarea{
   flex:1;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);
-  color:var(--text-1);font-size:.79rem;padding:9px 12px;outline:none;resize:none;
-  height:68px;transition:all var(--tr);font-family:var(--mono);line-height:1.55;
+  color:var(--text-1);font-size:.82rem;padding:10px 12px;outline:none;resize:none;
+  height:44px;max-height:160px;transition:border-color var(--tr),box-shadow var(--tr);
+  font-family:var(--font);line-height:1.55;
 }
 .chat-input-row textarea:focus{border-color:rgba(240,120,48,.5);box-shadow:0 0 0 3px rgba(240,120,48,.1)}
 .chat-input-row textarea::placeholder{color:var(--text-3)}
-.chat-send{display:flex;flex-direction:column;gap:7px}
-.chat-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:var(--text-3);gap:8px;font-size:.8rem}
+.chat-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:var(--text-3);gap:10px;font-size:.8rem}
+.chat-empty-ico{opacity:.2}
 .typing-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--orange);animation:tdot .9s infinite}
 .typing-dot:nth-child(2){animation-delay:.2s}
 .typing-dot:nth-child(3){animation-delay:.4s}
@@ -468,7 +475,8 @@ select.inp{cursor:pointer}
   .stat-grid{grid-template-columns:1fr 1fr}
   .agent-actions{display:none}
   .provider-grid{grid-template-columns:1fr}
-  .chat-wrap{height:calc(100vh - 200px)}
+  .chat-wrap{height:calc(100vh - 180px)}
+  .chat-input-row textarea{height:40px}
 }
 
 /* ── transaction card (inline in chat) ── */
@@ -1045,30 +1053,33 @@ select.inp{cursor:pointer}
         <h1>Playground</h1>
         <div class="sub">Mimo is the default engine. Claude and Grok also available — no API key required.</div>
       </div>
-      <div id="pgModeBanner" style="margin-bottom:12px;padding:8px 13px;border-radius:6px;font-size:.74rem;border:1px solid var(--line)"></div>
       <div class="chat-controls">
         <select class="inp chat-model-sel" id="pgModelSel"></select>
-        <button class="btn sm" id="pgClearBtn">clear chat</button>
-        <button class="search-toggle" id="searchToggle" title="Enable web search (requires BRAVE_SEARCH_API_KEY)">🔍 <span>web search</span></button>
-        <span id="pgKeyWarn" style="color:var(--red);font-size:.74rem;display:none">⚠ set API key in Settings first</span>
+        <button class="btn-icon" id="searchToggle" title="Web search">
+          <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="8.5" cy="8.5" r="5.5"/><path d="M17 17l-4-4"/></svg>
+        </button>
+        <button class="btn-icon" id="pgClearBtn" title="Clear chat">
+          <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3,6 5,6 17,6"/><path d="M8 6V4h4v2"/><rect x="5" y="6" width="10" height="11" rx="1.5"/><path d="M8 10v4M12 10v4"/></svg>
+        </button>
       </div>
+      <div id="pgModeBanner" class="pg-status"></div>
       <div class="chat-wrap">
         <div class="chat-messages" id="chatMessages">
           <div class="chat-empty" id="chatEmpty">
-            <div style="font-size:1.4rem;opacity:.3">▷</div>
-            <div>Select a model and start chatting</div>
-            <div style="font-size:.74rem;color:var(--dim-2)">Select a model above and start chatting</div>
+            <div class="chat-empty-ico"><svg width="32" height="32" viewBox="0 0 20 20" fill="currentColor"><path d="M10 2c-.35 3-1.6 5.5-4 6.8 2.4 1.3 3.65 3.8 4 6.8.35-3 1.6-5.5 4-6.8-2.4-1.3-3.65-3.8-4-6.8z"/></svg></div>
+            <div>Choose a model and send a message</div>
           </div>
         </div>
         <div id="imgPreviewBar"></div>
         <input type="file" id="imgFileInput" accept="image/*" style="display:none" multiple>
         <div class="chat-input-row">
-          <textarea id="chatInput" placeholder="Type a message… (Enter to send, Shift+Enter for newline)"></textarea>
-          <div class="chat-send">
-            <button class="btn primary" id="chatSendBtn">send</button>
-            <button class="img-btn" id="imgBtn" title="Attach image">🖼</button>
-            <div style="color:var(--dim-2);font-size:.66rem;text-align:center;line-height:1.4">tokens<br><span id="pgTokens">—</span></div>
-          </div>
+          <button class="btn-icon" id="imgBtn" title="Attach image">
+            <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4.5" width="15" height="11" rx="2"/><circle cx="7" cy="9" r="1.5"/><path d="M2.5 14l4.5-4 3 3 2.5-2.5 5 5"/></svg>
+          </button>
+          <textarea id="chatInput" placeholder="Message Orlix…"></textarea>
+          <button class="btn primary" id="chatSendBtn" style="height:44px;width:44px;padding:0;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="10" y1="16" x2="10" y2="4"/><polyline points="5,9 10,4 15,9"/></svg>
+          </button>
         </div>
       </div>
     </div>
@@ -1656,7 +1667,7 @@ function newChat(){
   chatHistory = [];
   localStorage.removeItem('orlix_active_chat');
   const cm = document.getElementById('chatMessages');
-  cm.innerHTML = '<div class="chat-empty" id="chatEmpty"><div style="font-size:1.4rem;margin-bottom:12px">◈</div><div>Select a model and start chatting</div><div style="font-size:.74rem;color:var(--dim-2);margin-top:4px">Mimo, Claude, Grok, Groq, DeepSeek and Gemini work without any API key.</div></div>';
+  cm.innerHTML = '<div class="chat-empty" id="chatEmpty"><div class="chat-empty-ico"><svg width="32" height="32" viewBox="0 0 20 20" fill="currentColor"><path d="M10 2c-.35 3-1.6 5.5-4 6.8 2.4 1.3 3.65 3.8 4 6.8.35-3 1.6-5.5 4-6.8-2.4-1.3-3.65-3.8-4-6.8z"/></svg></div><div>Choose a model and send a message</div></div>';
   renderHistoryList();
   showView('playground');
 }
@@ -1732,13 +1743,8 @@ function getProxyUrl(){ return localStorage.getItem('bkProxyUrl')||''; }
 
 function banner(type, html){
   const b=document.getElementById('pgModeBanner');
-  const styles={
-    red:  'border:1px solid rgba(255,107,107,.3);background:rgba(255,107,107,.08);color:var(--red)',
-    green:'border:1px solid rgba(126,224,168,.25);background:rgba(126,224,168,.08);color:var(--green)',
-    amber:'border:1px solid rgba(255,154,82,.3);background:rgba(255,154,82,.08);color:var(--amber)',
-  };
-  b.style.cssText=`margin-bottom:12px;padding:8px 13px;border-radius:6px;font-size:.74rem;${styles[type]}`;
-  b.innerHTML=html;
+  const dots={red:'var(--red)',green:'var(--green)',amber:'var(--amber)'};
+  b.innerHTML=`<span class="pg-dot" style="background:${dots[type]}"></span><span>${html}</span>`;
 }
 
 function updateBanner(){
@@ -1985,7 +1991,7 @@ async function sendChat(){
             const u = parsed.usage;
             const usage = u ? ` · ${u.input_tokens||u.prompt_tokens||0}in / ${u.output_tokens||u.completion_tokens||0}out` : '';
             totalTokens += (u?.input_tokens||u?.prompt_tokens||0)+(u?.output_tokens||u?.completion_tokens||0);
-            document.getElementById('pgTokens').textContent = totalTokens||'—';
+            const pgTok=document.getElementById('pgTokens'); if(pgTok) pgTok.textContent = totalTokens||'—';
             const msgEl = addMsg('assistant', parsed.text, model+usage+' · '+new Date().toLocaleTimeString());
             if(typeof logAudit==='function') logAudit('chat','Orlix','replied ('+pgModelSel.value+')');
             saveCurrentChat();
@@ -2012,8 +2018,7 @@ chatInput.addEventListener('keydown',e=>{
 document.getElementById('pgClearBtn').addEventListener('click',()=>{
   chatHistory=[];totalTokens=0;
   pendingImages=[];renderImgPreview();
-  document.getElementById('pgTokens').textContent='—';
-  chatMessages.innerHTML=`<div class="chat-empty" id="chatEmpty"><div style="font-size:1.4rem;opacity:.3">▷</div><div>Select a model and start chatting</div><div style="font-size:.74rem;color:var(--dim-2)">Select a model above and start chatting</div></div>`;
+  chatMessages.innerHTML='<div class="chat-empty" id="chatEmpty"><div class="chat-empty-ico"><svg width="32" height="32" viewBox="0 0 20 20" fill="currentColor"><path d="M10 2c-.35 3-1.6 5.5-4 6.8 2.4 1.3 3.65 3.8 4 6.8.35-3 1.6-5.5 4-6.8-2.4-1.3-3.65-3.8-4-6.8z"/></svg></div><div>Choose a model and send a message</div></div>';
 });
 
 // ── IMAGE UPLOAD ─────────
