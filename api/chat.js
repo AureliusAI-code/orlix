@@ -134,7 +134,7 @@ const ALL_TOOLS = [
   },
   {
     name: 'uniswap_quote',
-    description: 'Get a swap price quote on Base. Uses Odos aggregator for best prices across all DEXes (Aerodrome, Uniswap, BaseSwap, etc.). Works for any token pair.',
+    description: 'Get a swap price quote on Base via Uniswap V3. Queries on-chain liquidity pools (all fee tiers: 0.01%, 0.05%, 0.3%, 1%). Supports single-hop and 2-hop routes through WETH.',
     input_schema: {
       type: 'object',
       properties: {
@@ -181,7 +181,7 @@ const ALL_TOOLS = [
   },
   {
     name: 'uniswap_prepare_swap',
-    description: 'Prepare a swap transaction via Odos aggregator on Base. Works for ANY token pair — ETH, USDC, AERO, BRETT, or any ERC20. Returns complete transaction(s) ready to sign. For ERC20 input tokens, returns 2 transactions (approve + swap) — user must sign BOTH.',
+    description: 'Prepare a swap transaction via Uniswap V3 SwapRouter on Base. Finds the best fee tier automatically. Supports ETH, USDC, WETH, and any token with Uniswap V3 liquidity on Base. For ERC20 input tokens, returns 2 transactions (approve + swap) — user must sign BOTH.',
     input_schema: {
       type: 'object',
       properties: {
@@ -462,69 +462,71 @@ async function executeTool(name, input) {
         return { tokens, count: tokens.length, source: 'Flaunch', chain: 'Base' };
       }
       case 'uniswap_quote': {
+        const WETH     = '0x4200000000000000000000000000000000000006';
+        const QUOTER   = '0x3d4e44Eb1374240CE5F1B871ab261CD16335B76a';
+        const ETH_ZERO = '0x0000000000000000000000000000000000000000';
+
         const decimalsIn = input.token_in_decimals ?? 18;
         const amtFloat   = parseFloat(input.amount_in);
         if (isNaN(amtFloat) || amtFloat <= 0) return { error: 'Invalid amount_in' };
         const amountIn   = BigInt(Math.round(amtFloat * Math.pow(10, decimalsIn))).toString();
 
-        const ETH_ZERO = '0x0000000000000000000000000000000000000000';
         const isEthIn  = input.token_in  === ETH_ZERO || input.token_in?.toLowerCase()  === 'eth';
         const isEthOut = input.token_out === ETH_ZERO || input.token_out?.toLowerCase() === 'eth';
-        const tIn  = isEthIn  ? ETH_ZERO : input.token_in;
-        const tOut = isEthOut ? ETH_ZERO : input.token_out;
+        const tIn  = isEthIn  ? WETH : input.token_in;
+        const tOut = isEthOut ? WETH : input.token_out;
 
-        // Try Odos first (retry on 429), fall back to KyberSwap
-        for (let attempt = 0; attempt < 2; attempt++) {
-          if (attempt > 0) await new Promise(r => setTimeout(r, 1500));
+        const a32 = a => a.replace('0x','').toLowerCase().padStart(64,'0');
+        const n32 = n => BigInt(n).toString(16).padStart(64,'0');
+
+        // quoteExactInputSingle on QuoterV2
+        const quoteSingle = async (ti, to, fee) => {
+          const data = '0xc6a5026a' + a32(ti) + a32(to) + n32(amountIn) + n32(fee) + n32(0);
+          const res = await rpc('eth_call', [{ to: QUOTER, data }, 'latest']);
+          if (!res || res === '0x' || res.length < 66) return null;
+          const out = BigInt('0x' + res.slice(2, 66));
+          return out > 0n ? out.toString() : null;
+        };
+
+        let bestOut = null;
+        for (const fee of [500, 3000, 10000, 100]) {
           try {
-            const r = await fetch('https://api.odos.xyz/sor/quote/v2', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                chainId: 8453,
-                inputTokens:  [{ tokenAddress: tIn,  amount: amountIn }],
-                outputTokens: [{ tokenAddress: tOut, proportion: 1 }],
-                userAddr: '0x0000000000000000000000000000000000000001',
-                slippageLimitPercent: 1, referralCode: 0, disableRFQs: false, compact: false
-              }),
-              signal: AbortSignal.timeout(9000)
-            });
-            if (r.status === 429) continue;
-            if (r.ok) {
-              const d = await r.json();
-              if (d.outTokens?.[0]?.amount) {
-                return {
-                  token_in: input.token_in, token_out: input.token_out, amount_in: input.amount_in,
-                  amount_out_raw: d.outTokens[0].amount,
-                  price_impact_percent: d.priceImpact ?? null, gas_estimate: d.gasEstimate ?? null,
-                  note: 'amount_out_raw in smallest unit. USDC=6 decimals, ETH/WETH=18.',
-                  source: 'Odos', chain: 'Base'
-                };
-              }
-            }
+            const out = await quoteSingle(tIn, tOut, fee);
+            if (out && (!bestOut || BigInt(out) > BigInt(bestOut))) bestOut = out;
           } catch {}
         }
-        // KyberSwap fallback
-        try {
-          const qs = new URLSearchParams({ tokenIn: tIn, tokenOut: tOut, amountIn, saveGas: 'false', gasInclude: 'true' });
-          const r = await fetch(`https://aggregator-api.kyberswap.com/base/api/v1/routes?${qs}`, {
-            headers: { 'x-client-id': 'orlix' }, signal: AbortSignal.timeout(9000)
-          });
-          if (r.ok) {
-            const d = await r.json();
-            const rs = d.data?.routeSummary;
-            if (rs?.amountOut) {
-              return {
-                token_in: input.token_in, token_out: input.token_out, amount_in: input.amount_in,
-                amount_out_raw: rs.amountOut,
-                price_impact_percent: rs.priceImpact ?? null, gas_estimate: rs.gas ?? null,
-                note: 'amount_out_raw in smallest unit. USDC=6 decimals, ETH/WETH=18.',
-                source: 'KyberSwap', chain: 'Base'
-              };
+
+        // 2-hop via WETH if no direct pool
+        if (!bestOut && tIn !== WETH && tOut !== WETH) {
+          for (const f1 of [500, 3000]) {
+            for (const f2 of [500, 3000]) {
+              try {
+                const path =
+                  tIn.replace('0x','').toLowerCase() + f1.toString(16).padStart(6,'0') +
+                  WETH.replace('0x','').toLowerCase() + f2.toString(16).padStart(6,'0') +
+                  tOut.replace('0x','').toLowerCase();
+                const data = '0xcdca1753' +
+                  '0000000000000000000000000000000000000000000000000000000000000040' +
+                  n32(amountIn) +
+                  '0000000000000000000000000000000000000000000000000000000000000042' +
+                  path.padEnd(Math.ceil(66/32)*64,'0');
+                const res = await rpc('eth_call', [{ to: QUOTER, data }, 'latest']);
+                if (res && res !== '0x' && res.length >= 66) {
+                  const out = BigInt('0x' + res.slice(2, 66));
+                  if (out > 0n && (!bestOut || out > BigInt(bestOut))) bestOut = out.toString();
+                }
+              } catch {}
             }
           }
-        } catch {}
-        return { error: 'Quote unavailable — both Odos and KyberSwap failed. Check token addresses are valid Base contracts.' };
+        }
+
+        if (!bestOut) return { error: 'No Uniswap V3 liquidity found for this token pair on Base.' };
+        return {
+          token_in: input.token_in, token_out: input.token_out, amount_in: input.amount_in,
+          amount_out_raw: bestOut,
+          note: 'amount_out_raw in smallest unit. USDC=6 decimals, ETH/WETH=18.',
+          source: 'Uniswap V3', chain: 'Base'
+        };
       }
       case 'moonwell_markets': {
         const url = input.asset
@@ -595,117 +597,111 @@ async function executeTool(name, input) {
         return result;
       }
       case 'uniswap_prepare_swap': {
+        const WETH     = '0x4200000000000000000000000000000000000006';
+        const QUOTER   = '0x3d4e44Eb1374240CE5F1B871ab261CD16335B76a';
+        const ROUTER   = '0x2626664c2603336E57B271c5C0b26F421741e481';
+        const ETH_ZERO = '0x0000000000000000000000000000000000000000';
+
         const decimalsIn = input.token_in_decimals ?? 18;
         const amtFloat   = parseFloat(input.amount_in);
         if (isNaN(amtFloat) || amtFloat <= 0) return { error: 'Invalid amount_in' };
         const amountIn   = BigInt(Math.round(amtFloat * Math.pow(10, decimalsIn))).toString();
 
-        const ETH_ZERO = '0x0000000000000000000000000000000000000000';
         const isEthIn  = input.token_in  === ETH_ZERO || input.token_in?.toLowerCase()  === 'eth';
         const isEthOut = input.token_out === ETH_ZERO || input.token_out?.toLowerCase() === 'eth';
-        const tokenIn  = isEthIn  ? ETH_ZERO : input.token_in;
-        const tokenOut = isEthOut ? ETH_ZERO : input.token_out;
+        const tokenIn  = isEthIn  ? WETH : input.token_in;
+        const tokenOut = isEthOut ? WETH : input.token_out;
 
-        let tx = null, outAmtRaw = null, provider = '';
+        const a32 = a => a.replace('0x','').toLowerCase().padStart(64,'0');
+        const n32 = n => BigInt(n).toString(16).padStart(64,'0');
 
-        // ── Primary: Odos (3 attempts, 1.5 s wait on 429) ────────────────────
-        for (let attempt = 0; attempt < 3 && !tx; attempt++) {
-          if (attempt > 0) await new Promise(r => setTimeout(r, 1500));
+        // Find best fee tier via QuoterV2
+        const quoteSingle = async (ti, to, fee) => {
+          const data = '0xc6a5026a' + a32(ti) + a32(to) + n32(amountIn) + n32(fee) + n32(0);
+          const res = await rpc('eth_call', [{ to: QUOTER, data }, 'latest']);
+          if (!res || res === '0x' || res.length < 66) return null;
+          const out = BigInt('0x' + res.slice(2, 66));
+          return out > 0n ? out.toString() : null;
+        };
+
+        let bestOut = null, bestFee = null, useHop = false, bestF1 = null, bestF2 = null;
+
+        for (const fee of [500, 3000, 10000, 100]) {
           try {
-            const qr = await fetch('https://api.odos.xyz/sor/quote/v2', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                chainId: 8453,
-                inputTokens:  [{ tokenAddress: tokenIn,  amount: amountIn }],
-                outputTokens: [{ tokenAddress: tokenOut, proportion: 1 }],
-                userAddr: input.wallet_address,
-                slippageLimitPercent: 1, referralCode: 0, disableRFQs: false, compact: false
-              }),
-              signal: AbortSignal.timeout(10000)
-            });
-            if (qr.status === 429) continue; // rate limited — retry after wait
-            if (!qr.ok) break;
-            const qd = await qr.json();
-            if (!qd.pathId) break;
-            outAmtRaw = qd.outTokens?.[0]?.amount ?? null;
-
-            const ar = await fetch('https://api.odos.xyz/sor/assemble', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ userAddr: input.wallet_address, pathId: qd.pathId, simulate: false }),
-              signal: AbortSignal.timeout(12000)
-            });
-            if (!ar.ok) break;
-            const ad = await ar.json();
-            if (ad.transaction?.to && ad.transaction?.data) {
-              tx = ad.transaction;
-              provider = 'Odos';
+            const out = await quoteSingle(tokenIn, tokenOut, fee);
+            if (out && (!bestOut || BigInt(out) > BigInt(bestOut))) {
+              bestOut = out; bestFee = fee; useHop = false;
             }
           } catch {}
         }
 
-        // ── Fallback: KyberSwap ───────────────────────────────────────────────
-        if (!tx) {
-          try {
-            const qs = new URLSearchParams({
-              tokenIn, tokenOut, amountIn, saveGas: 'false', gasInclude: 'true', to: input.wallet_address
-            });
-            const rr = await fetch(`https://aggregator-api.kyberswap.com/base/api/v1/routes?${qs}`, {
-              headers: { 'x-client-id': 'orlix' }, signal: AbortSignal.timeout(10000)
-            });
-            if (rr.ok) {
-              const rd = await rr.json();
-              const routeSummary = rd.data?.routeSummary;
-              if (routeSummary) {
-                outAmtRaw = outAmtRaw ?? routeSummary.amountOut ?? null;
-                const br = await fetch('https://aggregator-api.kyberswap.com/base/api/v1/route/build', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json', 'x-client-id': 'orlix' },
-                  body: JSON.stringify({
-                    routeSummary,
-                    sender:            input.wallet_address,
-                    recipient:         input.wallet_address,
-                    slippageTolerance: 100,  // 1% in bps
-                    deadline:          Math.floor(Date.now() / 1000) + 1200,
-                    source:            'orlix'
-                  }),
-                  signal: AbortSignal.timeout(10000)
-                });
-                if (br.ok) {
-                  const bd = await br.json();
-                  const routerAddr = bd.data?.routerAddress;
-                  const calldata   = bd.data?.data;
-                  if (routerAddr && calldata) {
-                    tx = { to: routerAddr, data: calldata, value: isEthIn ? amountIn : '0', gas: 500000 };
-                    provider = 'KyberSwap';
+        // 2-hop via WETH if no direct pool
+        if (!bestOut && tokenIn !== WETH && tokenOut !== WETH) {
+          for (const f1 of [500, 3000]) {
+            for (const f2 of [500, 3000]) {
+              try {
+                const path =
+                  tokenIn.replace('0x','').toLowerCase() + f1.toString(16).padStart(6,'0') +
+                  WETH.replace('0x','').toLowerCase()    + f2.toString(16).padStart(6,'0') +
+                  tokenOut.replace('0x','').toLowerCase();
+                const data = '0xcdca1753' +
+                  '0000000000000000000000000000000000000000000000000000000000000040' +
+                  n32(amountIn) +
+                  '0000000000000000000000000000000000000000000000000000000000000042' +
+                  path.padEnd(Math.ceil(66/32)*64,'0');
+                const res = await rpc('eth_call', [{ to: QUOTER, data }, 'latest']);
+                if (res && res !== '0x' && res.length >= 66) {
+                  const out = BigInt('0x' + res.slice(2, 66));
+                  if (out > 0n && (!bestOut || out > BigInt(bestOut))) {
+                    bestOut = out.toString(); useHop = true; bestF1 = f1; bestF2 = f2;
                   }
                 }
-              }
+              } catch {}
             }
-          } catch {}
+          }
         }
 
-        if (!tx) return { error: 'Swap unavailable right now — Odos and KyberSwap both failed. Try again in a few seconds.' };
+        if (!bestOut) return { error: 'No Uniswap V3 liquidity found for this token pair on Base.' };
 
-        // Build transaction list: ERC20 approval first (if not ETH), then swap
+        const amountOutMin = (BigInt(bestOut) * 99n / 100n).toString();
+
+        // Build calldata for SwapRouter02
+        let calldata;
+        if (!useHop) {
+          // exactInputSingle (no deadline) — selector 0x04e45aaf
+          calldata = '0x04e45aaf' +
+            a32(tokenIn) + a32(tokenOut) + n32(bestFee) +
+            a32(input.wallet_address) +
+            n32(amountIn) + n32(amountOutMin) + n32(0);
+        } else {
+          // exactInput (no deadline) — selector 0xb858183f
+          const path =
+            tokenIn.replace('0x','').toLowerCase() + bestF1.toString(16).padStart(6,'0') +
+            WETH.replace('0x','').toLowerCase()    + bestF2.toString(16).padStart(6,'0') +
+            tokenOut.replace('0x','').toLowerCase();
+          calldata = '0xb858183f' +
+            '0000000000000000000000000000000000000000000000000000000000000020' +
+            '0000000000000000000000000000000000000000000000000000000000000080' +
+            a32(input.wallet_address) + n32(amountIn) + n32(amountOutMin) +
+            '0000000000000000000000000000000000000000000000000000000000000042' +
+            path.padEnd(Math.ceil(66/32)*64,'0');
+        }
+
         const transactions = [];
         if (!isEthIn) {
           transactions.push({
             to:      input.token_in,
-            data:    '0x095ea7b3' +
-                     tx.to.replace('0x','').toLowerCase().padStart(64,'0') +
-                     'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+            data:    '0x095ea7b3' + ROUTER.replace('0x','').toLowerCase().padStart(64,'0') + 'f'.repeat(64),
             value:   '0',
             gas:     '100000',
             chainId: 8453
           });
         }
         transactions.push({
-          to:      tx.to,
-          data:    tx.data,
-          value:   tx.value != null ? String(tx.value) : '0',
-          gas:     String(Math.max(Number(tx.gas) || 0, 500000)),
+          to:      ROUTER,
+          data:    calldata,
+          value:   isEthIn ? amountIn : '0',
+          gas:     useHop ? '350000' : '250000',
           chainId: 8453
         });
 
@@ -713,10 +709,10 @@ async function executeTool(name, input) {
         const txCount = transactions.length > 1 ? ' (2 txns: approve then swap — sign both)' : '';
         return {
           __action:       'sign_transaction',
-          protocol:       provider,
-          description:    `Swap ${input.amount_in} ${tokenInLabel} via ${provider} (Base)${txCount}`,
+          protocol:       'Uniswap V3',
+          description:    `Swap ${input.amount_in} ${tokenInLabel} via Uniswap V3 (Base)${txCount}`,
           transactions,
-          amount_out_raw: outAmtRaw,
+          amount_out_raw: bestOut,
           chain_id:       8453,
           wallet:         input.wallet_address
         };
