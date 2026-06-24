@@ -158,7 +158,7 @@ module.exports = async (req, res) => {
   genre = genre || 'trap';
 
   const apiKey = process.env.BANKR_LLM_KEY || process.env.ANTHROPIC_API_KEY || '';
-  if (!apiKey) { res.writeHead(503, CORS); return res.end(JSON.stringify({ error: 'AI not configured' })); }
+  if (!apiKey) { res.writeHead(503, CORS); return res.end(JSON.stringify({ error: 'Service temporarily unavailable' })); }
 
   const isAnthropicKey = apiKey.startsWith('sk-ant-');
   const aiUrl     = isAnthropicKey ? 'https://api.anthropic.com/v1/messages' : 'https://llm.bankr.bot/v1/messages';

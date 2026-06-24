@@ -97,7 +97,7 @@ async function getDex(address) {
 
 async function aiVerdict(address, token, dex) {
   const key = process.env.BANKR_LLM_KEY || process.env.ANTHROPIC_API_KEY || '';
-  if (!key) return '**AI analysis unavailable** — BANKR_LLM_KEY not set.';
+  if (!key) return '**AI analysis temporarily unavailable.**';
 
   const priceStr = dex?.priceUsd
     ? `$${Number(dex.priceUsd).toFixed(Number(dex.priceUsd) < 0.0001 ? 10 : Number(dex.priceUsd) < 0.01 ? 8 : 6)}`

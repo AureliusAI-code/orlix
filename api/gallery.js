@@ -45,12 +45,6 @@ module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
-  // ── Debug endpoint — GET ?debug=1 (internal only) ───────────────────────────
-  if (req.method === 'GET' && req.query && req.query.debug === '1') {
-    const creds = getCredentials();
-    return res.status(200).json({ configured: !!creds });
-  }
-
   const creds = getCredentials();
   if (!creds) {
     return res.status(503).json({ error: 'Service temporarily unavailable.' });

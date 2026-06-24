@@ -1611,9 +1611,10 @@ function loadChat(id){
     if(Array.isArray(m.content) && m.role==='user'){
       const imgs = m.content.filter(b=>b.type==='image_url');
       const textBlock = m.content.find(b=>b.type==='text');
+      const safeImgUrl = u => /^data:image\/(png|jpe?g|gif|webp|svg\+xml);base64,/i.test(u) ? u : '';
       const imgHtml2 = imgs.length
         ? '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px">'
-          + imgs.map(b=>`<img src="${b.image_url.url}" style="width:56px;height:56px;object-fit:cover;border-radius:6px;border:1px solid var(--line)">`).join('')
+          + imgs.map(b=>{ const s=safeImgUrl(b.image_url.url); return s?`<img src="${s}" style="width:56px;height:56px;object-fit:cover;border-radius:6px;border:1px solid var(--line)">`:'' }).join('')
           + '</div>'
         : '';
       const div2 = document.createElement('div');

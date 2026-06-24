@@ -817,6 +817,9 @@ module.exports = async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(204).end();
   if (req.method !== 'POST')   return res.status(405).json({ error: 'Method not allowed' });
 
+  const contentLength = parseInt(req.headers['content-length'] || '0', 10);
+  if (contentLength > 2 * 1024 * 1024) return res.status(413).json({ error: 'Request too large' });
+
   const bodyObj = typeof req.body === 'object' && req.body !== null
     ? req.body : JSON.parse(req.body || '{}');
 

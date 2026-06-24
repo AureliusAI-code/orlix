@@ -387,9 +387,6 @@ module.exports = async function handler(req, res) {
     return res.status(200).json({
       ok: true,
       configured: !!token,
-      setup: token
-        ? `Set webhook: https://api.telegram.org/bot${token}/setWebhook?url=https://${req.headers.host}/api/telegram`
-        : 'Add TELEGRAM_BOT_TOKEN to Vercel environment variables first.',
     });
   }
 
@@ -397,6 +394,13 @@ module.exports = async function handler(req, res) {
 
   const token = TG_TOKEN();
   if (!token) return res.status(200).json({ ok: true });
+
+  // Verify webhook secret if configured (set TELEGRAM_WEBHOOK_SECRET in Vercel env)
+  const webhookSecret = process.env.TELEGRAM_WEBHOOK_SECRET || '';
+  if (webhookSecret) {
+    const incoming = req.headers['x-telegram-bot-api-secret-token'] || '';
+    if (incoming !== webhookSecret) return res.status(200).json({ ok: true });
+  }
 
   const update  = req.body || {};
   const message = update.message || update.edited_message;

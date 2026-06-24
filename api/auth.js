@@ -45,17 +45,14 @@ function parseCookies(h) {
 
 module.exports = async function handler(req, res) {
   res.setHeader('x-orlix-proxy', '1');
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Origin', 'https://orlixai.xyz');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   const SECRET = process.env.PRIVY_APP_SECRET || '';
   if (!SECRET) {
-    return res.status(503).json({
-      error: 'PRIVY_APP_SECRET not set.',
-      hint:  'Add PRIVY_APP_SECRET to Vercel Environment Variables and redeploy.',
-    });
+    return res.status(503).json({ error: 'Authentication service temporarily unavailable.' });
   }
 
   const action = (req.query && req.query.action) || (req.body && req.body.action) || '';
@@ -175,9 +172,12 @@ module.exports = async function handler(req, res) {
       });
       const data = await r.json();
       if (data.token) {
-        const user  = encodeURIComponent(JSON.stringify(data.user || {}));
-        const token = encodeURIComponent(data.token);
-        res.writeHead(302, { Location: `/app?privy_token=${token}&privy_user=${user}` });
+        // Store token in HttpOnly cookie — keep it out of URL/browser history
+        res.setHeader('Set-Cookie', [
+          `privy_token=${encodeURIComponent(data.token)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=86400; Secure`,
+          `privy_user=${encodeURIComponent(JSON.stringify(data.user || {}))}; Path=/; SameSite=Lax; Max-Age=86400; Secure`,
+        ]);
+        res.writeHead(302, { Location: '/app' });
         return res.end();
       }
       return res.status(400).send(
