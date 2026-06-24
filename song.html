@@ -702,9 +702,12 @@ async function generate() {
   const stopLoading = showLoading(query);
 
   try {
+    const songTok = localStorage.getItem('orlix_token') || '';
+    const songHdrs = { 'Content-Type': 'application/json' };
+    if (songTok) songHdrs['Authorization'] = 'Bearer ' + songTok;
     const res = await fetch('/api/song', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: songHdrs,
       body: JSON.stringify({ query, genre: selectedGenre }),
     });
 

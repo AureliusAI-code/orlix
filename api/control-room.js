@@ -116,7 +116,7 @@ function deriveNewTokens(pairs) {
 
 function deriveTrending(pairs) {
   return pairs
-    .filter(p => (p.volume?.h24 || 0) > 100)
+    .filter(p => (p.volume?.h24 || 0) > 10)
     .sort((a, b) => (b.volume?.h24 || 0) - (a.volume?.h24 || 0))
     .slice(0, 20)
     .map(mapPair); // mapPair already includes volume1h, buys1h, sells1h
@@ -130,13 +130,18 @@ function deriveWhales(pairs) {
     .map(mapPair);
 }
 
-// Live activity: SAFE tokens (liq >= 20k) with any 1h action (>= 500)
+// Live activity: tokens with meaningful liq and any 1h action
 function deriveLiveActivity(pairs) {
-  return pairs
-    .filter(p => (p.liquidity?.usd || 0) >= 20000 && (p.volume?.h1 || 0) >= 500)
+  // First try strict: liq >= 10k, vol1h >= 200
+  let filtered = pairs.filter(p => (p.liquidity?.usd || 0) >= 10000 && (p.volume?.h1 || 0) >= 200);
+  // Fall back to looser: any liq, vol1h >= 50
+  if (filtered.length < 5) {
+    filtered = pairs.filter(p => (p.volume?.h1 || 0) >= 50);
+  }
+  return filtered
     .sort((a, b) => (b.volume?.h1 || 0) - (a.volume?.h1 || 0))
     .slice(0, 50)
-    .map(mapPair);
+    .map(p => ({ ...mapPair(p), risk: quickRisk(p.liquidity?.usd || 0) }));
 }
 
 async function generateCommentary(data, apiKey) {

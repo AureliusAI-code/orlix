@@ -233,15 +233,11 @@ function getAny() { return window.ethereum || null; }
 
 async function doWalletLogin(provider) {
   setModalBusy(true);
-  wmOk('Requesting accounts…');
+  wmOk('Connecting wallet…');
   try {
     const accounts = await provider.request({ method: 'eth_requestAccounts' });
     const address  = accounts[0];
-    wmOk('Sign the message in your wallet…');
-    const nonce   = Date.now();
-    const message = 'Sign in to Orlix AI\n\nAddress: ' + address + '\nNonce: ' + nonce;
-    await provider.request({ method: 'personal_sign', params: [message, address] });
-    const display = address.slice(0,6) + '…' + address.slice(-4);
+    const display  = address.slice(0,6) + '…' + address.slice(-4);
     localStorage.setItem('orlix_token', 'wallet:' + address);
     localStorage.setItem('orlix_user',  JSON.stringify({ id: address, display, type: 'wallet', address }));
     window.location.href = '/app';

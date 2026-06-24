@@ -32,34 +32,28 @@ async function redisCmd(url, token, ...args) {
   return json.result ?? null;
 }
 
+function getAuthWallet(req) {
+  const auth = req.headers['authorization'] || '';
+  if (auth.startsWith('Bearer wallet:0x')) return auth.slice(7); // 'wallet:0x...'
+  return null;
+}
+
 module.exports = async function handler(req, res) {
   res.setHeader('x-orlix-proxy', '1');
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
-  // ── Debug endpoint — GET ?debug=1 ───────────────────────────────────────────
+  // ── Debug endpoint — GET ?debug=1 (internal only) ───────────────────────────
   if (req.method === 'GET' && req.query && req.query.debug === '1') {
     const creds = getCredentials();
-    return res.status(200).json({
-      configured: !!creds,
-      url_found: creds ? creds.url.slice(0, 40) + '…' : null,
-      env_keys: Object.keys(process.env).filter(k =>
-        k.includes('UPSTASH') || k.includes('KV_REST') || k.includes('STORAGE')
-      ),
-    });
+    return res.status(200).json({ configured: !!creds });
   }
 
   const creds = getCredentials();
   if (!creds) {
-    return res.status(503).json({
-      error: 'Upstash Redis not configured.',
-      hint: 'Vercel Dashboard → Storage → Upstash → connect to orlix → Redeploy',
-      env_keys_found: Object.keys(process.env).filter(k =>
-        k.includes('UPSTASH') || k.includes('REDIS') || k.includes('KV')
-      ),
-    });
+    return res.status(503).json({ error: 'Service temporarily unavailable.' });
   }
 
   const { url, token } = creds;
@@ -75,8 +69,11 @@ module.exports = async function handler(req, res) {
     }
   }
 
-  // ── POST — save a new build ──────────────────────────────────────────────────
+  // ── POST — save a new build (requires auth) ──────────────────────────────────
   if (req.method === 'POST') {
+    const callerWallet = getAuthWallet(req);
+    if (!callerWallet) return res.status(401).json({ error: 'Authentication required' });
+
     const { id, code, title } = req.body || {};
     if (!id || !code || !title) {
       return res.status(400).json({ error: 'Missing id, code, or title' });
@@ -88,31 +85,40 @@ module.exports = async function handler(req, res) {
       // Dedupe by id
       const filtered = builds.filter(b => b.id !== id);
       const newBuild = {
-        id:    String(id).slice(0, 64),
-        title: String(title).slice(0, 120),
-        code:  String(code).slice(0, 300000),
-        ts:    Date.now(),
+        id:     String(id).slice(0, 64),
+        title:  String(title).slice(0, 120),
+        code:   String(code).slice(0, 300000),
+        owner:  callerWallet,
+        ts:     Date.now(),
       };
       const updated = [newBuild, ...filtered].slice(0, MAX);
       await redisCmd(url, token, 'SET', KEY, JSON.stringify(updated));
       return res.status(200).json({ ok: true, total: updated.length });
     } catch (e) {
-      return res.status(502).json({ error: e.message });
+      return res.status(502).json({ error: 'Failed to save' });
     }
   }
 
-  // ── DELETE — remove build by id ──────────────────────────────────────────────
+  // ── DELETE — remove build by id (requires auth + ownership) ──────────────────
   if (req.method === 'DELETE') {
+    const callerWallet = getAuthWallet(req);
+    if (!callerWallet) return res.status(401).json({ error: 'Authentication required' });
+
     const { id } = req.body || {};
     if (!id) return res.status(400).json({ error: 'Missing id' });
     try {
       const raw = await redisCmd(url, token, 'GET', KEY);
       const builds = JSON.parse(raw || '[]');
+      const target = builds.find(b => b.id === id);
+      // Allow delete if: caller owns it, or entry has no owner (legacy)
+      if (target && target.owner && target.owner !== callerWallet) {
+        return res.status(403).json({ error: 'Not authorized to delete this entry' });
+      }
       const updated = builds.filter(b => b.id !== id);
       await redisCmd(url, token, 'SET', KEY, JSON.stringify(updated));
       return res.status(200).json({ ok: true });
     } catch (e) {
-      return res.status(502).json({ error: e.message });
+      return res.status(502).json({ error: 'Failed to delete' });
     }
   }
 

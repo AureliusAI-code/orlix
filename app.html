@@ -1764,7 +1764,9 @@ updateBanner();
 
 async function apiFetch(key, bodyObj){
   const bodyStr = JSON.stringify(bodyObj);
+  const orlixTok = localStorage.getItem('orlix_token') || '';
   const h = {'Content-Type':'application/json','x-api-key':key};
+  if (orlixTok) h['Authorization'] = 'Bearer ' + orlixTok;
   const errors = [];
   const m = (bodyObj.model||'').toLowerCase();
   const isMimo = m.startsWith('mimo');
@@ -2637,9 +2639,12 @@ async function publishBuild(btn, id){
 
   // Also POST to Vercel KV for public/cross-device gallery
   try{
+    const galleryTok = localStorage.getItem('orlix_token') || '';
+    const galleryHdrs = {'Content-Type':'application/json'};
+    if (galleryTok) galleryHdrs['Authorization'] = 'Bearer ' + galleryTok;
     const r = await fetch('/api/gallery',{
       method:'POST',
-      headers:{'Content-Type':'application/json'},
+      headers: galleryHdrs,
       body:JSON.stringify({id, code, title})
     });
     const data = await r.json();

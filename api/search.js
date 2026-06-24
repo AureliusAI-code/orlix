@@ -9,7 +9,7 @@ module.exports = async function handler(req, res) {
   if (!q) return res.status(400).json({ error: 'Missing query parameter q' });
 
   const key = process.env.BRAVE_SEARCH_API_KEY || '';
-  if (!key) return res.status(401).json({ error: 'BRAVE_SEARCH_API_KEY not configured' });
+  if (!key) return res.status(503).json({ error: 'Search service unavailable' });
 
   try {
     const r = await fetch(
