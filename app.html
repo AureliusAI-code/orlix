@@ -107,8 +107,10 @@ input,select,textarea{font-family:var(--mono)}
 
 /* ── main area ── */
 .main{flex:1;overflow-y:auto;padding:28px 32px;min-width:0;background:var(--bg)}
+.main.pg-mode{overflow:hidden;padding-top:14px;padding-bottom:0}
 .view{display:none}
 .view.active{display:block}
+#view-playground{height:100%;display:flex;flex-direction:column}
 @keyframes boot-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 .view.active{animation:boot-in .2s ease}
 
@@ -273,7 +275,7 @@ select.inp{cursor:pointer}
 .model-try:hover{border-color:var(--orange);color:var(--orange)}
 
 /* ── playground ── */
-.chat-wrap{display:flex;flex-direction:column;height:calc(100vh - 110px);min-height:300px}
+.chat-wrap{display:flex;flex-direction:column;flex:1;min-height:0}
 .chat-controls{display:flex;gap:8px;margin-bottom:8px;align-items:center}
 .chat-model-sel{flex:1;min-width:0}
 .pg-status{font-size:.72rem;color:var(--text-3);display:flex;align-items:center;gap:5px;margin-bottom:10px;min-height:16px}
@@ -475,7 +477,7 @@ select.inp{cursor:pointer}
   .stat-grid{grid-template-columns:1fr 1fr}
   .agent-actions{display:none}
   .provider-grid{grid-template-columns:1fr}
-  .chat-wrap{height:calc(100vh - 130px)}
+  .main.pg-mode{padding-top:12px}
   .chat-input-row textarea{height:40px}
 }
 
@@ -1223,6 +1225,7 @@ function showView(name){
   document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id==='view-'+name));
   document.querySelectorAll('.sb-item').forEach(i=>i.classList.toggle('active',i.dataset.view===name));
   document.getElementById('sidebar').classList.remove('open');
+  document.querySelector('.main').classList.toggle('pg-mode', name==='playground');
   history.replaceState(null,'','#'+name);
   if(name==='overview') refreshDashboard();
   if(name==='aeon-memory') refreshMemoryView();
@@ -1230,8 +1233,8 @@ function showView(name){
 }
 document.querySelectorAll('.sb-item').forEach(i=>i.addEventListener('click',()=>showView(i.dataset.view)));
 document.querySelectorAll('[data-nav]').forEach(b=>b.addEventListener('click',()=>showView(b.dataset.nav)));
-// Restore view from URL hash on load
-(function(){const h=location.hash.slice(1);if(h&&document.getElementById('view-'+h))showView(h);})();
+// Restore view from URL hash on load (or default to playground)
+(function(){const h=location.hash.slice(1)||'playground';if(document.getElementById('view-'+h))showView(h);})();
 
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 
