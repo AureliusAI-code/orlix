@@ -299,6 +299,21 @@ input[type=range]:disabled{opacity:.4;cursor:not-allowed}
 }
 .fg-x:hover{color:var(--t1)}
 
+/* ── DEPLOY BUTTON STATES ── */
+.deploy-btn.dep-loading{
+  opacity:.75;cursor:not-allowed;
+  background:linear-gradient(135deg,#4b5563,#6b7280);
+  box-shadow:none;transform:none;
+}
+.deploy-btn.dep-success{
+  background:linear-gradient(135deg,var(--green) 0%,#16a34a 100%);
+  box-shadow:0 4px 20px rgba(34,197,94,.3);
+}
+.deploy-btn.dep-error{
+  background:linear-gradient(135deg,var(--red) 0%,#dc2626 100%);
+  box-shadow:0 4px 20px rgba(239,68,68,.3);
+}
+
 /* ── MODAL ── */
 .modal-ov{
   position:fixed;inset:0;z-index:500;
@@ -688,15 +703,15 @@ input[type=range]:disabled{opacity:.4;cursor:not-allowed}
   <button class="fg-x" onclick="dismissFeatGate()" aria-label="Dismiss">×</button>
 </div>
 
-<!-- DEPLOY MODAL -->
+<!-- DEPLOY MODAL (pre-Beryl countdown) -->
 <div class="modal-ov" id="deployModal" onclick="if(event.target===this)closeModal()">
   <div class="modal-box">
-    <div class="modal-ico">🪙</div>
+    <div class="modal-ico">⏳</div>
     <div class="modal-title" id="mTitle">Not yet active</div>
-    <div class="modal-cd" id="mCd" style="font-size:1.1rem">⏳ Waiting on Base</div>
-    <div class="modal-until" id="mUntil">B20 deploys go live when Base activates the standard</div>
+    <div class="modal-cd" id="mCd">—</div>
+    <div class="modal-until" id="mUntil">Until Base Beryl activates the B20 standard</div>
     <div class="modal-sub" id="mSub">
-      Your token config is ready. B20 deploys go live when Base Beryl activates the standard —
+      Your token config is ready to go. B20 deploys go live when Base Beryl activates —
       <strong style="color:var(--orange)">come back then and hit Deploy</strong>.
     </div>
     <button class="modal-close" onclick="closeModal()">Got it</button>
@@ -706,8 +721,9 @@ input[type=range]:disabled{opacity:.4;cursor:not-allowed}
 <script>
 const MAINNET_TS = new Date('2026-06-25T00:00:00Z').getTime();
 let variant = 'asset';
-let cdTimer = null;
-let walletAddress = null; // updated by orlix:wallet:connected events from wallet.js
+let walletAddress = null;
+let deploying = false;
+let deployedTxHash = null;
 
 // ── variant ───────────────────────────────────────────────────────────────────
 function setVariant(v) {
@@ -741,7 +757,7 @@ function onCapToggle() {
   document.getElementById('rpCapMax').textContent = display;
 }
 
-// ── address hash ──────────────────────────────────────────────────────────────
+// ── address preview ───────────────────────────────────────────────────────────
 function h32(s) {
   let h = 0x811c9dc5;
   for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; }
@@ -778,100 +794,232 @@ function showTab(name, el, isMobile) {
   ['tabCreate','tabTokens','tabManage'].forEach(id => {
     document.getElementById(id).style.display = (id === 'tab' + cap1(name)) ? '' : 'none';
   });
-  // sidebar
   ['sbCreate','sbTokens','sbManage'].forEach(id => {
-    const el2 = document.getElementById(id);
-    if (el2) el2.classList.remove('active');
+    const e2 = document.getElementById(id); if (e2) e2.classList.remove('active');
   });
-  const sbMap = {create:'sbCreate',tokens:'sbTokens',manage:'sbManage'};
-  const sbEl = document.getElementById(sbMap[name]);
+  const sbEl = document.getElementById({create:'sbCreate',tokens:'sbTokens',manage:'sbManage'}[name]);
   if (sbEl) sbEl.classList.add('active');
-  // bottom nav
   ['bnCreate','bnTokens','bnManage'].forEach(id => {
-    const el2 = document.getElementById(id);
-    if (el2) el2.classList.remove('active');
+    const e2 = document.getElementById(id); if (e2) e2.classList.remove('active');
   });
-  const bnMap = {create:'bnCreate',tokens:'bnTokens',manage:'bnManage'};
-  const bnEl = document.getElementById(bnMap[name]);
+  const bnEl = document.getElementById({create:'bnCreate',tokens:'bnTokens',manage:'bnManage'}[name]);
   if (bnEl) bnEl.classList.add('active');
   if (isMobile) window.scrollTo({top:0,behavior:'smooth'});
 }
 function cap1(s) { return s[0].toUpperCase() + s.slice(1); }
 
-// ── deploy countdown ──────────────────────────────────────────────────────────
-function formatCountdown(diff) {
-  const d = Math.floor(diff / 86400000);
-  const h = Math.floor((diff % 86400000) / 3600000);
-  const m = Math.floor((diff % 3600000) / 60000);
-  const s = Math.floor((diff % 60000) / 1000);
-  return `${d}d ${String(h).padStart(2,'0')}h ${String(m).padStart(2,'0')}m ${String(s).padStart(2,'0')}s`;
+// ── deploy button state ───────────────────────────────────────────────────────
+function setDeployBtn(state, label, sub) {
+  const btn   = document.querySelector('.deploy-btn');
+  const span  = btn.querySelector('span:first-child');
+  const subEl = document.getElementById('deploySubtitle');
+  btn.className = 'deploy-btn';
+  btn.disabled  = false;
+  btn.onclick   = onDeploy;
+  if (state === 'loading' || state === 'signing') {
+    btn.classList.add('dep-loading'); btn.disabled = true;
+    span.textContent = label; if (sub) subEl.textContent = sub;
+  } else if (state === 'success') {
+    btn.classList.add('dep-success');
+    span.textContent = label; if (sub) subEl.textContent = sub;
+    if (deployedTxHash) btn.onclick = () => window.open('https://basescan.org/tx/' + deployedTxHash, '_blank');
+  } else if (state === 'error') {
+    btn.classList.add('dep-error');
+    span.textContent = '→ Try Again'; subEl.textContent = sub || label;
+  } else {
+    span.textContent = '→ Deploy B20 Token'; updateSubtitle();
+  }
 }
+
+// ── deploy subtitle countdown ─────────────────────────────────────────────────
 function updateSubtitle() {
   const diff = MAINNET_TS - Date.now();
   const el = document.getElementById('deploySubtitle');
   if (!el) return;
-  if (diff <= 0) { el.textContent = 'Base Beryl is live — deploy now'; return; }
+  if (diff <= 0) {
+    el.textContent = walletAddress ? 'Base Beryl is live — ready to deploy' : 'Base Beryl is live — connect wallet to deploy';
+    return;
+  }
   const d = Math.floor(diff / 86400000);
   const h = Math.floor((diff % 86400000) / 3600000);
-  const m = Math.floor((diff % 3600000) / 60000);
-  el.textContent = `Deploy when Base activates · Base Beryl`;
+  const m = Math.floor((diff % 3600000)  / 60000);
+  const s = Math.floor((diff % 60000)    / 1000);
+  el.textContent = `Live in ${d}d ${String(h).padStart(2,'0')}h ${String(m).padStart(2,'0')}m ${String(s).padStart(2,'0')}s`;
 }
 
-// ── deploy modal ──────────────────────────────────────────────────────────────
-function onDeploy() {
+// ── pre-Beryl modal ───────────────────────────────────────────────────────────
+function showCountdownModal() {
+  const diff = MAINNET_TS - Date.now();
+  const d = Math.floor(diff / 86400000);
+  const h = Math.floor((diff % 86400000) / 3600000);
+  const m = Math.floor((diff % 3600000)  / 60000);
+  const s = Math.floor((diff % 60000)    / 1000);
+  document.getElementById('mTitle').textContent = 'Not yet active';
+  document.getElementById('mCd').textContent    = `${d}d ${String(h).padStart(2,'0')}h ${String(m).padStart(2,'0')}m ${String(s).padStart(2,'0')}s`;
+  document.getElementById('mUntil').textContent = 'Until Base Beryl activates the B20 standard';
+  document.getElementById('mSub').innerHTML     = 'Your token config is ready to go. B20 deploys go live when Base Beryl activates — <strong style="color:var(--orange)">come back then and hit Deploy</strong>.';
   document.getElementById('deployModal').classList.add('open');
-  const now = Date.now();
-  if (now >= MAINNET_TS) {
-    document.getElementById('mTitle').textContent = 'Ready to Deploy';
-    document.getElementById('mCd').textContent    = '🟢 Base Beryl is Live';
-    document.getElementById('mUntil').textContent = walletAddress ? 'Connected — deploy on Base mainnet' : 'Connect wallet to deploy';
-    document.getElementById('mSub').innerHTML     = 'Base Beryl is live! ' + (walletAddress ? 'Confirm the transaction in your wallet to deploy this B20 token on Base mainnet.' : 'Connect your wallet to deploy this B20 token on Base mainnet.');
-  } else {
-    // not live yet — static message, no countdown
-  }
 }
-function closeModal() {
-  document.getElementById('deployModal').classList.remove('open');
-  if (cdTimer) { clearInterval(cdTimer); cdTimer = null; }
+function closeModal() { document.getElementById('deployModal').classList.remove('open'); }
+
+// ── MAIN DEPLOY FLOW ──────────────────────────────────────────────────────────
+async function onDeploy() {
+  if (deploying) return;
+
+  // Pre-Beryl: show countdown modal
+  if (Date.now() < MAINNET_TS) { showCountdownModal(); return; }
+
+  // Form validation
+  const name = document.getElementById('fName').value.trim();
+  const sym  = document.getElementById('fSym').value.trim().toUpperCase();
+  if (!name) { setDeployBtn('error', '', 'Token Name is required'); return; }
+  if (!sym)  { setDeployBtn('error', '', 'Symbol is required'); return; }
+  if (sym.length > 11) { setDeployBtn('error', '', 'Symbol must be ≤ 11 characters'); return; }
+
+  // Wallet check
+  if (!walletAddress) {
+    setDeployBtn('error', '', 'Connect your wallet first (top right)');
+    return;
+  }
+  if (!window.ethereum) {
+    setDeployBtn('error', '', 'No Ethereum wallet found — install MetaMask');
+    return;
+  }
+
+  deploying = true;
+
+  try {
+    // ── Step 1: Prepare tx via b20-skill API ─────────────────────────────────
+    setDeployBtn('loading', '⏳ Preparing…', 'Fetching live gas + nonce from Base…');
+
+    const adminless = document.getElementById('fAdminless').checked;
+    const capRaw    = document.getElementById('fCap').value.replace(/,/g,'');
+    const payload   = {
+      action:      'prepare',
+      name,
+      symbol:      sym,
+      variant,
+      decimals:    parseInt(document.getElementById('fDec').value),
+      supply_cap:  document.getElementById('fUncapped').checked ? '0' : (capRaw || '0'),
+      admin:       adminless ? undefined : walletAddress,
+      adminless,
+      policies: {
+        allowlist: document.getElementById('fAllow').checked,
+        blocklist: document.getElementById('fBlock').checked,
+        freeze:    document.getElementById('fFreeze').checked,
+      },
+      network: 'mainnet',
+    };
+    const uri = document.getElementById('fUri').value.trim();
+    if (uri) payload.contract_uri = uri;
+
+    const resp = await fetch('/api/b20-skill', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify(payload),
+    });
+
+    if (!resp.ok) throw new Error('API error ' + resp.status);
+    const data = await resp.json();
+
+    if (!data.ok) {
+      const msg = (data.errors || []).join(', ') || data.error || 'Validation failed';
+      setDeployBtn('error', '', msg);
+      deploying = false;
+      return;
+    }
+
+    const tx = data.deployment?.tx;
+    if (!tx?.to || !tx?.data) {
+      setDeployBtn('error', '', 'No transaction returned from API');
+      deploying = false;
+      return;
+    }
+
+    // ── Step 2: Switch to Base Mainnet ────────────────────────────────────────
+    setDeployBtn('loading', '🔄 Switching network…', 'Please confirm network switch in wallet');
+    try {
+      await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x2105' }] });
+    } catch (swErr) {
+      if (swErr.code === 4902) {
+        await window.ethereum.request({
+          method: 'wallet_addEthereumChain',
+          params: [{ chainId: '0x2105', chainName: 'Base', nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 }, rpcUrls: ['https://mainnet.base.org'], blockExplorerUrls: ['https://basescan.org'] }],
+        });
+      } else { throw swErr; }
+    }
+
+    // Verify chain
+    const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+    if (chainId !== '0x2105') {
+      setDeployBtn('error', '', 'Switch to Base network in your wallet, then try again');
+      deploying = false;
+      return;
+    }
+
+    // ── Step 3: Sign + broadcast transaction ──────────────────────────────────
+    setDeployBtn('signing', '✍ Sign in wallet…', 'Confirm the transaction in your wallet');
+
+    const rawVal = tx.value ?? '0x0';
+    const hexVal = rawVal === '0' || rawVal === '' ? '0x0'
+      : rawVal.startsWith('0x') ? rawVal
+      : '0x' + BigInt(rawVal).toString(16);
+
+    const txParams = {
+      from:  walletAddress,
+      to:    tx.to,
+      data:  tx.data,
+      value: hexVal,
+      gas:   '0x30d40', // 200000
+    };
+
+    const hash = await window.ethereum.request({ method: 'eth_sendTransaction', params: [txParams] });
+    deployedTxHash = hash;
+
+    // ── Step 4: Success ───────────────────────────────────────────────────────
+    setDeployBtn('success', '✓ Submitted!', 'View on BaseScan →');
+
+  } catch (e) {
+    const msg = e.code === 4001 ? 'Rejected — try again'
+      : e.code === -32603 ? 'Transaction error — check your ETH balance'
+      : (e.message || 'Unknown error').slice(0, 80);
+    setDeployBtn('error', '', msg);
+  } finally {
+    deploying = false;
+  }
 }
 
 // ── feature gated toast ───────────────────────────────────────────────────────
 function dismissFeatGate() {
   const el = document.getElementById('featGate');
-  el.style.opacity = '0';
-  el.style.transform = 'translateY(10px)';
+  el.style.opacity = '0'; el.style.transform = 'translateY(10px)';
   setTimeout(() => el.style.display = 'none', 300);
   try { sessionStorage.setItem('fg_dismissed','1'); } catch {}
 }
 
-// ── wallet events (dispatched by /wallet-dist/wallet.js) ─────────────────────
+// ── wallet events (from /wallet-dist/wallet.js) ───────────────────────────────
 window.addEventListener('orlix:wallet:connected', (e) => {
   const addr = e.detail?.address;
   if (!addr) return;
   walletAddress = addr;
   const el = document.getElementById('fAdmin');
   if (el && !el.value) { el.value = addr; onFormChange(); }
+  updateSubtitle();
 });
 window.addEventListener('orlix:wallet:disconnected', () => {
   walletAddress = null;
   const el = document.getElementById('fAdmin');
   if (el) { el.value = ''; onFormChange(); }
+  updateSubtitle();
 });
 
 // ── init ──────────────────────────────────────────────────────────────────────
 (function init() {
-  // Subtitle countdown
   updateSubtitle();
-  setInterval(updateSubtitle, 60000);
-
-  // Form init
+  setInterval(updateSubtitle, 1000);
   onFormChange();
-
-  // Feature gate: hide if already dismissed this session
   try {
-    if (sessionStorage.getItem('fg_dismissed')) {
-      document.getElementById('featGate').style.display = 'none';
-    }
+    if (sessionStorage.getItem('fg_dismissed')) document.getElementById('featGate').style.display = 'none';
   } catch {}
 })();
 </script>
