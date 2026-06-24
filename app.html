@@ -273,7 +273,7 @@ select.inp{cursor:pointer}
 .model-try:hover{border-color:var(--orange);color:var(--orange)}
 
 /* ── playground ── */
-.chat-wrap{display:flex;flex-direction:column;height:calc(100vh - 160px);min-height:300px}
+.chat-wrap{display:flex;flex-direction:column;height:calc(100vh - 110px);min-height:300px}
 .chat-controls{display:flex;gap:8px;margin-bottom:8px;align-items:center}
 .chat-model-sel{flex:1;min-width:0}
 .pg-status{font-size:.72rem;color:var(--text-3);display:flex;align-items:center;gap:5px;margin-bottom:10px;min-height:16px}
@@ -475,7 +475,7 @@ select.inp{cursor:pointer}
   .stat-grid{grid-template-columns:1fr 1fr}
   .agent-actions{display:none}
   .provider-grid{grid-template-columns:1fr}
-  .chat-wrap{height:calc(100vh - 180px)}
+  .chat-wrap{height:calc(100vh - 130px)}
   .chat-input-row textarea{height:40px}
 }
 
@@ -1048,11 +1048,6 @@ select.inp{cursor:pointer}
 
     <!-- ═══ PLAYGROUND ═══ -->
     <div class="view" id="view-playground">
-      <div class="page-hd">
-        <div class="file">$ orlix playground --interactive</div>
-        <h1>Playground</h1>
-        <div class="sub">Mimo is the default engine. Claude and Grok also available — no API key required.</div>
-      </div>
       <div class="chat-controls">
         <select class="inp chat-model-sel" id="pgModelSel"></select>
         <button class="btn-icon" id="searchToggle" title="Web search">
@@ -1067,7 +1062,6 @@ select.inp{cursor:pointer}
         <div class="chat-messages" id="chatMessages">
           <div class="chat-empty" id="chatEmpty">
             <div class="chat-empty-ico"><svg width="32" height="32" viewBox="0 0 20 20" fill="currentColor"><path d="M10 2c-.35 3-1.6 5.5-4 6.8 2.4 1.3 3.65 3.8 4 6.8.35-3 1.6-5.5 4-6.8-2.4-1.3-3.65-3.8-4-6.8z"/></svg></div>
-            <div>Choose a model and send a message</div>
           </div>
         </div>
         <div id="imgPreviewBar"></div>
@@ -1667,7 +1661,7 @@ function newChat(){
   chatHistory = [];
   localStorage.removeItem('orlix_active_chat');
   const cm = document.getElementById('chatMessages');
-  cm.innerHTML = '<div class="chat-empty" id="chatEmpty"><div class="chat-empty-ico"><svg width="32" height="32" viewBox="0 0 20 20" fill="currentColor"><path d="M10 2c-.35 3-1.6 5.5-4 6.8 2.4 1.3 3.65 3.8 4 6.8.35-3 1.6-5.5 4-6.8-2.4-1.3-3.65-3.8-4-6.8z"/></svg></div><div>Choose a model and send a message</div></div>';
+  cm.innerHTML = '<div class="chat-empty" id="chatEmpty"><div class="chat-empty-ico"><svg width="32" height="32" viewBox="0 0 20 20" fill="currentColor"><path d="M10 2c-.35 3-1.6 5.5-4 6.8 2.4 1.3 3.65 3.8 4 6.8.35-3 1.6-5.5 4-6.8-2.4-1.3-3.65-3.8-4-6.8z"/></svg></div></div>';
   renderHistoryList();
   showView('playground');
 }
@@ -2018,7 +2012,7 @@ chatInput.addEventListener('keydown',e=>{
 document.getElementById('pgClearBtn').addEventListener('click',()=>{
   chatHistory=[];totalTokens=0;
   pendingImages=[];renderImgPreview();
-  chatMessages.innerHTML='<div class="chat-empty" id="chatEmpty"><div class="chat-empty-ico"><svg width="32" height="32" viewBox="0 0 20 20" fill="currentColor"><path d="M10 2c-.35 3-1.6 5.5-4 6.8 2.4 1.3 3.65 3.8 4 6.8.35-3 1.6-5.5 4-6.8-2.4-1.3-3.65-3.8-4-6.8z"/></svg></div><div>Choose a model and send a message</div></div>';
+  chatMessages.innerHTML='<div class="chat-empty" id="chatEmpty"><div class="chat-empty-ico"><svg width="32" height="32" viewBox="0 0 20 20" fill="currentColor"><path d="M10 2c-.35 3-1.6 5.5-4 6.8 2.4 1.3 3.65 3.8 4 6.8.35-3 1.6-5.5 4-6.8-2.4-1.3-3.65-3.8-4-6.8z"/></svg></div></div>';
 });
 
 // ── IMAGE UPLOAD ─────────
