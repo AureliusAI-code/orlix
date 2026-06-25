@@ -40,7 +40,7 @@ a{text-decoration:none}
 /* ── LAYOUT ── */
 .layout{
   display:grid;
-  grid-template-columns:200px 1fr 288px;
+  grid-template-columns:200px 1fr;
   min-height:100vh;
   padding-top:56px;
 }
@@ -177,21 +177,6 @@ select.inp option{background:var(--s2);color:var(--t1)}
 .cap-toggle-wrap{display:flex;align-items:center;gap:6px;margin-left:auto}
 .cap-toggle-lbl{font-size:.7rem;color:var(--t3)}
 
-/* ── ADDR PREVIEW ── */
-.addr-row{
-  display:flex;align-items:center;justify-content:space-between;
-  background:var(--s2);border:1px solid var(--b1);border-radius:9px;
-  padding:11px 14px;margin-top:14px;
-}
-.addr-lbl{font-size:.62rem;color:var(--t3);text-transform:uppercase;letter-spacing:.09em;margin-bottom:3px}
-.addr-val{font-family:var(--mono);font-size:.78rem;color:var(--blue)}
-.det-btn{
-  font-size:.64rem;font-weight:600;color:var(--t3);background:var(--s3);
-  border:1px solid var(--b1);border-radius:6px;padding:5px 10px;cursor:pointer;
-  letter-spacing:.04em;transition:all .15s;white-space:nowrap;
-}
-.det-btn:hover{color:var(--t1);border-color:var(--b2)}
-
 /* ── DEPLOY BTN ── */
 .deploy-btn{
   width:100%;padding:14px 20px;border-radius:10px;border:none;cursor:pointer;
@@ -207,40 +192,6 @@ select.inp option{background:var(--s2);color:var(--t1)}
 .deploy-btn.dep-loading{opacity:.6;cursor:not-allowed;background:#374151;box-shadow:none;transform:none}
 .deploy-btn.dep-success{background:var(--green);box-shadow:0 2px 16px rgba(34,197,94,.25)}
 .deploy-btn.dep-error{background:var(--red);box-shadow:0 2px 16px rgba(239,68,68,.25)}
-
-/* ── RIGHT PANEL ── */
-.right-panel{
-  border-left:1px solid var(--b1);padding:22px 18px;
-  background:var(--s1);position:sticky;top:56px;
-  height:calc(100vh - 56px);overflow-y:auto;
-}
-.rp-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
-.rp-section-label{font-size:.625rem;font-weight:700;color:var(--t3);letter-spacing:.13em;text-transform:uppercase}
-.rp-card{background:var(--s2);border:1px solid var(--b1);border-radius:10px;padding:14px;margin-bottom:10px}
-.rp-tok-top{display:flex;align-items:center;gap:11px;margin-bottom:13px}
-.rp-tok-ico{
-  width:36px;height:36px;border-radius:9px;
-  background:rgba(240,120,48,.1);border:1px solid rgba(240,120,48,.15);
-  display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;
-}
-.rp-tok-name{font-size:.875rem;font-weight:700;color:var(--t1)}
-.rp-tok-sym{font-size:.7rem;color:var(--t3);font-family:var(--mono);margin-top:2px}
-.act-row{margin-bottom:10px}
-.act-lbl{font-size:.7rem;color:var(--t3);margin-bottom:6px}
-.act-sub{font-size:.65rem;color:var(--t3);opacity:.65}
-.act-btns{display:flex;gap:6px}
-.act-btn{
-  flex:1;padding:7px 6px;border-radius:7px;border:1px solid var(--b1);
-  background:var(--s3);color:var(--t2);font-size:.74rem;font-weight:600;
-  cursor:pointer;transition:all .15s;text-align:center;white-space:nowrap;
-}
-.act-btn:hover{border-color:var(--b2);color:var(--t1)}
-.act-btn.primary{background:rgba(240,120,48,.1);border-color:rgba(240,120,48,.25);color:var(--orange)}
-.act-btn.primary:hover{background:rgba(240,120,48,.16)}
-.stat-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--b1)}
-.stat-row:last-child{border-bottom:none;padding-bottom:0}
-.stat-lbl{font-size:.72rem;color:var(--t3)}
-.stat-val{font-size:.75rem;font-weight:600;color:var(--t1);font-family:var(--mono)}
 
 /* ── EXPLORE / LAUNCHED ── */
 .launched-bar{display:flex;align-items:center;gap:8px;margin-bottom:22px;flex-wrap:wrap}
@@ -331,7 +282,6 @@ select.inp option{background:var(--s2);color:var(--t1)}
 /* ── RESPONSIVE ── */
 @media(max-width:1100px){
   .layout{grid-template-columns:190px 1fr}
-  .right-panel{display:none}
 }
 @media(max-width:720px){
   .layout{grid-template-columns:1fr;padding-top:56px}
@@ -622,32 +572,6 @@ select.inp option{background:var(--s2);color:var(--t1)}
 
 </main>
 
-<!-- RIGHT PANEL -->
-<aside class="right-panel">
-  <div class="rp-hdr"></div>
-
-  <div class="rp-card">
-    <div class="rp-tok-top">
-      <div class="rp-tok-ico">🪙</div>
-      <div>
-        <div class="rp-tok-name" id="rpName">My B20 Token</div>
-        <div class="rp-tok-sym" id="rpSym">TOKEN</div>
-      </div>
-    </div>
-    <div class="stat-row"><div class="stat-lbl">Supply Cap</div><div class="stat-val" id="rpCap">—</div></div>
-    <div class="stat-row"><div class="stat-lbl">Decimals</div><div class="stat-val" id="rpDec">18</div></div>
-    <div class="stat-row"><div class="stat-lbl">Variant</div><div class="stat-val" id="rpVariant">Asset</div></div>
-  </div>
-
-  <div class="rp-card">
-    <div style="font-size:.72rem;color:var(--t3);line-height:1.6;margin-bottom:10px">
-      Mint, Burn, and Pause will be available here after your token is deployed on Base.
-    </div>
-    <button class="act-btn" style="width:100%" onclick="showTab('manage',document.getElementById('sbManage'))">Manage Roles</button>
-  </div>
-
-</aside>
-
 </div>
 
 <!-- MOBILE BOTTOM NAV -->
@@ -696,7 +620,6 @@ let walletAddress = null;
 let deploying = false;
 let deployedTxHash = null;
 
-// ── variant ───────────────────────────────────────────────────────────────────
 function setVariant(v) {
   variant = v;
   document.getElementById('varAsset').classList.toggle('sel', v === 'asset');
@@ -705,37 +628,21 @@ function setVariant(v) {
   if (v === 'stablecoin') { dec.value = '6'; dec.disabled = true; }
   else { dec.disabled = false; }
   document.getElementById('rebaseRow').style.display = v === 'asset' ? '' : 'none';
-  document.getElementById('rpVariant').textContent = v === 'asset' ? 'Asset' : 'Stablecoin';
   onFormChange();
 }
 
-// ── decimals ──────────────────────────────────────────────────────────────────
-function onDecChange() {
-  document.getElementById('rpDec').textContent = document.getElementById('fDec').value;
-}
+function onDecChange() {}
 
-// ── supply cap ────────────────────────────────────────────────────────────────
 function onCapToggle() {
   const unc = document.getElementById('fUncapped').checked;
   const cap = document.getElementById('fCap');
   cap.disabled = unc;
   if (unc) { cap.value = ''; cap.placeholder = 'Uncapped'; }
   else { cap.placeholder = 'e.g. 10,000,000'; }
-  const display = unc ? '∞' : (cap.value || '—');
-  document.getElementById('rpCap').textContent = display;
 }
 
-function onFormChange() {
-  const name = document.getElementById('fName').value || 'Token';
-  const sym  = document.getElementById('fSym').value  || 'TKN';
-  const cap  = document.getElementById('fCap').value  || '0';
-  document.getElementById('rpName').textContent = name || 'My B20 Token';
-  document.getElementById('rpSym').textContent  = (sym || 'TOKEN').toUpperCase();
-  const capVal = document.getElementById('fUncapped').checked ? '∞' : (cap || '—');
-  document.getElementById('rpCap').textContent = capVal;
-}
+function onFormChange() {}
 
-// ── policies ──────────────────────────────────────────────────────────────────
 function onPolicyChange() {
   const al = document.getElementById('fAllow').checked;
   const bl = document.getElementById('fBlock').checked;
@@ -746,7 +653,6 @@ function onPolicyChange() {
   document.getElementById('freezeWarn').classList.toggle('show', fr);
 }
 
-// ── tabs ──────────────────────────────────────────────────────────────────────
 function showTab(name, el, isMobile) {
   ['tabCreate','tabTokens','tabManage','tabNew'].forEach(id => {
     document.getElementById(id).style.display = (id === 'tab' + cap1(name)) ? '' : 'none';
@@ -768,7 +674,6 @@ function showTab(name, el, isMobile) {
 }
 function cap1(s) { return s[0].toUpperCase() + s.slice(1); }
 
-// ── deploy button state ───────────────────────────────────────────────────────
 function setDeployBtn(state, label, sub) {
   const btn   = document.querySelector('.deploy-btn');
   const span  = btn.querySelector('span:first-child');
@@ -791,7 +696,6 @@ function setDeployBtn(state, label, sub) {
   }
 }
 
-// ── deploy subtitle countdown ─────────────────────────────────────────────────
 function updateSubtitle() {
   const diff = MAINNET_TS - Date.now();
   const el = document.getElementById('deploySubtitle');
@@ -807,7 +711,6 @@ function updateSubtitle() {
   el.textContent = `Live in ${d}d ${String(h).padStart(2,'0')}h ${String(m).padStart(2,'0')}m ${String(s).padStart(2,'0')}s`;
 }
 
-// ── pre-Beryl modal ───────────────────────────────────────────────────────────
 function showCountdownModal() {
   const diff = MAINNET_TS - Date.now();
   const d = Math.floor(diff / 86400000);
@@ -822,144 +725,74 @@ function showCountdownModal() {
 }
 function closeModal() { document.getElementById('deployModal').classList.remove('open'); }
 
-// ── MAIN DEPLOY FLOW ──────────────────────────────────────────────────────────
 async function onDeploy() {
   if (deploying) return;
-
-  // Pre-Beryl: show countdown modal
   if (Date.now() < MAINNET_TS) { showCountdownModal(); return; }
-
-  // Form validation
   const name = document.getElementById('fName').value.trim();
   const sym  = document.getElementById('fSym').value.trim().toUpperCase();
   if (!name) { setDeployBtn('error', '', 'Token Name is required'); return; }
   if (!sym)  { setDeployBtn('error', '', 'Symbol is required'); return; }
   if (sym.length > 11) { setDeployBtn('error', '', 'Symbol must be ≤ 11 characters'); return; }
-
-  // Wallet check
-  if (!walletAddress) {
-    setDeployBtn('error', '', 'Connect your wallet first (top right)');
-    return;
-  }
-  if (!window.ethereum) {
-    setDeployBtn('error', '', 'No Ethereum wallet found — install MetaMask');
-    return;
-  }
-
+  if (!walletAddress) { setDeployBtn('error', '', 'Connect your wallet first (top right)'); return; }
+  if (!window.ethereum) { setDeployBtn('error', '', 'No Ethereum wallet found — install MetaMask'); return; }
   deploying = true;
-
   try {
-    // ── Step 1: Prepare tx via b20-skill API ─────────────────────────────────
     setDeployBtn('loading', '⏳ Preparing…', 'Fetching live gas + nonce from Base…');
-
     const adminless = document.getElementById('fAdminless').checked;
     const capRaw    = document.getElementById('fCap').value.replace(/,/g,'');
     const payload   = {
-      action:      'prepare',
-      name,
-      symbol:      sym,
-      variant,
-      decimals:    parseInt(document.getElementById('fDec').value),
-      supply_cap:  document.getElementById('fUncapped').checked ? '0' : (capRaw || '0'),
-      admin:       adminless ? undefined : walletAddress,
+      action:'prepare', name, symbol:sym, variant,
+      decimals:parseInt(document.getElementById('fDec').value),
+      supply_cap:document.getElementById('fUncapped').checked ? '0' : (capRaw || '0'),
+      admin:adminless ? undefined : walletAddress,
       adminless,
-      policies: {
-        allowlist: document.getElementById('fAllow').checked,
-        blocklist: document.getElementById('fBlock').checked,
-        freeze:    document.getElementById('fFreeze').checked,
+      policies:{
+        allowlist:document.getElementById('fAllow').checked,
+        blocklist:document.getElementById('fBlock').checked,
+        freeze:document.getElementById('fFreeze').checked,
       },
-      roles: {
-        minter:       document.getElementById('fRoleMinter').value.trim()      || undefined,
-        burner:       document.getElementById('fRoleBurner').value.trim()      || undefined,
-        burn_blocked: document.getElementById('fRoleBurnBlocked').value.trim() || undefined,
-        pauser:       document.getElementById('fRolePauser').value.trim()      || undefined,
-        unpauser:     document.getElementById('fRoleUnpauser').value.trim()    || undefined,
-        meta_admin:   document.getElementById('fRoleMeta').value.trim()        || undefined,
+      roles:{
+        minter:document.getElementById('fRoleMinter').value.trim() || undefined,
+        burner:document.getElementById('fRoleBurner').value.trim() || undefined,
+        burn_blocked:document.getElementById('fRoleBurnBlocked').value.trim() || undefined,
+        pauser:document.getElementById('fRolePauser').value.trim() || undefined,
+        unpauser:document.getElementById('fRoleUnpauser').value.trim() || undefined,
+        meta_admin:document.getElementById('fRoleMeta').value.trim() || undefined,
       },
-      network: 'mainnet',
+      network:'mainnet',
     };
-    const uri     = document.getElementById('fUri').value.trim();
-    const rebase  = document.getElementById('fRebase').value.trim();
-    if (uri)    payload.contract_uri        = uri;
-    if (rebase) payload.rebase_multiplier   = rebase;
-
-    const resp = await fetch('/api/b20-skill', {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify(payload),
-    });
-
+    const uri    = document.getElementById('fUri').value.trim();
+    const rebase = document.getElementById('fRebase').value.trim();
+    if (uri)    payload.contract_uri      = uri;
+    if (rebase) payload.rebase_multiplier = rebase;
+    const resp = await fetch('/api/b20-skill', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
     if (!resp.ok) throw new Error('API error ' + resp.status);
     const data = await resp.json();
-
-    if (!data.ok) {
-      const msg = (data.errors || []).join(', ') || data.error || 'Validation failed';
-      setDeployBtn('error', '', msg);
-      deploying = false;
-      return;
-    }
-
+    if (!data.ok) { setDeployBtn('error', '', (data.errors||[]).join(', ')||data.error||'Validation failed'); deploying=false; return; }
     const tx = data.deployment?.tx;
-    if (!tx?.to || !tx?.data) {
-      setDeployBtn('error', '', 'No transaction returned from API');
-      deploying = false;
-      return;
-    }
-
-    // ── Step 2: Switch to Base Mainnet ────────────────────────────────────────
+    if (!tx?.to || !tx?.data) { setDeployBtn('error', '', 'No transaction returned from API'); deploying=false; return; }
     setDeployBtn('loading', '🔄 Switching network…', 'Please confirm network switch in wallet');
     try {
-      await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x2105' }] });
+      await window.ethereum.request({ method:'wallet_switchEthereumChain', params:[{ chainId:'0x2105' }] });
     } catch (swErr) {
       if (swErr.code === 4902) {
-        await window.ethereum.request({
-          method: 'wallet_addEthereumChain',
-          params: [{ chainId: '0x2105', chainName: 'Base', nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 }, rpcUrls: ['https://mainnet.base.org'], blockExplorerUrls: ['https://basescan.org'] }],
-        });
+        await window.ethereum.request({ method:'wallet_addEthereumChain', params:[{ chainId:'0x2105', chainName:'Base', nativeCurrency:{name:'Ether',symbol:'ETH',decimals:18}, rpcUrls:['https://mainnet.base.org'], blockExplorerUrls:['https://basescan.org'] }] });
       } else { throw swErr; }
     }
-
-    // Verify chain
-    const chainId = await window.ethereum.request({ method: 'eth_chainId' });
-    if (chainId !== '0x2105') {
-      setDeployBtn('error', '', 'Switch to Base network in your wallet, then try again');
-      deploying = false;
-      return;
-    }
-
-    // ── Step 3: Sign + broadcast transaction ──────────────────────────────────
+    const chainId = await window.ethereum.request({ method:'eth_chainId' });
+    if (chainId !== '0x2105') { setDeployBtn('error', '', 'Switch to Base network in your wallet, then try again'); deploying=false; return; }
     setDeployBtn('signing', '✍ Sign in wallet…', 'Confirm the transaction in your wallet');
-
     const rawVal = tx.value ?? '0x0';
-    const hexVal = rawVal === '0' || rawVal === '' ? '0x0'
-      : rawVal.startsWith('0x') ? rawVal
-      : '0x' + BigInt(rawVal).toString(16);
-
-    const txParams = {
-      from:  walletAddress,
-      to:    tx.to,
-      data:  tx.data,
-      value: hexVal,
-      gas:   '0x30d40', // 200000
-    };
-
-    const hash = await window.ethereum.request({ method: 'eth_sendTransaction', params: [txParams] });
+    const hexVal = rawVal === '0' || rawVal === '' ? '0x0' : rawVal.startsWith('0x') ? rawVal : '0x' + BigInt(rawVal).toString(16);
+    const hash = await window.ethereum.request({ method:'eth_sendTransaction', params:[{ from:walletAddress, to:tx.to, data:tx.data, value:hexVal, gas:'0x30d40' }] });
     deployedTxHash = hash;
-
-    // ── Step 4: Success ───────────────────────────────────────────────────────
     setDeployBtn('success', '✓ Submitted!', 'View on BaseScan →');
-
   } catch (e) {
-    const msg = e.code === 4001 ? 'Rejected — try again'
-      : e.code === -32603 ? 'Transaction error — check your ETH balance'
-      : (e.message || 'Unknown error').slice(0, 80);
+    const msg = e.code===4001 ? 'Rejected — try again' : e.code===-32603 ? 'Transaction error — check your ETH balance' : (e.message||'Unknown error').slice(0,80);
     setDeployBtn('error', '', msg);
-  } finally {
-    deploying = false;
-  }
+  } finally { deploying = false; }
 }
 
-// ── AI auto-fill ──────────────────────────────────────────────────────────────
 async function aiAutoFill() {
   const desc = (document.getElementById('aiDesc').value || '').trim();
   if (!desc) return;
@@ -968,23 +801,19 @@ async function aiAutoFill() {
   btn.disabled = true; btn.textContent = '⏳ Generating…';
   status.className = 'ai-status'; status.textContent = 'Asking AI…';
   try {
-    const r = await fetch(`${location.origin}/api/b20-ai`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ description: desc })
-    });
+    const r = await fetch(`${location.origin}/api/b20-ai`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ description:desc }) });
     if (!r.ok) { const e = await r.json().catch(()=>({error:'Error '+r.status})); throw new Error(e.error||'Error '+r.status); }
     const d = await r.json();
-    if (d.name)   document.getElementById('fName').value = d.name;
-    if (d.symbol) document.getElementById('fSym').value = d.symbol.toUpperCase().slice(0,11);
+    if (d.name)    document.getElementById('fName').value = d.name;
+    if (d.symbol)  document.getElementById('fSym').value  = d.symbol.toUpperCase().slice(0,11);
     if (d.variant) setVariant(d.variant);
-    if (d.decimals !== undefined) { document.getElementById('fDec').value = d.decimals; onDecChange(); }
+    if (d.decimals !== undefined) document.getElementById('fDec').value = d.decimals;
     if (d.uncapped !== undefined) { document.getElementById('fUncapped').checked = !!d.uncapped; onCapToggle(); }
-    if (d.supply && !d.uncapped) document.getElementById('fCap').value = Number(d.supply).toLocaleString();
-    if (d.allowlist !== undefined) document.getElementById('fAllow').checked = !!d.allowlist;
-    if (d.blocklist !== undefined) document.getElementById('fBlock').checked = !!d.blocklist;
-    if (d.freeze   !== undefined) document.getElementById('fFreeze').checked  = !!d.freeze;
-    onFormChange(); onPolicyChange();
+    if (d.supply && !d.uncapped)  document.getElementById('fCap').value = Number(d.supply).toLocaleString();
+    if (d.allowlist !== undefined) document.getElementById('fAllow').checked  = !!d.allowlist;
+    if (d.blocklist !== undefined) document.getElementById('fBlock').checked  = !!d.blocklist;
+    if (d.freeze   !== undefined)  document.getElementById('fFreeze').checked = !!d.freeze;
+    onPolicyChange();
     status.className = 'ai-status ok';
     status.textContent = '✓ Form filled — review and adjust before deploying';
   } catch(e) {
@@ -994,9 +823,7 @@ async function aiAutoFill() {
   btn.disabled = false; btn.textContent = '✦ Generate';
 }
 
-// ── new launched ──────────────────────────────────────────────────────────────
 let _launchedAll = [], _launchedFilter = 'all', _launchedLoaded = false;
-
 const TOKEN_COLORS = ['#F07830','#A78BFA','#22C55E','#3B82F6','#F59E0B','#EF4444','#06B6D4','#EC4899'];
 function tokenColor(sym) { let h=0; for(const c of (sym||'?')) h=(h*31+c.charCodeAt(0))&0xffff; return TOKEN_COLORS[h % TOKEN_COLORS.length]; }
 
@@ -1050,10 +877,7 @@ async function loadLaunched() {
   document.getElementById('launchedGrid').innerHTML = '<div class="launched-spin">Fetching from Base…</div>';
   try {
     const r = await fetch(`${location.origin}/api/b20-tokens`);
-    if (r.ok) {
-      const d = await r.json();
-      _launchedAll = d.tokens || [];
-    }
+    if (r.ok) { const d = await r.json(); _launchedAll = d.tokens || []; }
   } catch(_) {}
   _launchedLoaded = true;
   renderLaunchedGrid();
@@ -1069,58 +893,47 @@ function _timeAgo(ms) {
 }
 function _esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
-// ── wallet fallback — only shown if wallet.js fails to load ──────────────────
 async function walletFallback() {
   if (!window.ethereum) { alert('No wallet detected. Install MetaMask or open in a wallet browser.'); return; }
   try {
-    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+    const accounts = await window.ethereum.request({ method:'eth_requestAccounts' });
     if (accounts[0]) {
       const addr = accounts[0];
       const fb = document.getElementById('wallet-fallback');
-      if (fb) {
-        fb.innerHTML = `<span class="wf-dot" style="background:#4ADE80;box-shadow:0 0 5px rgba(74,222,128,.5)"></span>${addr.slice(0,6)}…${addr.slice(-4)}`;
-        fb.style.borderColor = 'rgba(74,222,128,.3)';
-        fb.style.color = '#f1f1f3';
-      }
-      window.dispatchEvent(new CustomEvent('orlix:wallet:connected', { detail: { address: addr } }));
+      if (fb) { fb.innerHTML = `<span class="wf-dot" style="background:#4ADE80;box-shadow:0 0 5px rgba(74,222,128,.5)"></span>${addr.slice(0,6)}…${addr.slice(-4)}`; fb.style.borderColor='rgba(74,222,128,.3)'; fb.style.color='#f1f1f3'; }
+      window.dispatchEvent(new CustomEvent('orlix:wallet:connected', { detail:{ address:addr } }));
     }
   } catch(e) { console.warn('wallet fallback:', e); }
 }
 
-// Show fallback only if wallet.js hasn't injected within 2.5s
 setTimeout(() => {
   const fb = document.getElementById('wallet-fallback');
   if (fb && !document.querySelector('.ow-btn')) fb.style.visibility = 'visible';
 }, 2500);
 
-// Hide fallback as soon as Privy widget appears
 new MutationObserver(() => {
   const fb = document.getElementById('wallet-fallback');
   if (fb && document.querySelector('.ow-btn')) fb.style.display = 'none';
-}).observe(document.getElementById('orlix-wallet') || document.body, { childList: true, subtree: true });
+}).observe(document.getElementById('orlix-wallet') || document.body, { childList:true, subtree:true });
 
-// ── wallet events (dispatched by /wallet-dist/wallet.js) ─────────────────────
 window.addEventListener('orlix:wallet:connected', (e) => {
   const addr = e.detail?.address;
   if (!addr) return;
   walletAddress = addr;
   const el = document.getElementById('fAdmin');
-  if (el && !el.value) { el.value = addr; onFormChange(); }
+  if (el && !el.value) { el.value = addr; }
   updateSubtitle();
 });
 window.addEventListener('orlix:wallet:disconnected', () => {
   walletAddress = null;
   const el = document.getElementById('fAdmin');
-  if (el) { el.value = ''; onFormChange(); }
+  if (el) el.value = '';
   updateSubtitle();
 });
 
-// ── init ──────────────────────────────────────────────────────────────────────
 (function init() {
   updateSubtitle();
   setInterval(updateSubtitle, 1000);
-  onFormChange();
-  // Stablecoin hides rebase row
   document.getElementById('rebaseRow').style.display = variant === 'asset' ? '' : 'none';
 })();
 </script>
