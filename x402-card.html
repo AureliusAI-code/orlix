@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1200">
+<title>Orlix AI × x402 Builder Code</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    width: 1200px;
+    height: 630px;
+    background: #09090B;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+
+  /* Background glow effects */
+  .glow-1 {
+    position: absolute;
+    width: 600px; height: 600px;
+    background: radial-gradient(circle, rgba(240,120,48,.18) 0%, transparent 70%);
+    top: -160px; left: -100px;
+    pointer-events: none;
+  }
+  .glow-2 {
+    position: absolute;
+    width: 500px; height: 500px;
+    background: radial-gradient(circle, rgba(59,130,246,.10) 0%, transparent 70%);
+    bottom: -180px; right: 80px;
+    pointer-events: none;
+  }
+  .glow-3 {
+    position: absolute;
+    width: 300px; height: 300px;
+    background: radial-gradient(circle, rgba(240,120,48,.08) 0%, transparent 70%);
+    bottom: 0; left: 50%;
+    pointer-events: none;
+  }
+
+  /* Grid lines */
+  .grid {
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,.03) 1px, transparent 1px);
+    background-size: 60px 60px;
+    pointer-events: none;
+  }
+
+  .card {
+    position: relative;
+    z-index: 10;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    padding: 0 80px;
+    gap: 80px;
+  }
+
+  /* Left section */
+  .left {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+  }
+
+  .badge-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .badge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(240,120,48,.12);
+    border: 1px solid rgba(240,120,48,.3);
+    border-radius: 100px;
+    padding: 6px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #F07830;
+    letter-spacing: .02em;
+  }
+
+  .badge-dot {
+    width: 6px; height: 6px;
+    background: #F07830;
+    border-radius: 50%;
+  }
+
+  .badge-base {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(59,130,246,.10);
+    border: 1px solid rgba(59,130,246,.25);
+    border-radius: 100px;
+    padding: 6px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #60a5fa;
+    letter-spacing: .02em;
+  }
+
+  .headline {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .headline-top {
+    font-size: 15px;
+    font-weight: 600;
+    color: #A1A1AA;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+  }
+
+  .headline-main {
+    font-size: 54px;
+    font-weight: 800;
+    color: #FAFAFA;
+    line-height: 1.08;
+    letter-spacing: -.02em;
+  }
+
+  .headline-main span {
+    color: #F07830;
+  }
+
+  .desc {
+    font-size: 17px;
+    color: #A1A1AA;
+    font-weight: 500;
+    line-height: 1.6;
+    max-width: 440px;
+  }
+
+  .endpoints {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .ep {
+    background: rgba(255,255,255,.05);
+    border: 1px solid rgba(255,255,255,.09);
+    border-radius: 8px;
+    padding: 5px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #71717A;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .ep-price {
+    color: #F07830;
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  /* Right section */
+  .right {
+    width: 360px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .code-card {
+    background: rgba(255,255,255,.04);
+    border: 1px solid rgba(255,255,255,.09);
+    border-radius: 16px;
+    padding: 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .code-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, #F07830, #fb923c, transparent);
+  }
+
+  .code-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #52525B;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+  }
+
+  .code-value {
+    font-size: 26px;
+    font-weight: 800;
+    color: #FAFAFA;
+    letter-spacing: .06em;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+  }
+
+  .code-value span {
+    color: #F07830;
+  }
+
+  .code-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .meta-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 13px;
+  }
+
+  .meta-key { color: #52525B; font-weight: 500; }
+  .meta-val { color: #A1A1AA; font-weight: 600; }
+  .meta-val.green { color: #4ade80; }
+
+  .divider {
+    height: 1px;
+    background: rgba(255,255,255,.06);
+  }
+
+  /* Chain badge */
+  .chain-card {
+    background: rgba(59,130,246,.06);
+    border: 1px solid rgba(59,130,246,.18);
+    border-radius: 12px;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .chain-icon {
+    width: 36px; height: 36px;
+    background: rgba(59,130,246,.15);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+  }
+
+  .chain-info { flex: 1; }
+  .chain-name { font-size: 14px; font-weight: 700; color: #FAFAFA; }
+  .chain-sub  { font-size: 12px; color: #60a5fa; font-weight: 500; margin-top: 2px; }
+
+  .chain-live {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    font-weight: 700;
+    color: #4ade80;
+  }
+
+  .live-dot {
+    width: 6px; height: 6px;
+    background: #4ade80;
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%,100% { opacity: 1; }
+    50% { opacity: .4; }
+  }
+
+  /* Logo / branding bottom */
+  .branding {
+    position: absolute;
+    bottom: 32px;
+    left: 80px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .logo-mark {
+    width: 28px; height: 28px;
+    background: #F07830;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .logo-mark svg { width: 16px; height: 16px; }
+
+  .brand-name {
+    font-size: 14px;
+    font-weight: 700;
+    color: #FAFAFA;
+    letter-spacing: .01em;
+  }
+
+  .brand-url {
+    font-size: 13px;
+    color: #3F3F46;
+    font-weight: 500;
+    margin-left: 4px;
+  }
+
+  /* x402 protocol label bottom right */
+  .protocol-label {
+    position: absolute;
+    bottom: 32px;
+    right: 80px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: #3F3F46;
+    font-weight: 600;
+  }
+
+  .protocol-label span {
+    color: #52525B;
+  }
+</style>
+</head>
+<body>
+
+<div class="glow-1"></div>
+<div class="glow-2"></div>
+<div class="glow-3"></div>
+<div class="grid"></div>
+
+<div class="card">
+  <!-- LEFT -->
+  <div class="left">
+    <div class="badge-row">
+      <div class="badge">
+        <div class="badge-dot"></div>
+        Orlix AI
+      </div>
+      <div class="badge-base">
+        x402 Protocol
+      </div>
+    </div>
+
+    <div class="headline">
+      <div class="headline-top">Builder Code Registered</div>
+      <div class="headline-main">Pay-Per-Use<br><span>AI APIs</span><br>on Base</div>
+    </div>
+
+    <div class="desc">
+      6 production-ready AI endpoints with onchain attribution via x402. USDC payments on Base mainnet.
+    </div>
+
+    <div class="endpoints">
+      <div class="ep">analyze <span class="ep-price">$0.05</span></div>
+      <div class="ep">chat <span class="ep-price">$0.002</span></div>
+      <div class="ep">song <span class="ep-price">$0.05</span></div>
+      <div class="ep">market <span class="ep-price">$0.01</span></div>
+      <div class="ep">wallet <span class="ep-price">$0.03</span></div>
+      <div class="ep">b20 <span class="ep-price">$0.01</span></div>
+    </div>
+  </div>
+
+  <!-- RIGHT -->
+  <div class="right">
+    <div class="code-card">
+      <div>
+        <div class="code-label">Builder Code</div>
+        <div style="margin-top:8px;">
+          <div class="code-value"><span>bc_</span>cxvityc7</div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="code-meta">
+        <div class="meta-row">
+          <span class="meta-key">Provider</span>
+          <span class="meta-val">Orlix AI</span>
+        </div>
+        <div class="meta-row">
+          <span class="meta-key">Network</span>
+          <span class="meta-val">Base Mainnet</span>
+        </div>
+        <div class="meta-row">
+          <span class="meta-key">Currency</span>
+          <span class="meta-val">USDC</span>
+        </div>
+        <div class="meta-row">
+          <span class="meta-key">Attribution</span>
+          <span class="meta-val green">Onchain ✓</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="chain-card">
+      <div class="chain-icon">⬟</div>
+      <div class="chain-info">
+        <div class="chain-name">Base</div>
+        <div class="chain-sub">Coinbase L2 · EVM</div>
+      </div>
+      <div class="chain-live">
+        <div class="live-dot"></div>
+        LIVE
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Branding bottom left -->
+<div class="branding">
+  <div class="logo-mark">
+    <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="8" cy="8" r="3" fill="white"/>
+      <circle cx="8" cy="8" r="6" stroke="white" stroke-width="1.5" fill="none"/>
+    </svg>
+  </div>
+  <span class="brand-name">Orlix AI</span>
+  <span class="brand-url">orlixai.xyz</span>
+</div>
+
+<!-- Protocol bottom right -->
+<div class="protocol-label">
+  Powered by <span style="color:#A1A1AA;margin-left:5px;">x402 Protocol</span>
+</div>
+
+</body>
+</html>
