@@ -40,7 +40,7 @@ button,input,select{font-family:var(--font)}
 .b20-nav-ico{width:20px;height:20px;border-radius:4px;background:#fff;padding:2px;overflow:hidden;flex-shrink:0}
 .b20-nav-ico img{width:100%;height:100%;object-fit:contain}
 .nav-badge-label{font-size:.82rem;font-weight:700;color:var(--t1)}
-.beta-tag{font-size:.58rem;font-weight:700;color:var(--orange);background:var(--orange-d);border:1px solid rgba(240,120,48,.25);border-radius:4px;padding:1px 6px;letter-spacing:.06em}
+.live-tag{font-size:.58rem;font-weight:700;color:#4ade80;background:rgba(74,222,128,.08);border:1px solid rgba(74,222,128,.25);border-radius:4px;padding:1px 6px;letter-spacing:.06em}
 .nav-right{display:flex;align-items:center;gap:7px;flex-shrink:0}
 .chain-pill{
   display:flex;align-items:center;gap:5px;
@@ -126,7 +126,7 @@ button,input,select{font-family:var(--font)}
 .sb-link.active .sb-ico,.sb-link:hover .sb-ico{opacity:1}
 
 /* ── CONTENT ── */
-.content{padding:28px 26px 80px;min-width:0;overflow-x:hidden}
+.content{padding:28px 26px 32px;min-width:0;overflow-x:hidden}
 .pg-label{font-size:.6rem;font-weight:700;color:var(--orange);letter-spacing:.12em;text-transform:uppercase;margin-bottom:5px}
 .pg-title{font-size:1.5rem;font-weight:800;color:var(--t1);letter-spacing:-.025em;margin-bottom:5px;line-height:1.2}
 .pg-sub{font-size:.79rem;color:var(--t3);margin-bottom:22px;line-height:1.55}
@@ -423,16 +423,13 @@ input[type=range]:disabled{opacity:.4;cursor:not-allowed}
 <!-- NAV -->
 <nav class="nav">
   <div class="nav-left">
-    <a class="nav-logo" href="/"><img src="/orlix-logo.jpeg" alt="Orlix"><span class="nav-logo-text">Orlix AI</span></a>
-    <div class="nav-div"></div>
     <div class="nav-badge">
       <div class="b20-nav-ico"><img src="/b20-logo.png" alt="B20"></div>
       <span class="nav-badge-label" style="font-size:.82rem;font-weight:700;color:var(--t1)">B20 Studio</span>
-      <span class="beta-tag">BETA</span>
+      <span class="live-tag">LIVE</span>
     </div>
   </div>
   <div class="nav-right">
-    <div class="chain-pill"><div class="chain-dot"></div>Base</div>
     <div id="orlix-wallet" style="display:flex;align-items:center">
       <button id="wallet-fallback" onclick="walletFallback()">
         <span class="wf-dot"></span>Connect Wallet
