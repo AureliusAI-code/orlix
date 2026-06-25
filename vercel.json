@@ -22,15 +22,18 @@
     }
   ],
   "functions": {
-    "api/chat.js":      { "maxDuration": 60 },
-    "api/gallery.js":   { "maxDuration": 10 },
-    "api/analyze.js":   { "maxDuration": 60 },
-    "api/music.js":     { "maxDuration": 60 },
-    "api/b20.js":       { "maxDuration": 15 },
+    "api/chat.js":         { "maxDuration": 60 },
+    "api/gallery.js":      { "maxDuration": 10 },
+    "api/analyze.js":      { "maxDuration": 60 },
+    "api/music.js":        { "maxDuration": 60 },
+    "api/b20.js":          { "maxDuration": 15 },
     "api/b20-skill.js":    { "maxDuration": 30 },
     "api/token-search.js": { "maxDuration": 15 },
     "api/b20-ai.js":       { "maxDuration": 15 },
-    "api/b20-tokens.js":   { "maxDuration": 15 }
+    "api/b20-tokens.js":   { "maxDuration": 15 },
+    "api/x402-analyze.js": { "maxDuration": 60 },
+    "api/x402-chat.js":    { "maxDuration": 60 },
+    "api/x402-song.js":    { "maxDuration": 60 }
   },
   "redirects": [
     { "source": "/app.html",          "destination": "/app",          "permanent": true },

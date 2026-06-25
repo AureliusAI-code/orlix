@@ -1,6 +1,13 @@
 {
   "network": "base",
   "currency": "USDC",
+  "builderCode": "bc_cxvityc7",
+  "provider": "Orlix AI — https://orlixai.xyz",
+  "endpoints": {
+    "analyze": "https://orlixai.xyz/api/x402-analyze",
+    "chat":    "https://orlixai.xyz/api/x402-chat",
+    "song":    "https://orlixai.xyz/api/x402-song"
+  },
   "services": {
     "analyze": {
       "description": "AI-powered security analysis for any Base token. Returns red flags, green flags, liquidity risk, and SAFE/CAUTION/HIGH RISK/SCAM LIKELY verdict. $ORLIX holders (pass ?wallet=) get deeper analysis with price action + whale risk sections.",
