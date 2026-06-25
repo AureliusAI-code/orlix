@@ -1,7 +1,7 @@
 api/ping.js
-api/auth.js
 api/bankr-tokens.js
 api/music.js
+api/telegram.js
 api/x402-analyze.js
 api/x402-chat.js
 api/x402-song.js

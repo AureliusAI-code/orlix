@@ -1,12 +1,8 @@
 import { ConnectButton } from '@rainbow-me/rainbowkit'
 import { useWalletSession } from './hooks/useWalletSession'
 
-// WalletWidget renders into any #orlix-wallet div on the page.
-// Uses RainbowKit's ConnectButton.Custom so we control the styling
-// while RainbowKit handles wallet detection, modals, and chain switching.
 export function WalletWidget() {
-  // Sync wagmi state → localStorage + dispatch DOM events
-  useWalletSession()
+  const { signing } = useWalletSession()
 
   return (
     <ConnectButton.Custom>
@@ -19,7 +15,6 @@ export function WalletWidget() {
         authenticationStatus,
         mounted,
       }) => {
-        // Render nothing until hydrated to avoid layout flash
         if (!mounted) {
           return (
             <div
@@ -29,19 +24,19 @@ export function WalletWidget() {
           )
         }
 
-        const authing = authenticationStatus === 'loading'
+        const authing   = authenticationStatus === 'loading'
         const connected =
           !!account &&
           !!chain &&
           (!authenticationStatus || authenticationStatus === 'authenticated')
 
-        // ── Not connected ─────────────────────────────────────────────────────
+        // ── Not connected ────────────────────────────────────────────────────
         if (!connected) {
-          if (authing) {
+          if (authing || signing) {
             return (
               <button className="ow-btn ow-btn-pending" disabled type="button">
                 <div className="ow-dot ow-dot-pending" />
-                Connecting…
+                {signing ? 'Signing…' : 'Connecting…'}
               </button>
             )
           }
@@ -59,7 +54,7 @@ export function WalletWidget() {
           )
         }
 
-        // ── Wrong network ──────────────────────────────────────────────────────
+        // ── Wrong network ────────────────────────────────────────────────────
         if (chain.unsupported) {
           return (
             <button
@@ -73,7 +68,7 @@ export function WalletWidget() {
           )
         }
 
-        // ── Connected ──────────────────────────────────────────────────────────
+        // ── Connected (may still be signing) ────────────────────────────────
         return (
           <div className="ow-wrap">
             {/* Chain pill */}
@@ -84,27 +79,30 @@ export function WalletWidget() {
               aria-label={`Switch network (currently ${chain.name})`}
             >
               {chain.hasIcon && chain.iconUrl && (
-                <img
-                  src={chain.iconUrl}
-                  alt={chain.name}
-                  className="ow-chain-ico"
-                />
+                <img src={chain.iconUrl} alt={chain.name} className="ow-chain-ico" />
               )}
               {chain.name}
             </button>
 
-            {/* Account pill */}
+            {/* Account pill — shows signing indicator while SIWE is in progress */}
             <button
-              className="ow-btn ow-btn-connected"
-              onClick={openAccountModal}
+              className={`ow-btn ow-btn-connected${signing ? ' ow-btn-pending' : ''}`}
+              onClick={signing ? undefined : openAccountModal}
+              disabled={signing}
               type="button"
-              aria-label="Open account details"
+              aria-label={signing ? 'Signing in…' : 'Open account details'}
             >
-              <div className="ow-dot ow-dot-connected" />
-              {account.displayBalance && (
-                <span className="ow-balance">{account.displayBalance} · </span>
+              <div className={`ow-dot${signing ? ' ow-dot-pending' : ' ow-dot-connected'}`} />
+              {signing ? (
+                <span className="ow-addr">Signing…</span>
+              ) : (
+                <>
+                  {account.displayBalance && (
+                    <span className="ow-balance">{account.displayBalance} · </span>
+                  )}
+                  <span className="ow-addr">{account.displayName}</span>
+                </>
               )}
-              <span className="ow-addr">{account.displayName}</span>
             </button>
           </div>
         )
