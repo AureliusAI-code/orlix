@@ -40,7 +40,7 @@ a{text-decoration:none}
 /* ── LAYOUT ── */
 .layout{
   display:grid;
-  grid-template-columns:200px 1fr 288px;
+  grid-template-columns:200px 1fr;
   min-height:100vh;
   padding-top:56px;
 }
@@ -331,7 +331,6 @@ select.inp option{background:var(--s2);color:var(--t1)}
 /* ── RESPONSIVE ── */
 @media(max-width:1100px){
   .layout{grid-template-columns:190px 1fr}
-  .right-panel{display:none}
 }
 @media(max-width:720px){
   .layout{grid-template-columns:1fr;padding-top:56px}
@@ -622,32 +621,6 @@ select.inp option{background:var(--s2);color:var(--t1)}
 
 </main>
 
-<!-- RIGHT PANEL -->
-<aside class="right-panel">
-  <div class="rp-hdr"></div>
-
-  <div class="rp-card">
-    <div class="rp-tok-top">
-      <div class="rp-tok-ico">🪙</div>
-      <div>
-        <div class="rp-tok-name" id="rpName">My B20 Token</div>
-        <div class="rp-tok-sym" id="rpSym">TOKEN</div>
-      </div>
-    </div>
-    <div class="stat-row"><div class="stat-lbl">Supply Cap</div><div class="stat-val" id="rpCap">—</div></div>
-    <div class="stat-row"><div class="stat-lbl">Decimals</div><div class="stat-val" id="rpDec">18</div></div>
-    <div class="stat-row"><div class="stat-lbl">Variant</div><div class="stat-val" id="rpVariant">Asset</div></div>
-  </div>
-
-  <div class="rp-card">
-    <div style="font-size:.72rem;color:var(--t3);line-height:1.6;margin-bottom:10px">
-      Mint, Burn, and Pause will be available here after your token is deployed on Base.
-    </div>
-    <button class="act-btn" style="width:100%" onclick="showTab('manage',document.getElementById('sbManage'))">Manage Roles</button>
-  </div>
-
-</aside>
-
 </div>
 
 <!-- MOBILE BOTTOM NAV -->
@@ -705,14 +678,10 @@ function setVariant(v) {
   if (v === 'stablecoin') { dec.value = '6'; dec.disabled = true; }
   else { dec.disabled = false; }
   document.getElementById('rebaseRow').style.display = v === 'asset' ? '' : 'none';
-  document.getElementById('rpVariant').textContent = v === 'asset' ? 'Asset' : 'Stablecoin';
   onFormChange();
 }
 
-// ── decimals ──────────────────────────────────────────────────────────────────
-function onDecChange() {
-  document.getElementById('rpDec').textContent = document.getElementById('fDec').value;
-}
+function onDecChange() { /* no-op */ }
 
 // ── supply cap ────────────────────────────────────────────────────────────────
 function onCapToggle() {
@@ -721,19 +690,10 @@ function onCapToggle() {
   cap.disabled = unc;
   if (unc) { cap.value = ''; cap.placeholder = 'Uncapped'; }
   else { cap.placeholder = 'e.g. 10,000,000'; }
-  const display = unc ? '∞' : (cap.value || '—');
-  document.getElementById('rpCap').textContent = display;
+  // update placeholder only
 }
 
-function onFormChange() {
-  const name = document.getElementById('fName').value || 'Token';
-  const sym  = document.getElementById('fSym').value  || 'TKN';
-  const cap  = document.getElementById('fCap').value  || '0';
-  document.getElementById('rpName').textContent = name || 'My B20 Token';
-  document.getElementById('rpSym').textContent  = (sym || 'TOKEN').toUpperCase();
-  const capVal = document.getElementById('fUncapped').checked ? '∞' : (cap || '—');
-  document.getElementById('rpCap').textContent = capVal;
-}
+function onFormChange() { /* triggers reactivity if needed */ }
 
 // ── policies ──────────────────────────────────────────────────────────────────
 function onPolicyChange() {
