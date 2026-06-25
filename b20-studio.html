@@ -134,24 +134,12 @@ a{text-decoration:none}
 .inp::placeholder{color:var(--t3)}
 .inp:disabled{opacity:.35;cursor:not-allowed}
 
-/* ── RANGE ── */
-.range-row{display:flex;align-items:center;gap:10px}
-.range-lim{font-size:.7rem;color:var(--t3)}
-input[type=range]{
-  flex:1;-webkit-appearance:none;appearance:none;height:3px;border-radius:2px;
-  background:var(--s3);outline:none;cursor:pointer;
+/* ── SELECT ── */
+select.inp{cursor:pointer;appearance:none;-webkit-appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238A8A96' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 12px center;padding-right:32px;
 }
-input[type=range]::-webkit-slider-thumb{
-  -webkit-appearance:none;width:15px;height:15px;border-radius:50%;
-  background:var(--orange);cursor:pointer;box-shadow:0 0 0 3px rgba(240,120,48,.15);
-}
-input[type=range]::-moz-range-thumb{width:15px;height:15px;border-radius:50%;border:none;background:var(--orange);cursor:pointer}
-input[type=range]:disabled{opacity:.35;cursor:not-allowed}
-.range-val{
-  font-family:var(--mono);font-size:.74rem;color:var(--orange);
-  background:rgba(240,120,48,.08);border:1px solid rgba(240,120,48,.18);
-  border-radius:5px;padding:3px 10px;min-width:36px;text-align:center;
-}
+select.inp option{background:var(--s2);color:var(--t1)}
 
 /* ── TOGGLE ── */
 .toggle{position:relative;display:inline-flex;cursor:pointer;flex-shrink:0;user-select:none}
@@ -369,7 +357,7 @@ input[type=range]:disabled{opacity:.35;cursor:not-allowed}
   </div>
   <div class="nav-right">
     <div id="orlix-wallet" style="display:flex;align-items:center">
-      <button id="wallet-fallback" onclick="walletFallback()">
+      <button id="wallet-fallback" onclick="walletFallback()" style="visibility:hidden">
         <span class="wf-dot"></span>Connect Wallet
       </button>
     </div>
@@ -453,24 +441,23 @@ input[type=range]:disabled{opacity:.35;cursor:not-allowed}
         </div>
       </div>
 
-      <!-- Decimals -->
-      <div class="field" style="margin-bottom:14px">
-        <label class="field-label">Decimals</label>
-        <div class="range-row">
-          <span class="range-lim">6</span>
-          <input type="range" id="fDec" min="6" max="18" value="18" oninput="onDecChange()">
-          <span class="range-lim">18</span>
-          <div class="range-val" id="decVal">18</div>
-        </div>
-      </div>
-
-      <!-- Supply Cap + Initial Admin -->
+      <!-- Decimals + Supply Cap -->
       <div class="field-row">
+        <div class="field">
+          <label class="field-label">Decimals</label>
+          <select class="inp" id="fDec" onchange="onDecChange()">
+            <option value="6">6</option>
+            <option value="8">8</option>
+            <option value="10">10</option>
+            <option value="12">12</option>
+            <option value="18" selected>18</option>
+          </select>
+        </div>
         <div class="field">
           <div class="cap-label-row">
             <label class="field-label" style="margin-bottom:0">Supply Cap</label>
             <div class="cap-toggle-wrap">
-              <span class="cap-toggle-lbl">Uncapped</span>
+              <span class="cap-toggle-lbl">No cap</span>
               <label class="toggle">
                 <input type="checkbox" id="fUncapped" onchange="onCapToggle()">
                 <div class="tg-track"></div>
@@ -480,14 +467,97 @@ input[type=range]:disabled{opacity:.35;cursor:not-allowed}
           </div>
           <input class="inp" id="fCap" type="text" placeholder="e.g. 10,000,000" oninput="onFormChange()">
         </div>
+      </div>
+
+      <!-- Initial Admin -->
+      <div class="field">
+        <label class="field-label">Initial Admin</label>
+        <input class="inp" id="fAdmin" type="text" placeholder="0x… (auto-fills on connect)" style="font-size:.72rem" oninput="onFormChange()" autocomplete="off">
+      </div>
+
+      <!-- Rebase Multiplier (Asset only) -->
+      <div class="field" id="rebaseRow">
+        <label class="field-label">Rebase Multiplier <span class="sub">· optional</span></label>
+        <input class="inp" id="fRebase" type="text" placeholder="(none)" autocomplete="off">
+      </div>
+
+      <!-- Contract URI -->
+      <div class="field">
+        <label class="field-label">Contract URI <span class="sub">· metadata</span></label>
+        <input class="inp" id="fUri" type="text" placeholder="ipfs://bafkrei… or https://…" autocomplete="off">
+      </div>
+
+      <!-- Compliance -->
+      <div class="sec-label" style="margin-top:8px">Compliance Policy</div>
+      <p style="font-size:.72rem;color:var(--t3);margin-bottom:12px;line-height:1.55">Turn on the rails you need. All policy flags can be edited after deploy.</p>
+      <div class="policy-row" id="polAllow">
+        <div>
+          <div class="p-name">Allowlist enabled</div>
+          <div class="p-desc">Only addresses on the allowlist can hold or receive the token.</div>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="fAllow" onchange="onPolicyChange()">
+          <div class="tg-track"></div><div class="tg-thumb"></div>
+        </label>
+      </div>
+      <div class="policy-row" id="polBlock">
+        <div>
+          <div class="p-name">Blocklist enabled</div>
+          <div class="p-desc">Addresses on the blocklist cannot send or receive the token.</div>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="fBlock" onchange="onPolicyChange()">
+          <div class="tg-track"></div><div class="tg-thumb"></div>
+        </label>
+      </div>
+      <div class="policy-row" id="polFreeze">
+        <div>
+          <div class="p-name">Freeze-and-seize</div>
+          <div class="p-desc">Lets the admin freeze an address's balance and move it elsewhere. Powerful — use only when compliance requires it.</div>
+          <div class="p-warn" id="freezeWarn">Admin can freeze accounts and seize token balances at any time.</div>
+        </div>
+        <label class="toggle danger">
+          <input type="checkbox" id="fFreeze" onchange="onPolicyChange()">
+          <div class="tg-track"></div><div class="tg-thumb"></div>
+        </label>
+      </div>
+
+      <!-- Roles -->
+      <div class="sec-label" style="margin-top:22px">Roles</div>
+      <p style="font-size:.72rem;color:var(--t3);margin-bottom:12px;line-height:1.55">Optional. Leave blank to grant the role to the initial admin only.</p>
+      <div class="field-row">
         <div class="field">
-          <label class="field-label">Initial Admin</label>
-          <input class="inp" id="fAdmin" type="text" placeholder="0x… (auto-fills on connect)" style="font-size:.68rem" oninput="onFormChange()">
+          <label class="field-label">Minter</label>
+          <input class="inp" id="fRoleMinter" type="text" placeholder="0x… (defaults to admin)" style="font-size:.68rem" autocomplete="off">
+        </div>
+        <div class="field">
+          <label class="field-label">Burner</label>
+          <input class="inp" id="fRoleBurner" type="text" placeholder="0x… (defaults to admin)" style="font-size:.68rem" autocomplete="off">
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label class="field-label">Burn-blocked</label>
+          <input class="inp" id="fRoleBurnBlocked" type="text" placeholder="0x… (defaults to admin)" style="font-size:.68rem" autocomplete="off">
+        </div>
+        <div class="field">
+          <label class="field-label">Pauser</label>
+          <input class="inp" id="fRolePauser" type="text" placeholder="0x… (defaults to admin)" style="font-size:.68rem" autocomplete="off">
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label class="field-label">Unpauser</label>
+          <input class="inp" id="fRoleUnpauser" type="text" placeholder="0x… (defaults to admin)" style="font-size:.68rem" autocomplete="off">
+        </div>
+        <div class="field">
+          <label class="field-label">Metadata Admin</label>
+          <input class="inp" id="fRoleMeta" type="text" placeholder="0x… (defaults to admin)" style="font-size:.68rem" autocomplete="off">
         </div>
       </div>
 
       <!-- Admin-less -->
-      <div class="adminless-row">
+      <div class="adminless-row" style="margin-top:8px">
         <label class="toggle danger" style="margin-top:2px">
           <input type="checkbox" id="fAdminless">
           <div class="tg-track"></div>
@@ -497,46 +567,6 @@ input[type=range]:disabled{opacity:.35;cursor:not-allowed}
           <div class="al-name">Launch admin-less</div>
           <div class="al-desc">Irreversible — no one can mint, pause, or change policy after deploy.</div>
         </div>
-      </div>
-
-      <!-- Contract URI -->
-      <div class="field">
-        <label class="field-label">Contract URI <span class="sub">· metadata</span></label>
-        <input class="inp" id="fUri" type="text" placeholder="ipfs://bafkrei…_metadata.json" autocomplete="off">
-      </div>
-
-      <!-- Compliance -->
-      <div class="sec-label" style="margin-top:6px">Compliance Policy</div>
-      <div class="policy-row" id="polAllow">
-        <div>
-          <div class="p-name">Allowlist</div>
-          <div class="p-desc">Only approved addresses can hold the token.</div>
-        </div>
-        <label class="toggle">
-          <input type="checkbox" id="fAllow" onchange="onPolicyChange()">
-          <div class="tg-track"></div><div class="tg-thumb"></div>
-        </label>
-      </div>
-      <div class="policy-row" id="polBlock">
-        <div>
-          <div class="p-name">Blocklist</div>
-          <div class="p-desc">Specific addresses can be barred from transfers.</div>
-        </div>
-        <label class="toggle">
-          <input type="checkbox" id="fBlock" onchange="onPolicyChange()">
-          <div class="tg-track"></div><div class="tg-thumb"></div>
-        </label>
-      </div>
-      <div class="policy-row" id="polFreeze">
-        <div>
-          <div class="p-name">⚠ Freeze &amp; Seize</div>
-          <div class="p-desc">Grants admin power to freeze and seize holder balances.</div>
-          <div class="p-warn" id="freezeWarn">Admin can freeze accounts and seize token balances at any time.</div>
-        </div>
-        <label class="toggle danger">
-          <input type="checkbox" id="fFreeze" onchange="onPolicyChange()">
-          <div class="tg-track"></div><div class="tg-thumb"></div>
-        </label>
       </div>
 
       <!-- Deploy -->
@@ -671,19 +701,17 @@ function setVariant(v) {
   variant = v;
   document.getElementById('varAsset').classList.toggle('sel', v === 'asset');
   document.getElementById('varStable').classList.toggle('sel', v === 'stablecoin');
-  const r = document.getElementById('fDec');
-  const dv = document.getElementById('decVal');
-  if (v === 'stablecoin') { r.value = 6; r.disabled = true; dv.textContent = '6'; }
-  else { r.disabled = false; dv.textContent = r.value; }
+  const dec = document.getElementById('fDec');
+  if (v === 'stablecoin') { dec.value = '6'; dec.disabled = true; }
+  else { dec.disabled = false; }
+  document.getElementById('rebaseRow').style.display = v === 'asset' ? '' : 'none';
   document.getElementById('rpVariant').textContent = v === 'asset' ? 'Asset' : 'Stablecoin';
   onFormChange();
 }
 
 // ── decimals ──────────────────────────────────────────────────────────────────
 function onDecChange() {
-  const v = document.getElementById('fDec').value;
-  document.getElementById('decVal').textContent = v;
-  document.getElementById('rpDec').textContent = v;
+  document.getElementById('rpDec').textContent = document.getElementById('fDec').value;
 }
 
 // ── supply cap ────────────────────────────────────────────────────────────────
@@ -840,10 +868,20 @@ async function onDeploy() {
         blocklist: document.getElementById('fBlock').checked,
         freeze:    document.getElementById('fFreeze').checked,
       },
+      roles: {
+        minter:       document.getElementById('fRoleMinter').value.trim()      || undefined,
+        burner:       document.getElementById('fRoleBurner').value.trim()      || undefined,
+        burn_blocked: document.getElementById('fRoleBurnBlocked').value.trim() || undefined,
+        pauser:       document.getElementById('fRolePauser').value.trim()      || undefined,
+        unpauser:     document.getElementById('fRoleUnpauser').value.trim()    || undefined,
+        meta_admin:   document.getElementById('fRoleMeta').value.trim()        || undefined,
+      },
       network: 'mainnet',
     };
-    const uri = document.getElementById('fUri').value.trim();
-    if (uri) payload.contract_uri = uri;
+    const uri     = document.getElementById('fUri').value.trim();
+    const rebase  = document.getElementById('fRebase').value.trim();
+    if (uri)    payload.contract_uri        = uri;
+    if (rebase) payload.rebase_multiplier   = rebase;
 
     const resp = await fetch('/api/b20-skill', {
       method:  'POST',
@@ -1031,20 +1069,31 @@ function _timeAgo(ms) {
 }
 function _esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
-// ── wallet fallback (instant — works before wallet.js loads) ─────────────────
+// ── wallet fallback — only shown if wallet.js fails to load ──────────────────
 async function walletFallback() {
-  if (!window.ethereum) { alert('Tidak ada wallet terdeteksi. Install MetaMask atau buka lewat browser wallet.'); return; }
+  if (!window.ethereum) { alert('No wallet detected. Install MetaMask or open in a wallet browser.'); return; }
   try {
     const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
     if (accounts[0]) {
       const addr = accounts[0];
       const fb = document.getElementById('wallet-fallback');
-      if (fb) { fb.innerHTML = `<span class="wf-dot" style="background:#4ADE80;box-shadow:0 0 5px rgba(74,222,128,.5)"></span>${addr.slice(0,6)}…${addr.slice(-4)}`; fb.style.borderColor='rgba(74,222,128,.3)'; fb.style.color='#f1f1f3'; }
+      if (fb) {
+        fb.innerHTML = `<span class="wf-dot" style="background:#4ADE80;box-shadow:0 0 5px rgba(74,222,128,.5)"></span>${addr.slice(0,6)}…${addr.slice(-4)}`;
+        fb.style.borderColor = 'rgba(74,222,128,.3)';
+        fb.style.color = '#f1f1f3';
+      }
       window.dispatchEvent(new CustomEvent('orlix:wallet:connected', { detail: { address: addr } }));
     }
   } catch(e) { console.warn('wallet fallback:', e); }
 }
-// Hide fallback once RainbowKit injects its own button
+
+// Show fallback only if wallet.js hasn't injected within 2.5s
+setTimeout(() => {
+  const fb = document.getElementById('wallet-fallback');
+  if (fb && !document.querySelector('.ow-btn')) fb.style.visibility = 'visible';
+}, 2500);
+
+// Hide fallback as soon as Privy widget appears
 new MutationObserver(() => {
   const fb = document.getElementById('wallet-fallback');
   if (fb && document.querySelector('.ow-btn')) fb.style.display = 'none';
@@ -1071,6 +1120,8 @@ window.addEventListener('orlix:wallet:disconnected', () => {
   updateSubtitle();
   setInterval(updateSubtitle, 1000);
   onFormChange();
+  // Stablecoin hides rebase row
+  document.getElementById('rebaseRow').style.display = variant === 'asset' ? '' : 'none';
 })();
 </script>
 
