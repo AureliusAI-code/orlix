@@ -665,10 +665,7 @@ input[type=range]:disabled{opacity:.4;cursor:not-allowed}
 
 <!-- RIGHT PANEL -->
 <aside class="right-panel">
-  <div class="rp-hdr">
-    <div class="rp-title">Preview</div>
-    <div class="rp-badge">● Demo</div>
-  </div>
+  <div class="rp-hdr"></div>
 
   <div class="rp-card">
     <div class="rp-tok-top">
@@ -705,12 +702,9 @@ input[type=range]:disabled{opacity:.4;cursor:not-allowed}
 
   <div class="rp-card">
     <div class="stat-row"><div class="stat-lbl">Roles</div><div class="stat-val">1 admin · 0 minters</div></div>
-    <div style="margin-top:8px"><button class="act-btn" style="width:100%">Manage Roles</button></div>
+    <div style="margin-top:8px"><button class="act-btn" style="width:100%" onclick="showTab('manage',document.getElementById('sbManage'))">Manage Roles</button></div>
   </div>
 
-  <div class="rp-note">
-    <strong>Demo preview</strong> — shows what your deployed token's manage UI looks like. Actual deployment goes live when Base Beryl activates.
-  </div>
 </aside>
 
 </div>
@@ -739,17 +733,7 @@ input[type=range]:disabled{opacity:.4;cursor:not-allowed}
   </a>
 </nav>
 
-<!-- FEATURE GATED TOAST -->
-<div class="feat-gate" id="featGate">
-  <div class="fg-ico">⚠</div>
-  <div class="fg-body">
-    <div class="fg-title">Feature gated</div>
-    <div class="fg-desc">B20 deploys are live once Base activates the standard.</div>
-  </div>
-  <button class="fg-x" onclick="dismissFeatGate()" aria-label="Dismiss">×</button>
-</div>
-
-<!-- DEPLOY MODAL (pre-Beryl countdown) -->
+<!-- DEPLOY MODAL -->
 <div class="modal-ov" id="deployModal" onclick="if(event.target===this)closeModal()">
   <div class="modal-box">
     <div class="modal-ico">⏳</div>
@@ -1148,14 +1132,6 @@ function _timeAgo(ms) {
 }
 function _esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
-// ── feature gated toast ───────────────────────────────────────────────────────
-function dismissFeatGate() {
-  const el = document.getElementById('featGate');
-  el.style.opacity = '0'; el.style.transform = 'translateY(10px)';
-  setTimeout(() => el.style.display = 'none', 300);
-  try { sessionStorage.setItem('fg_dismissed','1'); } catch {}
-}
-
 // ── wallet fallback (instant — works before wallet.js loads) ─────────────────
 async function walletFallback() {
   if (!window.ethereum) { alert('Tidak ada wallet terdeteksi. Install MetaMask atau buka lewat browser wallet.'); return; }
@@ -1196,9 +1172,6 @@ window.addEventListener('orlix:wallet:disconnected', () => {
   updateSubtitle();
   setInterval(updateSubtitle, 1000);
   onFormChange();
-  try {
-    if (sessionStorage.getItem('fg_dismissed')) document.getElementById('featGate').style.display = 'none';
-  } catch {}
 })();
 </script>
 
