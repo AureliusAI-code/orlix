@@ -563,7 +563,7 @@ select.inp option{background:var(--s2);color:var(--t1)}
       <button class="lchip active" id="lchipAll"    onclick="filterLaunched('all',this)">All</button>
       <button class="lchip"        id="lchipAsset"  onclick="filterLaunched('asset',this)">Asset</button>
       <button class="lchip"        id="lchipStable" onclick="filterLaunched('stablecoin',this)">Stablecoin</button>
-      <button onclick="loadLaunched()" style="margin-left:auto;background:none;border:1px solid var(--b1);border-radius:7px;color:var(--t3);padding:4px 11px;font-size:.72rem;cursor:pointer;font-family:var(--font);transition:.15s" onmouseover="this.style.color='var(--t1)'" onmouseout="this.style.color='var(--t3)'">↻ Refresh</button>
+      <button onclick="loadLaunched()" style="margin-left:auto;background:none;border:1px solid var(--b1);border-radius:7px;color:var(--t3);padding:4px 11px;font-size:.72rem;cursor:pointer;font-family:var(--font);transition:.15s" onmouseover="this.style.color='var(--t1)'" onmouseout="this.style.color='var(--t3)'">&#x21BB; Refresh</button>
     </div>
     <div id="launchedGrid" class="launched-grid">
       <div class="launched-spin">Loading…</div>
@@ -614,7 +614,7 @@ select.inp option{background:var(--s2);color:var(--t1)}
 </div>
 
 <script>
-const MAINNET_TS = new Date('2026-06-25T00:00:00Z').getTime();
+let b20Activated = false; // true once Activation Registry confirms B20 is live
 let variant = 'asset';
 let walletAddress = null;
 let deploying = false;
@@ -697,37 +697,35 @@ function setDeployBtn(state, label, sub) {
 }
 
 function updateSubtitle() {
-  const diff = MAINNET_TS - Date.now();
   const el = document.getElementById('deploySubtitle');
   if (!el) return;
-  if (diff <= 0) {
-    el.textContent = walletAddress ? 'Base Beryl is live — ready to deploy' : 'Base Beryl is live — connect wallet to deploy';
+  if (!b20Activated) {
+    el.textContent = walletAddress ? 'Checking activation…' : 'Connect wallet · checking B20 status';
     return;
   }
-  const d = Math.floor(diff / 86400000);
-  const h = Math.floor((diff % 86400000) / 3600000);
-  const m = Math.floor((diff % 3600000)  / 60000);
-  const s = Math.floor((diff % 60000)    / 1000);
-  el.textContent = `Live in ${d}d ${String(h).padStart(2,'0')}h ${String(m).padStart(2,'0')}m ${String(s).padStart(2,'0')}s`;
+  el.textContent = walletAddress ? 'Base Beryl is live — ready to deploy' : 'Connect wallet to deploy';
+}
+
+async function checkB20Activation() {
+  try {
+    const r = await fetch('/api/b20-skill?action=info');
+    if (r.ok) { const d = await r.json(); b20Activated = d.activation?.asset === true; }
+  } catch {}
+  updateSubtitle();
+  if (!b20Activated) setTimeout(checkB20Activation, 60000);
 }
 
 function showCountdownModal() {
-  const diff = MAINNET_TS - Date.now();
-  const d = Math.floor(diff / 86400000);
-  const h = Math.floor((diff % 86400000) / 3600000);
-  const m = Math.floor((diff % 3600000)  / 60000);
-  const s = Math.floor((diff % 60000)    / 1000);
-  document.getElementById('mTitle').textContent = 'Not yet active';
-  document.getElementById('mCd').textContent    = `${d}d ${String(h).padStart(2,'0')}h ${String(m).padStart(2,'0')}m ${String(s).padStart(2,'0')}s`;
-  document.getElementById('mUntil').textContent = 'Until Base Beryl activates the B20 standard';
-  document.getElementById('mSub').innerHTML     = 'Your token config is ready to go. B20 deploys go live when Base Beryl activates — <strong style="color:var(--orange)">come back then and hit Deploy</strong>.';
+  document.getElementById('mTitle').textContent = 'Activation Pending';
+  document.getElementById('mCd').textContent    = '~1 hour';
+  document.getElementById('mUntil').textContent = 'Activation Registry warming up after Beryl hardfork';
+  document.getElementById('mSub').innerHTML     = 'Beryl activated but the B20 Activation Registry takes ~1 hour to enable. <strong style="color:var(--orange)">Try again shortly</strong> — deploying before activation reverts with FeatureNotActivated.';
   document.getElementById('deployModal').classList.add('open');
 }
 function closeModal() { document.getElementById('deployModal').classList.remove('open'); }
 
 async function onDeploy() {
   if (deploying) return;
-  if (Date.now() < MAINNET_TS) { showCountdownModal(); return; }
   const name = document.getElementById('fName').value.trim();
   const sym  = document.getElementById('fSym').value.trim().toUpperCase();
   if (!name) { setDeployBtn('error', '', 'Token Name is required'); return; }
@@ -768,7 +766,13 @@ async function onDeploy() {
     const resp = await fetch('/api/b20-skill', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
     if (!resp.ok) throw new Error('API error ' + resp.status);
     const data = await resp.json();
-    if (!data.ok) { setDeployBtn('error', '', (data.errors||[]).join(', ')||data.error||'Validation failed'); deploying=false; return; }
+    if (!data.ok) {
+      const msg = (data.errors || []).join(', ') || data.error || 'Validation failed';
+      setDeployBtn('error', '', msg);
+      deploying = false;
+      return;
+    }
+    if (data.activated === false) { b20Activated = false; showCountdownModal(); deploying = false; return; }
     const tx = data.deployment?.tx;
     if (!tx?.to || !tx?.data) { setDeployBtn('error', '', 'No transaction returned from API'); deploying=false; return; }
     setDeployBtn('loading', '🔄 Switching network…', 'Please confirm network switch in wallet');
@@ -932,8 +936,7 @@ window.addEventListener('orlix:wallet:disconnected', () => {
 });
 
 (function init() {
-  updateSubtitle();
-  setInterval(updateSubtitle, 1000);
+  checkB20Activation();
   document.getElementById('rebaseRow').style.display = variant === 'asset' ? '' : 'none';
 })();
 </script>
