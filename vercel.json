@@ -33,7 +33,10 @@
     "api/b20-tokens.js":   { "maxDuration": 15 },
     "api/x402-analyze.js": { "maxDuration": 60 },
     "api/x402-chat.js":    { "maxDuration": 60 },
-    "api/x402-song.js":    { "maxDuration": 60 }
+    "api/x402-song.js":    { "maxDuration": 60 },
+    "api/x402-market.js":  { "maxDuration": 30 },
+    "api/x402-wallet.js":  { "maxDuration": 30 },
+    "api/x402-b20.js":     { "maxDuration": 15 }
   },
   "redirects": [
     { "source": "/app.html",          "destination": "/app",          "permanent": true },

@@ -6,7 +6,10 @@
   "endpoints": {
     "analyze": "https://orlixai.xyz/api/x402-analyze",
     "chat":    "https://orlixai.xyz/api/x402-chat",
-    "song":    "https://orlixai.xyz/api/x402-song"
+    "song":    "https://orlixai.xyz/api/x402-song",
+    "market":  "https://orlixai.xyz/api/x402-market",
+    "wallet":  "https://orlixai.xyz/api/x402-wallet",
+    "b20":     "https://orlixai.xyz/api/x402-b20"
   },
   "services": {
     "analyze": {
