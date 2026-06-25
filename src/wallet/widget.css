@@ -150,6 +150,55 @@
   letter-spacing: -0.01em;
 }
 
+/* ── Dropdown menu ── */
+.ow-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 172px;
+  background: #111118;
+  border: 1px solid rgba(255,255,255,.10);
+  border-radius: 10px;
+  padding: 5px;
+  box-shadow: 0 8px 32px rgba(0,0,0,.55);
+  z-index: 200;
+  animation: ow-fade-in .1s ease;
+}
+@keyframes ow-fade-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.ow-drop-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 7px;
+  border: none;
+  background: none;
+  color: #9ca3af;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, sans-serif;
+  cursor: pointer;
+  text-align: left;
+  text-decoration: none;
+  transition: background .1s, color .1s;
+  -webkit-font-smoothing: antialiased;
+}
+.ow-drop-item:hover {
+  background: rgba(255,255,255,.06);
+  color: #f1f1f3;
+}
+.ow-drop-sep {
+  height: 1px;
+  background: rgba(255,255,255,.07);
+  margin: 4px 0;
+}
+.ow-drop-danger { color: #ef4444; }
+.ow-drop-danger:hover { background: rgba(239,68,68,.08); color: #ef4444; }
+
 /* ── Responsive: hide balance on very small screens ── */
 @media (max-width: 380px) {
   .ow-balance { display: none; }
