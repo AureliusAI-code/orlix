@@ -489,7 +489,7 @@ select.inp option{background:var(--s2);color:var(--t1)}
 
       <!-- Compliance -->
       <div class="sec-label" style="margin-top:8px">Compliance Policy</div>
-      <p style="font-size:.72rem;color:var(--t3);margin-bottom:12px;line-height:1.55">Turn on the rails you need. All policy flags can be edited after deploy.</p>
+      <p style="font-size:.72rem;color:var(--t3);margin-bottom:12px;line-height:1.55">Compliance policies are configured <strong style="color:var(--t2)">post-deploy</strong> via the Manage tab using your admin wallet. The toggles below are saved for reference.</p>
       <div class="policy-row" id="polAllow">
         <div>
           <div class="p-name">Allowlist enabled</div>
@@ -860,7 +860,7 @@ async function onDeploy() {
       deploying = false;
       return;
     }
-    if (data.activated === false) { b20Activated = false; showCountdownModal(); deploying = false; return; }
+    if (!data.activated) { b20Activated = false; showCountdownModal(); deploying = false; return; }
 
     const tx = data.deployment?.tx;
     if (!tx?.to || !tx?.data) {
@@ -903,7 +903,7 @@ async function onDeploy() {
       to:    tx.to,
       data:  tx.data,
       value: hexVal,
-      gas:   '0x30d40', // 200000
+      gas:   data.deployment?.gasEstimate || '0x493E0', // 300000 default, dynamic from API
     };
 
     const hash = await window.ethereum.request({ method: 'eth_sendTransaction', params: [txParams] });
@@ -986,11 +986,11 @@ function renderLaunchedGrid() {
           <div class="lcard-name">${_esc(t.name||'Unknown')}</div>
           <div class="lcard-sym">${_esc(t.symbol||'???')}</div>
         </div>
-        <span class="lcard-badge ${t.variant==='stablecoin'?'lbadge-stable':'lbadge-asset'}">${t.variant||'asset'}</span>
+        <span class="lcard-badge ${t.variant==='stablecoin'?'lbadge-stable':'lbadge-asset'}">${_esc(t.variant||'asset')}</span>
       </div>
       <div class="lcard-meta">
         <div class="lcard-meta-row"><span style="opacity:.5">⏱</span>${ago}</div>
-        <div class="lcard-meta-row"><span style="opacity:.5">👤</span>${t.deployer?t.deployer.slice(0,6)+'…'+t.deployer.slice(-4):'unknown'}</div>
+        <div class="lcard-meta-row"><span style="opacity:.5">👤</span>${t.deployer?_esc(t.deployer.slice(0,6))+'…'+_esc(t.deployer.slice(-4)):'unknown'}</div>
         ${t.supply?`<div class="lcard-meta-row"><span style="opacity:.5">◎</span>${Number(t.supply).toLocaleString()} supply</div>`:''}
       </div>
       <div class="lcard-actions">
@@ -1016,9 +1016,9 @@ async function loadLaunched() {
     if (r.ok) {
       const d = await r.json();
       _launchedAll = d.tokens || [];
+      _launchedLoaded = true;
     }
   } catch(_) {}
-  _launchedLoaded = true;
   renderLaunchedGrid();
 }
 

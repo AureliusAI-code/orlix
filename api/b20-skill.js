@@ -540,7 +540,7 @@ async function handlePrepare(body, res) {
     const adminAddr = config.admin ?? ethers.ZeroAddress;
     const [gasResult, nonceResult, balResult] = await Promise.all([
       fetchGas(net),
-      rpc(net, 'eth_getTransactionCount', [adminAddr, 'latest']),
+      rpc(net, 'eth_getTransactionCount', [adminAddr, 'pending']),
       config.admin ? rpc(net, 'eth_getBalance', [config.admin, 'latest']) : Promise.resolve('0x0'),
     ]);
     gas   = gasResult;
@@ -572,7 +572,9 @@ async function handlePrepare(body, res) {
     warnings.push(`Live chain data fetch failed: ${e.message}`);
   }
 
-  const DEPLOY_GAS_UNITS = 200000;
+  // Gas: base 150k + 35k per initCall (grantRole ~30k, updateSupplyCap ~35k)
+  const initCallsCount = buildInitCalls(config).length;
+  const DEPLOY_GAS_UNITS = Math.max(200000, 150000 + initCallsCount * 35000);
   const maxFeeHex = gas?.maxFeePerGas ?? null;
   const tipHex    = gas?.maxPriorityFeePerGas ?? null;
 
@@ -605,10 +607,12 @@ async function handlePrepare(body, res) {
     predictedAddress,
 
     deployment: {
-      factory:  B20_FACTORY,
-      network:  net,
-      chainId:  CHAIN_ID[net],
+      factory:      B20_FACTORY,
+      network:      net,
+      chainId:      CHAIN_ID[net],
       calldata,
+      gasEstimate:  '0x' + DEPLOY_GAS_UNITS.toString(16),
+      initCallCount: initCallsCount,
       tx,
       txNote: 'EIP-1559 unsigned tx. factory=createB20(variant,salt,params,initCalls)',
     },

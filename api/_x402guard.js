@@ -11,6 +11,9 @@ const BASE_URL = 'https://orlixai.xyz';
 
 function buildRequirements(path, amountUsdc, description) {
   const payTo = process.env.PAYTO_ADDRESS || '';
+  if (!payTo || !/^0x[0-9a-fA-F]{40}$/.test(payTo)) {
+    throw new Error('PAYTO_ADDRESS env var not set or invalid — x402 payments disabled');
+  }
   return [{
     scheme:             'exact',
     network:            'base',
