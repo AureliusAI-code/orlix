@@ -1,40 +1,42 @@
 import { useEffect, useRef } from 'react'
-import { useAccount } from 'wagmi'
+import { usePrivy, useWallets } from '@privy-io/react-auth'
 
-// Syncs wagmi wallet state → localStorage + custom DOM events.
+// Syncs Privy auth state → localStorage + custom DOM events.
 // Vanilla-JS pages listen to orlix:wallet:connected / orlix:wallet:disconnected.
 export function useWalletSession() {
-  const { address, isConnected, status } = useAccount()
+  const { ready, authenticated, user } = usePrivy()
+  const { wallets } = useWallets()
   const prevAddr = useRef<string | undefined>(undefined)
 
   useEffect(() => {
-    // Skip transient states — wait for settled connected / disconnected
-    if (status === 'connecting' || status === 'reconnecting') return
+    if (!ready) return
 
-    if (isConnected && address) {
+    const address = wallets[0]?.address ?? undefined
+
+    if (authenticated && address) {
       if (prevAddr.current === address) return
       prevAddr.current = address
 
+      const display  = `${address.slice(0, 6)}…${address.slice(-4)}`
       const userData = {
-        id: address,
+        id:       user?.id ?? address,
         address,
-        display: `${address.slice(0, 6)}…${address.slice(-4)}`,
-        type: 'wallet' as const,
+        display,
+        type:     'wallet' as const,
+        privy_id: user?.id,
       }
 
       try {
-        localStorage.setItem('orlix_user', JSON.stringify(userData))
-        localStorage.setItem('orlix_token', `wallet:${address}`)
-      } catch {
-        // localStorage blocked in strict private browsing
-      }
+        localStorage.setItem('orlix_user',  JSON.stringify(userData))
+        localStorage.setItem('orlix_token', user?.id ? `privy:${user.id}` : `wallet:${address}`)
+      } catch { /* strict private browsing */ }
 
       window.dispatchEvent(
         new CustomEvent('orlix:wallet:connected', {
-          detail: { address, display: userData.display },
+          detail: { address, display },
         })
       )
-    } else if (status === 'disconnected') {
+    } else if (ready && !authenticated) {
       if (prevAddr.current === undefined) return
       prevAddr.current = undefined
 
@@ -45,20 +47,5 @@ export function useWalletSession() {
 
       window.dispatchEvent(new CustomEvent('orlix:wallet:disconnected'))
     }
-  }, [isConnected, address, status])
-
-  // On first mount: if wagmi has already reconnected from a persisted session,
-  // fire the connected event immediately so the page reflects the right state.
-  useEffect(() => {
-    if (status === 'connected' && address && prevAddr.current === undefined) {
-      prevAddr.current = address
-      const display = `${address.slice(0, 6)}…${address.slice(-4)}`
-      try {
-        localStorage.setItem('orlix_user', JSON.stringify({ id: address, address, display, type: 'wallet' }))
-        localStorage.setItem('orlix_token', `wallet:${address}`)
-      } catch {}
-      window.dispatchEvent(new CustomEvent('orlix:wallet:connected', { detail: { address, display } }))
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [ready, authenticated, wallets, user])
 }

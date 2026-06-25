@@ -9,9 +9,10 @@
     "typecheck": "tsc --noEmit"
   },
   "engines": {
-    "node": "20.x"
+    "node": "24.x"
   },
   "dependencies": {
+    "@privy-io/react-auth": "^3.32.2",
     "ethers": "^6.13.0"
   },
   "devDependencies": {

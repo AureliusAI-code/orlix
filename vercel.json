@@ -22,15 +22,16 @@
     }
   ],
   "functions": {
-    "api/chat.js":      { "maxDuration": 60 },
-    "api/gallery.js":   { "maxDuration": 10 },
-    "api/analyze.js":   { "maxDuration": 60 },
-    "api/music.js":     { "maxDuration": 60 },
-    "api/b20.js":       { "maxDuration": 15 },
+    "api/auth.js":         { "maxDuration": 15 },
+    "api/chat.js":         { "maxDuration": 60 },
+    "api/gallery.js":      { "maxDuration": 10 },
+    "api/analyze.js":      { "maxDuration": 60 },
+    "api/b20.js":          { "maxDuration": 15 },
     "api/b20-skill.js":    { "maxDuration": 30 },
     "api/token-search.js": { "maxDuration": 15 },
     "api/b20-ai.js":       { "maxDuration": 15 },
-    "api/b20-tokens.js":   { "maxDuration": 15 }
+    "api/b20-tokens.js":   { "maxDuration": 15 },
+    "api/x402.js":         { "maxDuration": 60 }
   },
   "redirects": [
     { "source": "/app.html",          "destination": "/app",          "permanent": true },
@@ -55,7 +56,6 @@
     { "source": "/gallery",      "destination": "/gallery.html" },
     { "source": "/token",        "destination": "/token.html" },
     { "source": "/song",         "destination": "/song.html" },
-    { "source": "/b20",          "destination": "/b20-studio.html" },
-    { "source": "/b20-promo",     "destination": "/b20-promo.html" }
+    { "source": "/b20",          "destination": "/b20-studio.html" }
   ]
 }
