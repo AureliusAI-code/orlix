@@ -1,9 +1,6 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 
-// RainbowKit's base styles (modals, animations, etc.) — injected into the
-// page's <head> at runtime by vite-plugin-css-injected-by-js
-import '@rainbow-me/rainbowkit/styles.css'
 import './widget.css'
 
 import { Providers } from './providers'

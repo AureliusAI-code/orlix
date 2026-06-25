@@ -1,41 +1,28 @@
 import type { ReactNode } from 'react'
-import { WagmiProvider } from 'wagmi'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { RainbowKitProvider, darkTheme } from '@rainbow-me/rainbowkit'
-import { wagmiConfig } from './config'
-
-// Singleton QueryClient — created once per bundle load
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: 2,
-      staleTime: 30_000,
-      gcTime: 5 * 60_000,
-    },
-  },
-})
-
-// Orlix-themed RainbowKit modal — orange accent, dark bg
-const orlixTheme = darkTheme({
-  accentColor: '#F07830',
-  accentColorForeground: '#ffffff',
-  borderRadius: 'medium',
-  fontStack: 'system',
-  overlayBlur: 'small',
-})
+import { PrivyProvider } from '@privy-io/react-auth'
+import { base } from 'viem/chains'
 
 export function Providers({ children }: { children: ReactNode }) {
   return (
-    <WagmiProvider config={wagmiConfig}>
-      <QueryClientProvider client={queryClient}>
-        <RainbowKitProvider
-          theme={orlixTheme}
-          modalSize="compact"
-          initialChain={8453} // Base mainnet
-        >
-          {children}
-        </RainbowKitProvider>
-      </QueryClientProvider>
-    </WagmiProvider>
+    <PrivyProvider
+      appId="cmqh5fvyg00co0ci68birz0s2"
+      config={{
+        loginMethods: ['wallet'],
+        appearance: {
+          theme: 'dark',
+          accentColor: '#F07830',
+          logo: 'https://orlixai.xyz/orlix-logo.jpeg',
+          landingHeader: 'Connect your wallet',
+          loginMessage: 'Connect a wallet to continue',
+        },
+        defaultChain: base,
+        supportedChains: [base],
+        embeddedWallets: {
+          createOnLogin: 'off',
+        },
+      }}
+    >
+      {children}
+    </PrivyProvider>
   )
 }
