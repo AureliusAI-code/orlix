@@ -110,10 +110,39 @@
   flex-shrink: 0;
 }
 
+/* ── Network pill ── */
+.ow-network-pill {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(59, 130, 246, 0.08);
+  border: 1px solid rgba(59, 130, 246, 0.20);
+  border-radius: 6px;
+  padding: 4px 9px;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: #60a5fa;
+  font-family: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, sans-serif;
+  white-space: nowrap;
+  user-select: none;
+  -webkit-font-smoothing: antialiased;
+}
+.ow-net-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #3b82f6;
+  box-shadow: 0 0 5px rgba(59, 130, 246, 0.6);
+  flex-shrink: 0;
+}
+
 /* ── Balance + address ── */
 .ow-balance {
   opacity: 0.70;
   font-size: 10.5px;
+  font-family: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
+  color: #9ca3af;
+  white-space: nowrap;
 }
 .ow-addr {
   font-family: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
