@@ -80,26 +80,34 @@ a{text-decoration:none}
 .sec-label{font-size:.625rem;font-weight:700;color:var(--t3);letter-spacing:.13em;text-transform:uppercase;margin-bottom:14px}
 
 /* ── AI FILL ── */
-.ai-fill{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);padding:16px 18px;margin-bottom:14px}
-.ai-fill-head{display:flex;align-items:center;gap:8px;margin-bottom:11px}
-.ai-fill-title{font-size:.7rem;font-weight:700;color:var(--orange);letter-spacing:.09em;text-transform:uppercase}
-.ai-fill-hint{margin-left:auto;font-size:.72rem;color:var(--t3)}
-.ai-fill-row{display:flex;gap:9px;align-items:flex-start}
-.ai-fill-ta{
-  flex:1;background:var(--s2);border:1px solid var(--b1);border-radius:8px;
-  padding:10px 13px;font-size:.8rem;color:var(--t1);resize:none;outline:none;
-  transition:border-color .15s;line-height:1.5;min-height:52px;
+/* ── AI PILL ── */
+.ai-pill-wrap{margin-bottom:14px}
+.ai-pill-label{font-size:.62rem;font-weight:700;color:var(--orange);letter-spacing:.11em;text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.ai-pill{
+  display:flex;align-items:center;
+  background:#131318;border-radius:999px;
+  padding:5px 5px 5px 18px;
+  box-shadow:0 0 0 1px rgba(255,255,255,.06);
+  transition:box-shadow .15s;
 }
-.ai-fill-ta::placeholder{color:var(--t3)}
-.ai-fill-ta:focus{border-color:rgba(240,120,48,.35);box-shadow:0 0 0 3px rgba(240,120,48,.06)}
-.ai-fill-btn{
-  padding:10px 16px;border-radius:8px;background:var(--orange);color:#fff;
-  font-size:.78rem;font-weight:700;border:none;cursor:pointer;white-space:nowrap;
-  transition:opacity .15s;flex-shrink:0;
+.ai-pill:focus-within{box-shadow:0 0 0 1.5px rgba(240,120,48,.35),0 0 0 4px rgba(240,120,48,.06)}
+.ai-pill-inp{
+  flex:1;background:none;border:none;outline:none;
+  font-size:.82rem;color:var(--t1);font-family:var(--font);
+  padding:7px 0;min-width:0;
 }
-.ai-fill-btn:hover:not(:disabled){opacity:.86}
-.ai-fill-btn:disabled{opacity:.45;cursor:wait}
-.ai-status{margin-top:9px;font-size:.72rem;color:var(--t3);min-height:14px}
+.ai-pill-inp::placeholder{color:var(--t3)}
+.ai-pill-btn{
+  width:36px;height:36px;border-radius:50%;flex-shrink:0;
+  background:var(--orange);border:none;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:opacity .15s,transform .1s;
+}
+.ai-pill-btn:hover:not(:disabled){opacity:.88;transform:scale(1.05)}
+.ai-pill-btn:active:not(:disabled){transform:scale(.95)}
+.ai-pill-btn:disabled{opacity:.4;cursor:wait}
+.ai-pill-btn svg{display:block}
+.ai-status{margin-top:8px;font-size:.72rem;color:var(--t3);min-height:14px;padding-left:4px}
 .ai-status.ok{color:#4ade80}.ai-status.err{color:var(--red)}
 
 /* ── VARIANT ── */
@@ -397,17 +405,20 @@ select.inp option{background:var(--s2);color:var(--t1)}
     <p class="pg-sub">Deploy a native Base token. Role-gated, ERC-20 compatible, precompile-backed.</p>
 
     <!-- AI AUTO-FILL -->
-    <div class="ai-fill">
-      <div class="ai-fill-head">
-        <span style="color:var(--orange);font-size:.9rem">✦</span>
-        <span class="ai-fill-title">AI Auto-Fill</span>
-        <span class="ai-fill-hint">Describe your token, we fill the form</span>
+    <div class="ai-pill-wrap">
+      <div class="ai-pill-label">
+        <svg width="10" height="10" viewBox="0 0 20 20" fill="currentColor"><path d="M10 2c-.35 3-1.6 5.5-4 6.8 2.4 1.3 3.65 3.8 4 6.8.35-3 1.6-5.5 4-6.8-2.4-1.3-3.65-3.8-4-6.8z"/></svg>
+        AI Auto-Fill
       </div>
-      <div class="ai-fill-row">
-        <textarea class="ai-fill-ta" id="aiDesc" rows="2"
-          placeholder="e.g. a deflationary gaming reward token called GAMEFI with 500M supply and burn mechanic"
-          onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();aiAutoFill()}"></textarea>
-        <button class="ai-fill-btn" id="aiFillBtn" onclick="aiAutoFill()">✦ Generate</button>
+      <div class="ai-pill">
+        <input class="ai-pill-inp" id="aiDesc" type="text"
+          placeholder="Describe your token — e.g. gaming reward token 500M supply burn mechanic"
+          onkeydown="if(event.key==='Enter'){aiAutoFill()}">
+        <button class="ai-pill-btn" id="aiFillBtn" onclick="aiAutoFill()" aria-label="Generate">
+          <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10 17V3"/><path d="M4 9l6-6 6 6"/>
+          </svg>
+        </button>
       </div>
       <div class="ai-status" id="aiStatus"></div>
     </div>
@@ -489,7 +500,7 @@ select.inp option{background:var(--s2);color:var(--t1)}
 
       <!-- Compliance -->
       <div class="sec-label" style="margin-top:8px">Compliance Policy</div>
-      <p style="font-size:.72rem;color:var(--t3);margin-bottom:12px;line-height:1.55">Turn on the rails you need. All policy flags can be edited after deploy.</p>
+      <p style="font-size:.72rem;color:var(--t3);margin-bottom:12px;line-height:1.55">Compliance policies are configured <strong style="color:var(--t2)">post-deploy</strong> via the Manage tab using your admin wallet. The toggles below are saved for reference.</p>
       <div class="policy-row" id="polAllow">
         <div>
           <div class="p-name">Allowlist enabled</div>
@@ -554,6 +565,13 @@ select.inp option{background:var(--s2);color:var(--t1)}
           <label class="field-label">Metadata Admin</label>
           <input class="inp" id="fRoleMeta" type="text" placeholder="0x… (defaults to admin)" style="font-size:.68rem" autocomplete="off">
         </div>
+      </div>
+      <div class="field-row" id="operatorRow">
+        <div class="field">
+          <label class="field-label">Operator <span class="sub">· Asset only</span></label>
+          <input class="inp" id="fRoleOperator" type="text" placeholder="0x… (defaults to admin)" style="font-size:.68rem" autocomplete="off">
+        </div>
+        <div class="field"></div>
       </div>
 
       <!-- Admin-less -->
@@ -681,7 +699,8 @@ function setVariant(v) {
   const dec = document.getElementById('fDec');
   if (v === 'stablecoin') { dec.value = '6'; dec.disabled = true; }
   else { dec.disabled = false; }
-  document.getElementById('rebaseRow').style.display = v === 'asset' ? '' : 'none';
+  document.getElementById('rebaseRow').style.display   = v === 'asset' ? '' : 'none';
+  document.getElementById('operatorRow').style.display = v === 'asset' ? '' : 'none';
   onFormChange();
 }
 
@@ -760,7 +779,12 @@ function updateSubtitle() {
   const el = document.getElementById('deploySubtitle');
   if (!el) return;
   if (!b20Activated) {
-    el.textContent = walletAddress ? 'Checking activation…' : 'Connect wallet · checking B20 status';
+    const now = Date.now();
+    const activationUTC = new Date('2026-06-26T18:00:00Z').getTime();
+    const suffix = now < activationUTC
+      ? 'activates today ~6pm UTC'
+      : 'Activation Registry warming up…';
+    el.textContent = walletAddress ? suffix : `Connect wallet · ${suffix}`;
     return;
   }
   el.textContent = walletAddress ? 'Base Beryl is live — ready to deploy' : 'Connect wallet to deploy';
@@ -837,6 +861,7 @@ async function onDeploy() {
         pauser:       document.getElementById('fRolePauser').value.trim()      || undefined,
         unpauser:     document.getElementById('fRoleUnpauser').value.trim()    || undefined,
         meta_admin:   document.getElementById('fRoleMeta').value.trim()        || undefined,
+        operator:     document.getElementById('fRoleOperator').value.trim()   || undefined,
       },
       network: 'mainnet',
     };
@@ -860,7 +885,7 @@ async function onDeploy() {
       deploying = false;
       return;
     }
-    if (data.activated === false) { b20Activated = false; showCountdownModal(); deploying = false; return; }
+    if (!data.activated) { b20Activated = false; showCountdownModal(); deploying = false; return; }
 
     const tx = data.deployment?.tx;
     if (!tx?.to || !tx?.data) {
@@ -903,7 +928,7 @@ async function onDeploy() {
       to:    tx.to,
       data:  tx.data,
       value: hexVal,
-      gas:   '0x30d40', // 200000
+      gas:   data.deployment?.gasEstimate || '0x493E0', // 300000 default, dynamic from API
     };
 
     const hash = await window.ethereum.request({ method: 'eth_sendTransaction', params: [txParams] });
@@ -928,7 +953,8 @@ async function aiAutoFill() {
   if (!desc) return;
   const btn = document.getElementById('aiFillBtn');
   const status = document.getElementById('aiStatus');
-  btn.disabled = true; btn.textContent = '⏳ Generating…';
+  btn.disabled = true;
+  btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><circle cx="10" cy="10" r="7" stroke-dasharray="32" stroke-dashoffset="32"><animate attributeName="stroke-dashoffset" from="32" to="0" dur=".6s" fill="freeze"/></circle></svg>';
   status.className = 'ai-status'; status.textContent = 'Asking AI…';
   try {
     const r = await fetch(`${location.origin}/api/b20-ai`, {
@@ -954,7 +980,8 @@ async function aiAutoFill() {
     status.className = 'ai-status err';
     status.textContent = '✗ ' + (e.message || 'Failed to generate');
   }
-  btn.disabled = false; btn.textContent = '✦ Generate';
+  btn.disabled = false;
+  btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 17V3"/><path d="M4 9l6-6 6 6"/></svg>';
 }
 
 // ── new launched ──────────────────────────────────────────────────────────────
@@ -986,11 +1013,11 @@ function renderLaunchedGrid() {
           <div class="lcard-name">${_esc(t.name||'Unknown')}</div>
           <div class="lcard-sym">${_esc(t.symbol||'???')}</div>
         </div>
-        <span class="lcard-badge ${t.variant==='stablecoin'?'lbadge-stable':'lbadge-asset'}">${t.variant||'asset'}</span>
+        <span class="lcard-badge ${t.variant==='stablecoin'?'lbadge-stable':'lbadge-asset'}">${_esc(t.variant||'asset')}</span>
       </div>
       <div class="lcard-meta">
         <div class="lcard-meta-row"><span style="opacity:.5">⏱</span>${ago}</div>
-        <div class="lcard-meta-row"><span style="opacity:.5">👤</span>${t.deployer?t.deployer.slice(0,6)+'…'+t.deployer.slice(-4):'unknown'}</div>
+        <div class="lcard-meta-row"><span style="opacity:.5">👤</span>${t.deployer?_esc(t.deployer.slice(0,6))+'…'+_esc(t.deployer.slice(-4)):'unknown'}</div>
         ${t.supply?`<div class="lcard-meta-row"><span style="opacity:.5">◎</span>${Number(t.supply).toLocaleString()} supply</div>`:''}
       </div>
       <div class="lcard-actions">
@@ -1016,9 +1043,9 @@ async function loadLaunched() {
     if (r.ok) {
       const d = await r.json();
       _launchedAll = d.tokens || [];
+      _launchedLoaded = true;
     }
   } catch(_) {}
-  _launchedLoaded = true;
   renderLaunchedGrid();
 }
 
@@ -1082,8 +1109,8 @@ window.addEventListener('orlix:wallet:disconnected', () => {
 (function init() {
   checkB20Activation();
   onFormChange();
-  // Stablecoin hides rebase row
-  document.getElementById('rebaseRow').style.display = variant === 'asset' ? '' : 'none';
+  document.getElementById('rebaseRow').style.display   = variant === 'asset' ? '' : 'none';
+  document.getElementById('operatorRow').style.display = variant === 'asset' ? '' : 'none';
 })();
 </script>
 

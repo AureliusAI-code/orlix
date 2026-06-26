@@ -1,4 +1,17 @@
 // /api/b20-ai — Parse natural language token description → B20 form fields (Claude Haiku)
+
+// Simple in-memory rate limit: max 5 requests per IP per minute
+const _rl = new Map();
+function rateLimit(ip) {
+  const now = Date.now();
+  const key = ip || 'unknown';
+  const entry = _rl.get(key) || { count: 0, reset: now + 60000 };
+  if (now > entry.reset) { entry.count = 0; entry.reset = now + 60000; }
+  entry.count++;
+  _rl.set(key, entry);
+  return entry.count > 5;
+}
+
 const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
@@ -42,8 +55,16 @@ module.exports = async (req, res) => {
     return res.end(JSON.stringify({ error: 'POST only' }));
   }
 
+  const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress;
+  if (rateLimit(ip)) {
+    res.writeHead(429, CORS); return res.end(JSON.stringify({ error: 'Too many requests — try again in a minute' }));
+  }
+
   let body = '';
-  req.on('data', c => body += c);
+  req.on('data', c => {
+    body += c;
+    if (body.length > 8000) { body = ''; req.destroy(); }
+  });
   await new Promise(r => req.on('end', r));
 
   let description;
