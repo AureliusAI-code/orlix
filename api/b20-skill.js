@@ -25,6 +25,7 @@ const CORS = {
 // ── Addresses ─────────────────────────────────────────────────────────────────
 const B20_FACTORY         = '0xB20f000000000000000000000000000000000000';
 const ACTIVATION_REGISTRY = '0x8453000000000000000000000000000000000001';
+const POLICY_REGISTRY     = '0x8453000000000000000000000000000000000002';
 
 // ── Network ───────────────────────────────────────────────────────────────────
 const RPC_URL  = { mainnet: 'https://mainnet.base.org', sepolia: 'https://sepolia.base.org' };
@@ -39,6 +40,8 @@ const ROLES = {
   PAUSE_ROLE:        '0x139c2898040ef16910dc9f44dc697df79363da767d8bc92f2e310312b816e46d',
   UNPAUSE_ROLE:      '0x265b220c5a8891efdd9e1b1b7fa72f257bd5169f8d87e319cf3dad6ff52b94ae',
   METADATA_ROLE:     '0x6bd6b5318a46e5fff572d5e4258a20774aab40cc35ac7680654b9081fcc82f80',
+  // Asset-variant only — gates updateMultiplier and announce()
+  OPERATOR_ROLE:     ethers.id('OPERATOR_ROLE'),
 };
 
 // ── Activation Registry feature IDs — keccak256("base.b20_*") ────────────────
@@ -125,7 +128,8 @@ async function checkActivated(net, variant) {
 
 function encodeCreateParams(config) {
   if (config.variant === 'stablecoin') {
-    const currency = ((config.currency ?? 'USD').trim().toUpperCase()).slice(0, 3);
+    // Currency: A-Z only per B20 spec (no digits, no spaces)
+    const currency = (config.currency ?? 'USD').trim().toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3) || 'USD';
     return ABI_CODER.encode(
       ['uint8', 'string', 'string', 'address', 'string'],
       [1, config.name, config.symbol, config.admin ?? ethers.ZeroAddress, currency]
@@ -153,6 +157,7 @@ function buildInitCalls(config) {
     pauser:       ROLES.PAUSE_ROLE,
     unpauser:     ROLES.UNPAUSE_ROLE,
     meta_admin:   ROLES.METADATA_ROLE,
+    operator:     ROLES.OPERATOR_ROLE,  // Asset only — rebase multiplier & announcements
   };
   for (const [key, roleHash] of Object.entries(roleMap)) {
     const addr = (config.roles ?? {})[key];
@@ -259,7 +264,7 @@ function parseConfig(input) {
 
   // Roles
   const roles = {};
-  for (const key of ['minter','burner','burn_blocked','pauser','unpauser','meta_admin']) {
+  for (const key of ['minter','burner','burn_blocked','pauser','unpauser','meta_admin','operator']) {
     const addr = (input.roles ?? {})[key];
     if (addr && addr.trim()) {
       if (!/^0x[0-9a-fA-F]{40}$/i.test(addr.trim()))
@@ -329,6 +334,10 @@ async function handleInfo(net, res) {
       factory: {
         address: B20_FACTORY,
         note:    'B20 Factory precompile on Base',
+      },
+      policyRegistry: {
+        address: POLICY_REGISTRY,
+        note:    'Create allowlist/blocklist policies, then link to token via updatePolicy(scope, policyId)',
       },
       variants: [
         { name: 'asset',      description: 'General-purpose. Configurable decimals (6–18), rebasing, issuer metadata.' },

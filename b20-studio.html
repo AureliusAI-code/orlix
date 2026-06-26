@@ -555,6 +555,13 @@ select.inp option{background:var(--s2);color:var(--t1)}
           <input class="inp" id="fRoleMeta" type="text" placeholder="0x… (defaults to admin)" style="font-size:.68rem" autocomplete="off">
         </div>
       </div>
+      <div class="field-row" id="operatorRow">
+        <div class="field">
+          <label class="field-label">Operator <span class="sub">· Asset only</span></label>
+          <input class="inp" id="fRoleOperator" type="text" placeholder="0x… (defaults to admin)" style="font-size:.68rem" autocomplete="off">
+        </div>
+        <div class="field"></div>
+      </div>
 
       <!-- Admin-less -->
       <div class="adminless-row" style="margin-top:8px">
@@ -681,7 +688,8 @@ function setVariant(v) {
   const dec = document.getElementById('fDec');
   if (v === 'stablecoin') { dec.value = '6'; dec.disabled = true; }
   else { dec.disabled = false; }
-  document.getElementById('rebaseRow').style.display = v === 'asset' ? '' : 'none';
+  document.getElementById('rebaseRow').style.display   = v === 'asset' ? '' : 'none';
+  document.getElementById('operatorRow').style.display = v === 'asset' ? '' : 'none';
   onFormChange();
 }
 
@@ -760,7 +768,12 @@ function updateSubtitle() {
   const el = document.getElementById('deploySubtitle');
   if (!el) return;
   if (!b20Activated) {
-    el.textContent = walletAddress ? 'Checking activation…' : 'Connect wallet · checking B20 status';
+    const now = Date.now();
+    const activationUTC = new Date('2026-06-26T18:00:00Z').getTime();
+    const suffix = now < activationUTC
+      ? 'activates today ~6pm UTC'
+      : 'Activation Registry warming up…';
+    el.textContent = walletAddress ? suffix : `Connect wallet · ${suffix}`;
     return;
   }
   el.textContent = walletAddress ? 'Base Beryl is live — ready to deploy' : 'Connect wallet to deploy';
@@ -837,6 +850,7 @@ async function onDeploy() {
         pauser:       document.getElementById('fRolePauser').value.trim()      || undefined,
         unpauser:     document.getElementById('fRoleUnpauser').value.trim()    || undefined,
         meta_admin:   document.getElementById('fRoleMeta').value.trim()        || undefined,
+        operator:     document.getElementById('fRoleOperator').value.trim()   || undefined,
       },
       network: 'mainnet',
     };
@@ -1082,8 +1096,8 @@ window.addEventListener('orlix:wallet:disconnected', () => {
 (function init() {
   checkB20Activation();
   onFormChange();
-  // Stablecoin hides rebase row
-  document.getElementById('rebaseRow').style.display = variant === 'asset' ? '' : 'none';
+  document.getElementById('rebaseRow').style.display   = variant === 'asset' ? '' : 'none';
+  document.getElementById('operatorRow').style.display = variant === 'asset' ? '' : 'none';
 })();
 </script>
 
