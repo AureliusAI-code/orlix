@@ -423,13 +423,44 @@ select.inp option{background:var(--s2);color:var(--t1)}
 @media(max-width:720px){
   .layout{grid-template-columns:1fr;padding-top:56px}
   .sidebar{display:none}
-  .content{padding:20px 16px 76px}
+  .content{padding:20px 16px 80px}
   .field-row,.variant-grid{grid-template-columns:1fr}
-  .pg-title{font-size:1.3rem}
-  .card{padding:18px}
+  .pg-title{font-size:1.25rem}
+  .card{padding:16px}
   .bottom-nav{display:grid}
+  /* Nav: tighter on mobile */
+  .nav{padding:0 14px;gap:6px}
+  .nav-left{gap:6px}
+  .nav-mid{flex:0 0 auto}
+  /* Hide home link text on mobile — icon only */
+  .nav-home-btn span,.nav-home-text{display:none}
+  /* Smaller network pills */
+  .net-pills{padding:2px;gap:2px}
+  .net-pill{font-size:.65rem;padding:4px 10px}
+  /* Wallet button: tighter */
+  #wallet-fallback,
+  #orlix-wallet .ow-btn,
+  #orlix-wallet button:not(#wallet-fallback){
+    padding:7px 12px!important;font-size:.72rem!important;gap:5px!important
+  }
 }
-@media(max-width:380px){.nav-badge-label{display:none}}
+@media(max-width:480px){
+  .live-tag{display:none}
+  .nav-home-btn{display:none}
+  .nav-badge-label{font-size:.8rem}
+  .deploy-sub{font-size:.65rem}
+  /* Compact CA field text */
+  .dc-field-val{font-size:.65rem}
+  .dc-title{font-size:.82rem}
+  /* Compact action buttons in deployed card */
+  .dc-action-btn{font-size:.68rem;padding:5px 10px}
+  /* Smaller launch cards */
+  .lcard-ca-val{font-size:.62rem}
+}
+@media(max-width:380px){
+  .nav-badge-label{font-size:.75rem}
+  .net-pill{font-size:.6rem;padding:4px 8px}
+}
 </style>
 </head>
 <body>
@@ -439,7 +470,7 @@ select.inp option{background:var(--s2);color:var(--t1)}
   <div class="nav-left">
     <a href="/" class="nav-home-btn">
       <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 10L10 3l7.5 7"/><path d="M4.5 8.5v8h4v-4h3v4h4v-8"/></svg>
-      Home
+      <span class="nav-home-text">Home</span>
     </a>
     <div class="nav-badge">
       <span class="nav-badge-label" style="font-size:.82rem;font-weight:700;color:var(--t1)">B20 Studio</span>
