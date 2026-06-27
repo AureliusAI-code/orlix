@@ -16,6 +16,10 @@ const crypto = require('crypto');
 
 const REDIS_KEY = 'xagent:replied'; // Set of replied tweet IDs
 
+// In-memory fallback (survives warm invocations within same instance)
+const _repliedCache = new Set();
+let   _sinceIdCache = null;
+
 // ── Redis helpers ──────────────────────────────────────────────
 function getRedis() {
   return {
@@ -33,16 +37,30 @@ async function redisCmd(url, token, ...args) {
 }
 
 async function hasReplied(tweetId) {
+  if (_repliedCache.has(tweetId)) return true;
   const { url, token } = getRedis();
   if (!url) return false;
   return (await redisCmd(url, token, 'SISMEMBER', REDIS_KEY, tweetId)) === 1;
 }
 
 async function markReplied(tweetId) {
+  _repliedCache.add(tweetId);
   const { url, token } = getRedis();
   if (!url) return;
   await redisCmd(url, token, 'SADD', REDIS_KEY, tweetId);
   await redisCmd(url, token, 'EXPIRE', REDIS_KEY, 86400); // 24h TTL
+}
+
+async function getSinceId() {
+  const { url, token } = getRedis();
+  if (url) return await redisCmd(url, token, 'GET', 'xagent:since_id');
+  return _sinceIdCache;
+}
+
+async function setSinceId(id) {
+  _sinceIdCache = id;
+  const { url, token } = getRedis();
+  if (url) await redisCmd(url, token, 'SET', 'xagent:since_id', id);
 }
 
 // ── OAuth 1.0a (needed for posting tweets) ────────────────────
@@ -233,9 +251,8 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    // Get recent mentions (last ~2 minutes via since_id or last 10 tweets)
-    const { url, token } = getRedis();
-    let sinceId = url ? await redisCmd(url, token, 'GET', 'xagent:since_id') : null;
+    // Get recent mentions using since_id to avoid re-processing
+    const sinceId = await getSinceId();
 
     const data  = await getMentions(username, sinceId);
     const tweets = data.data || [];
@@ -245,9 +262,9 @@ module.exports = async function handler(req, res) {
       return res.status(200).json({ ok: true, processed: 0, message: 'No new mentions' });
     }
 
-    // Update since_id to newest tweet
+    // Update since_id to newest tweet before processing
     const newestId = tweets[0].id;
-    if (url) await redisCmd(url, token, 'SET', 'xagent:since_id', newestId);
+    await setSinceId(newestId);
 
     let replied = 0;
     const errors = [];
