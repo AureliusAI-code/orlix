@@ -640,7 +640,7 @@ select.inp{cursor:pointer}
 .tx-time{font-size:.62rem;color:var(--text-3)}
 
 /* ── Song View ── */
-.song-wrap{padding:24px 20px 60px;display:flex;flex-direction:column;align-items:center}
+.song-wrap{padding-bottom:60px;display:flex;flex-direction:column;align-items:center}
 .song-wrap .song-hero{text-align:center;margin-bottom:32px;max-width:540px}
 .song-wrap .s-hero-tag{display:inline-flex;align-items:center;gap:6px;background:var(--purple-dim);border:1px solid rgba(167,139,250,.2);border-radius:99px;padding:4px 14px;font-size:.72rem;font-weight:700;color:var(--purple);letter-spacing:.08em;margin-bottom:18px}
 .song-wrap .s-hero-title{font-size:clamp(1.8rem,6vw,2.8rem);font-weight:800;color:var(--text-1);line-height:1.08;letter-spacing:-.03em;margin-bottom:14px}
@@ -717,7 +717,7 @@ select.inp{cursor:pointer}
 @media(max-width:480px){.song-wrap .genre-grid{grid-template-columns:repeat(2,1fr)}.song-wrap .tc-stats{display:none}}
 
 /* ── Gallery View ── */
-.gallery-wrap{padding:24px 24px 60px;max-width:1080px;margin:0 auto}
+.gallery-wrap{padding-bottom:60px;max-width:1080px;margin:0 auto}
 .gallery-wrap .g-hero{margin-bottom:28px}
 .gallery-wrap .g-hero-pre{font-size:.7rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--orange);margin-bottom:10px}
 .gallery-wrap .g-hero h1{font-size:1.8rem;font-weight:800;color:var(--text-1);letter-spacing:-.03em;line-height:1.15;margin-bottom:8px}
@@ -769,7 +769,7 @@ select.inp{cursor:pointer}
 .g-modal-close:hover{background:rgba(255,255,255,.12)}
 .g-modal-inner{flex:1;background:#fff;border-radius:var(--radius);overflow:hidden}
 .g-modal-inner iframe{width:100%;height:100%;border:none;display:block}
-@media(max-width:640px){.gallery-wrap{padding:16px 14px 50px}.gallery-wrap .g-hero h1{font-size:1.4rem}.gallery-wrap .g-stats{grid-template-columns:1fr 1fr}.gallery-wrap .g-stats .g-stat:last-child{display:none}.gallery-wrap .g-builds-grid{grid-template-columns:1fr}}
+@media(max-width:640px){.gallery-wrap{padding-bottom:50px}.gallery-wrap .g-hero h1{font-size:1.4rem}.gallery-wrap .g-stats{grid-template-columns:1fr 1fr}.gallery-wrap .g-stats .g-stat:last-child{display:none}.gallery-wrap .g-builds-grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -3676,7 +3676,10 @@ async function generateSong(){
     if(tok)hdrs['Authorization']='Bearer '+tok;
     const res=await fetch('/api/song',{method:'POST',headers:hdrs,body:JSON.stringify({query,genre:songSelectedGenre})});
     stopLoading();
-    if(!res.ok){const err=await res.json().catch(()=>({error:'Unknown error'}));throw new Error(err.error||`HTTP ${res.status}`);}
+    if(!res.ok){
+      if(res.status===401){throw new Error('Wallet not connected — click Connect at the top to generate songs');}
+      const err=await res.json().catch(()=>({error:'Unknown error'}));throw new Error(err.error||`HTTP ${res.status}`);
+    }
     const data=await res.json();
     songCurrentLyrics=data.lyrics;songCurrentToken=data.token;
     const sym=data.token?.symbol||query.toUpperCase().replace('$','');
