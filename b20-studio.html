@@ -927,7 +927,9 @@ async function onDeploy() {
       deploying = false;
       return;
     }
-    if (!data.activated) { b20Activated = false; showToast('B20 not yet activated on this network', 'warn'); deploying = false; return; }
+    if (!data.activated) {
+      showToast('Activation check inconclusive — attempting deploy…', 'info');
+    }
 
     const tx = data.deployment?.tx;
     if (!tx?.to || !tx?.data) {
