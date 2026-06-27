@@ -31,7 +31,8 @@
     "api/token-search.js": { "maxDuration": 15 },
     "api/b20-ai.js":       { "maxDuration": 15 },
     "api/b20-tokens.js":   { "maxDuration": 15 },
-    "api/x402.js":         { "maxDuration": 60 }
+    "api/x402.js":         { "maxDuration": 60 },
+    "api/song.js":         { "maxDuration": 60 }
   },
   "redirects": [
     { "source": "/app.html",          "destination": "/app",          "permanent": true },
@@ -40,9 +41,11 @@
     { "source": "/changelog.html",    "destination": "/changelog",    "permanent": true },
     { "source": "/privacy.html",      "destination": "/privacy",      "permanent": true },
     { "source": "/terms.html",        "destination": "/terms",        "permanent": true },
-    { "source": "/gallery.html",      "destination": "/gallery",      "permanent": true },
+    { "source": "/song",               "destination": "/app#song",     "permanent": false },
+    { "source": "/gallery",           "destination": "/app#gallery",  "permanent": false },
+    { "source": "/gallery.html",      "destination": "/app#gallery",  "permanent": true },
     { "source": "/token.html",        "destination": "/token",        "permanent": true },
-    { "source": "/song.html",         "destination": "/song",         "permanent": true },
+    { "source": "/song.html",         "destination": "/app#song",     "permanent": true },
     { "source": "/b20-studio.html",   "destination": "/b20",          "permanent": true },
     { "source": "/b20-demo.html",     "destination": "/b20-demo",     "permanent": true }
   ],
@@ -53,9 +56,7 @@
     { "source": "/changelog",    "destination": "/changelog.html" },
     { "source": "/privacy",      "destination": "/privacy.html" },
     { "source": "/terms",        "destination": "/terms.html" },
-    { "source": "/gallery",      "destination": "/gallery.html" },
     { "source": "/token",        "destination": "/token.html" },
-    { "source": "/song",         "destination": "/song.html" },
     { "source": "/b20",          "destination": "/b20-studio.html" }
   ]
 }
