@@ -206,7 +206,7 @@ async function generateReply(mentionText, authorName) {
     headers: { 'Content-Type': 'application/json', ...authHeader, 'anthropic-version': '2023-06-01' },
     body: JSON.stringify({
       model: 'claude-haiku-4-5-20251001',
-      max_tokens: 160,
+      max_tokens: 110,
       system: `you are orlix ai — onchain intelligence agent on base.
 ${isID ? 'balas dalam bahasa indonesia yang friendly dan informatif.' : 'reply in english. be friendly, warm, and data-driven.'}
 
@@ -227,9 +227,10 @@ knowledge:
 
 reply rules:
 - HARD MAX: 250 characters
-- if token data available: lead with key stats, add a brief insight
+- HARD MAX: 220 characters — count carefully, must be a COMPLETE sentence
+- if token data available: price + mcap + 24h% + one short insight. done.
 - if no token data: ask them to drop the contract address
-- if they ask how it works: explain the gate briefly, make it sound exciting
+- if they ask how it works: explain the gate briefly
 - do not mention claude or anthropic
 - output ONLY the reply text. nothing else. no quotes.`,
       messages: [{
@@ -244,7 +245,12 @@ reply rules:
   const d = await r.json();
   let reply = (d.content?.[0]?.text || '').trim().toLowerCase();
   reply = reply.replace(/[—–]/g, '').replace(/\s{2,}/g, ' ').trim();
-  if (reply.length > 270) reply = reply.slice(0, 267) + '...';
+  if (reply.length > 260) {
+    // Cut at last sentence boundary (. ! ?) before limit
+    const cut = reply.slice(0, 257);
+    const lastSentence = cut.search(/[.!?][^.!?]*$/);
+    reply = lastSentence > 80 ? cut.slice(0, lastSentence + 1) : cut.trimEnd();
+  }
   return reply || null;
 }
 
