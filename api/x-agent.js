@@ -138,8 +138,49 @@ async function postReply(text, inReplyToId) {
   return r.json();
 }
 
+// ── Token data fetcher (DexScreener) ─────────────────────────
+function fmtNum(n) {
+  if (!n) return 'N/A';
+  n = Number(n);
+  if (n >= 1e9) return `$${(n/1e9).toFixed(2)}B`;
+  if (n >= 1e6) return `$${(n/1e6).toFixed(2)}M`;
+  if (n >= 1e3) return `$${(n/1e3).toFixed(1)}K`;
+  return `$${n.toFixed(4)}`;
+}
+
+async function fetchTokenData(query) {
+  try {
+    const isCA = /^0x[0-9a-fA-F]{40}$/i.test(query.trim());
+    const url = isCA
+      ? `https://api.dexscreener.com/latest/dex/tokens/${query.trim()}`
+      : `https://api.dexscreener.com/latest/dex/search?q=${encodeURIComponent(query.trim())}`;
+
+    const r = await fetch(url, { signal: AbortSignal.timeout(6000) });
+    if (!r.ok) return null;
+    const d = await r.json();
+
+    const pairs = (d.pairs || [])
+      .filter(p => p.chainId === 'base')
+      .sort((a, b) => (b.volume?.h24 || 0) - (a.volume?.h24 || 0));
+
+    if (!pairs.length) return null;
+    const p = pairs[0];
+    return {
+      name:     p.baseToken?.name || query,
+      symbol:   p.baseToken?.symbol || query,
+      price:    p.priceUsd ? `$${Number(p.priceUsd).toPrecision(4)}` : 'N/A',
+      mcap:     fmtNum(p.fdv),
+      vol24h:   fmtNum(p.volume?.h24),
+      change24h: p.priceChange?.h24 != null ? `${Number(p.priceChange.h24) >= 0 ? '+' : ''}${Number(p.priceChange.h24).toFixed(2)}%` : 'N/A',
+      liquidity: fmtNum(p.liquidity?.usd),
+      buys:     p.txns?.h24?.buys || 0,
+      sells:    p.txns?.h24?.sells || 0,
+    };
+  } catch { return null; }
+}
+
 // ── AI reply generator ────────────────────────────────────────
-async function generateReply(mentionText, authorName, lang = 'en') {
+async function generateReply(mentionText, authorName) {
   const llmKey = process.env.BANKR_LLM_KEY || process.env.ANTHROPIC_API_KEY || '';
   if (!llmKey) return null;
 
@@ -148,46 +189,49 @@ async function generateReply(mentionText, authorName, lang = 'en') {
   const authHeader = isAnthropicKey ? { 'x-api-key': llmKey } : { 'X-API-Key': llmKey };
 
   const isID = /\b(apa|ini|itu|harga|tolong|gimana|berapa|token|kripto|bagaimana)\b/i.test(mentionText);
-  const langNote = isID
-    ? 'Balas dalam Bahasa Indonesia yang singkat dan natural.'
-    : 'Reply in English. Be concise.';
+
+  // Detect token query ($TICKER or 0x CA)
+  const caMatch     = mentionText.match(/0x[0-9a-fA-F]{40}/i);
+  const tickerMatch = mentionText.match(/\$([A-Za-z]{2,10})/);
+  let tokenData = null;
+  if (caMatch) tokenData = await fetchTokenData(caMatch[0]);
+  else if (tickerMatch) tokenData = await fetchTokenData(tickerMatch[1]);
+
+  const tokenContext = tokenData
+    ? `\nLive token data on Base:\n- ${tokenData.name} (${tokenData.symbol})\n- Price: ${tokenData.price}\n- Mcap: ${tokenData.mcap} | 24h vol: ${tokenData.vol24h}\n- 24h change: ${tokenData.change24h}\n- Liquidity: ${tokenData.liquidity}\n- Buys/Sells 24h: ${tokenData.buys}/${tokenData.sells}\nInclude these numbers naturally in your reply.`
+    : '';
 
   const r = await fetch(apiUrl, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...authHeader, 'anthropic-version': '2023-06-01' },
     body: JSON.stringify({
       model: 'claude-haiku-4-5-20251001',
-      max_tokens: 120,
-      system: `you are orlix ai — the most advanced onchain intelligence on base.
-${isID ? 'balas dalam bahasa indonesia yang profesional, percaya diri, dan berkesan.' : 'reply in english. be sharp, confident, and impressive.'}
+      max_tokens: 160,
+      system: `you are orlix ai — onchain intelligence agent on base.
+${isID ? 'balas dalam bahasa indonesia yang friendly dan informatif.' : 'reply in english. be friendly, warm, and data-driven.'}
 
 personality:
-- professional, authoritative, and polished — like a top-tier analyst
-- confident without being arrogant — you know your stuff and it shows
-- every reply sounds like it came from someone who sees the market differently
-- clear and precise — no fluff, every word earns its place
-- occasionally drop a sharp insight that makes them think twice
-- cool and composed — never flustered, always in control
-- no greetings, no hashtags, no exclamation marks
-- speak like the smartest person in the room who doesn't need to prove it
+- friendly, helpful, and genuinely excited to share insights
+- data-driven: when you have numbers, lead with them
+- clear and easy to understand — not overly technical
+- approachable like a knowledgeable friend, not a stiff analyst
+- no greetings, no hashtags
+- never use em dash or en dash characters
+- positive energy, use "!" occasionally${tokenContext}
 
 knowledge:
-- orlix ai analyzes any token on base — liquidity, risk, price, buy/sell ratio
-- wallets can be tracked with on-chain activity
-- requires 10m $orlix on base to unlock full ai access (gate is the product)
+- orlix ai analyzes any token on base: liquidity, risk, price, buy/sell ratio
+- requires 10m $orlix on base for full ai access
 - telegram bot: /analyze /watch /price
-- built on base network. powered by advanced ai
-- orlixai.xyz — app at orlixai.xyz/app
+- orlixai.xyz/app for full analysis
 
 reply rules:
-- HARD MAX: 220 characters
-- if they ask about price → "check orlixai.xyz/token for live data"
-- if they ask to analyze a token → "send the contract address"
-- if they ask how it works → explain the gate confidently, make it sound elite
-- if they're rude → respond with pure class and professionalism
+- HARD MAX: 250 characters
+- if token data available: lead with key stats, add a brief insight
+- if no token data: ask them to drop the contract address
+- if they ask how it works: explain the gate briefly, make it sound exciting
 - do not mention claude or anthropic
-- never use em dash (—) or en dash (–) characters
-- output ONLY the reply text. nothing else. no quotes around it.`,
+- output ONLY the reply text. nothing else. no quotes.`,
       messages: [{
         role: 'user',
         content: `${authorName} tagged you and said: "${mentionText}"\n\nreply:`,
