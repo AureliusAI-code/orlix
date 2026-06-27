@@ -206,25 +206,35 @@ select.inp option{background:var(--s2);color:var(--t1)}
 }
 .det-btn:hover{color:var(--t1);border-color:var(--b2)}
 
-/* ── NAV NETWORK TOGGLE SWITCH ── */
+/* ── NAV NETWORK PILLS ── */
 .nav-mid{display:flex;align-items:center;gap:8px}
-.net-toggle{display:flex;align-items:center;gap:9px}
-.net-tgl-lbl{font-size:.72rem;font-weight:700;color:var(--t3);cursor:pointer;transition:color .2s;user-select:none}
-.net-tgl-lbl.active{color:var(--t1)}
-.net-tgl-lbl.dim{opacity:.38}
-.net-switch{
-  position:relative;width:42px;height:23px;border-radius:12px;
-  border:1px solid var(--b2);cursor:pointer;
-  background:var(--orange);transition:background .25s;flex-shrink:0;
+.net-pills{display:flex;align-items:center;background:var(--s2);border:1px solid var(--b1);border-radius:8px;padding:3px;gap:2px}
+.net-pill{
+  padding:5px 14px;border-radius:6px;border:none;background:none;
+  font-size:.72rem;font-weight:700;color:var(--t3);cursor:pointer;
+  transition:all .15s;font-family:var(--font);letter-spacing:.04em;
+  text-transform:uppercase;white-space:nowrap;
 }
-.net-switch[data-net="mainnet"]{background:var(--s3)}
-.net-knob{
-  position:absolute;top:2px;left:calc(100% - 19px);
-  width:17px;height:17px;border-radius:50%;
-  background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.28);
-  transition:left .25s cubic-bezier(.4,0,.2,1);
+.net-pill:hover:not(.active){color:var(--t2);background:var(--s3)}
+.net-pill.active.sepolia{background:var(--orange);color:#fff;box-shadow:0 1px 6px rgba(240,120,48,.4)}
+.net-pill.active.mainnet{background:var(--s4);color:var(--t1);box-shadow:0 1px 3px rgba(0,0,0,.25)}
+/* mainnet warning banner */
+.mainnet-bar{
+  display:flex;align-items:center;gap:8px;
+  background:rgba(234,179,8,.1);border:1px solid rgba(234,179,8,.25);
+  border-radius:9px;padding:10px 16px;margin-bottom:18px;
+  font-size:.78rem;font-weight:600;color:#ca8a04;
 }
-.net-switch[data-net="mainnet"] .net-knob{left:2px}
+:root.light .mainnet-bar{background:rgba(234,179,8,.08);color:#92400e}
+.mainnet-bar button{background:none;border:none;color:inherit;font-weight:700;cursor:pointer;text-decoration:underline;font-size:inherit;font-family:inherit;padding:0}
+.mainnet-bar button:hover{opacity:.8}
+/* sepolia live badge */
+.sepolia-bar{display:flex;align-items:center;gap:10px;margin-bottom:18px;flex-wrap:wrap}
+.sepolia-live{display:inline-flex;align-items:center;gap:6px;font-size:.7rem;font-weight:700;color:#4ade80;background:rgba(74,222,128,.08);border:1px solid rgba(74,222,128,.2);border-radius:6px;padding:4px 10px;letter-spacing:.06em;text-transform:uppercase}
+.sepolia-dot{width:6px;height:6px;border-radius:50%;background:#4ade80;animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+.faucet-link{font-size:.7rem;font-weight:600;color:var(--t3);border:1px solid var(--b1);border-radius:6px;padding:4px 10px;text-decoration:none;transition:.15s}
+.faucet-link:hover{color:var(--t1);border-color:var(--b2)}
 /* status dot */
 .nav-status{display:flex;align-items:center;gap:6px;font-size:.72rem;font-weight:600;color:var(--t3);white-space:nowrap}
 .nav-status-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
@@ -336,15 +346,20 @@ select.inp option{background:var(--s2);color:var(--t1)}
 .bn-ico{display:flex;align-items:center;justify-content:center;height:20px}
 .bn-lbl{font-size:.6rem;font-weight:600;letter-spacing:.03em;text-transform:uppercase}
 
-/* ── WALLET FALLBACK ── */
-#wallet-fallback{
-  display:flex;align-items:center;gap:7px;
-  background:var(--orange);border:none;border-radius:999px;
-  padding:8px 18px;font-size:.78rem;font-weight:700;color:#fff;
-  cursor:pointer;transition:opacity .15s,box-shadow .15s;white-space:nowrap;
-  box-shadow:0 2px 12px rgba(240,120,48,.35);
+/* ── WALLET BUTTON (fallback + Privy override) ── */
+#wallet-fallback,
+#orlix-wallet .ow-btn,
+#orlix-wallet button:not(#wallet-fallback) {
+  display:flex!important;align-items:center!important;gap:7px!important;
+  background:var(--orange)!important;border:none!important;border-radius:999px!important;
+  padding:8px 18px!important;font-size:.78rem!important;font-weight:700!important;color:#fff!important;
+  cursor:pointer!important;transition:opacity .15s,box-shadow .15s!important;white-space:nowrap!important;
+  box-shadow:0 2px 12px rgba(240,120,48,.35)!important;
+  font-family:var(--font)!important;
 }
-#wallet-fallback:hover{opacity:.88;box-shadow:0 4px 20px rgba(240,120,48,.45)}
+#wallet-fallback:hover,
+#orlix-wallet .ow-btn:hover,
+#orlix-wallet button:not(#wallet-fallback):hover{opacity:.88!important;box-shadow:0 4px 20px rgba(240,120,48,.45)!important}
 #wallet-fallback .wf-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.7);flex-shrink:0}
 
 /* ── WALLET NETWORK DROPDOWN ── */
@@ -401,12 +416,9 @@ select.inp option{background:var(--s2);color:var(--t1)}
     </div>
   </div>
   <div class="nav-mid">
-    <div class="net-toggle">
-      <span class="net-tgl-lbl dim" id="navNetMainnet" onclick="showMainnetSoon()">Main</span>
-      <div class="net-switch" id="netToggle" data-net="sepolia" onclick="onNetToggle()" title="Toggle network">
-        <div class="net-knob"></div>
-      </div>
-      <span class="net-tgl-lbl active" id="navNetSepolia">Sepolia</span>
+    <div class="net-pills">
+      <button class="net-pill active sepolia" id="navNetSepolia" onclick="setNetwork('sepolia')">Sepolia</button>
+      <button class="net-pill mainnet" id="navNetMainnet" onclick="setNetwork('mainnet')">Mainnet</button>
     </div>
   </div>
   <div class="nav-right">
@@ -426,7 +438,7 @@ select.inp option{background:var(--s2);color:var(--t1)}
           <span>Base Sepolia</span>
           <span class="wnd-badge live">LIVE</span>
         </div>
-        <div class="wnd-item wnd-item-soon" onclick="showMainnetSoon()">
+        <div class="wnd-item wnd-item-soon" onclick="setNetwork('mainnet')">
           <span>Base Mainnet</span>
           <span class="wnd-badge soon">SOON</span>
         </div>
@@ -469,6 +481,17 @@ select.inp option{background:var(--s2);color:var(--t1)}
     <div class="pg-label">Create</div>
     <h1 class="pg-title">Create a B20 Token</h1>
     <p class="pg-sub">Deploy a native Base token. Role-gated, ERC-20 compatible, precompile-backed.</p>
+
+    <!-- NETWORK STATUS BANNERS -->
+    <div id="mainnetBar" class="mainnet-bar" style="display:none">
+      <svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="10" cy="10" r="7.5"/><path d="M10 6.5v4"/><circle cx="10" cy="13.5" r=".8" fill="currentColor" stroke="none"/></svg>
+      B20 not yet active on Base Mainnet — deploy is disabled.
+      Switch to <button onclick="setNetwork('sepolia')">Sepolia</button> to deploy now.
+    </div>
+    <div id="sepoliaBar" class="sepolia-bar">
+      <span class="sepolia-live"><span class="sepolia-dot"></span>B20 Live on Base Sepolia</span>
+      <a class="faucet-link" href="https://www.coinbase.com/faucets/base-ethereum-goerli-faucet" target="_blank" rel="noopener">Faucet ↗</a>
+    </div>
 
     <!-- AI AUTO-FILL -->
     <div class="ai-pill-wrap">
@@ -787,30 +810,39 @@ const NET = {
 };
 
 function setNetwork(n) {
-  if (n === 'mainnet') return; // mainnet locked until B20 activates
   network = n;
-  const tog = document.getElementById('netToggle');
-  if (tog) tog.setAttribute('data-net', n);
-  const mainLbl = document.getElementById('navNetMainnet');
-  const sepLbl  = document.getElementById('navNetSepolia');
-  if (mainLbl) { mainLbl.className = 'net-tgl-lbl' + (n === 'mainnet' ? ' active' : ' dim'); }
-  if (sepLbl)  { sepLbl.className  = 'net-tgl-lbl' + (n === 'sepolia' ? ' active' : ''); }
+  // Update pill buttons
+  const sepBtn  = document.getElementById('navNetSepolia');
+  const mainBtn = document.getElementById('navNetMainnet');
+  if (sepBtn)  sepBtn.className  = 'net-pill' + (n === 'sepolia'  ? ' active sepolia'  : ' sepolia');
+  if (mainBtn) mainBtn.className = 'net-pill' + (n === 'mainnet' ? ' active mainnet' : ' mainnet');
+  // Status dot
   const dot = document.getElementById('navStatusDot');
   const txt = document.getElementById('navStatusText');
   if (dot && txt) {
     dot.className = 'nav-status-dot ' + (n === 'sepolia' ? 'green' : 'amber');
-    txt.textContent = n === 'sepolia' ? 'Active on Sepolia' : 'Beryl live on Mainnet';
+    txt.textContent = n === 'sepolia' ? 'Active on Sepolia' : 'Mainnet (deploy disabled)';
   }
-  updateSubtitle();
-}
-
-function onNetToggle() {
-  if (network === 'sepolia') showMainnetSoon();
-  else setNetwork('sepolia');
-}
-
-function showMainnetSoon() {
-  showToast('B20 not active on Mainnet yet — use Sepolia to deploy and test now', 'info');
+  // Show/hide network banners
+  const mainBar = document.getElementById('mainnetBar');
+  const sepBar  = document.getElementById('sepoliaBar');
+  if (mainBar) mainBar.style.display = n === 'mainnet' ? '' : 'none';
+  if (sepBar)  sepBar.style.display  = n === 'sepolia'  ? '' : 'none';
+  // Disable deploy button on mainnet
+  const btn = document.querySelector('.deploy-btn');
+  if (btn) {
+    btn.disabled = n === 'mainnet';
+    if (n === 'mainnet') {
+      btn.classList.add('dep-loading');
+      btn.onclick = null;
+      const sub = document.getElementById('deploySubtitle');
+      if (sub) sub.textContent = 'Switch to Sepolia to deploy';
+    } else {
+      btn.classList.remove('dep-loading');
+      btn.onclick = onDeploy;
+      updateSubtitle();
+    }
+  }
 }
 
 function showToast(msg, type) {
@@ -1208,7 +1240,7 @@ function toggleWalletDrop(e) {
 async function walletFallback(net) {
   document.getElementById('wallet-net-drop').style.display = 'none';
   if (!net) net = 'sepolia'; // default to sepolia
-  if (net === 'mainnet') { showMainnetSoon(); return; }
+  if (net === 'mainnet') { setNetwork('mainnet'); return; }
   if (!window.ethereum) { alert('No wallet detected. Install MetaMask or open in a wallet browser.'); return; }
   try {
     // Switch to selected network first
