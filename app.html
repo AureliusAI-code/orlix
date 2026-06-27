@@ -108,9 +108,12 @@ input,select,textarea{font-family:var(--mono)}
 /* ── main area ── */
 .main{flex:1;overflow-y:auto;padding:28px 32px;min-width:0;background:var(--bg)}
 .main.pg-mode{overflow:hidden;padding-top:14px;padding-bottom:0}
+.main.embed-mode{overflow:hidden;padding:0}
 .view{display:none}
 .view.active{display:block}
 #view-playground.active{height:100%;display:flex;flex-direction:column;overflow:hidden}
+#view-song.active,#view-gallery.active{height:100%;display:flex;flex-direction:column;overflow:hidden}
+.view-embed-frame{flex:1;min-height:0;width:100%;border:none;display:block;background:var(--bg)}
 @keyframes boot-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 .view.active{animation:boot-in .2s ease}
 
@@ -277,7 +280,19 @@ select.inp{cursor:pointer}
 /* ── playground ── */
 .chat-wrap{display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden}
 .chat-controls{display:flex;gap:8px;margin-bottom:8px;align-items:center}
-.chat-model-sel{flex:1;min-width:0}
+.chat-model-sel{
+  flex:1;min-width:0;
+  background:var(--bg-2);border:1px solid var(--border);
+  border-radius:20px;padding:6px 14px 6px 12px;
+  font-size:.78rem;color:var(--text-1);font-family:var(--font);
+  outline:none;cursor:pointer;transition:border-color var(--tr),box-shadow var(--tr);
+  appearance:none;-webkit-appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 20 20' fill='none' stroke='%2352525B' stroke-width='2' stroke-linecap='round'%3E%3Cpolyline points='5,7 10,13 15,7'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 12px center;padding-right:32px;
+}
+.chat-model-sel:focus{border-color:rgba(240,120,48,.4);box-shadow:0 0 0 3px rgba(240,120,48,.08)}
+.chat-model-sel optgroup{color:var(--text-3);font-weight:700;font-size:.72rem}
+.chat-model-sel option{background:var(--bg-2);color:var(--text-1)}
 .pg-status{font-size:.72rem;color:var(--text-3);display:flex;align-items:center;gap:5px;margin-bottom:10px;min-height:16px}
 .pg-status:empty{margin-bottom:0}
 .pg-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;display:inline-block}
@@ -347,7 +362,18 @@ select.inp{cursor:pointer}
 }
 .chat-input-row textarea:focus{border-color:rgba(240,120,48,.4);box-shadow:0 0 0 3px rgba(240,120,48,.08)}
 .chat-input-row textarea::placeholder{color:var(--text-3)}
-.chat-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:var(--text-3);gap:10px;font-size:.8rem}
+.chat-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:var(--text-3);gap:14px;font-size:.8rem;padding:24px}
+.chat-empty-title{color:var(--text-1);font-size:1rem;font-weight:700;letter-spacing:-.02em;margin-top:4px}
+.chat-empty-sub{color:var(--text-3);font-size:.78rem;text-align:center;max-width:260px;line-height:1.6;margin-top:-4px}
+.chat-starters{display:flex;flex-direction:column;gap:7px;margin-top:8px;width:100%;max-width:340px}
+.chat-starter{
+  background:var(--bg-2);border:1px solid var(--border);border-radius:10px;
+  padding:9px 14px;font-size:.77rem;color:var(--text-2);cursor:pointer;
+  font-family:var(--font);text-align:left;transition:all var(--tr);
+  display:flex;align-items:center;gap:8px;
+}
+.chat-starter:hover{border-color:rgba(240,120,48,.3);color:var(--text-1);background:var(--orange-dim)}
+.chat-starter-ico{font-size:.85rem;flex-shrink:0}
 .chat-attach-btn{border-radius:12px!important}
 .chat-send-btn{
   display:flex;align-items:center;justify-content:center;
@@ -615,7 +641,7 @@ select.inp{cursor:pointer}
       <span class="tb-title">dashboard</span>
     </div>
     <div class="tb-right">
-      <a href="/gallery" class="hide-mobile">gallery</a>
+      <a href="#gallery" class="hide-mobile" onclick="showView('gallery');return false">gallery</a>
       <a href="/" class="hide-mobile">← home</a>
     </div>
   </div>
@@ -660,12 +686,8 @@ select.inp{cursor:pointer}
       <span class="sb-label">crypto tools</span>
       <div class="sb-item" data-view="token-analyzer"><span class="ic"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="2.5,15 7,9.5 11.5,12.5 17.5,5"/><polyline points="13.5,5 17.5,5 17.5,9"/></svg></span>token analyzer</div>
       <div class="sb-item" data-view="wallet-watcher"><span class="ic"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M10 2.5a6 6 0 016 6c0 2.5.5 4 1.5 5H2.5c1-1 1.5-2.5 1.5-5a6 6 0 016-6z"/><path d="M8.5 17.5a1.5 1.5 0 003 0"/></svg></span>wallet watcher</div>
-      <a class="sb-item" href="/song">
-        <span class="ic"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8 15V5l9-2v10"/><circle cx="6" cy="15" r="2"/><circle cx="15" cy="13" r="2"/></svg></span>token song
-      </a>
-      <a class="sb-item" href="/gallery">
-        <span class="ic"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="7" height="7" rx="1.5"/><rect x="11" y="2" width="7" height="7" rx="1.5"/><rect x="2" y="11" width="7" height="7" rx="1.5"/><rect x="11" y="11" width="7" height="7" rx="1.5"/></svg></span>gallery
-      </a>
+      <div class="sb-item" data-view="song"><span class="ic"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8 15V5l9-2v10"/><circle cx="6" cy="15" r="2"/><circle cx="15" cy="13" r="2"/></svg></span>token song</div>
+      <div class="sb-item" data-view="gallery"><span class="ic"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="7" height="7" rx="1.5"/><rect x="11" y="2" width="7" height="7" rx="1.5"/><rect x="2" y="11" width="7" height="7" rx="1.5"/><rect x="11" y="11" width="7" height="7" rx="1.5"/></svg></span>gallery</div>
     </div>
     <div class="sb-footer">
 <div class="sb-ver"><span class="sb-status"></span>Mimo engine active<br>orlix v0.6.0 · local-first</div>
@@ -718,7 +740,7 @@ select.inp{cursor:pointer}
         <span class="sb-status"></span>
         <span style="color:var(--green);font-size:.8rem;font-weight:600">Mimo engine active</span>
         <span style="color:var(--dim-2);font-size:.73rem;margin-left:auto">soul.md · Base MCP · 16 skills</span>
-        <a href="/gallery" style="color:var(--violet);font-size:.73rem;text-decoration:none;padding:3px 9px;border:1px solid rgba(185,164,255,.25);border-radius:4px;background:rgba(185,164,255,.07)">gallery →</a>
+        <a href="#gallery" onclick="showView('gallery');return false" style="color:var(--violet);font-size:.73rem;text-decoration:none;padding:3px 9px;border:1px solid rgba(185,164,255,.25);border-radius:4px;background:rgba(185,164,255,.07)">gallery →</a>
       </div>
       <div class="panel">
         <div class="panel-hd">
@@ -1070,8 +1092,14 @@ select.inp{cursor:pointer}
       <div class="chat-wrap">
         <div class="chat-messages" id="chatMessages">
           <div class="chat-empty" id="chatEmpty">
-            <div class="chat-empty-ico"><svg width="32" height="32" viewBox="0 0 20 20" fill="currentColor"><path d="M10 2c-.35 3-1.6 5.5-4 6.8 2.4 1.3 3.65 3.8 4 6.8.35-3 1.6-5.5 4-6.8-2.4-1.3-3.65-3.8-4-6.8z"/></svg></div>
-            <div>Choose a model and send a message</div>
+            <div class="chat-empty-ico"><svg width="36" height="36" viewBox="0 0 20 20" fill="currentColor" style="color:var(--orange);opacity:.7"><path d="M10 2c-.35 3-1.6 5.5-4 6.8 2.4 1.3 3.65 3.8 4 6.8.35-3 1.6-5.5 4-6.8-2.4-1.3-3.65-3.8-4-6.8z"/></svg></div>
+            <div class="chat-empty-title">Orlix Playground</div>
+            <div class="chat-empty-sub">Select a model above and start chatting — or try one of these:</div>
+            <div class="chat-starters">
+              <button class="chat-starter" onclick="sendStarter(this)"><span class="chat-starter-ico">⛓</span>What is the B20 token standard on Base?</button>
+              <button class="chat-starter" onclick="sendStarter(this)"><span class="chat-starter-ico">📝</span>Write a simple ERC-20 contract in Solidity</button>
+              <button class="chat-starter" onclick="sendStarter(this)"><span class="chat-starter-ico">🤖</span>What can Orlix AI do for my project?</button>
+            </div>
           </div>
         </div>
         <div id="imgPreviewBar"></div>
@@ -1119,6 +1147,16 @@ select.inp{cursor:pointer}
       <div class="tx-feed" id="txFeed">
         <div style="color:var(--dim-2);font-size:.75rem;text-align:center;padding:20px 0">Enter a wallet address above and click Watch to start monitoring</div>
       </div>
+    </div>
+
+    <!-- ═══ TOKEN SONG ═══ -->
+    <div class="view" id="view-song">
+      <iframe class="view-embed-frame" id="songFrame" src="" title="Token Song Generator" allow="autoplay"></iframe>
+    </div>
+
+    <!-- ═══ GALLERY ═══ -->
+    <div class="view" id="view-gallery">
+      <iframe class="view-embed-frame" id="galleryFrame" src="" title="Gallery"></iframe>
     </div>
 
   </main>
@@ -1193,17 +1231,34 @@ const agents = [
 const typeCol = {action:'#ff9a52',policy:'#b9a4ff',memory:'#7ee0a8',goal:'#50c8ff',alert:'#ff6b6b'};
 
 // ───────── NAV ─────────
+const EMBED_VIEWS = {song:'/song', gallery:'/gallery'};
 function showView(name){
+  if(!name) return;
   document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id==='view-'+name));
   document.querySelectorAll('.sb-item').forEach(i=>i.classList.toggle('active',i.dataset.view===name));
   document.getElementById('sidebar').classList.remove('open');
+  const isEmbed = name in EMBED_VIEWS;
   document.querySelector('.main').classList.toggle('pg-mode', name==='playground');
+  document.querySelector('.main').classList.toggle('embed-mode', isEmbed);
+  // Lazy-load embed iframes
+  if(isEmbed){
+    const frame = document.getElementById(name+'Frame');
+    if(frame && !frame.src) frame.src = EMBED_VIEWS[name];
+  }
   history.replaceState(null,'','#'+name);
   if(name==='overview') refreshDashboard();
   if(name==='aeon-memory') refreshMemoryView();
 }
-document.querySelectorAll('.sb-item').forEach(i=>i.addEventListener('click',()=>showView(i.dataset.view)));
+document.querySelectorAll('.sb-item').forEach(i=>i.addEventListener('click',()=>{if(i.dataset.view) showView(i.dataset.view);}));
 document.querySelectorAll('[data-nav]').forEach(b=>b.addEventListener('click',()=>showView(b.dataset.nav)));
+
+function sendStarter(btn){
+  const text = btn.textContent.trim().replace(/^[^\w]+/,'').trim();
+  const input = document.getElementById('chatInput');
+  if(input){ input.value = text; input.focus(); }
+  const sendBtn = document.getElementById('chatSendBtn');
+  if(sendBtn) sendBtn.click();
+}
 
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 
@@ -1634,7 +1689,7 @@ function newChat(){
   chatHistory = [];
   localStorage.removeItem('orlix_active_chat');
   const cm = document.getElementById('chatMessages');
-  cm.innerHTML = '<div class="chat-empty" id="chatEmpty"><div class="chat-empty-ico"><svg width="32" height="32" viewBox="0 0 20 20" fill="currentColor"><path d="M10 2c-.35 3-1.6 5.5-4 6.8 2.4 1.3 3.65 3.8 4 6.8.35-3 1.6-5.5 4-6.8-2.4-1.3-3.65-3.8-4-6.8z"/></svg></div><div>Choose a model and send a message</div></div>';
+  cm.innerHTML = '<div class="chat-empty" id="chatEmpty"><div class="chat-empty-ico"><svg width="36" height="36" viewBox="0 0 20 20" fill="currentColor" style="color:var(--orange);opacity:.7"><path d="M10 2c-.35 3-1.6 5.5-4 6.8 2.4 1.3 3.65 3.8 4 6.8.35-3 1.6-5.5 4-6.8-2.4-1.3-3.65-3.8-4-6.8z"/></svg></div><div class="chat-empty-title">Orlix Playground</div><div class="chat-empty-sub">Select a model above and start chatting — or try one of these:</div><div class="chat-starters"><button class="chat-starter" onclick="sendStarter(this)"><span class="chat-starter-ico">⛓</span>What is the B20 token standard on Base?</button><button class="chat-starter" onclick="sendStarter(this)"><span class="chat-starter-ico">📝</span>Write a simple ERC-20 contract in Solidity</button><button class="chat-starter" onclick="sendStarter(this)"><span class="chat-starter-ico">🤖</span>What can Orlix AI do for my project?</button></div></div>';
   renderHistoryList();
   showView('playground');
 }
@@ -1961,7 +2016,7 @@ chatInput.addEventListener('keydown',e=>{
 document.getElementById('pgClearBtn').addEventListener('click',()=>{
   chatHistory=[];totalTokens=0;
   pendingImages=[];renderImgPreview();
-  chatMessages.innerHTML='<div class="chat-empty" id="chatEmpty"><div class="chat-empty-ico"><svg width="32" height="32" viewBox="0 0 20 20" fill="currentColor"><path d="M10 2c-.35 3-1.6 5.5-4 6.8 2.4 1.3 3.65 3.8 4 6.8.35-3 1.6-5.5 4-6.8-2.4-1.3-3.65-3.8-4-6.8z"/></svg></div><div>Choose a model and send a message</div></div>';
+  chatMessages.innerHTML='<div class="chat-empty" id="chatEmpty"><div class="chat-empty-ico"><svg width="36" height="36" viewBox="0 0 20 20" fill="currentColor" style="color:var(--orange);opacity:.7"><path d="M10 2c-.35 3-1.6 5.5-4 6.8 2.4 1.3 3.65 3.8 4 6.8.35-3 1.6-5.5 4-6.8-2.4-1.3-3.65-3.8-4-6.8z"/></svg></div><div class="chat-empty-title">Orlix Playground</div><div class="chat-empty-sub">Select a model above and start chatting — or try one of these:</div><div class="chat-starters"><button class="chat-starter" onclick="sendStarter(this)"><span class="chat-starter-ico">⛓</span>What is the B20 token standard on Base?</button><button class="chat-starter" onclick="sendStarter(this)"><span class="chat-starter-ico">📝</span>Write a simple ERC-20 contract in Solidity</button><button class="chat-starter" onclick="sendStarter(this)"><span class="chat-starter-ico">🤖</span>What can Orlix AI do for my project?</button></div></div>';
 });
 
 // ── IMAGE UPLOAD ─────────
