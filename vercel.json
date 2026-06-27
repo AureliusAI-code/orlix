@@ -57,6 +57,7 @@
     { "source": "/privacy",      "destination": "/privacy.html" },
     { "source": "/terms",        "destination": "/terms.html" },
     { "source": "/token",        "destination": "/token.html" },
-    { "source": "/b20",          "destination": "/b20-studio.html" }
+    { "source": "/b20",          "destination": "/b20-studio.html" },
+    { "source": "/montage",      "destination": "/montage.html" }
   ]
 }
