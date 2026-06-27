@@ -349,19 +349,26 @@ select.inp{cursor:pointer}
 .preview-close{background:rgba(255,255,255,.08);border:1px solid var(--border);color:var(--text-2);border-radius:8px;padding:5px 14px;cursor:pointer;font-size:.8rem;transition:all var(--tr)}
 .preview-close:hover{background:rgba(255,255,255,.14);color:var(--text-1)}
 .chat-input-row{
-  display:flex;gap:10px;align-items:center;
-  padding:10px 12px 10px;
+  display:flex;align-items:center;
+  padding:10px 16px 12px;
   background:var(--bg-2);border-top:1px solid var(--border);
   margin:0 -32px;padding-left:32px;padding-right:32px;
 }
-.chat-input-row textarea{
-  flex:1;background:var(--bg-3);border:1px solid var(--border);border-radius:22px;
-  color:var(--text-1);font-size:.82rem;padding:10px 16px;outline:none;resize:none;
-  height:44px;max-height:160px;transition:border-color var(--tr),box-shadow var(--tr);
+.chat-input-pill{
+  flex:1;display:flex;align-items:center;gap:6px;
+  background:var(--bg-3);border:1px solid var(--border);border-radius:999px;
+  padding:5px 6px 5px 10px;
+  transition:border-color var(--tr),box-shadow var(--tr);
+  margin-right:10px;
+}
+.chat-input-pill:focus-within{border-color:rgba(240,120,48,.4);box-shadow:0 0 0 3px rgba(240,120,48,.08)}
+.chat-input-pill textarea{
+  flex:1;background:none;border:none;
+  color:var(--text-1);font-size:.82rem;padding:5px 4px;outline:none;resize:none;
+  height:34px;max-height:120px;
   font-family:var(--font);line-height:1.4;
 }
-.chat-input-row textarea:focus{border-color:rgba(240,120,48,.4);box-shadow:0 0 0 3px rgba(240,120,48,.08)}
-.chat-input-row textarea::placeholder{color:var(--text-3)}
+.chat-input-pill textarea::placeholder{color:var(--text-3)}
 .chat-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:var(--text-3);gap:14px;font-size:.8rem;padding:24px}
 .chat-empty-title{color:var(--text-1);font-size:1rem;font-weight:700;letter-spacing:-.02em;margin-top:4px}
 .chat-empty-sub{color:var(--text-3);font-size:.78rem;text-align:center;max-width:260px;line-height:1.6;margin-top:-4px}
@@ -374,10 +381,16 @@ select.inp{cursor:pointer}
 }
 .chat-starter:hover{border-color:rgba(240,120,48,.3);color:var(--text-1);background:var(--orange-dim)}
 .chat-starter-ico{font-size:.85rem;flex-shrink:0}
-.chat-attach-btn{border-radius:12px!important}
+.chat-attach-btn{
+  display:flex;align-items:center;justify-content:center;
+  width:28px;height:28px;border-radius:50%;border:none;flex-shrink:0;
+  background:none;color:var(--text-3);cursor:pointer;
+  transition:color var(--tr);padding:0;
+}
+.chat-attach-btn:hover{color:var(--text-1)}
 .chat-send-btn{
   display:flex;align-items:center;justify-content:center;
-  width:44px;height:44px;border-radius:14px;border:none;flex-shrink:0;
+  width:44px;height:44px;border-radius:50%;border:none;flex-shrink:0;
   background:var(--orange);color:#fff;cursor:pointer;
   transition:background var(--tr),transform var(--tr);
 }
@@ -506,7 +519,7 @@ select.inp{cursor:pointer}
   .provider-grid{grid-template-columns:1fr}
   .main.pg-mode{padding-top:12px}
   .chat-input-row{margin:0 -14px;padding-left:14px;padding-right:14px;padding-bottom:max(10px,env(safe-area-inset-bottom))}
-  .chat-input-row textarea{height:40px;border-radius:20px}
+  .chat-input-pill textarea{height:30px}
 }
 
 /* ── transaction card (inline in chat) ── */
@@ -1105,10 +1118,12 @@ select.inp{cursor:pointer}
         <div id="imgPreviewBar"></div>
         <input type="file" id="imgFileInput" accept="image/*" style="display:none" multiple>
         <div class="chat-input-row">
-          <button class="btn-icon chat-attach-btn" id="imgBtn" title="Attach image">
-            <svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4.5" width="15" height="11" rx="2"/><circle cx="7" cy="9" r="1.5"/><path d="M2.5 14l4.5-4 3 3 2.5-2.5 5 5"/></svg>
-          </button>
-          <textarea id="chatInput" placeholder="Message Orlix…"></textarea>
+          <div class="chat-input-pill">
+            <button class="chat-attach-btn" id="imgBtn" title="Attach image">
+              <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4.5" width="15" height="11" rx="2"/><circle cx="7" cy="9" r="1.5"/><path d="M2.5 14l4.5-4 3 3 2.5-2.5 5 5"/></svg>
+            </button>
+            <textarea id="chatInput" placeholder="Message Orlix…"></textarea>
+          </div>
           <button class="chat-send-btn" id="chatSendBtn">
             <svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="10" y1="16" x2="10" y2="4"/><polyline points="5,9 10,4 15,9"/></svg>
           </button>
@@ -1151,12 +1166,12 @@ select.inp{cursor:pointer}
 
     <!-- ═══ TOKEN SONG ═══ -->
     <div class="view" id="view-song">
-      <iframe class="view-embed-frame" id="songFrame" src="" title="Token Song Generator" allow="autoplay"></iframe>
+      <iframe class="view-embed-frame" id="songFrame" title="Token Song Generator" allow="autoplay"></iframe>
     </div>
 
     <!-- ═══ GALLERY ═══ -->
     <div class="view" id="view-gallery">
-      <iframe class="view-embed-frame" id="galleryFrame" src="" title="Gallery"></iframe>
+      <iframe class="view-embed-frame" id="galleryFrame" title="Gallery"></iframe>
     </div>
 
   </main>
@@ -1243,7 +1258,7 @@ function showView(name){
   // Lazy-load embed iframes
   if(isEmbed){
     const frame = document.getElementById(name+'Frame');
-    if(frame && !frame.src) frame.src = EMBED_VIEWS[name];
+    if(frame && !frame.getAttribute('src')) frame.src = EMBED_VIEWS[name];
   }
   history.replaceState(null,'','#'+name);
   if(name==='overview') refreshDashboard();
