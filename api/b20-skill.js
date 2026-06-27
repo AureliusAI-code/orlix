@@ -92,6 +92,9 @@ const FACTORY_ERR = {
   [ethers.id('InitCallFailed(uint256)').slice(0,10)]:         'InitCallFailed — one of the initCalls reverted',
 };
 
+// createB20 function selector — if this appears as revert data the RPC is echoing our calldata
+const CREATE_B20_SEL = '0x62975e6a';
+
 function decodeFactoryRevert(data) {
   if (!data || data === '0x') return 'Factory reverted (no revert data)';
   const sel = data.slice(0, 10);
@@ -101,7 +104,8 @@ function decodeFactoryRevert(data) {
     return 'Error(string) revert — decode failed';
   }
   if (sel === '0x4e487b71') return 'Panic — arithmetic error or array bounds';
-  return `Unknown error (selector ${sel})`;
+  if (sel === CREATE_B20_SEL) return '__ECHO__'; // RPC echoed our own calldata — not a real error
+  return `Factory custom error (selector ${sel})`;
 }
 
 // ── JSON-RPC helpers ──────────────────────────────────────────────────────────
@@ -593,9 +597,16 @@ async function handlePrepare(body, res) {
     const sim = await ethCallSim(net, { from: simFrom, to: B20_FACTORY, data: calldata, value: '0x0' });
 
     if (sim.reverted) {
-      activated = false;
-      simRevertReason = decodeFactoryRevert(sim.data);
-      warnings.push(`Factory simulation reverted: ${simRevertReason}`);
+      const decoded = decodeFactoryRevert(sim.data);
+      if (decoded === '__ECHO__' || (sim.data && sim.data.startsWith(CREATE_B20_SEL))) {
+        // RPC echoed our calldata back — precompile may not support eth_call simulation.
+        // Trust the Activation Registry result instead of treating this as a hard block.
+        warnings.push('Factory simulation inconclusive (RPC returned calldata echo) — relying on Activation Registry');
+      } else {
+        activated = false;
+        simRevertReason = decoded;
+        warnings.push(`Factory simulation reverted: ${simRevertReason}`);
+      }
     } else {
       const simResult = sim.data;
       const isValidAddress = simResult && simResult.length === 66
@@ -603,10 +614,12 @@ async function handlePrepare(body, res) {
       if (isValidAddress) {
         activated = true;
       } else if (!simResult || simResult === '0x' || simResult === '0x' + '0'.repeat(64)) {
-        activated = false;
+        // Empty result — precompile not deployed or not active
         warnings.push('B20 factory returned empty — precompile not active on this network yet');
+        // Keep activated from registry check (don't override to false here)
+      } else if (simResult.startsWith(CREATE_B20_SEL)) {
+        warnings.push('Factory simulation inconclusive (calldata echo in result)');
       } else {
-        // Some RPC providers return revert data in result rather than error field
         simRevertReason = decodeFactoryRevert(simResult);
         warnings.push(`Factory simulation failed: ${simRevertReason}`);
         activated = false;

@@ -1007,7 +1007,9 @@ async function onDeploy() {
       return;
     }
     if (!data.activated) {
-      const reason = data.revertReason || data.message || 'B20 not yet active on this network';
+      const reason = data.revertReason
+        ? data.revertReason
+        : 'B20 Activation Registry returned false — Beryl hardfork may not be active on Base Sepolia yet';
       setDeployBtn('error', '', reason);
       deploying = false;
       return;
