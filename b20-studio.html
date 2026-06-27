@@ -769,36 +769,43 @@ select.inp option{background:var(--s2);color:var(--t1)}
   <div id="tabMint" style="display:none">
     <div class="pg-label">Mint</div>
     <h1 class="pg-title">Mint B20 Tokens</h1>
-    <p class="pg-sub">Mint tokens to any address. Your wallet must hold the MINT_ROLE on the token.</p>
+    <p class="pg-sub">Add supply to your deployed B20 token.</p>
     <div class="card">
       <div class="sec-label">Token</div>
-      <div style="margin-bottom:14px">
+      <div style="margin-bottom:10px">
         <label style="font-size:.7rem;color:var(--t3);display:block;margin-bottom:5px">Contract Address</label>
         <input id="mintTokenAddr" type="text" placeholder="0x…" style="width:100%;background:var(--s2);border:1px solid var(--b1);border-radius:8px;padding:9px 13px;color:var(--t1);font-family:var(--mono);font-size:.8rem;outline:none" oninput="lookupMintToken()">
       </div>
-      <div id="mintTokenInfo" style="display:none;background:var(--s2);border:1px solid var(--b1);border-radius:8px;padding:10px 14px;margin-bottom:14px;display:none">
-        <div style="font-size:.8rem;font-weight:700;color:var(--t1)" id="mintTokenName">—</div>
+      <div id="mintTokenInfo" style="display:none;background:var(--s2);border:1px solid var(--b1);border-radius:8px;padding:10px 14px;margin-bottom:10px">
+        <div style="font-size:.85rem;font-weight:700;color:var(--t1)" id="mintTokenName">—</div>
         <div style="font-size:.68rem;color:var(--t3);margin-top:2px" id="mintTokenDecimals">—</div>
         <input type="hidden" id="mintDecimals" value="18">
       </div>
-      <div class="sec-label" style="margin-top:18px">Amount</div>
-      <div style="margin-bottom:14px">
-        <label style="font-size:.7rem;color:var(--t3);display:block;margin-bottom:5px">Amount to Mint</label>
-        <input id="mintAmount" type="text" placeholder="e.g. 1000000" style="width:100%;background:var(--s2);border:1px solid var(--b1);border-radius:8px;padding:9px 13px;color:var(--t1);font-size:.85rem;outline:none">
+
+      <!-- Role status banner — shown after token lookup -->
+      <div id="mintRoleBanner" style="display:none;border-radius:10px;padding:12px 14px;margin-bottom:14px;font-size:.8rem">
+        <div id="mintRoleMsg" style="font-weight:600;margin-bottom:6px"></div>
+        <button id="mintGrantBtn" onclick="grantMintRole()" style="display:none;padding:7px 16px;border-radius:8px;border:none;background:var(--accent);color:#fff;font-size:.78rem;font-weight:700;cursor:pointer;font-family:var(--font)">Grant MINT_ROLE to my wallet</button>
+        <div id="mintGrantTx" style="display:none;font-family:var(--mono);font-size:.68rem;color:#4ade80;margin-top:6px;word-break:break-all"></div>
       </div>
-      <div style="margin-bottom:18px">
-        <label style="font-size:.7rem;color:var(--t3);display:block;margin-bottom:5px">Recipient Address</label>
-        <input id="mintRecipient" type="text" placeholder="0x… (defaults to your wallet)" style="width:100%;background:var(--s2);border:1px solid var(--b1);border-radius:8px;padding:9px 13px;color:var(--t1);font-family:var(--mono);font-size:.8rem;outline:none">
+
+      <!-- Mint form — only shown when user has MINT_ROLE -->
+      <div id="mintForm" style="display:none">
+        <div class="sec-label" style="margin-top:4px">Amount</div>
+        <div style="margin-bottom:14px;margin-top:8px">
+          <label style="font-size:.7rem;color:var(--t3);display:block;margin-bottom:5px">Amount to Mint</label>
+          <input id="mintAmount" type="text" placeholder="e.g. 1000000" style="width:100%;background:var(--s2);border:1px solid var(--b1);border-radius:8px;padding:9px 13px;color:var(--t1);font-size:.85rem;outline:none">
+        </div>
+        <div style="margin-bottom:18px">
+          <label style="font-size:.7rem;color:var(--t3);display:block;margin-bottom:5px">Recipient Address</label>
+          <input id="mintRecipient" type="text" placeholder="0x… (defaults to your wallet)" style="width:100%;background:var(--s2);border:1px solid var(--b1);border-radius:8px;padding:9px 13px;color:var(--t1);font-family:var(--mono);font-size:.8rem;outline:none">
+        </div>
+        <button onclick="onMint()" style="width:100%;padding:13px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-size:.88rem;font-weight:700;cursor:pointer;box-shadow:0 2px 14px rgba(240,120,48,.28);transition:opacity .15s" onmouseover="this.style.opacity='.88'" onmouseout="this.style.opacity='1'">→ Mint Tokens</button>
+        <div id="mintTxRow" style="display:none;margin-top:14px;background:var(--s2);border:1px solid rgba(74,222,128,.25);border-radius:8px;padding:10px 14px">
+          <div style="font-size:.68rem;color:var(--t3);margin-bottom:3px">TX SUBMITTED</div>
+          <div id="mintTxHash" style="font-family:var(--mono);font-size:.74rem;color:#4ade80;word-break:break-all"></div>
+        </div>
       </div>
-      <button onclick="onMint()" style="width:100%;padding:13px;border-radius:10px;border:none;background:var(--orange);color:#fff;font-size:.88rem;font-weight:700;cursor:pointer;box-shadow:0 2px 14px rgba(240,120,48,.28);transition:opacity .15s" onmouseover="this.style.opacity='.88'" onmouseout="this.style.opacity='1'">Mint Tokens</button>
-      <div id="mintTxRow" style="display:none;margin-top:14px;background:var(--s2);border:1px solid rgba(74,222,128,.25);border-radius:8px;padding:10px 14px">
-        <div style="font-size:.68rem;color:var(--t3);margin-bottom:3px">TX SUBMITTED</div>
-        <div id="mintTxHash" style="font-family:var(--mono);font-size:.74rem;color:#4ade80;word-break:break-all"></div>
-      </div>
-    </div>
-    <div class="card" style="font-size:.78rem;color:var(--t3);line-height:1.7">
-      <div style="font-weight:700;color:var(--t2);margin-bottom:8px">How minting works</div>
-      Your wallet must hold <span style="color:var(--orange);font-family:var(--mono);font-size:.72rem">MINT_ROLE</span> on the token contract. You can grant it during deployment (Roles section) or via Manage. The mint function encodes as <span style="color:var(--orange);font-family:var(--mono);font-size:.72rem">mint(address to, uint256 amount)</span> — amounts are in raw units (multiply by 10^decimals).
     </div>
   </div>
 
@@ -1551,9 +1558,32 @@ window.addEventListener('orlix:wallet:disconnected', () => {
 });
 
 // ── mint tab ──────────────────────────────────────────────────────────────────
+// Role constants (keccak256 values from b20-skill.js)
+const MINT_ROLE_HASH         = '0x154c00819833dac601ee5ddded6fda79d9d8b506b911b3dbd54cdb95fe6c3686';
+const DEFAULT_ADMIN_ROLE_HASH = '0x0000000000000000000000000000000000000000000000000000000000000000';
+
+async function ethCallLocal(to, data) {
+  // Direct eth_call via the connected wallet provider (avoids needing our API for simple reads)
+  return window.ethereum.request({ method: 'eth_call', params: [{ to, data }, 'latest'] });
+}
+
+async function hasRole(tokenAddr, role, account) {
+  try {
+    // hasRole(bytes32,address) = 0x91d14854
+    const roleHex = role.replace('0x', '').padStart(64, '0');
+    const addrHex = account.replace('0x', '').toLowerCase().padStart(64, '0');
+    const result  = await ethCallLocal(tokenAddr, '0x91d14854' + roleHex + addrHex);
+    return result && result !== '0x' && BigInt(result) !== 0n;
+  } catch { return false; }
+}
+
 async function lookupMintToken() {
-  const addr  = (document.getElementById('mintTokenAddr').value || '').trim();
+  const addr   = (document.getElementById('mintTokenAddr').value || '').trim();
   const infoEl = document.getElementById('mintTokenInfo');
+  const banner = document.getElementById('mintRoleBanner');
+  const form   = document.getElementById('mintForm');
+  banner.style.display = 'none';
+  form.style.display   = 'none';
   if (!addr || !/^0x[0-9a-fA-F]{40}$/.test(addr)) { infoEl.style.display = 'none'; return; }
   try {
     const r = await fetch('/api/b20-skill', {
@@ -1564,11 +1594,90 @@ async function lookupMintToken() {
     const d = await r.json();
     if (d.ok) {
       document.getElementById('mintTokenName').textContent = d.name + ' (' + d.symbol + ')';
-      document.getElementById('mintTokenDecimals').textContent = d.decimals + ' decimals · supply ' + d.totalSupply;
+      document.getElementById('mintTokenDecimals').textContent = d.decimals + ' decimals · current supply: ' + d.totalSupply;
       document.getElementById('mintDecimals').value = d.decimals;
       infoEl.style.display = '';
     }
   } catch {}
+
+  // Check wallet's MINT_ROLE and DEFAULT_ADMIN_ROLE on this token
+  if (!walletAddress) { form.style.display = ''; return; } // not connected — just show form
+  const [hasMint, hasAdmin] = await Promise.all([
+    hasRole(addr, MINT_ROLE_HASH, walletAddress),
+    hasRole(addr, DEFAULT_ADMIN_ROLE_HASH, walletAddress),
+  ]);
+
+  const msg     = document.getElementById('mintRoleMsg');
+  const grantBtn = document.getElementById('mintGrantBtn');
+  const grantTx  = document.getElementById('mintGrantTx');
+
+  if (hasMint) {
+    banner.style.background = 'rgba(34,197,94,.08)';
+    banner.style.border = '1px solid rgba(34,197,94,.25)';
+    msg.style.color = '#22c55e';
+    msg.textContent = '✓ Your wallet has MINT_ROLE — you can mint freely';
+    grantBtn.style.display = 'none';
+    grantTx.style.display  = 'none';
+    banner.style.display = '';
+    form.style.display   = '';
+  } else if (hasAdmin) {
+    banner.style.background = 'rgba(245,158,11,.08)';
+    banner.style.border = '1px solid rgba(245,158,11,.3)';
+    msg.style.color = '#f59e0b';
+    msg.textContent = '⚠ You are the admin but don\'t have MINT_ROLE yet. Grant it to yourself to start minting:';
+    grantBtn.style.display = '';
+    grantBtn.dataset.token  = addr;
+    grantTx.style.display  = 'none';
+    banner.style.display = '';
+    // Don't show mint form yet — wait until they grant the role
+  } else {
+    banner.style.background = 'rgba(239,68,68,.07)';
+    banner.style.border = '1px solid rgba(239,68,68,.2)';
+    msg.style.color = '#ef4444';
+    msg.textContent = '✗ Your wallet doesn\'t have MINT_ROLE or DEFAULT_ADMIN_ROLE on this token.';
+    grantBtn.style.display = 'none';
+    grantTx.style.display  = 'none';
+    banner.style.display = '';
+  }
+}
+
+async function grantMintRole() {
+  const btn   = document.getElementById('mintGrantBtn');
+  const addr  = btn.dataset.token;
+  const grantTx = document.getElementById('mintGrantTx');
+  if (!addr || !walletAddress) return;
+  try {
+    btn.disabled = true; btn.textContent = 'Sending…';
+    // grantRole(bytes32 role, address account) = 0x2f2ff15d
+    const roleHex = MINT_ROLE_HASH.replace('0x', '').padStart(64, '0');
+    const addrHex = walletAddress.replace('0x', '').toLowerCase().padStart(64, '0');
+    const data    = '0x2f2ff15d' + roleHex + addrHex;
+    const net     = NET[network];
+    try { await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: net.chainId }] }); } catch {}
+    const hash = await window.ethereum.request({ method: 'eth_sendTransaction', params: [{ from: walletAddress, to: addr, data, gas: '0x186A0' /* 100k */ }] });
+    grantTx.textContent = 'Tx: ' + hash;
+    grantTx.style.display = '';
+    btn.textContent = '✓ Role granted!';
+    showToast('MINT_ROLE granted — waiting for confirmation…', 'ok');
+    // Poll until role appears, then show mint form
+    for (let i = 0; i < 15; i++) {
+      await new Promise(r => setTimeout(r, 3000));
+      if (await hasRole(addr, MINT_ROLE_HASH, walletAddress)) {
+        document.getElementById('mintRoleMsg').textContent = '✓ MINT_ROLE confirmed — you can now mint!';
+        document.getElementById('mintRoleMsg').style.color = '#22c55e';
+        document.getElementById('mintRoleBanner').style.background = 'rgba(34,197,94,.08)';
+        document.getElementById('mintRoleBanner').style.border = '1px solid rgba(34,197,94,.25)';
+        btn.style.display = 'none';
+        document.getElementById('mintForm').style.display = '';
+        showToast('MINT_ROLE confirmed — mint form unlocked!', 'ok');
+        return;
+      }
+    }
+    showToast('Tx sent — reload this tab in a few seconds to mint', 'info');
+  } catch(e) {
+    btn.disabled = false; btn.textContent = 'Grant MINT_ROLE to my wallet';
+    showToast(e.code === 4001 ? 'Rejected' : (e.message || 'Failed').slice(0,80), 'warn');
+  }
 }
 
 async function onMint() {
