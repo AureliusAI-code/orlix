@@ -422,10 +422,6 @@ select.inp option{background:var(--s2);color:var(--t1)}
     </div>
   </div>
   <div class="nav-right">
-    <div id="nav-status-wrap" class="nav-status">
-      <span class="nav-status-dot green" id="navStatusDot"></span>
-      <span id="navStatusText">Active on Sepolia</span>
-    </div>
     <div id="orlix-wallet" style="display:flex;align-items:center;position:relative">
       <button id="wallet-fallback" onclick="toggleWalletDrop(event)" style="visibility:hidden">
         <span class="wf-dot"></span>
@@ -490,7 +486,7 @@ select.inp option{background:var(--s2);color:var(--t1)}
     </div>
     <div id="sepoliaBar" class="sepolia-bar">
       <span class="sepolia-live"><span class="sepolia-dot"></span>B20 Live on Base Sepolia</span>
-      <a class="faucet-link" href="https://www.coinbase.com/faucets/base-ethereum-goerli-faucet" target="_blank" rel="noopener">Faucet ↗</a>
+      <a class="faucet-link" href="https://portal.cdp.coinbase.com/products/faucet" target="_blank" rel="noopener">Faucet ↗</a>
     </div>
 
     <!-- AI AUTO-FILL -->
@@ -817,12 +813,6 @@ function setNetwork(n) {
   if (sepBtn)  sepBtn.className  = 'net-pill' + (n === 'sepolia'  ? ' active sepolia'  : ' sepolia');
   if (mainBtn) mainBtn.className = 'net-pill' + (n === 'mainnet' ? ' active mainnet' : ' mainnet');
   // Status dot
-  const dot = document.getElementById('navStatusDot');
-  const txt = document.getElementById('navStatusText');
-  if (dot && txt) {
-    dot.className = 'nav-status-dot ' + (n === 'sepolia' ? 'green' : 'amber');
-    txt.textContent = n === 'sepolia' ? 'Active on Sepolia' : 'Mainnet (deploy disabled)';
-  }
   // Show/hide network banners
   const mainBar = document.getElementById('mainnetBar');
   const sepBar  = document.getElementById('sepoliaBar');
@@ -1038,17 +1028,26 @@ async function onDeploy() {
       deploying = false;
       return;
     }
-    if (!data.activated) {
-      const reason = data.revertReason
-        ? data.revertReason
-        : 'B20 Activation Registry returned false — Beryl hardfork may not be active on Base Sepolia yet';
-      setDeployBtn('error', '', reason);
-      deploying = false;
-      return;
+    // Hard-block ONLY on definitive factory errors (wrong params, existing token, etc.)
+    // Do NOT block on activation uncertainty — let the tx reach the chain and report back.
+    const DEFINITIVE_ERRORS = [
+      'UnsupportedVersion','MissingRequiredField','InvalidCurrency',
+      'InvalidDecimals','InvalidVariant','NonPayable',
+    ];
+    if (!data.activated && data.revertReason) {
+      const isDefinitive = DEFINITIVE_ERRORS.some(e => (data.revertReason || '').includes(e));
+      if (isDefinitive) {
+        setDeployBtn('error', '', data.revertReason);
+        deploying = false;
+        return;
+      }
     }
 
     if (data.warnings?.length) {
       data.warnings.forEach(w => console.warn('[B20]', w));
+    }
+    if (!data.activated) {
+      showToast('Activation check inconclusive — broadcasting tx to Base Sepolia', 'info');
     }
 
     const tx = data.deployment?.tx;
