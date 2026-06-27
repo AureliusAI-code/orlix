@@ -170,19 +170,21 @@ async function checkActivated(net, variant) {
 // ── B20 calldata builders ─────────────────────────────────────────────────────
 
 function encodeCreateParams(config) {
-  // B20AssetCreateParams:      {uint8 version=1, string name, string symbol, address initialAdmin, uint8 decimals}
-  // B20StablecoinCreateParams: {uint8 version=1, string name, string symbol, address initialAdmin, string currency}
-  // version=1 per B20_ASSET_CREATE_PARAMS_VERSION / B20_STABLECOIN_CREATE_PARAMS_VERSION in base/base-std.
+  // Factory decodes params with abi.decode(params, (B20AssetCreateParams)) or (B20StablecoinCreateParams).
+  // A Solidity struct decoded this way expects abi.encode(structValue) which is tuple encoding —
+  // the outer bytes start with a 32-byte offset pointer, not the first field directly.
+  // Encoding as flat ['uint8','string',...] produces the wrong 288-byte layout; tuple encoding is 320 bytes.
+  const admin = config.admin ? ethers.getAddress(config.admin) : ethers.ZeroAddress;
   if (config.variant === 'stablecoin') {
     const currency = (config.currency ?? 'USD').trim().toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3) || 'USD';
     return ABI_CODER.encode(
-      ['uint8', 'string', 'string', 'address', 'string'],
-      [1, config.name, config.symbol, config.admin ?? ethers.ZeroAddress, currency]
+      ['tuple(uint8 version, string name, string symbol, address initialAdmin, string currency)'],
+      [{version: 1, name: config.name, symbol: config.symbol, initialAdmin: admin, currency}]
     );
   }
   return ABI_CODER.encode(
-    ['uint8', 'string', 'string', 'address', 'uint8'],
-    [1, config.name, config.symbol, config.admin ?? ethers.ZeroAddress, config.decimals]
+    ['tuple(uint8 version, string name, string symbol, address initialAdmin, uint8 decimals)'],
+    [{version: 1, name: config.name, symbol: config.symbol, initialAdmin: admin, decimals: config.decimals}]
   );
 }
 
@@ -415,7 +417,7 @@ async function handleInfo(net, res) {
 async function handleGas(net, res) {
   try {
     const gas = await fetchGas(net);
-    const DEPLOY_GAS = 300000n;
+    const DEPLOY_GAS = 600000n;
     const maxFee     = BigInt(gas.raw.maxFeePerGas);
     const costWei    = DEPLOY_GAS * maxFee;
     const costEth    = Number(costWei) / 1e18;
@@ -430,7 +432,7 @@ async function handleGas(net, res) {
         tips: gas.tips,
       },
       deployEstimate: {
-        gasUnits:   300000,
+        gasUnits:   600000,
         note:       'Approximate — actual gas depends on calldata size',
         maxCostEth: costEth.toFixed(8),
         maxCostWei: costWei.toString(),
@@ -550,7 +552,7 @@ async function handleValidate(body, res) {
       const balWei  = BigInt(balResult ?? '0x0');
       const balEth  = Number(balWei) / 1e18;
       const maxFee  = BigInt(gas.raw.maxFeePerGas);
-      const costWei = 200000n * maxFee;
+      const costWei = 600000n * maxFee;
       const costEth = Number(costWei) / 1e18;
       const funded  = balWei > costWei;
       if (!funded) warnings.push(`Admin wallet has ${balEth.toFixed(6)} ETH — estimated deploy cost ~${costEth.toFixed(6)} ETH`);
@@ -645,7 +647,7 @@ async function handlePrepare(body, res) {
     const balWei  = BigInt(balResult ?? '0x0');
     const balEth  = Number(balWei) / 1e18;
     const maxFee  = BigInt(gas.raw.maxFeePerGas);
-    const costWei = 300000n * maxFee;
+    const costWei = 600000n * maxFee;
     const costEth = Number(costWei) / 1e18;
     ethBalance = { wei: balWei.toString(), ether: balEth.toFixed(6) };
     if (balWei < costWei) warnings.push(`Admin wallet has ${balEth.toFixed(6)} ETH — estimated deploy cost ~${costEth.toFixed(6)} ETH`);
@@ -668,9 +670,9 @@ async function handlePrepare(body, res) {
     warnings.push(`Live chain data fetch failed: ${e.message}`);
   }
 
-  // Gas: base 250k + 50k per initCall, minimum 300k
+  // Gas: base 550k + 50k per initCall, minimum 600k (tuple-encoded params are larger than flat encoding)
   const initCallsCount = buildInitCalls(config).length;
-  const DEPLOY_GAS_UNITS = Math.max(300000, 250000 + initCallsCount * 50000);
+  const DEPLOY_GAS_UNITS = Math.max(600000, 550000 + initCallsCount * 50000);
   const maxFeeHex = gas?.maxFeePerGas ?? null;
   const tipHex    = gas?.maxPriorityFeePerGas ?? null;
 
