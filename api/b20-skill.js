@@ -533,7 +533,7 @@ async function handlePrepare(body, res) {
   if (errors.length)
     return res.end(JSON.stringify({ ok: false, valid: false, errors, warnings }));
 
-  // Activation check
+  // Activation check — try Activation Registry first, but don't trust it alone
   let activated = false;
   try { activated = await checkActivated(net, config.variant); } catch {}
 
@@ -543,27 +543,27 @@ async function handlePrepare(body, res) {
   // Build calldata
   const calldata = buildCreateCalldata(config, saltHex);
 
-  // Simulate the tx via eth_call — if this reverts, B20 isn't really ready on this network
-  if (activated) {
-    try {
-      const simFrom = config.admin ?? ethers.ZeroAddress;
-      const simResult = await rpc(net, 'eth_call', [
-        { from: simFrom, to: B20_FACTORY, data: calldata, value: '0x0' },
-        'latest',
-      ]);
-      // If eth_call returns empty or zero address → factory likely not implemented
-      if (!simResult || simResult === '0x' || simResult === '0x' + '0'.repeat(64)) {
-        activated = false;
-        warnings.push('B20 factory simulation returned empty — precompile may not be active on this network yet');
-      }
-    } catch (simErr) {
-      // eth_call threw → transaction would revert on-chain
+  // Simulate the tx via eth_call — always try regardless of registry result.
+  // On Sepolia the Activation Registry may not gate B20; factory response is ground truth.
+  try {
+    const simFrom = config.admin ?? ethers.ZeroAddress;
+    const simResult = await rpc(net, 'eth_call', [
+      { from: simFrom, to: B20_FACTORY, data: calldata, value: '0x0' },
+      'latest',
+    ]);
+    if (simResult && simResult !== '0x' && simResult !== '0x' + '0'.repeat(64)) {
+      activated = true; // factory returned a predicted address → precompile is live
+    } else {
       activated = false;
-      const reason = simErr.message?.includes('revert') || simErr.message?.includes('FeatureNotActivated')
-        ? 'FeatureNotActivated — B20 not yet live on this network'
-        : simErr.message ?? 'Simulation failed';
-      warnings.push(`Deploy simulation failed: ${reason}`);
+      warnings.push('B20 factory simulation returned empty — precompile may not be active on this network yet');
     }
+  } catch (simErr) {
+    const reason = simErr.message?.includes('revert') || simErr.message?.includes('FeatureNotActivated')
+      ? 'FeatureNotActivated — B20 not yet live on this network'
+      : simErr.message ?? 'Simulation failed';
+    // Only downgrade activated if registry also said false; if registry said true, trust it
+    if (!activated) warnings.push(`Deploy simulation failed: ${reason}`);
+    else warnings.push(`Simulation inconclusive (${reason}) — proceeding based on registry`);
   }
 
   // Fetch live gas + nonce
