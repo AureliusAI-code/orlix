@@ -204,18 +204,30 @@ reply rules:
   return reply || null;
 }
 
+// Known bots — never reply to these
+const BOT_BLOCKLIST = ['clanker_world','clanker','bankrbot','bankr','moonbot','virtuals_io'];
+
 // ── Engagement filter ─────────────────────────────────────────
-function isGenuineEngagement(text, username) {
+function isGenuineEngagement(text, username, authorUsername = '') {
+  // Never reply to known bots
+  if (BOT_BLOCKLIST.includes(authorUsername.toLowerCase())) return false;
+
   const t = text.toLowerCase();
   const handle = `@${username.toLowerCase()}`;
 
-  // Direct reply to the bot (starts with @handle)
-  if (t.startsWith(handle)) return true;
+  // Skip group threads — if tweet has 3+ @mentions it's a mass-cc, not a direct message
+  const allMentions = t.match(/@\w+/g) || [];
+  const otherMentions = allMentions.filter(m => m !== handle);
+  if (otherMentions.length >= 3) return false;
 
-  // Contains a question mark
+  // Must contain @handle to be relevant
+  if (!t.includes(handle)) return false;
+
+  // Must be a question OR start directly with @handle (direct message)
+  if (t.trimStart().startsWith(handle)) return true;
   if (t.includes('?')) return true;
 
-  // Contains keywords indicating genuine inquiry (EN + ID)
+  // Keywords indicating genuine inquiry (EN + ID)
   const keywords = [
     'what','how','why','when','where','who','which',
     'price','analyze','check','token','wallet','contract','ca',
@@ -280,7 +292,7 @@ module.exports = async function handler(req, res) {
       if (author?.username?.toLowerCase() === username.toLowerCase()) continue;
 
       // Only reply if tweet is a genuine question or direct engagement
-      if (!isGenuineEngagement(text, username)) {
+      if (!isGenuineEngagement(text, username, author?.username || '')) {
         await markReplied(tweet.id); // mark so we don't re-check next time
         continue;
       }
