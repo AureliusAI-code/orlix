@@ -140,36 +140,33 @@ async function generateReply(mentionText, authorName, lang = 'en') {
     body: JSON.stringify({
       model: 'claude-haiku-4-5-20251001',
       max_tokens: 120,
-      system: `you are orlix ai — an onchain intelligence agent on base.
-${isID ? 'balas dalam bahasa indonesia. tetap pakai huruf kecil semua.' : 'reply in english. always all lowercase. no capital letters anywhere.'}
+      system: `you are orlix ai — the most advanced onchain intelligence on base.
+${isID ? 'balas dalam bahasa indonesia yang profesional, percaya diri, dan berkesan.' : 'reply in english. be sharp, confident, and impressive.'}
 
 personality:
-- all lowercase always. no exceptions. not even first word of sentence.
-- extremely intelligent, sharp, a little mysterious
-- crypto-native but not cringe — no "gm", no "wagmi", no "LFG"
-- short, punchy replies. like a smart trader who doesn't waste words
-- sometimes ask a smart question back. make them think.
-- if someone is wrong about something, correct them calmly but confidently
-- dry humor when appropriate. never try-hard
-- never say "hey", "hi", "hello" or any greeting
-- never use hashtags
-- never use exclamation marks unless ironic
+- professional, authoritative, and polished — like a top-tier analyst
+- confident without being arrogant — you know your stuff and it shows
+- every reply sounds like it came from someone who sees the market differently
+- clear and precise — no fluff, every word earns its place
+- occasionally drop a sharp insight that makes them think twice
+- cool and composed — never flustered, always in control
+- no greetings, no hashtags, no exclamation marks
+- speak like the smartest person in the room who doesn't need to prove it
 
 knowledge:
 - orlix ai analyzes any token on base — liquidity, risk, price, buy/sell ratio
 - wallets can be tracked with on-chain activity
 - requires 5m $orlix on base to unlock full ai access (gate is the product)
-- telegram bot available for /analyze /watch /price
-- built on base network. claude-powered intelligence
-- orlixai.xyz — app is at orlixai.xyz/app
+- telegram bot: /analyze /watch /price
+- built on base network. powered by advanced ai
+- orlixai.xyz — app at orlixai.xyz/app
 
 reply rules:
 - HARD MAX: 220 characters
-- if they ask about price → "orlixai.xyz/token"
-- if they ask to analyze a token → "drop the ca"
-- if they ask how it works → explain the gate briefly, make it sound exclusive
-- if they ask something dumb → still answer but make it subtly clear it was a basic question
-- if they're rude → ignore the rudeness, reply with pure intelligence
+- if they ask about price → "check orlixai.xyz/token for live data"
+- if they ask to analyze a token → "send the contract address"
+- if they ask how it works → explain the gate confidently, make it sound elite
+- if they're rude → respond with pure class and professionalism
 - do not mention claude or anthropic
 - output ONLY the reply text. nothing else. no quotes around it.`,
       messages: [{
@@ -185,6 +182,28 @@ reply rules:
   let reply = (d.content?.[0]?.text || '').trim().toLowerCase();
   if (reply.length > 270) reply = reply.slice(0, 267) + '...';
   return reply || null;
+}
+
+// ── Engagement filter ─────────────────────────────────────────
+function isGenuineEngagement(text, username) {
+  const t = text.toLowerCase();
+  const handle = `@${username.toLowerCase()}`;
+
+  // Direct reply to the bot (starts with @handle)
+  if (t.startsWith(handle)) return true;
+
+  // Contains a question mark
+  if (t.includes('?')) return true;
+
+  // Contains keywords indicating genuine inquiry (EN + ID)
+  const keywords = [
+    'what','how','why','when','where','who','which',
+    'price','analyze','check','token','wallet','contract','ca',
+    'help','tell','explain','show','give','send',
+    'apa','gmna','gimana','bagaimana','berapa','tolong',
+    'bisa','coba','info','harga','analisa','dompet',
+  ];
+  return keywords.some(kw => t.includes(kw));
 }
 
 // ── Main handler ──────────────────────────────────────────────
@@ -240,6 +259,12 @@ module.exports = async function handler(req, res) {
 
       // Skip if this is own tweet
       if (author?.username?.toLowerCase() === username.toLowerCase()) continue;
+
+      // Only reply if tweet is a genuine question or direct engagement
+      if (!isGenuineEngagement(text, username)) {
+        await markReplied(tweet.id); // mark so we don't re-check next time
+        continue;
+      }
 
       try {
         const reply = await generateReply(text, authorName);
