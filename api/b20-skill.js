@@ -80,6 +80,30 @@ const SEL = {
   balanceOf:   '70a08231',
 };
 
+// Known factory custom-error 4-byte selectors → human messages
+const FACTORY_ERR = {
+  [ethers.id('NonPayable()').slice(0,10)]:                    'NonPayable — tx must not send ETH',
+  [ethers.id('TokenAlreadyExists(address)').slice(0,10)]:     'TokenAlreadyExists — try a different salt',
+  [ethers.id('InvalidVariant()').slice(0,10)]:                'InvalidVariant — variant must be 0 (asset) or 1 (stablecoin)',
+  [ethers.id('UnsupportedVersion(uint8,uint8)').slice(0,10)]: 'UnsupportedVersion — params.version must be 1',
+  [ethers.id('MissingRequiredField(string)').slice(0,10)]:    'MissingRequiredField — name, symbol, or admin missing',
+  [ethers.id('InvalidCurrency(string)').slice(0,10)]:         'InvalidCurrency — must be a valid 3-letter ISO code (e.g. USD)',
+  [ethers.id('InvalidDecimals(uint8)').slice(0,10)]:          'InvalidDecimals — asset decimals must be 6–18',
+  [ethers.id('InitCallFailed(uint256)').slice(0,10)]:         'InitCallFailed — one of the initCalls reverted',
+};
+
+function decodeFactoryRevert(data) {
+  if (!data || data === '0x') return 'Factory reverted (no revert data)';
+  const sel = data.slice(0, 10);
+  if (FACTORY_ERR[sel]) return FACTORY_ERR[sel];
+  if (sel === '0x08c379a0') {
+    try { return ABI_CODER.decode(['string'], '0x' + data.slice(10))[0]; } catch {}
+    return 'Error(string) revert — decode failed';
+  }
+  if (sel === '0x4e487b71') return 'Panic — arithmetic error or array bounds';
+  return `Unknown error (selector ${sel})`;
+}
+
 // ── JSON-RPC helpers ──────────────────────────────────────────────────────────
 
 async function rpc(net, method, params = []) {
@@ -110,6 +134,21 @@ async function ethCall(net, to, data) {
   return rpc(net, 'eth_call', [{ to, data }, 'latest']);
 }
 
+// eth_call that returns revert data instead of throwing, for factory simulation
+async function ethCallSim(net, txParams) {
+  const url = RPC_URL[net] ?? RPC_URL.mainnet;
+  const resp = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'eth_call', params: [txParams, 'latest'] }),
+  });
+  const json = await resp.json();
+  if (json.error) {
+    return { reverted: true, data: json.error.data ?? null, message: json.error.message };
+  }
+  return { reverted: false, data: json.result };
+}
+
 // ── Activation Registry ───────────────────────────────────────────────────────
 
 async function checkActivated(net, variant) {
@@ -127,19 +166,19 @@ async function checkActivated(net, variant) {
 // ── B20 calldata builders ─────────────────────────────────────────────────────
 
 function encodeCreateParams(config) {
-  // variant is already the first arg to createB20(uint8 variant,...) — params does NOT repeat it.
-  // Asset:      abi.encode(name, symbol, admin, decimals)
-  // Stablecoin: abi.encode(name, symbol, admin, currency)
+  // B20AssetCreateParams:      {uint8 version=1, string name, string symbol, address initialAdmin, uint8 decimals}
+  // B20StablecoinCreateParams: {uint8 version=1, string name, string symbol, address initialAdmin, string currency}
+  // version=1 per B20_ASSET_CREATE_PARAMS_VERSION / B20_STABLECOIN_CREATE_PARAMS_VERSION in base/base-std.
   if (config.variant === 'stablecoin') {
     const currency = (config.currency ?? 'USD').trim().toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3) || 'USD';
     return ABI_CODER.encode(
-      ['string', 'string', 'address', 'string'],
-      [config.name, config.symbol, config.admin ?? ethers.ZeroAddress, currency]
+      ['uint8', 'string', 'string', 'address', 'string'],
+      [1, config.name, config.symbol, config.admin ?? ethers.ZeroAddress, currency]
     );
   }
   return ABI_CODER.encode(
-    ['string', 'string', 'address', 'uint8'],
-    [config.name, config.symbol, config.admin ?? ethers.ZeroAddress, config.decimals]
+    ['uint8', 'string', 'string', 'address', 'uint8'],
+    [1, config.name, config.symbol, config.admin ?? ethers.ZeroAddress, config.decimals]
   );
 }
 
@@ -545,43 +584,37 @@ async function handlePrepare(body, res) {
   // Build calldata
   const calldata = buildCreateCalldata(config, saltHex);
 
-  // Simulate via eth_call — factory response is ground truth for activation status.
-  // createB20 returns address (32 bytes ABI-encoded) = exactly 66 hex chars with 0x prefix.
-  // Revert reasons start with 0x08c379a0 (Error(string)) or 0x4e487b71 (Panic) — longer, different.
-  // Empty (0x) or zero-padded (0x000...0) = no code at address.
+  // Simulate via eth_call — factory is ground truth.
+  // Success: returns ABI-encoded address (66 hex chars, non-zero) → activated = true.
+  // Revert:  returns error with revert data → decode and report reason → activated = false.
   let simRevertReason = null;
   try {
     const simFrom = config.admin ?? ethers.ZeroAddress;
-    const simResult = await rpc(net, 'eth_call', [
-      { from: simFrom, to: B20_FACTORY, data: calldata, value: '0x0' },
-      'latest',
-    ]);
-    const isValidAddress = simResult && simResult.length === 66
-      && !simResult.startsWith('0x08c379a0')
-      && !simResult.startsWith('0x4e487b71')
-      && simResult !== '0x' + '0'.repeat(64);
-    if (isValidAddress) {
-      activated = true;
-    } else if (!simResult || simResult === '0x') {
+    const sim = await ethCallSim(net, { from: simFrom, to: B20_FACTORY, data: calldata, value: '0x0' });
+
+    if (sim.reverted) {
       activated = false;
-      warnings.push('B20 factory returned empty — precompile not active on this network');
-    } else if (simResult.startsWith('0x08c379a0')) {
-      // Decode Error(string) revert reason
-      try {
-        const msg = ABI_CODER.decode(['string'], '0x' + simResult.slice(10))[0];
-        simRevertReason = msg;
-        warnings.push(`Factory reverted: ${msg}`);
-      } catch { warnings.push('Factory reverted with Error(string) — B20 may not be active'); }
-      activated = false;
+      simRevertReason = decodeFactoryRevert(sim.data);
+      warnings.push(`Factory simulation reverted: ${simRevertReason}`);
     } else {
-      activated = false;
-      warnings.push(`Factory simulation returned unexpected data (${simResult.slice(0, 20)}…)`);
+      const simResult = sim.data;
+      const isValidAddress = simResult && simResult.length === 66
+        && simResult !== '0x' + '0'.repeat(64);
+      if (isValidAddress) {
+        activated = true;
+      } else if (!simResult || simResult === '0x' || simResult === '0x' + '0'.repeat(64)) {
+        activated = false;
+        warnings.push('B20 factory returned empty — precompile not active on this network yet');
+      } else {
+        // Some RPC providers return revert data in result rather than error field
+        simRevertReason = decodeFactoryRevert(simResult);
+        warnings.push(`Factory simulation failed: ${simRevertReason}`);
+        activated = false;
+      }
     }
   } catch (simErr) {
-    // RPC-level error (network, JSON parse, etc.)
-    const reason = simErr.message ?? 'Simulation failed';
-    warnings.push(`Factory simulation error: ${reason}`);
-    // Keep activated as-is from registry check
+    warnings.push(`Factory simulation error: ${simErr.message ?? 'unknown'}`);
+    // Keep activated from registry check
   }
 
   // Fetch live gas + nonce
