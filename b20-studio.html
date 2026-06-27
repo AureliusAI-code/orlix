@@ -900,17 +900,7 @@ function setNetwork(n) {
   }
 }
 
-function showToast(msg, type) {
-  const existing = document.getElementById('b20-toast');
-  if (existing) existing.remove();
-  const t = document.createElement('div');
-  t.id = 'b20-toast';
-  const colors = { info: 'rgba(240,120,48,.9)', warn: 'rgba(234,179,8,.9)', error: 'rgba(239,68,68,.9)' };
-  t.style.cssText = `position:fixed;bottom:28px;left:50%;transform:translateX(-50%);z-index:9999;background:${colors[type]||colors.info};color:#fff;font-size:.78rem;font-weight:600;padding:10px 20px;border-radius:999px;box-shadow:0 4px 20px rgba(0,0,0,.35);pointer-events:none;white-space:nowrap;transition:opacity .3s`;
-  t.textContent = msg;
-  document.body.appendChild(t);
-  setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 300); }, 3000);
-}
+function showToast() {} // notifications disabled
 
 // ── variant ───────────────────────────────────────────────────────────────────
 function setVariant(v) {
