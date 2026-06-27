@@ -210,9 +210,11 @@ select.inp option{background:var(--s2);color:var(--t1)}
 .nav-mid{display:flex;align-items:center;gap:10px}
 .net-nav-wrap{display:flex;align-items:center;background:var(--s2);border:1px solid var(--b1);border-radius:999px;padding:3px;gap:2px}
 .net-nav-pill{display:flex;align-items:center;padding:4px 14px;border-radius:999px;border:1.5px solid transparent;background:none;font-size:.67rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--t3);cursor:pointer;transition:all .15s;font-family:var(--font)}
-.net-nav-pill.active{background:rgba(59,130,246,.12);border-color:rgba(59,130,246,.5);color:#60A5FA}
+.net-nav-pill.active{background:rgba(240,120,48,.12);border-color:rgba(240,120,48,.5);color:var(--orange)}
 .net-nav-pill.disabled{cursor:default;opacity:.35;pointer-events:none}
-.b20-live-badge{font-size:.62rem;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:#60A5FA;border:1px solid rgba(96,165,250,.3);border-radius:999px;padding:4px 11px;white-space:nowrap}
+.net-nav-pill.soon{cursor:pointer;opacity:.5}
+.net-nav-pill.soon:hover{opacity:.75;border-color:rgba(240,120,48,.3);color:var(--orange)}
+.b20-live-badge{font-size:.62rem;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--orange);border:1px solid rgba(240,120,48,.35);border-radius:999px;padding:4px 11px;white-space:nowrap}
 .nav-home-btn{display:flex;align-items:center;gap:5px;color:var(--t3);border:1px solid var(--b1);border-radius:7px;padding:5px 10px;font-size:.72rem;font-weight:600;text-decoration:none;transition:all .15s;white-space:nowrap;font-family:var(--font);margin-right:2px}
 .nav-home-btn:hover{color:var(--t1);border-color:var(--b2)}
 
@@ -363,7 +365,7 @@ select.inp option{background:var(--s2);color:var(--t1)}
   <div class="nav-mid">
     <div class="net-nav-wrap">
       <button class="net-nav-pill active" id="navNetSepolia" onclick="setNetwork('sepolia')">SEPOLIA</button>
-      <button class="net-nav-pill disabled" id="navNetMainnet">MAINNET</button>
+      <button class="net-nav-pill soon" id="navNetMainnet" onclick="showMainnetSoon()">MAINNET</button>
     </div>
     <span class="b20-live-badge">B20 LIVE ON BASE SEPOLIA</span>
   </div>
@@ -690,10 +692,26 @@ const NET = {
 };
 
 function setNetwork(n) {
-  if (n === 'mainnet') return; // mainnet coming soon
+  if (n === 'mainnet') return;
   network = n;
   document.getElementById('navNetSepolia').classList.toggle('active', n === 'sepolia');
   updateSubtitle();
+}
+
+function showMainnetSoon() {
+  showToast('Mainnet activation coming soon — B20 is currently live on Base Sepolia', 'info');
+}
+
+function showToast(msg, type) {
+  const existing = document.getElementById('b20-toast');
+  if (existing) existing.remove();
+  const t = document.createElement('div');
+  t.id = 'b20-toast';
+  const colors = { info: 'rgba(240,120,48,.9)', warn: 'rgba(234,179,8,.9)', error: 'rgba(239,68,68,.9)' };
+  t.style.cssText = `position:fixed;bottom:28px;left:50%;transform:translateX(-50%);z-index:9999;background:${colors[type]||colors.info};color:#fff;font-size:.78rem;font-weight:600;padding:10px 20px;border-radius:999px;box-shadow:0 4px 20px rgba(0,0,0,.35);pointer-events:none;white-space:nowrap;transition:opacity .3s`;
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 300); }, 3000);
 }
 
 // ── variant ───────────────────────────────────────────────────────────────────
@@ -876,7 +894,7 @@ async function onDeploy() {
       deploying = false;
       return;
     }
-    if (!data.activated) { b20Activated = false; showCountdownModal(); deploying = false; return; }
+    if (!data.activated) { b20Activated = false; showToast('B20 not yet activated on this network', 'warn'); deploying = false; return; }
 
     const tx = data.deployment?.tx;
     if (!tx?.to || !tx?.data) {
