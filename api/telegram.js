@@ -435,7 +435,17 @@ Guidelines:
 
 module.exports = async function handler(req, res) {
   if (req.method === 'GET') {
-    return res.status(200).json({ ok: true, configured: !!TG_TOKEN() });
+    const token = TG_TOKEN();
+    const llmKey = ANTHROPIC_KEY();
+    return res.status(200).json({
+      ok: true,
+      configured: !!token,
+      status: {
+        TELEGRAM_BOT_TOKEN: token ? `set (${token.slice(0,8)}...)` : 'MISSING',
+        BANKR_LLM_KEY: llmKey ? `set (${llmKey.slice(0,8)}...)` : 'MISSING',
+        TELEGRAM_WEBHOOK_SECRET: process.env.TELEGRAM_WEBHOOK_SECRET ? 'set' : 'not set',
+      }
+    });
   }
   if (req.method !== 'POST') return res.status(405).end();
 
