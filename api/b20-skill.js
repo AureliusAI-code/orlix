@@ -196,7 +196,14 @@ function buildInitCalls(config) {
     calls.push(B20_IFACE.encodeFunctionData('updateSupplyCap', [BigInt(config.supply_cap)]));
   }
 
-  // Role grants
+  // Auto-grant MINT_ROLE to the initialAdmin so they can mint immediately after deploy.
+  // Without this, the admin only has DEFAULT_ADMIN_ROLE and mint() would always revert.
+  if (config.admin && !config.adminless) {
+    const adminAddr = ethers.getAddress(config.admin);
+    calls.push(B20_IFACE.encodeFunctionData('grantRole', [ROLES.MINT_ROLE, adminAddr]));
+  }
+
+  // Explicit role grants from config (user-specified via roles section)
   const roleMap = {
     minter:       ROLES.MINT_ROLE,
     burner:       ROLES.BURN_ROLE,
@@ -204,12 +211,15 @@ function buildInitCalls(config) {
     pauser:       ROLES.PAUSE_ROLE,
     unpauser:     ROLES.UNPAUSE_ROLE,
     meta_admin:   ROLES.METADATA_ROLE,
-    operator:     ROLES.OPERATOR_ROLE,  // Asset only — rebase multiplier & announcements
+    operator:     ROLES.OPERATOR_ROLE,
   };
   for (const [key, roleHash] of Object.entries(roleMap)) {
     const addr = (config.roles ?? {})[key];
     if (addr && /^0x[0-9a-fA-F]{40}$/i.test(addr)) {
-      calls.push(B20_IFACE.encodeFunctionData('grantRole', [roleHash, addr]));
+      const grantee = ethers.getAddress(addr);
+      // Skip if already granted to admin above (avoid duplicate grantRole for MINT_ROLE)
+      if (roleHash === ROLES.MINT_ROLE && config.admin && grantee.toLowerCase() === config.admin.toLowerCase()) continue;
+      calls.push(B20_IFACE.encodeFunctionData('grantRole', [roleHash, grantee]));
     }
   }
 
@@ -670,9 +680,10 @@ async function handlePrepare(body, res) {
     warnings.push(`Live chain data fetch failed: ${e.message}`);
   }
 
-  // Gas: base 550k + 50k per initCall, minimum 600k (tuple-encoded params are larger than flat encoding)
+  // Gas: base 500k + 50k per initCall, minimum 600k
+  // initCalls always includes at least grantRole(MINT_ROLE, admin) = 1 call → ~550k
   const initCallsCount = buildInitCalls(config).length;
-  const DEPLOY_GAS_UNITS = Math.max(600000, 550000 + initCallsCount * 50000);
+  const DEPLOY_GAS_UNITS = Math.max(600000, 500000 + initCallsCount * 50000);
   const maxFeeHex = gas?.maxFeePerGas ?? null;
   const tipHex    = gas?.maxPriorityFeePerGas ?? null;
 
