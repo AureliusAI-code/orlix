@@ -745,12 +745,21 @@ async function handleReceipt(body, res) {
     }
 
     const success = receipt.status === '0x1';
-    // B20 factory emits TokenCreated(address indexed token, ...) — token is topic[1]
+    // Extract deployed token address from logs.
+    // Strategy 1: find log from B20 factory with token address in topic[1]
+    // Strategy 2: find any log whose emitting address starts with 0xb200 (B20 token address prefix)
     let deployedToken = null;
     if (success && receipt.logs?.length > 0) {
-      const log = receipt.logs.find(l => l.address?.toLowerCase() === B20_FACTORY.toLowerCase());
-      if (log?.topics?.[1]) {
-        deployedToken = '0x' + log.topics[1].slice(26);
+      const factoryLog = receipt.logs.find(l => l.address?.toLowerCase() === B20_FACTORY.toLowerCase());
+      if (factoryLog?.topics?.[1]) {
+        deployedToken = '0x' + factoryLog.topics[1].slice(26);
+      }
+      if (!deployedToken) {
+        const b20Log = receipt.logs.find(l => l.address?.toLowerCase().startsWith('0xb200'));
+        if (b20Log) deployedToken = b20Log.address;
+      }
+      if (!deployedToken && receipt.logs[0]?.address) {
+        deployedToken = receipt.logs[0].address;
       }
     }
 
