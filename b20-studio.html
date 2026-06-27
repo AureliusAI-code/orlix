@@ -333,9 +333,17 @@ select.inp option{background:var(--s2);color:var(--t1)}
 .lbadge-asset{background:rgba(240,120,48,.1);color:var(--orange);border:1px solid rgba(240,120,48,.2)}
 .lbadge-stable{background:rgba(74,222,128,.07);color:#4ade80;border:1px solid rgba(74,222,128,.18)}
 .lcard-meta{display:flex;flex-direction:column;gap:3px;font-size:.7rem;color:var(--t3);margin-bottom:13px}
+.lcard-ca{display:flex;align-items:center;gap:5px;background:rgba(240,120,48,.05);border:1px solid rgba(240,120,48,.15);border-radius:7px;padding:4px 8px;margin-bottom:10px}
+.lcard-ca-val{font-family:var(--mono);font-size:.68rem;color:var(--t2);flex:1}
+.lcard-ca-copy{font-size:.6rem;font-weight:600;padding:1px 7px;border-radius:4px;border:1px solid var(--b1);background:transparent;color:var(--t3);cursor:pointer;transition:.12s}
+.lcard-ca-copy:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
+.lcard-ca-link{font-size:.7rem;color:var(--accent);text-decoration:none;font-weight:700;padding:0 2px}
+.lcard-ca-link:hover{text-decoration:underline}
 .lcard-actions{display:flex;gap:7px}
 .lcard-act{flex:1;padding:6px 8px;border-radius:7px;border:1px solid var(--b1);background:none;color:var(--t3);font-size:.7rem;cursor:pointer;transition:.15s;text-align:center;text-decoration:none;display:flex;align-items:center;justify-content:center}
 .lcard-act:hover{border-color:var(--b2);color:var(--t1)}
+.lcard-act-primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.lcard-act-primary:hover{opacity:.88;border-color:var(--accent);color:#fff}
 .launched-empty{text-align:center;padding:60px 20px}
 .le-ico{font-size:2rem;margin-bottom:14px;opacity:.2}
 .le-title{font-size:.9rem;font-weight:700;color:var(--t1);margin-bottom:7px}
@@ -741,13 +749,8 @@ select.inp option{background:var(--s2);color:var(--t1)}
   <div id="tabTokens" style="display:none">
     <div class="pg-label">My Tokens</div>
     <h1 class="pg-title">My B20 Tokens</h1>
-    <p class="pg-sub">Tokens you deploy on Base appear here after mainnet activates.</p>
-    <div class="empty">
-      <div class="empty-ico">◈</div>
-      <div class="empty-t">No tokens yet</div>
-      B20 deploys go live <strong style="color:var(--orange)">when Base activates the standard</strong>.<br>
-      Configure and deploy from the <a onclick="showTab('create',document.getElementById('sbCreate'))" style="color:var(--orange);cursor:pointer;text-decoration:underline">Create</a> tab.
-    </div>
+    <p class="pg-sub">Tokens you deploy on Base Sepolia. Click Mint to add supply.</p>
+    <div id="myTokensGrid" class="launched-grid" style="margin-top:18px"></div>
   </div>
 
   <!-- MANAGE TAB -->
@@ -958,6 +961,7 @@ function showTab(name, el, isMobile) {
   const bnEl = document.getElementById(bnMap[name]);
   if (bnEl) bnEl.classList.add('active');
   if (name === 'new') loadLaunched();
+  if (name === 'tokens') renderMyTokens();
   if (name === 'mint' && walletAddress) document.getElementById('mintRecipient').placeholder = walletAddress;
   if (isMobile) window.scrollTo({top:0,behavior:'smooth'});
 }
@@ -1188,6 +1192,10 @@ function showDeployedCard(hash, net, predictedCA) {
     document.getElementById('dcScanLink').href = explorer + '/address/' + predictedCA;
     document.getElementById('dcBaseScanBtn').href = explorer + '/address/' + predictedCA;
     document.getElementById('dcActions').style.display = 'flex';
+    // Pre-save to My Tokens (pending state, will be overwritten when receipt arrives)
+    saveMyToken({ address: predictedCA, name: _deployedTokenName, symbol: _deployedTokenSym,
+      variant: document.getElementById('fVariant')?.value || 'asset',
+      txHash: hash, deployedAt: Date.now(), network: net });
   } else {
     document.getElementById('dcSub').textContent = 'Confirming on-chain…';
     document.getElementById('dcCA').textContent = '—';
@@ -1223,6 +1231,14 @@ async function pollReceipt(hash, net, predictedCA) {
           document.getElementById('dcCAField').style.display = 'flex';
           document.getElementById('dcScanLink').href = explorer + '/address/' + ca;
           document.getElementById('dcBaseScanBtn').href = explorer + '/address/' + ca;
+          // Save to My Tokens
+          const fDec = document.getElementById('fDec');
+          saveMyToken({
+            address: ca, name: _deployedTokenName, symbol: _deployedTokenSym,
+            variant: document.getElementById('fVariant')?.value || 'asset',
+            decimals: fDec ? parseInt(fDec.value) : 18,
+            txHash: hash, deployedAt: Date.now(), network: net,
+          });
         }
         document.getElementById('dcActions').style.display = 'flex';
         setDeployBtn('success', '✓ Deployed!', 'Token live on Base Sepolia');
@@ -1259,6 +1275,79 @@ function deployAnother() {
   document.getElementById('deployedCard').style.display = 'none';
   deployedTxHash = null;
   setDeployBtn('default');
+}
+
+function mintFromCard(tokenAddr) {
+  const input = document.getElementById('mintToken');
+  if (input) {
+    input.value = tokenAddr;
+    lookupMintToken();
+  }
+  showTab('mint', document.getElementById('sbMint'));
+}
+
+// ── My Tokens (localStorage) ─────────────────────────────────────────────────
+const MY_TOKENS_KEY = 'b20_my_tokens';
+
+function saveMyToken(tokenInfo) {
+  try {
+    const stored = JSON.parse(localStorage.getItem(MY_TOKENS_KEY) || '[]');
+    const existing = stored.findIndex(t => t.address?.toLowerCase() === tokenInfo.address?.toLowerCase());
+    if (existing >= 0) stored[existing] = { ...stored[existing], ...tokenInfo };
+    else stored.unshift(tokenInfo);
+    localStorage.setItem(MY_TOKENS_KEY, JSON.stringify(stored.slice(0, 50)));
+  } catch {}
+}
+
+function loadMyTokens() {
+  try { return JSON.parse(localStorage.getItem(MY_TOKENS_KEY) || '[]'); } catch { return []; }
+}
+
+function renderMyTokens() {
+  const grid = document.getElementById('myTokensGrid');
+  if (!grid) return;
+  const tokens = loadMyTokens();
+  if (!tokens.length) {
+    grid.innerHTML = `<div class="empty" style="padding:40px 0">
+      <div class="empty-ico">◈</div>
+      <div class="empty-t">No tokens yet</div>
+      <p style="font-size:.8rem;color:var(--t2)">Tokens you deploy will appear here automatically.</p>
+      <button onclick="showTab('create',document.getElementById('sbCreate'))" style="margin-top:8px;padding:8px 18px;border-radius:8px;background:var(--accent);color:#fff;border:none;cursor:pointer;font-size:.78rem;font-weight:700;font-family:var(--font)">+ Deploy Token</button>
+    </div>`;
+    return;
+  }
+  const net = network || 'sepolia';
+  const explorer = NET[net]?.explorer ?? 'https://sepolia.basescan.org';
+  grid.innerHTML = tokens.map(t => {
+    const col = tokenColor(t.symbol);
+    const initials = (t.symbol||'?').slice(0,3);
+    const ago = _timeAgo(t.deployedAt);
+    const ca = t.address ? _esc(t.address) : '';
+    const shortCA = t.address ? t.address.slice(0,6)+'…'+t.address.slice(-4) : '';
+    return `<div class="lcard">
+      <div class="lcard-top">
+        <div class="lcard-ico" style="background:${col}">${initials}</div>
+        <div class="lcard-info">
+          <div class="lcard-name">${_esc(t.name||'Token')}</div>
+          <div class="lcard-sym">${_esc(t.symbol||'???')}</div>
+        </div>
+        <span class="lcard-badge ${t.variant==='stablecoin'?'lbadge-stable':'lbadge-asset'}">${_esc(t.variant||'asset')}</span>
+      </div>
+      ${ca ? `<div class="lcard-ca">
+        <span class="lcard-ca-val" title="${ca}">${shortCA}</span>
+        <button class="lcard-ca-copy" onclick="navigator.clipboard.writeText('${ca}');this.textContent='Copied!';setTimeout(()=>this.textContent='Copy',1400)">Copy</button>
+        <a class="lcard-ca-link" href="${explorer}/address/${ca}" target="_blank" rel="noopener">↗</a>
+      </div>` : ''}
+      <div class="lcard-meta">
+        <div class="lcard-meta-row"><span style="opacity:.5">⏱</span>${ago}</div>
+        ${t.decimals !== undefined ? `<div class="lcard-meta-row"><span style="opacity:.5">·</span>${t.decimals} decimals</div>` : ''}
+      </div>
+      <div class="lcard-actions">
+        ${ca ? `<button class="lcard-act lcard-act-primary" onclick="mintFromCard('${ca}')">Mint ↑</button>` : ''}
+        ${t.txHash ? `<a class="lcard-act" href="${explorer}/tx/${_esc(t.txHash)}" target="_blank" rel="noopener">BaseScan ↗</a>` : ''}
+      </div>
+    </div>`;
+  }).join('');
 }
 
 // ── AI auto-fill ──────────────────────────────────────────────────────────────
@@ -1317,9 +1406,13 @@ function renderLaunchedGrid() {
     return;
   }
   grid.innerHTML = items.map(t => {
-    const ago = _timeAgo(t.deployedAt);
-    const col = tokenColor(t.symbol);
+    const ago      = _timeAgo((t.deployedAt || t.timestamp) ? (t.deployedAt || t.timestamp * 1000) : null);
+    const col      = tokenColor(t.symbol);
     const initials = (t.symbol||'?').slice(0,3);
+    const net      = network || 'mainnet';
+    const explorer = NET[net]?.explorer ?? 'https://basescan.org';
+    const shortCA  = t.address ? t.address.slice(0,6)+'…'+t.address.slice(-4) : '';
+    const ca       = t.address ? _esc(t.address) : '';
     return `<div class="lcard">
       <div class="lcard-top">
         <div class="lcard-ico" style="background:${col}">${initials}</div>
@@ -1329,14 +1422,19 @@ function renderLaunchedGrid() {
         </div>
         <span class="lcard-badge ${t.variant==='stablecoin'?'lbadge-stable':'lbadge-asset'}">${_esc(t.variant||'asset')}</span>
       </div>
+      ${ca ? `<div class="lcard-ca">
+        <span class="lcard-ca-val" title="${ca}">${shortCA}</span>
+        <button class="lcard-ca-copy" onclick="navigator.clipboard.writeText('${ca}');this.textContent='Copied!';setTimeout(()=>this.textContent='Copy',1400)" title="Copy CA">Copy</button>
+        <a class="lcard-ca-link" href="${explorer}/address/${ca}" target="_blank" rel="noopener">↗</a>
+      </div>` : ''}
       <div class="lcard-meta">
         <div class="lcard-meta-row"><span style="opacity:.5">⏱</span>${ago}</div>
         <div class="lcard-meta-row"><span style="opacity:.5">👤</span>${t.deployer?_esc(t.deployer.slice(0,6))+'…'+_esc(t.deployer.slice(-4)):'unknown'}</div>
         ${t.supply?`<div class="lcard-meta-row"><span style="opacity:.5">◎</span>${Number(t.supply).toLocaleString()} supply</div>`:''}
       </div>
       <div class="lcard-actions">
-        ${t.txHash?`<a class="lcard-act" href="https://basescan.org/tx/${t.txHash}" target="_blank" rel="noopener">Basescan ↗</a>`:''}
-        <button class="lcard-act" onclick="showTab('manage',document.getElementById('sbManage'))">Manage</button>
+        ${ca ? `<button class="lcard-act lcard-act-primary" onclick="mintFromCard('${ca}')">Mint ↑</button>` : ''}
+        ${t.txHash?`<a class="lcard-act" href="${explorer}/tx/${_esc(t.txHash)}" target="_blank" rel="noopener">BaseScan ↗</a>`:''}
       </div>
     </div>`;
   }).join('');
