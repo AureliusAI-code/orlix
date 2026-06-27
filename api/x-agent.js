@@ -184,6 +184,28 @@ reply rules:
   return reply || null;
 }
 
+// ── Engagement filter ─────────────────────────────────────────
+function isGenuineEngagement(text, username) {
+  const t = text.toLowerCase();
+  const handle = `@${username.toLowerCase()}`;
+
+  // Direct reply to the bot (starts with @handle)
+  if (t.startsWith(handle)) return true;
+
+  // Contains a question mark
+  if (t.includes('?')) return true;
+
+  // Contains keywords indicating genuine inquiry (EN + ID)
+  const keywords = [
+    'what','how','why','when','where','who','which',
+    'price','analyze','check','token','wallet','contract','ca',
+    'help','tell','explain','show','give','send',
+    'apa','gmna','gimana','bagaimana','berapa','tolong',
+    'bisa','coba','info','harga','analisa','dompet',
+  ];
+  return keywords.some(kw => t.includes(kw));
+}
+
 // ── Main handler ──────────────────────────────────────────────
 module.exports = async function handler(req, res) {
   // Allow GET for health check
@@ -237,6 +259,12 @@ module.exports = async function handler(req, res) {
 
       // Skip if this is own tweet
       if (author?.username?.toLowerCase() === username.toLowerCase()) continue;
+
+      // Only reply if tweet is a genuine question or direct engagement
+      if (!isGenuineEngagement(text, username)) {
+        await markReplied(tweet.id); // mark so we don't re-check next time
+        continue;
+      }
 
       try {
         const reply = await generateReply(text, authorName);
