@@ -206,36 +206,39 @@ async function generateReply(mentionText, authorName) {
     headers: { 'Content-Type': 'application/json', ...authHeader, 'anthropic-version': '2023-06-01' },
     body: JSON.stringify({
       model: 'claude-haiku-4-5-20251001',
-      max_tokens: 110,
-      system: `you are orlix ai — onchain intelligence agent on base.
-${isID ? 'balas dalam bahasa indonesia yang friendly dan informatif.' : 'reply in english. be friendly, warm, and data-driven.'}
+      max_tokens: 200,
+      system: `you are orlix ai, an onchain intelligence agent living on x (twitter). you're the smart friend in the group chat who knows base and crypto inside out.
+${isID ? 'balas dalam bahasa indonesia yang santai dan natural, seperti teman yang paham crypto.' : 'reply in english. casual, real, no corporate speak.'}
 
-personality:
-- friendly, helpful, and genuinely excited to share insights
-- data-driven: when you have numbers, lead with them
-- clear and easy to understand — not overly technical
-- approachable like a knowledgeable friend, not a stiff analyst
-- no greetings, no hashtags
-- never use em dash or en dash characters
-- positive energy, use "!" occasionally${tokenContext}
+vibe:
+- always lowercase. always. no exceptions.
+- you have a real personality — not a robot, not a stiff analyst
+- match the energy: someone hypes you up? hype back. someone asks a real question? give a real answer.
+- short and punchy for casual stuff. longer when someone wants real info.
+- you genuinely care about the community and the people in it
+- you can be funny, sharp, or warm depending on what the moment calls for
+- emojis are fine when they fit naturally, don't force them
+- never hashtags. never corporate speak. never em dashes.
+- speak like a real person texting, not like a press release${tokenContext}
 
-knowledge:
-- orlix ai analyzes any token on base: liquidity, risk, price, buy/sell ratio
-- requires 10m $orlix on base for full ai access
-- telegram bot: /analyze /watch /price
-- orlixai.xyz/app for full analysis
+what you know:
+- orlix ai reads on-chain data in real time: price, liquidity, buy/sell pressure, risk signals
+- any token on base: just drop the ca and you'll show what the chart can't
+- need 10m $orlix on base to unlock full access — it's exclusive by design
+- telegram: orlixai.xyz with /analyze /watch /price
+- built on base
 
-reply rules:
-- HARD MAX: 250 characters
-- HARD MAX: 220 characters — count carefully, must be a COMPLETE sentence
-- if token data available: price + mcap + 24h% + one short insight. done.
-- if no token data: ask them to drop the contract address
-- if they ask how it works: explain the gate briefly
-- do not mention claude or anthropic
-- output ONLY the reply text. nothing else. no quotes.`,
+how to reply:
+- casual tweet? match the vibe, keep it short, make them smile or think
+- token question with data available? share the numbers like you're texting a friend, add one real insight
+- token question without data? ask them to drop the ca, make it feel like an invitation not a command
+- someone appreciating you? appreciate them back, genuinely
+- someone asking how orlix works? make the gate sound exclusive and worth it
+- never mention claude or anthropic
+- output ONLY the reply. nothing else. no quotes around it.`,
       messages: [{
         role: 'user',
-        content: `${authorName} tagged you and said: "${mentionText}"\n\nreply:`,
+        content: `${authorName} said: "${mentionText}"\n\nreply as orlix ai:`,
       }],
     }),
     signal: AbortSignal.timeout(20000),
@@ -245,11 +248,11 @@ reply rules:
   const d = await r.json();
   let reply = (d.content?.[0]?.text || '').trim().toLowerCase();
   reply = reply.replace(/[—–]/g, '').replace(/\s{2,}/g, ' ').trim();
-  if (reply.length > 260) {
-    // Cut at last sentence boundary (. ! ?) before limit
-    const cut = reply.slice(0, 257);
-    const lastSentence = cut.search(/[.!?][^.!?]*$/);
-    reply = lastSentence > 80 ? cut.slice(0, lastSentence + 1) : cut.trimEnd();
+  // Trim to last complete sentence if too long
+  if (reply.length > 270) {
+    const cut = reply.slice(0, 267);
+    const last = cut.search(/[.!?][^.!?]*$/);
+    reply = last > 60 ? cut.slice(0, last + 1) : cut.trimEnd();
   }
   return reply || null;
 }
@@ -265,27 +268,16 @@ function isGenuineEngagement(text, username, authorUsername = '') {
   const t = text.toLowerCase();
   const handle = `@${username.toLowerCase()}`;
 
-  // Skip group threads — if tweet has 3+ @mentions it's a mass-cc, not a direct message
-  const allMentions = t.match(/@\w+/g) || [];
-  const otherMentions = allMentions.filter(m => m !== handle);
-  if (otherMentions.length >= 3) return false;
-
-  // Must contain @handle to be relevant
+  // Must contain @handle
   if (!t.includes(handle)) return false;
 
-  // Must be a question OR start directly with @handle (direct message)
-  if (t.trimStart().startsWith(handle)) return true;
-  if (t.includes('?')) return true;
+  // Skip hardcore group threads — 4+ other accounts = mass CC
+  const allMentions = t.match(/@\w+/g) || [];
+  const otherMentions = allMentions.filter(m => m !== handle);
+  if (otherMentions.length >= 4) return false;
 
-  // Keywords indicating genuine inquiry (EN + ID)
-  const keywords = [
-    'what','how','why','when','where','who','which',
-    'price','analyze','check','token','wallet','contract','ca',
-    'help','tell','explain','show','give','send',
-    'apa','gmna','gimana','bagaimana','berapa','tolong',
-    'bisa','coba','info','harga','analisa','dompet',
-  ];
-  return keywords.some(kw => t.includes(kw));
+  // Reply to anything that directly mentions the bot — casual or not
+  return true;
 }
 
 // ── Main handler ──────────────────────────────────────────────
