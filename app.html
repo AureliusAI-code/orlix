@@ -72,10 +72,7 @@ input,select,textarea{font-family:var(--mono)}
 }
 .tb-in{display:flex;align-items:center;justify-content:space-between;width:100%;padding:0 18px}
 .tb-left{display:flex;align-items:center;gap:12px}
-.tb-brand{
-  font-family:var(--font);font-weight:800;font-size:.9rem;
-  letter-spacing:-.01em;color:var(--text-1);text-decoration:none;
-}
+.tb-brand{display:flex;align-items:center;text-decoration:none}
 .tb-sep{color:var(--text-3);margin:0 2px;font-size:.75rem}
 .tb-title{color:var(--text-3);font-size:.75rem;letter-spacing:.02em}
 .tb-right{display:flex;align-items:center;gap:16px}
@@ -887,7 +884,7 @@ select.inp{cursor:pointer}
   <div class="tb-in">
     <div class="tb-left">
       <button class="menu-btn" id="menuBtn" aria-label="Menu">☰</button>
-      <a href="/" class="tb-brand">ORLIX</a>
+      <a href="/" class="tb-brand"><img src="/orlix-logo.png" alt="ORLIX" style="height:24px;display:block"></a>
       <span class="tb-sep">/</span>
       <span class="tb-title">dashboard</span>
     </div>
