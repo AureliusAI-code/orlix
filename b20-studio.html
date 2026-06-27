@@ -1223,7 +1223,7 @@ async function pollReceipt(hash, net, predictedCA) {
         const fDec = document.getElementById('fDec');
         saveMyToken({
           address: ca || null, name: _deployedTokenName, symbol: _deployedTokenSym,
-          variant: document.getElementById('fVariant')?.value || 'asset',
+          variant: variant || 'asset',
           decimals: fDec ? parseInt(fDec.value) : 18,
           txHash: hash, deployedAt: Date.now(), network: net,
         });
