@@ -137,15 +137,19 @@ module.exports = async (req, res) => {
   if (req.method === 'OPTIONS') { res.writeHead(204, CORS); return res.end(); }
   if (req.method !== 'POST') { res.writeHead(405, CORS); return res.end(JSON.stringify({ error: 'Method not allowed' })); }
 
-  let body = '';
-  await new Promise((resolve, reject) => {
-    req.on('data', d => { body += d; });
-    req.on('end', resolve);
-    req.on('error', reject);
-  });
-
+  // Vercel pre-parses JSON bodies into req.body; fall back to raw stream for other envs
   let query, genre;
-  try { ({ query, genre } = JSON.parse(body)); } catch { res.writeHead(400, CORS); return res.end(JSON.stringify({ error: 'Invalid JSON' })); }
+  if (req.body && typeof req.body === 'object') {
+    ({ query, genre } = req.body);
+  } else {
+    let raw = '';
+    await new Promise((resolve, reject) => {
+      req.on('data', d => { raw += d; });
+      req.on('end', resolve);
+      req.on('error', reject);
+    });
+    try { ({ query, genre } = JSON.parse(raw)); } catch { res.writeHead(400, CORS); return res.end(JSON.stringify({ error: 'Invalid JSON body' })); }
+  }
 
   if (!query?.trim()) { res.writeHead(400, CORS); return res.end(JSON.stringify({ error: 'Missing token query' })); }
   genre = genre || 'trap';

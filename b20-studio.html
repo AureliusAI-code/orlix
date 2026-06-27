@@ -1079,8 +1079,7 @@ async function onDeploy() {
 
     const adminless = document.getElementById('fAdminless').checked;
     const capRaw    = document.getElementById('fCap').value.replace(/,/g,'');
-    _deployInitSupply = (document.getElementById('fInitSupply').value || '').trim().replace(/,/g,'') || '0';
-    _deployDecimals   = parseInt(document.getElementById('fDec').value) || 18;
+    _deployDecimals = parseInt(document.getElementById('fDec').value) || 18;
     const payload   = {
       action:      'prepare',
       name,
@@ -1213,8 +1212,7 @@ async function onDeploy() {
 }
 
 // ── Deployed CA card ─────────────────────────────────────────────────────────
-let _deployedTokenName = '', _deployedTokenSym = '';
-let _deployInitSupply = '0', _deployDecimals = 18;
+let _deployedTokenName = '', _deployedTokenSym = '', _deployDecimals = 18;
 
 function showDeployedCard(hash, net, predictedCA) {
   const explorer = NET[net]?.explorer ?? 'https://sepolia.basescan.org';
@@ -1269,10 +1267,6 @@ async function pollReceipt(hash, net, predictedCA) {
         });
         document.getElementById('dcActions').style.display = 'flex';
         setDeployBtn('success', '✓ Deployed!', 'Token live on Base Sepolia');
-        // Auto-mint initial supply as a separate tx (user wallet is msg.sender with MINT_ROLE)
-        if (ca && _deployInitSupply && _deployInitSupply !== '0' && walletAddress) {
-          await autoMintSupply(ca, _deployInitSupply, _deployDecimals, net, explorer);
-        }
         return;
       } else if (d.status === 'failed') {
         document.getElementById('dcCheck').textContent = '✗';
@@ -1288,52 +1282,6 @@ async function pollReceipt(hash, net, predictedCA) {
   }
   document.getElementById('dcSub').textContent = 'Still pending — check BaseScan';
   setDeployBtn('success', '✓ Submitted!', 'View on BaseScan →');
-}
-
-async function autoMintSupply(tokenCA, supply, decimals, net, explorer) {
-  const sub = document.getElementById('dcSub');
-  try {
-    sub.textContent = '⏳ Minting initial supply…';
-    // Encode mint(address,uint256) — selector 0x40c10f19
-    const supplyWei = BigInt(supply) * (10n ** BigInt(decimals));
-    const addrPart  = walletAddress.replace('0x','').toLowerCase().padStart(64,'0');
-    const amtPart   = supplyWei.toString(16).padStart(64,'0');
-    const mintData  = '0x40c10f19' + addrPart + amtPart;
-
-    const mintHash = await window.ethereum.request({
-      method: 'eth_sendTransaction',
-      params: [{ from: walletAddress, to: tokenCA, data: mintData }],
-    });
-
-    sub.textContent = '⏳ Confirming mint tx…';
-
-    // Poll for mint receipt
-    for (let i = 0; i < 20; i++) {
-      await new Promise(r => setTimeout(r, 3000));
-      try {
-        const receipt = await window.ethereum.request({
-          method: 'eth_getTransactionReceipt',
-          params: [mintHash],
-        });
-        if (!receipt) continue;
-        if (receipt.status === '0x1') {
-          const displayAmt = (Number(supplyWei) / Math.pow(10, decimals)).toLocaleString();
-          const sym = _deployedTokenSym ? ` ${_deployedTokenSym}` : '';
-          sub.textContent = `✓ ${displayAmt}${sym} minted to your wallet`;
-        } else {
-          sub.textContent = 'Mint tx failed — use Mint tab to mint manually';
-        }
-        return;
-      } catch {}
-    }
-    sub.textContent = 'Mint pending — check BaseScan or use Mint tab';
-  } catch (e) {
-    if (e.code === 4001) {
-      sub.textContent = 'Mint skipped — use Mint tab to mint your supply';
-    } else {
-      sub.textContent = 'Mint failed — use Mint tab to mint manually';
-    }
-  }
 }
 
 function copyField(elId, btn) {
