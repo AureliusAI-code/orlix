@@ -1,6 +1,7 @@
 api/ping.js
 api/bankr-tokens.js
 api/music.js
+api/b20-ai.js
 api/x402-analyze.js
 api/x402-chat.js
 api/x402-song.js
