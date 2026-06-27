@@ -627,6 +627,15 @@ select.inp option{background:var(--s2);color:var(--t1)}
         </div>
       </div>
 
+      <!-- Initial Supply -->
+      <div class="field">
+        <div class="cap-label-row">
+          <label class="field-label" style="margin-bottom:0">Initial Supply</label>
+          <span style="font-size:.62rem;color:var(--t3)">minted to you at deploy</span>
+        </div>
+        <input class="inp" id="fInitSupply" type="text" placeholder="e.g. 1000000" oninput="onFormChange()" autocomplete="off">
+      </div>
+
       <!-- Initial Admin -->
       <div class="field">
         <label class="field-label">Initial Admin</label>
@@ -1076,7 +1085,8 @@ async function onDeploy() {
       symbol:      sym,
       variant,
       decimals:    parseInt(document.getElementById('fDec').value),
-      supply_cap:  document.getElementById('fUncapped').checked ? '0' : (capRaw || '0'),
+      supply_cap:     document.getElementById('fUncapped').checked ? '0' : (capRaw || '0'),
+      initial_supply: (document.getElementById('fInitSupply').value || '').trim().replace(/,/g,'') || '0',
       admin:       adminless ? undefined : walletAddress,
       adminless,
       policies: {

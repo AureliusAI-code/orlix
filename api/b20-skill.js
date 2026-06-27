@@ -57,6 +57,7 @@ const FACTORY_IFACE = new ethers.Interface([
 
 const B20_IFACE = new ethers.Interface([
   'function grantRole(bytes32 role, address account)',
+  'function mint(address to, uint256 amount)',
   'function updateSupplyCap(uint256 newSupplyCap)',
   'function name() view returns (string)',
   'function symbol() view returns (string)',
@@ -196,11 +197,18 @@ function buildInitCalls(config) {
     calls.push(B20_IFACE.encodeFunctionData('updateSupplyCap', [BigInt(config.supply_cap)]));
   }
 
-  // Auto-grant MINT_ROLE to the initialAdmin so they can mint immediately after deploy.
-  // Without this, the admin only has DEFAULT_ADMIN_ROLE and mint() would always revert.
+  // Grant MINT_ROLE to admin so they can mint now and in future.
+  // initCalls are executed with deployer as msg.sender, so this grantRole call succeeds
+  // because the deployer is DEFAULT_ADMIN_ROLE (admin of all roles) at init time.
   if (config.admin && !config.adminless) {
     const adminAddr = ethers.getAddress(config.admin);
     calls.push(B20_IFACE.encodeFunctionData('grantRole', [ROLES.MINT_ROLE, adminAddr]));
+
+    // If initial_supply is set, mint it to admin in the same deploy tx
+    if (config.initial_supply && config.initial_supply !== '0') {
+      const supplyWei = BigInt(Math.round(parseFloat(config.initial_supply) * Math.pow(10, config.decimals)));
+      calls.push(B20_IFACE.encodeFunctionData('mint', [adminAddr, supplyWei]));
+    }
   }
 
   // Explicit role grants from config (user-specified via roles section)
@@ -313,6 +321,14 @@ function parseConfig(input) {
     else supplyCap = rawCap;
   }
 
+  // Initial supply: minted to admin at deploy time (in whole token units, not wei)
+  const rawInit = String(input.initial_supply ?? input.initialSupply ?? '0').replace(/,/g, '');
+  let initialSupply = '0';
+  if (rawInit && rawInit !== '0') {
+    if (!/^\d+(\.\d+)?$/.test(rawInit)) errors.push('initial_supply must be a number');
+    else initialSupply = rawInit;
+  }
+
   const pol      = input.policies ?? {};
   const policies = { allowlist: !!pol.allowlist, blocklist: !!pol.blocklist, freeze: !!pol.freeze };
   if (policies.allowlist && policies.blocklist) warnings.push('Both allowlist and blocklist enabled — allowlist takes precedence');
@@ -335,13 +351,14 @@ function parseConfig(input) {
     errors, warnings,
     config: {
       name, symbol, variant, decimals,
-      supply_cap:   supplyCap,
-      admin:        adminless ? null : admin,
+      supply_cap:     supplyCap,
+      initial_supply: initialSupply,
+      admin:          adminless ? null : admin,
       adminless,
       policies,
       roles,
-      currency:     (input.currency ?? 'USD').trim().toUpperCase().slice(0, 3),
-      contract_uri: input.contract_uri ?? input.contractUri ?? null,
+      currency:       (input.currency ?? 'USD').trim().toUpperCase().slice(0, 3),
+      contract_uri:   input.contract_uri ?? input.contractUri ?? null,
     },
   };
 }
