@@ -258,12 +258,27 @@ how to reply:
 }
 
 // Known bots — never reply to these
-const BOT_BLOCKLIST = ['clanker_world','clanker','bankrbot','bankr','moonbot','virtuals_io'];
+const BOT_BLOCKLIST = [
+  'clanker_world','clanker','bankrbot','bankr','moonbot','virtuals_io',
+  'oxtrenchor','oxtrencher','yapprbot','yappr','tweetshift','auto',
+];
+
+// Patterns that indicate auto-generated bot replies
+const BOT_REPLY_PATTERNS = [
+  /\$YOURTICKER/i, /\@yourhandle/i, /automated capital formation/i,
+  /i couldn't find a token ticker/i, /try: `@\w+/i,
+];
 
 // ── Engagement filter ─────────────────────────────────────────
 function isGenuineEngagement(text, username, authorUsername = '') {
   // Never reply to known bots
-  if (BOT_BLOCKLIST.includes(authorUsername.toLowerCase())) return false;
+  if (BOT_BLOCKLIST.some(b => authorUsername.toLowerCase().includes(b))) return false;
+
+  // Skip auto-generated template replies from bots
+  if (BOT_REPLY_PATTERNS.some(p => p.test(text))) return false;
+
+  // Skip if username ends in "bot" (most bots)
+  if (/bot$/i.test(authorUsername)) return false;
 
   const t = text.toLowerCase();
   const handle = `@${username.toLowerCase()}`;
