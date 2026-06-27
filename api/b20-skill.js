@@ -370,7 +370,7 @@ async function handleInfo(net, res) {
 async function handleGas(net, res) {
   try {
     const gas = await fetchGas(net);
-    const DEPLOY_GAS = 200000n;
+    const DEPLOY_GAS = 300000n;
     const maxFee     = BigInt(gas.raw.maxFeePerGas);
     const costWei    = DEPLOY_GAS * maxFee;
     const costEth    = Number(costWei) / 1e18;
@@ -385,7 +385,7 @@ async function handleGas(net, res) {
         tips: gas.tips,
       },
       deployEstimate: {
-        gasUnits:   200000,
+        gasUnits:   300000,
         note:       'Approximate — actual gas depends on calldata size',
         maxCostEth: costEth.toFixed(8),
         maxCostWei: costWei.toString(),
