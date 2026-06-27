@@ -137,13 +137,6 @@ module.exports = async (req, res) => {
   if (req.method === 'OPTIONS') { res.writeHead(204, CORS); return res.end(); }
   if (req.method !== 'POST') { res.writeHead(405, CORS); return res.end(JSON.stringify({ error: 'Method not allowed' })); }
 
-  // Auth gate
-  const authHeader = req.headers['authorization'] || '';
-  if (!authHeader.startsWith('Bearer wallet:0x')) {
-    res.writeHead(401, CORS);
-    return res.end(JSON.stringify({ error: 'Authentication required' }));
-  }
-
   let body = '';
   await new Promise((resolve, reject) => {
     req.on('data', d => { body += d; });

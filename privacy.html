@@ -17,7 +17,10 @@
 <meta name="twitter:title" content="Orlix AI">
 <meta name="twitter:description" content="Personal AI Operating System">
 <meta name="twitter:image" content="https://www.orlixai.xyz/og-image.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="prefetch" href="/app">
 <style>
 :root{
   --bg:#09090B;--bg-2:#111113;--bg-3:#1A1A1E;
@@ -36,6 +39,9 @@
   --tr:0.18s cubic-bezier(.4,0,.2,1);
   --radius:12px;--radius-sm:8px;
 }
+:root.light{--bg:#F8F8FA;--bg-2:#EFEFF2;--bg-3:#E6E6EB;--border:rgba(0,0,0,.08);--border-b:rgba(0,0,0,.14);--text-1:#18181B;--text-2:#52525B;--text-3:#A1A1AA;--orange-dim:rgba(240,120,48,.12);--purple-dim:rgba(167,139,250,.12);--green-dim:rgba(74,222,128,.12)}
+:root.light .nav{background:rgba(248,248,250,.92)!important}
+:root.light .nav-links a:hover{background:rgba(0,0,0,.05)}
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html{scroll-behavior:smooth}
 body{background:var(--bg);color:var(--text-2);font-family:var(--font);font-size:15px;line-height:1.7;-webkit-font-smoothing:antialiased;overflow-x:hidden}
@@ -228,5 +234,8 @@ footer{border-top:1px solid var(--border);padding:40px 0 56px}
   </div>
 </footer>
 
+<script>
+(function(){var r=document.documentElement;if(localStorage.getItem('orlix_theme')==='light')r.classList.add('light');window.addEventListener('storage',function(e){if(e.key==='orlix_theme'){e.newValue==='light'?r.classList.add('light'):r.classList.remove('light');}});})();
+</script>
 </body>
 </html>
