@@ -324,12 +324,34 @@ select.inp option{background:var(--s2);color:var(--t1)}
 /* ── WALLET FALLBACK ── */
 #wallet-fallback{
   display:flex;align-items:center;gap:7px;
-  background:#3B82F6;border:none;border-radius:8px;
+  background:var(--orange);border:none;border-radius:8px;
   padding:8px 16px;font-size:.8rem;font-weight:700;color:#fff;
   cursor:pointer;transition:opacity .15s;white-space:nowrap;
 }
 #wallet-fallback:hover{opacity:.85}
 #wallet-fallback .wf-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.6);flex-shrink:0}
+
+/* ── WALLET NETWORK DROPDOWN ── */
+#wallet-net-drop{
+  position:absolute;top:calc(100% + 8px);right:0;
+  background:var(--s2);border:1px solid var(--b2);border-radius:10px;
+  padding:6px;min-width:210px;z-index:200;
+  box-shadow:0 8px 32px rgba(0,0,0,.4);
+  animation:dropIn .12s ease;
+}
+@keyframes dropIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+.wnd-title{font-size:.62rem;font-weight:700;color:var(--t3);letter-spacing:.1em;text-transform:uppercase;padding:6px 10px 4px}
+.wnd-item{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:10px 12px;border-radius:7px;cursor:pointer;
+  transition:background .12s;font-size:.82rem;font-weight:600;color:var(--t2);
+}
+.wnd-item:hover{background:var(--s3);color:var(--t1)}
+.wnd-item-soon{cursor:default;opacity:.5}
+.wnd-item-soon:hover{background:none;color:var(--t2)}
+.wnd-badge{font-size:.58rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;padding:2px 8px;border-radius:4px;flex-shrink:0}
+.wnd-badge.live{background:rgba(74,222,128,.1);color:#4ADE80;border:1px solid rgba(74,222,128,.25)}
+.wnd-badge.soon{background:var(--s3);color:var(--t3);border:1px solid var(--b1)}
 
 /* ── RESPONSIVE ── */
 @media(max-width:1100px){
@@ -370,12 +392,23 @@ select.inp option{background:var(--s2);color:var(--t1)}
     <span class="b20-live-badge">B20 LIVE ON BASE SEPOLIA</span>
   </div>
   <div class="nav-right">
-    <div id="orlix-wallet" style="display:flex;align-items:center">
-      <button id="wallet-fallback" onclick="walletFallback()" style="visibility:hidden">
+    <div id="orlix-wallet" style="display:flex;align-items:center;position:relative">
+      <button id="wallet-fallback" onclick="toggleWalletDrop(event)" style="visibility:hidden">
         <span class="wf-dot"></span>
         <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="2" y="5" width="16" height="12" rx="2"/><path d="M2 9h16"/><circle cx="14.5" cy="13" r="1" fill="currentColor" stroke="none"/></svg>
         Connect Wallet
       </button>
+      <div id="wallet-net-drop" style="display:none">
+        <div class="wnd-title">Connect to network</div>
+        <div class="wnd-item" onclick="walletFallback('sepolia')">
+          <span>Base Sepolia</span>
+          <span class="wnd-badge live">LIVE</span>
+        </div>
+        <div class="wnd-item wnd-item-soon" onclick="showMainnetSoon()">
+          <span>Base Mainnet</span>
+          <span class="wnd-badge soon">SOON</span>
+        </div>
+      </div>
     </div>
   </div>
 </nav>
@@ -1070,16 +1103,34 @@ function _timeAgo(ms) {
 function _esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
 // ── wallet fallback — only shown if wallet.js fails to load ──────────────────
-async function walletFallback() {
+function toggleWalletDrop(e) {
+  e.stopPropagation();
+  const drop = document.getElementById('wallet-net-drop');
+  if (!drop) return;
+  const open = drop.style.display !== 'none';
+  drop.style.display = open ? 'none' : 'block';
+  if (!open) {
+    const close = (ev) => { drop.style.display = 'none'; document.removeEventListener('click', close); };
+    setTimeout(() => document.addEventListener('click', close), 0);
+  }
+}
+
+async function walletFallback(net) {
+  document.getElementById('wallet-net-drop').style.display = 'none';
+  if (!net) net = 'sepolia'; // default to sepolia
+  if (net === 'mainnet') { showMainnetSoon(); return; }
   if (!window.ethereum) { alert('No wallet detected. Install MetaMask or open in a wallet browser.'); return; }
   try {
-    // Auto-switch to Base Sepolia
-    const sepoliaChain = '0x14a34';
+    // Switch to selected network first
+    const chainId = net === 'sepolia' ? '0x14a34' : '0x2105';
+    const chainName = net === 'sepolia' ? 'Base Sepolia' : 'Base';
+    const rpc = net === 'sepolia' ? 'https://sepolia.base.org' : 'https://mainnet.base.org';
+    const explorer = net === 'sepolia' ? 'https://sepolia.basescan.org' : 'https://basescan.org';
     try {
-      await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: sepoliaChain }] });
+      await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId }] });
     } catch (swErr) {
       if (swErr.code === 4902) {
-        await window.ethereum.request({ method: 'wallet_addEthereumChain', params: [{ chainId: sepoliaChain, chainName: 'Base Sepolia', nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 }, rpcUrls: ['https://sepolia.base.org'], blockExplorerUrls: ['https://sepolia.basescan.org'] }] });
+        await window.ethereum.request({ method: 'wallet_addEthereumChain', params: [{ chainId, chainName, nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 }, rpcUrls: [rpc], blockExplorerUrls: [explorer] }] });
       }
     }
     const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
@@ -1110,13 +1161,30 @@ new MutationObserver(() => {
 }).observe(document.getElementById('orlix-wallet') || document.body, { childList: true, subtree: true });
 
 // ── wallet events (dispatched by /wallet-dist/wallet.js) ─────────────────────
-window.addEventListener('orlix:wallet:connected', (e) => {
+window.addEventListener('orlix:wallet:connected', async (e) => {
   const addr = e.detail?.address;
   if (!addr) return;
   walletAddress = addr;
   const el = document.getElementById('fAdmin');
   if (el && !el.value) { el.value = addr; onFormChange(); }
   updateSubtitle();
+  // Auto-switch to the active network in B20 Studio (Sepolia by default)
+  if (window.ethereum) {
+    const net = NET[network] || NET.sepolia;
+    try {
+      const current = await window.ethereum.request({ method: 'eth_chainId' });
+      if (current !== net.chainId) {
+        try {
+          await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: net.chainId }] });
+        } catch (swErr) {
+          if (swErr.code === 4902) {
+            await window.ethereum.request({ method: 'wallet_addEthereumChain', params: [{ chainId: net.chainId, chainName: net.name, nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 }, rpcUrls: [net.rpc], blockExplorerUrls: [net.explorer] }] });
+          }
+        }
+        showToast(`Switched to ${net.name}`, 'info');
+      }
+    } catch {}
+  }
 });
 window.addEventListener('orlix:wallet:disconnected', () => {
   walletAddress = null;
