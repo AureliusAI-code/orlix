@@ -543,6 +543,29 @@ async function handlePrepare(body, res) {
   // Build calldata
   const calldata = buildCreateCalldata(config, saltHex);
 
+  // Simulate the tx via eth_call — if this reverts, B20 isn't really ready on this network
+  if (activated) {
+    try {
+      const simFrom = config.admin ?? ethers.ZeroAddress;
+      const simResult = await rpc(net, 'eth_call', [
+        { from: simFrom, to: B20_FACTORY, data: calldata, value: '0x0' },
+        'latest',
+      ]);
+      // If eth_call returns empty or zero address → factory likely not implemented
+      if (!simResult || simResult === '0x' || simResult === '0x' + '0'.repeat(64)) {
+        activated = false;
+        warnings.push('B20 factory simulation returned empty — precompile may not be active on this network yet');
+      }
+    } catch (simErr) {
+      // eth_call threw → transaction would revert on-chain
+      activated = false;
+      const reason = simErr.message?.includes('revert') || simErr.message?.includes('FeatureNotActivated')
+        ? 'FeatureNotActivated — B20 not yet live on this network'
+        : simErr.message ?? 'Simulation failed';
+      warnings.push(`Deploy simulation failed: ${reason}`);
+    }
+  }
+
   // Fetch live gas + nonce
   let gas = null, nonce = null, ethBalance = null, predictedAddress = null;
   try {
@@ -558,10 +581,10 @@ async function handlePrepare(body, res) {
     const balWei  = BigInt(balResult ?? '0x0');
     const balEth  = Number(balWei) / 1e18;
     const maxFee  = BigInt(gas.raw.maxFeePerGas);
-    const costWei = 200000n * maxFee;
+    const costWei = 300000n * maxFee;
     const costEth = Number(costWei) / 1e18;
     ethBalance = { wei: balWei.toString(), ether: balEth.toFixed(6) };
-    if (balWei < costWei) warnings.push(`Admin wallet has ${balEth.toFixed(6)} ETH — estimated cost ~${costEth.toFixed(6)} ETH`);
+    if (balWei < costWei) warnings.push(`Admin wallet has ${balEth.toFixed(6)} ETH — estimated deploy cost ~${costEth.toFixed(6)} ETH`);
 
     // Predict token address
     if (config.admin) {
@@ -581,9 +604,9 @@ async function handlePrepare(body, res) {
     warnings.push(`Live chain data fetch failed: ${e.message}`);
   }
 
-  // Gas: base 150k + 35k per initCall (grantRole ~30k, updateSupplyCap ~35k)
+  // Gas: base 250k + 50k per initCall, minimum 300k
   const initCallsCount = buildInitCalls(config).length;
-  const DEPLOY_GAS_UNITS = Math.max(200000, 150000 + initCallsCount * 35000);
+  const DEPLOY_GAS_UNITS = Math.max(300000, 250000 + initCallsCount * 50000);
   const maxFeeHex = gas?.maxFeePerGas ?? null;
   const tipHex    = gas?.maxPriorityFeePerGas ?? null;
 

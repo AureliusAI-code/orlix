@@ -833,10 +833,13 @@ async function checkB20Activation() {
 
 // ── pre-Beryl modal ───────────────────────────────────────────────────────────
 function showCountdownModal() {
-  document.getElementById('mTitle').textContent = 'Activation Pending';
-  document.getElementById('mCd').textContent    = '~1 hour';
-  document.getElementById('mUntil').textContent = 'Activation Registry warming up after Beryl hardfork';
-  document.getElementById('mSub').innerHTML     = 'Beryl activated but the B20 Activation Registry takes ~1 hour to enable. <strong style="color:var(--orange)">Try again shortly</strong> — deploying before activation reverts with FeatureNotActivated.';
+  const isTestnet = (typeof network !== 'undefined' && network === 'sepolia');
+  document.getElementById('mTitle').textContent = isTestnet ? 'Not Available on Testnet' : 'Activation Pending';
+  document.getElementById('mCd').textContent    = isTestnet ? 'Mainnet only' : '~1 hour';
+  document.getElementById('mUntil').textContent = isTestnet ? 'B20 deploys on Base Sepolia are not yet supported' : 'Activation Registry warming up after Beryl hardfork';
+  document.getElementById('mSub').innerHTML = isTestnet
+    ? 'B20 is not yet live on Base Sepolia testnet. The standard will be available on testnet alongside or after mainnet activation. <strong style="color:var(--orange)">Follow @OrLixAI for updates</strong>.'
+    : 'Beryl activated but the B20 Activation Registry takes ~1 hour to enable. <strong style="color:var(--orange)">Try again shortly</strong> — deploying before activation reverts with FeatureNotActivated.';
   document.getElementById('deployModal').classList.add('open');
 }
 function closeModal() { document.getElementById('deployModal').classList.remove('open'); }
