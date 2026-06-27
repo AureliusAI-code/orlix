@@ -41,7 +41,7 @@ a{text-decoration:none}
 .nav-badge{display:flex;align-items:center;gap:8px}
 .nav-badge-label{font-size:.875rem;font-weight:700;color:var(--t1);letter-spacing:-.01em}
 .live-tag{font-size:.6rem;font-weight:700;color:#4ade80;background:rgba(74,222,128,.08);border:1px solid rgba(74,222,128,.2);border-radius:4px;padding:2px 7px;letter-spacing:.07em}
-@media(max-width:640px){.b20-live-badge{display:none}}
+@media(max-width:640px){.nav-status{display:none}}
 
 /* ── LAYOUT ── */
 .layout{
@@ -207,14 +207,17 @@ select.inp option{background:var(--s2);color:var(--t1)}
 .det-btn:hover{color:var(--t1);border-color:var(--b2)}
 
 /* ── NAV NETWORK PILLS ── */
-.nav-mid{display:flex;align-items:center;gap:10px}
-.net-nav-wrap{display:flex;align-items:center;background:var(--s2);border:1px solid var(--b1);border-radius:999px;padding:3px;gap:2px}
-.net-nav-pill{display:flex;align-items:center;padding:4px 14px;border-radius:999px;border:1.5px solid transparent;background:none;font-size:.67rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--t3);cursor:pointer;transition:all .15s;font-family:var(--font)}
-.net-nav-pill.active{background:rgba(240,120,48,.12);border-color:rgba(240,120,48,.5);color:var(--orange)}
-.net-nav-pill.disabled{cursor:default;opacity:.35;pointer-events:none}
-.net-nav-pill.soon{cursor:pointer;opacity:.5}
-.net-nav-pill.soon:hover{opacity:.75;border-color:rgba(240,120,48,.3);color:var(--orange)}
-.b20-live-badge{font-size:.62rem;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--orange);border:1px solid rgba(240,120,48,.35);border-radius:999px;padding:4px 11px;white-space:nowrap}
+.nav-mid{display:flex;align-items:center;gap:8px}
+.net-nav-wrap{display:flex;align-items:center;background:var(--s2);border:1px solid var(--b1);border-radius:7px;padding:3px;gap:2px}
+.net-nav-pill{display:flex;align-items:center;padding:4px 13px;border-radius:5px;border:none;background:none;font-size:.75rem;font-weight:600;color:var(--t3);cursor:pointer;transition:all .15s;font-family:var(--font)}
+.net-nav-pill.active{background:var(--s4);color:var(--t1);box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.net-nav-pill.soon{cursor:pointer;opacity:.45}
+.net-nav-pill.soon:hover{opacity:.7;color:var(--t2)}
+/* status dot in right side of nav */
+.nav-status{display:flex;align-items:center;gap:6px;font-size:.72rem;font-weight:600;color:var(--t3);white-space:nowrap}
+.nav-status-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.nav-status-dot.green{background:#22c55e;box-shadow:0 0 6px rgba(34,197,94,.5)}
+.nav-status-dot.amber{background:var(--orange);box-shadow:0 0 6px rgba(240,120,48,.4)}
 .nav-home-btn{display:flex;align-items:center;gap:5px;color:var(--t3);border:1px solid var(--b1);border-radius:7px;padding:5px 10px;font-size:.72rem;font-weight:600;text-decoration:none;transition:all .15s;white-space:nowrap;font-family:var(--font);margin-right:2px}
 .nav-home-btn:hover{color:var(--t1);border-color:var(--b2)}
 
@@ -386,12 +389,15 @@ select.inp option{background:var(--s2);color:var(--t1)}
   </div>
   <div class="nav-mid">
     <div class="net-nav-wrap">
-      <button class="net-nav-pill active" id="navNetSepolia" onclick="setNetwork('sepolia')">SEPOLIA</button>
-      <button class="net-nav-pill soon" id="navNetMainnet" onclick="showMainnetSoon()">MAINNET</button>
+      <button class="net-nav-pill soon" id="navNetMainnet" onclick="showMainnetSoon()">Main</button>
+      <button class="net-nav-pill active" id="navNetSepolia" onclick="setNetwork('sepolia')">Sepolia</button>
     </div>
-    <span class="b20-live-badge">B20 LIVE ON BASE SEPOLIA</span>
   </div>
   <div class="nav-right">
+    <div id="nav-status-wrap" class="nav-status">
+      <span class="nav-status-dot green" id="navStatusDot"></span>
+      <span id="navStatusText">Active on Sepolia</span>
+    </div>
     <div id="orlix-wallet" style="display:flex;align-items:center;position:relative">
       <button id="wallet-fallback" onclick="toggleWalletDrop(event)" style="visibility:hidden">
         <span class="wf-dot"></span>
@@ -728,11 +734,18 @@ function setNetwork(n) {
   if (n === 'mainnet') return;
   network = n;
   document.getElementById('navNetSepolia').classList.toggle('active', n === 'sepolia');
+  document.getElementById('navNetMainnet').classList.toggle('active', n === 'mainnet');
+  const dot  = document.getElementById('navStatusDot');
+  const txt  = document.getElementById('navStatusText');
+  if (dot && txt) {
+    dot.className = 'nav-status-dot ' + (n === 'sepolia' ? 'green' : 'amber');
+    txt.textContent = n === 'sepolia' ? 'Active on Sepolia' : 'Beryl live on Mainnet';
+  }
   updateSubtitle();
 }
 
 function showMainnetSoon() {
-  showToast('Mainnet activation coming soon — B20 is currently live on Base Sepolia', 'info');
+  showToast('B20 not active on Mainnet yet — use Sepolia to deploy and test now', 'info');
 }
 
 function showToast(msg, type) {

@@ -127,18 +127,19 @@ async function checkActivated(net, variant) {
 // ── B20 calldata builders ─────────────────────────────────────────────────────
 
 function encodeCreateParams(config) {
+  // variant is already the first arg to createB20(uint8 variant,...) — params does NOT repeat it.
+  // Asset:      abi.encode(name, symbol, admin, decimals)
+  // Stablecoin: abi.encode(name, symbol, admin, currency)
   if (config.variant === 'stablecoin') {
-    // Currency: A-Z only per B20 spec (no digits, no spaces)
     const currency = (config.currency ?? 'USD').trim().toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3) || 'USD';
     return ABI_CODER.encode(
-      ['uint8', 'string', 'string', 'address', 'string'],
-      [1, config.name, config.symbol, config.admin ?? ethers.ZeroAddress, currency]
+      ['string', 'string', 'address', 'string'],
+      [config.name, config.symbol, config.admin ?? ethers.ZeroAddress, currency]
     );
   }
-  // Asset variant: inner params variant byte must be 0 (not 1) to match createB20(variant=0,...)
   return ABI_CODER.encode(
-    ['uint8', 'string', 'string', 'address', 'uint8'],
-    [0, config.name, config.symbol, config.admin ?? ethers.ZeroAddress, config.decimals]
+    ['string', 'string', 'address', 'uint8'],
+    [config.name, config.symbol, config.admin ?? ethers.ZeroAddress, config.decimals]
   );
 }
 
