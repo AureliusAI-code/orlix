@@ -156,7 +156,7 @@ personality:
 knowledge:
 - orlix ai analyzes any token on base — liquidity, risk, price, buy/sell ratio
 - wallets can be tracked with on-chain activity
-- requires 5m $orlix on base to unlock full ai access (gate is the product)
+- requires 10m $orlix on base to unlock full ai access (gate is the product)
 - telegram bot: /analyze /watch /price
 - built on base network. powered by advanced ai
 - orlixai.xyz — app at orlixai.xyz/app

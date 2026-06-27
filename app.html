@@ -834,7 +834,7 @@ select.inp{cursor:pointer}
     <div class="gate-req">
       <div class="gate-req-ico">🔐</div>
       <div class="gate-req-text">
-        <strong>5,000,000 $ORLIX required</strong>
+        <strong>10,000,000 $ORLIX required</strong>
         Hold $ORLIX on Base to unlock full platform access
       </div>
     </div>
@@ -862,7 +862,7 @@ select.inp{cursor:pointer}
     <div id="gateDenied" style="display:none">
       <div class="gate-denied-ico">🚫</div>
       <div class="gate-denied-title">Insufficient $ORLIX</div>
-      <div class="gate-denied-sub">You need <strong>5,000,000 $ORLIX</strong> to access Orlix AI</div>
+      <div class="gate-denied-sub">You need <strong>10,000,000 $ORLIX</strong> to access Orlix AI</div>
       <div class="gate-denied-balance" id="gateDeniedBalance">Your balance: 0 ORLIX</div>
       <div class="gate-buy-links">
         <a href="https://app.uniswap.org/swap?outputCurrency=0x799c28BAC95B3E0B26534D1e9A586511895EcBA3&chain=base" target="_blank" rel="noopener" class="gate-buy-btn">🦄 Uniswap</a>
@@ -3919,7 +3919,7 @@ document.getElementById('previewCloseBtn').addEventListener('click', closePrevie
 (function(){
   const ORLIX_CA = '0x799c28BAC95B3E0B26534D1e9A586511895EcBA3';
   const BASE_RPC = 'https://mainnet.base.org';
-  const GATE_MIN = 5_000_000n * 10n ** 18n;
+  const GATE_MIN = 10_000_000n * 10n ** 18n;
   const SESS_KEY = 'orlix_gate_v1';
   const CONN_SVG = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Connect Wallet';
 

@@ -7,7 +7,7 @@ const TG_TOKEN      = () => process.env.TELEGRAM_BOT_TOKEN || '';
 
 const ORLIX_CA   = '0x799c28BAC95B3E0B26534D1e9A586511895EcBA3';
 const BASE_RPC   = 'https://mainnet.base.org';
-const GATE_MIN   = BigInt('5000000') * (10n ** 18n);
+const GATE_MIN   = BigInt('10000000') * (10n ** 18n);
 
 // In-memory session cache (survives warm invocations, resets on cold start)
 const sessions = new Map(); // chatId → { wallet, verified, balance }
@@ -90,8 +90,8 @@ async function requireGate(chatId, lang) {
   const isID = lang === 'id';
   await send(chatId,
     isID
-      ? `🔒 *Akses Terkunci*\n\nFitur AI memerlukan minimal *5,000,000 $ORLIX* di wallet Base.\n\nKirim wallet kamu:\n\`/connect 0xALAMAT_WALLET\`\n\n_Beli $ORLIX: [orlixai.xyz/token](https://orlixai.xyz/token)_`
-      : `🔒 *Access Locked*\n\nAI features require holding at least *5,000,000 $ORLIX* on Base.\n\nSend your wallet:\n\`/connect 0xYOUR_WALLET\`\n\n_Get $ORLIX: [orlixai.xyz/token](https://orlixai.xyz/token)_`
+      ? `🔒 *Akses Terkunci*\n\nFitur AI memerlukan minimal *10,000,000 $ORLIX* di wallet Base.\n\nKirim wallet kamu:\n\`/connect 0xALAMAT_WALLET\`\n\n_Beli $ORLIX: [orlixai.xyz/token](https://orlixai.xyz/token)_`
+      : `🔒 *Access Locked*\n\nAI features require holding at least *10,000,000 $ORLIX* on Base.\n\nSend your wallet:\n\`/connect 0xYOUR_WALLET\`\n\n_Get $ORLIX: [orlixai.xyz/token](https://orlixai.xyz/token)_`
   );
 }
 
@@ -125,8 +125,8 @@ async function cmdConnect(chatId, wallet, lang) {
     const needed = Number((GATE_MIN - balance) / 10n ** 15n) / 1000;
     await send(chatId,
       isID
-        ? `❌ *Saldo Tidak Cukup*\n\nWallet: \`${short}\`\nSaldo: *${balFmt} ORLIX*\nDibutuhkan: *5,000,000 ORLIX*\nKurang: *${needed.toLocaleString('en-US', { maximumFractionDigits: 0 })} ORLIX*\n\n_Beli $ORLIX: [orlixai.xyz/token](https://orlixai.xyz/token)_`
-        : `❌ *Insufficient Balance*\n\nWallet: \`${short}\`\nBalance: *${balFmt} ORLIX*\nRequired: *5,000,000 ORLIX*\nShortfall: *${needed.toLocaleString('en-US', { maximumFractionDigits: 0 })} ORLIX*\n\n_Get $ORLIX: [orlixai.xyz/token](https://orlixai.xyz/token)_`
+        ? `❌ *Saldo Tidak Cukup*\n\nWallet: \`${short}\`\nSaldo: *${balFmt} ORLIX*\nDibutuhkan: *10,000,000 ORLIX*\nKurang: *${needed.toLocaleString('en-US', { maximumFractionDigits: 0 })} ORLIX*\n\n_Beli $ORLIX: [orlixai.xyz/token](https://orlixai.xyz/token)_`
+        : `❌ *Insufficient Balance*\n\nWallet: \`${short}\`\nBalance: *${balFmt} ORLIX*\nRequired: *10,000,000 ORLIX*\nShortfall: *${needed.toLocaleString('en-US', { maximumFractionDigits: 0 })} ORLIX*\n\n_Get $ORLIX: [orlixai.xyz/token](https://orlixai.xyz/token)_`
     );
   }
 }
@@ -476,14 +476,14 @@ module.exports = async function handler(req, res) {
     const session = sessions.get(chatId);
     const accessLine = session?.verified
       ? (isID ? `\n✅ _Wallet terverifikasi · ${session.balance} ORLIX_` : `\n✅ _Wallet verified · ${session.balance} ORLIX_`)
-      : (isID ? `\n🔒 _Fitur AI memerlukan 5M $ORLIX — gunakan /connect 0xWALLET_` : `\n🔒 _AI features require 5M $ORLIX — use /connect 0xWALLET_`);
+      : (isID ? `\n🔒 _Fitur AI memerlukan 10M $ORLIX — gunakan /connect 0xWALLET_` : `\n🔒 _AI features require 10M $ORLIX — use /connect 0xWALLET_`);
 
     await send(chatId,
       `👋 ${isID ? `Selamat datang di *Orlix AI*, ${firstName}!` : `Welcome to *Orlix AI*, ${firstName}!`}\n\n` +
       (isID
         ? `Asisten AI yang bisa menjawab *apa saja* — plus analisa token & dompet Base.\n\n*Perintah:*\n`
         : `Your AI assistant for *anything* — plus Base token & wallet analysis.\n\n*Commands:*\n`) +
-      `/connect \`0x...\` — ${isID ? 'Verifikasi wallet (butuh 5M $ORLIX)' : 'Verify wallet (need 5M $ORLIX)'}\n` +
+      `/connect \`0x...\` — ${isID ? 'Verifikasi wallet (butuh 10M $ORLIX)' : 'Verify wallet (need 10M $ORLIX)'}\n` +
       `/analyze \`0x...\` — ${isID ? 'Analisa keamanan token' : 'Token security analysis'}\n` +
       `/watch \`0x...\` — ${isID ? 'Cek aktivitas dompet' : 'Wallet activity tracker'}\n` +
       `/price \`0x...\` — ${isID ? 'Harga token cepat' : 'Quick token price'}\n` +
@@ -508,11 +508,11 @@ module.exports = async function handler(req, res) {
     await send(chatId,
       `*Orlix AI — ${isID ? 'Panduan Lengkap' : 'Full Command Reference'}*\n\n` +
       `*🔑 ${isID ? 'Akses' : 'Access'}* ${verified ? '✅' : '🔒'}\n` +
-      `/connect \`0x...\` — ${isID ? 'Verifikasi 5M $ORLIX untuk akses AI penuh' : 'Verify 5M $ORLIX for full AI access'}\n\n` +
+      `/connect \`0x...\` — ${isID ? 'Verifikasi 10M $ORLIX untuk akses AI penuh' : 'Verify 10M $ORLIX for full AI access'}\n\n` +
       `*📊 ${isID ? 'Data Onchain (Gratis)' : 'Onchain Data (Free)'}*\n` +
       `/price \`0x...\` — ${isID ? 'Harga token instan' : 'Instant token price'}\n` +
       `/watch \`0x...\` — ${isID ? 'Saldo & transaksi wallet' : 'Wallet balance & transactions'}\n\n` +
-      `*🤖 ${isID ? 'Fitur AI (Perlu 5M $ORLIX)' : 'AI Features (Need 5M $ORLIX)'}*\n` +
+      `*🤖 ${isID ? 'Fitur AI (Perlu 10M $ORLIX)' : 'AI Features (Need 10M $ORLIX)'}*\n` +
       `/analyze \`0x...\` — ${isID ? 'Analisa risiko token mendalam' : 'Deep token risk analysis'}\n` +
       `${isID ? 'Chat bebas' : 'Free chat'} — ${isID ? 'Tanya apa saja' : 'Ask anything'}\n` +
       `${isID ? 'Kirim gambar' : 'Send image'} — ${isID ? 'Analisa visual AI' : 'AI visual analysis'}\n\n` +
