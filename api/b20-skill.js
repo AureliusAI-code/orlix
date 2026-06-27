@@ -135,9 +135,10 @@ function encodeCreateParams(config) {
       [1, config.name, config.symbol, config.admin ?? ethers.ZeroAddress, currency]
     );
   }
+  // Asset variant: inner params variant byte must be 0 (not 1) to match createB20(variant=0,...)
   return ABI_CODER.encode(
     ['uint8', 'string', 'string', 'address', 'uint8'],
-    [1, config.name, config.symbol, config.admin ?? ethers.ZeroAddress, config.decimals]
+    [0, config.name, config.symbol, config.admin ?? ethers.ZeroAddress, config.decimals]
   );
 }
 
@@ -543,27 +544,43 @@ async function handlePrepare(body, res) {
   // Build calldata
   const calldata = buildCreateCalldata(config, saltHex);
 
-  // Simulate the tx via eth_call — always try regardless of registry result.
-  // On Sepolia the Activation Registry may not gate B20; factory response is ground truth.
+  // Simulate via eth_call — factory response is ground truth for activation status.
+  // createB20 returns address (32 bytes ABI-encoded) = exactly 66 hex chars with 0x prefix.
+  // Revert reasons start with 0x08c379a0 (Error(string)) or 0x4e487b71 (Panic) — longer, different.
+  // Empty (0x) or zero-padded (0x000...0) = no code at address.
+  let simRevertReason = null;
   try {
     const simFrom = config.admin ?? ethers.ZeroAddress;
     const simResult = await rpc(net, 'eth_call', [
       { from: simFrom, to: B20_FACTORY, data: calldata, value: '0x0' },
       'latest',
     ]);
-    if (simResult && simResult !== '0x' && simResult !== '0x' + '0'.repeat(64)) {
-      activated = true; // factory returned a predicted address → precompile is live
+    const isValidAddress = simResult && simResult.length === 66
+      && !simResult.startsWith('0x08c379a0')
+      && !simResult.startsWith('0x4e487b71')
+      && simResult !== '0x' + '0'.repeat(64);
+    if (isValidAddress) {
+      activated = true;
+    } else if (!simResult || simResult === '0x') {
+      activated = false;
+      warnings.push('B20 factory returned empty — precompile not active on this network');
+    } else if (simResult.startsWith('0x08c379a0')) {
+      // Decode Error(string) revert reason
+      try {
+        const msg = ABI_CODER.decode(['string'], '0x' + simResult.slice(10))[0];
+        simRevertReason = msg;
+        warnings.push(`Factory reverted: ${msg}`);
+      } catch { warnings.push('Factory reverted with Error(string) — B20 may not be active'); }
+      activated = false;
     } else {
       activated = false;
-      warnings.push('B20 factory simulation returned empty — precompile may not be active on this network yet');
+      warnings.push(`Factory simulation returned unexpected data (${simResult.slice(0, 20)}…)`);
     }
   } catch (simErr) {
-    const reason = simErr.message?.includes('revert') || simErr.message?.includes('FeatureNotActivated')
-      ? 'FeatureNotActivated — B20 not yet live on this network'
-      : simErr.message ?? 'Simulation failed';
-    // Only downgrade activated if registry also said false; if registry said true, trust it
-    if (!activated) warnings.push(`Deploy simulation failed: ${reason}`);
-    else warnings.push(`Simulation inconclusive (${reason}) — proceeding based on registry`);
+    // RPC-level error (network, JSON parse, etc.)
+    const reason = simErr.message ?? 'Simulation failed';
+    warnings.push(`Factory simulation error: ${reason}`);
+    // Keep activated as-is from registry check
   }
 
   // Fetch live gas + nonce
@@ -630,9 +647,12 @@ async function handlePrepare(body, res) {
     ok:        true,
     status:    activated ? 'ready' : 'prepared',
     activated,
+    revertReason: simRevertReason,
     message:   activated
       ? 'Config valid — sign and broadcast to deploy'
-      : 'Config valid but B20 Activation Registry not yet enabled. Wait ~1 hour after Beryl hardfork, then deploy.',
+      : simRevertReason
+        ? `Factory reverted: ${simRevertReason}`
+        : 'B20 not yet active on this network — Beryl hardfork activation pending.',
 
     config,
     salt: saltHex,

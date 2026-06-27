@@ -928,7 +928,14 @@ async function onDeploy() {
       return;
     }
     if (!data.activated) {
-      showToast('Activation check inconclusive — attempting deploy…', 'info');
+      const reason = data.revertReason || data.message || 'B20 not yet active on this network';
+      setDeployBtn('error', '', reason);
+      deploying = false;
+      return;
+    }
+
+    if (data.warnings?.length) {
+      data.warnings.forEach(w => console.warn('[B20]', w));
     }
 
     const tx = data.deployment?.tx;
