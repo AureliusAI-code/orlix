@@ -17,8 +17,10 @@
 <meta name="twitter:title" content="Orlix AI">
 <meta name="twitter:description" content="Personal AI Operating System">
 <meta name="twitter:image" content="https://www.orlixai.xyz/og-image.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-<script src="https://unpkg.com/tone@14.9.6/build/Tone.js"></script>
+<script src="https://unpkg.com/tone@14.9.6/build/Tone.js" defer></script>
 <style>
 :root{
   --bg:#09090B;--bg-2:#111113;--bg-3:#1A1A1E;--bg-4:#222226;
@@ -82,6 +84,8 @@ input,select,textarea{font-family:var(--mono)}
 .status-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green)}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.35}}
 .status-dot{animation:blink 2.5s ease-in-out infinite}
+:root.light .titlebar{background:rgba(248,248,250,.92)!important;border-bottom-color:rgba(0,0,0,.08)}
+:root.light .menu-btn{background:rgba(0,0,0,.04);border-color:rgba(0,0,0,.1);color:var(--text-2)}
 
 /* ── layout ── */
 .app-layout{display:flex;height:100vh;height:100dvh;padding-top:52px}
@@ -3696,10 +3700,7 @@ async function generateSong(){
     if(tok)hdrs['Authorization']='Bearer '+tok;
     const res=await fetch('/api/song',{method:'POST',headers:hdrs,body:JSON.stringify({query,genre:songSelectedGenre})});
     stopLoading();
-    if(!res.ok){
-      if(res.status===401){throw new Error('Wallet not connected — click Connect at the top to generate songs');}
-      const err=await res.json().catch(()=>({error:'Unknown error'}));throw new Error(err.error||`HTTP ${res.status}`);
-    }
+    if(!res.ok){const err=await res.json().catch(()=>({error:'Unknown error'}));throw new Error(err.error||`HTTP ${res.status}`);}
     const data=await res.json();
     songCurrentLyrics=data.lyrics;songCurrentToken=data.token;
     const sym=data.token?.symbol||query.toUpperCase().replace('$','');
