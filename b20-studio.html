@@ -200,6 +200,18 @@ select.inp option{background:var(--s2);color:var(--t1)}
 }
 .det-btn:hover{color:var(--t1);border-color:var(--b2)}
 
+/* ── NETWORK TOGGLE ── */
+.net-toggle{display:flex;align-items:center;gap:6px;margin-bottom:14px}
+.net-pill{
+  display:flex;align-items:center;gap:5px;padding:5px 12px;
+  border-radius:999px;border:1px solid var(--b1);background:none;
+  font-size:.7rem;font-weight:600;color:var(--t3);cursor:pointer;
+  transition:all .15s;font-family:var(--font);
+}
+.net-pill.active{background:rgba(240,120,48,.1);border-color:rgba(240,120,48,.3);color:var(--orange)}
+.net-pill.soon{cursor:default;opacity:.45}
+.net-dot{width:5px;height:5px;border-radius:50%;background:currentColor;flex-shrink:0}
+
 /* ── DEPLOY BTN ── */
 .deploy-btn{
   width:100%;padding:14px 20px;border-radius:10px;border:none;cursor:pointer;
@@ -587,6 +599,16 @@ select.inp option{background:var(--s2);color:var(--t1)}
         </div>
       </div>
 
+      <!-- Network toggle -->
+      <div class="net-toggle" style="margin-top:18px">
+        <button class="net-pill active" id="netTestnet" onclick="setNetwork('sepolia')">
+          <span class="net-dot"></span>Testnet
+        </button>
+        <button class="net-pill soon" id="netMainnet" title="B20 mainnet not yet active">
+          <span class="net-dot"></span>Mainnet <span style="font-size:.6rem;opacity:.7;margin-left:2px">· soon</span>
+        </button>
+      </div>
+
       <!-- Deploy -->
       <button class="deploy-btn" onclick="onDeploy()">
         <span>→ Deploy B20 Token</span>
@@ -685,11 +707,26 @@ select.inp option{background:var(--s2);color:var(--t1)}
 </div>
 
 <script>
-let b20Activated = false; // true once Activation Registry confirms B20 is live
+let b20Activated = false;
 let variant = 'asset';
+let network = 'sepolia'; // mainnet locked until B20 activates
 let walletAddress = null;
 let deploying = false;
 let deployedTxHash = null;
+
+const NET = {
+  mainnet: { chainId: '0x2105', name: 'Base',         rpc: 'https://mainnet.base.org',        explorer: 'https://basescan.org' },
+  sepolia: { chainId: '0x14a34', name: 'Base Sepolia', rpc: 'https://sepolia.base.org',        explorer: 'https://sepolia.basescan.org' },
+};
+
+function setNetwork(n) {
+  // mainnet disabled until B20 activates
+  if (n === 'mainnet') return;
+  network = n;
+  document.getElementById('netTestnet').classList.toggle('active', n === 'sepolia');
+  document.getElementById('netMainnet').classList.toggle('active', n === 'mainnet');
+  updateSubtitle();
+}
 
 // ── variant ───────────────────────────────────────────────────────────────────
 function setVariant(v) {
@@ -765,7 +802,7 @@ function setDeployBtn(state, label, sub) {
   } else if (state === 'success') {
     btn.classList.add('dep-success');
     span.textContent = label; if (sub) subEl.textContent = sub;
-    if (deployedTxHash) btn.onclick = () => window.open('https://basescan.org/tx/' + deployedTxHash, '_blank');
+    if (deployedTxHash) btn.onclick = () => window.open(NET[network].explorer + '/tx/' + deployedTxHash, '_blank');
   } else if (state === 'error') {
     btn.classList.add('dep-error');
     span.textContent = '→ Try Again'; subEl.textContent = sub || label;
@@ -779,20 +816,15 @@ function updateSubtitle() {
   const el = document.getElementById('deploySubtitle');
   if (!el) return;
   if (!b20Activated) {
-    const now = Date.now();
-    const activationUTC = new Date('2026-06-26T18:00:00Z').getTime();
-    const suffix = now < activationUTC
-      ? 'activates today ~6pm UTC'
-      : 'Activation Registry warming up…';
-    el.textContent = walletAddress ? suffix : `Connect wallet · ${suffix}`;
+    el.textContent = walletAddress ? 'Checking B20 activation on Sepolia…' : 'Connect wallet to deploy on Sepolia';
     return;
   }
-  el.textContent = walletAddress ? 'Base Beryl is live — ready to deploy' : 'Connect wallet to deploy';
+  el.textContent = walletAddress ? 'Base Sepolia ready — deploy your token' : 'Connect wallet to deploy';
 }
 
 async function checkB20Activation() {
   try {
-    const r = await fetch('/api/b20-skill?action=info');
+    const r = await fetch(`/api/b20-skill?action=info&network=${network}`);
     if (r.ok) { const d = await r.json(); b20Activated = d.activation?.asset === true; }
   } catch {}
   updateSubtitle();
@@ -863,7 +895,7 @@ async function onDeploy() {
         meta_admin:   document.getElementById('fRoleMeta').value.trim()        || undefined,
         operator:     document.getElementById('fRoleOperator').value.trim()   || undefined,
       },
-      network: 'mainnet',
+      network,
     };
     const uri     = document.getElementById('fUri').value.trim();
     const rebase  = document.getElementById('fRebase').value.trim();
@@ -894,23 +926,24 @@ async function onDeploy() {
       return;
     }
 
-    // ── Step 2: Switch to Base Mainnet ────────────────────────────────────────
-    setDeployBtn('loading', '🔄 Switching network…', 'Please confirm network switch in wallet');
+    // ── Step 2: Switch to correct network ────────────────────────────────────
+    const net = NET[network];
+    setDeployBtn('loading', '🔄 Switching network…', `Switching to ${net.name}…`);
     try {
-      await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x2105' }] });
+      await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: net.chainId }] });
     } catch (swErr) {
       if (swErr.code === 4902) {
         await window.ethereum.request({
           method: 'wallet_addEthereumChain',
-          params: [{ chainId: '0x2105', chainName: 'Base', nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 }, rpcUrls: ['https://mainnet.base.org'], blockExplorerUrls: ['https://basescan.org'] }],
+          params: [{ chainId: net.chainId, chainName: net.name, nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 }, rpcUrls: [net.rpc], blockExplorerUrls: [net.explorer] }],
         });
       } else { throw swErr; }
     }
 
     // Verify chain
     const chainId = await window.ethereum.request({ method: 'eth_chainId' });
-    if (chainId !== '0x2105') {
-      setDeployBtn('error', '', 'Switch to Base network in your wallet, then try again');
+    if (chainId !== net.chainId) {
+      setDeployBtn('error', '', `Switch to ${net.name} in your wallet, then try again`);
       deploying = false;
       return;
     }
