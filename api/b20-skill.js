@@ -57,6 +57,7 @@ const FACTORY_IFACE = new ethers.Interface([
 
 const B20_IFACE = new ethers.Interface([
   'function grantRole(bytes32 role, address account)',
+  'function revokeRole(bytes32 role, address account)',
   'function mint(address to, uint256 amount)',
   'function updateSupplyCap(uint256 newSupplyCap)',
   'function name() view returns (string)',
@@ -197,17 +198,22 @@ function buildInitCalls(config) {
     calls.push(B20_IFACE.encodeFunctionData('updateSupplyCap', [BigInt(config.supply_cap)]));
   }
 
-  // Grant MINT_ROLE to admin so they can mint now and in future.
-  // initCalls are executed with deployer as msg.sender, so this grantRole call succeeds
-  // because the deployer is DEFAULT_ADMIN_ROLE (admin of all roles) at init time.
+  // During initCalls, msg.sender = B20 factory (not the deployer).
+  // The factory has DEFAULT_ADMIN_ROLE on the token during initCalls, so grantRole works.
+  // But mint() requires MINT_ROLE — factory doesn't have it by default.
+  // Fix: grant MINT_ROLE to factory first, mint, grant to admin, then revoke from factory.
   if (config.admin && !config.adminless) {
     const adminAddr = ethers.getAddress(config.admin);
-    calls.push(B20_IFACE.encodeFunctionData('grantRole', [ROLES.MINT_ROLE, adminAddr]));
 
-    // If initial_supply is set, mint it to admin in the same deploy tx
     if (config.initial_supply && config.initial_supply !== '0') {
-      const supplyWei = BigInt(Math.round(parseFloat(config.initial_supply) * Math.pow(10, config.decimals)));
+      // Pure BigInt arithmetic — avoids float precision loss (e.g. 1e6 * 1e18 = wrong with floats)
+      const supplyWei = BigInt(config.initial_supply) * (10n ** BigInt(config.decimals));
+      calls.push(B20_IFACE.encodeFunctionData('grantRole', [ROLES.MINT_ROLE, B20_FACTORY]));
       calls.push(B20_IFACE.encodeFunctionData('mint', [adminAddr, supplyWei]));
+      calls.push(B20_IFACE.encodeFunctionData('grantRole', [ROLES.MINT_ROLE, adminAddr]));
+      calls.push(B20_IFACE.encodeFunctionData('revokeRole', [ROLES.MINT_ROLE, B20_FACTORY]));
+    } else {
+      calls.push(B20_IFACE.encodeFunctionData('grantRole', [ROLES.MINT_ROLE, adminAddr]));
     }
   }
 
