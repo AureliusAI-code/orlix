@@ -1184,24 +1184,11 @@ function showDeployedCard(hash, net, predictedCA) {
   document.getElementById('dcTitle').textContent = 'Token deployed on Base Sepolia';
   document.getElementById('dcTxHash').textContent = hash;
   document.getElementById('dcTxLink').href = explorer + '/tx/' + hash;
-  if (predictedCA) {
-    // Show predicted CA immediately — confirmed once receipt arrives
-    document.getElementById('dcSub').textContent = 'Confirming on-chain…';
-    document.getElementById('dcCA').textContent = predictedCA;
-    document.getElementById('dcCAField').style.display = 'flex';
-    document.getElementById('dcScanLink').href = explorer + '/address/' + predictedCA;
-    document.getElementById('dcBaseScanBtn').href = explorer + '/address/' + predictedCA;
-    document.getElementById('dcActions').style.display = 'flex';
-    // Pre-save to My Tokens (pending state, will be overwritten when receipt arrives)
-    saveMyToken({ address: predictedCA, name: _deployedTokenName, symbol: _deployedTokenSym,
-      variant: document.getElementById('fVariant')?.value || 'asset',
-      txHash: hash, deployedAt: Date.now(), network: net });
-  } else {
-    document.getElementById('dcSub').textContent = 'Confirming on-chain…';
-    document.getElementById('dcCA').textContent = '—';
-    document.getElementById('dcCAField').style.display = 'none';
-    document.getElementById('dcActions').style.display = 'none';
-  }
+  // Always hide CA and actions until receipt confirms — avoids showing "CA exists" when tx hasn't landed
+  document.getElementById('dcSub').textContent = 'Waiting for block confirmation… (10-30s)';
+  document.getElementById('dcCA').textContent = predictedCA || '—';
+  document.getElementById('dcCAField').style.display = 'none';
+  document.getElementById('dcActions').style.display = 'none';
   document.getElementById('deployedCard').style.display = 'flex';
 }
 
@@ -1231,15 +1218,15 @@ async function pollReceipt(hash, net, predictedCA) {
           document.getElementById('dcCAField').style.display = 'flex';
           document.getElementById('dcScanLink').href = explorer + '/address/' + ca;
           document.getElementById('dcBaseScanBtn').href = explorer + '/address/' + ca;
-          // Save to My Tokens
-          const fDec = document.getElementById('fDec');
-          saveMyToken({
-            address: ca, name: _deployedTokenName, symbol: _deployedTokenSym,
-            variant: document.getElementById('fVariant')?.value || 'asset',
-            decimals: fDec ? parseInt(fDec.value) : 18,
-            txHash: hash, deployedAt: Date.now(), network: net,
-          });
         }
+        // Save confirmed token to My Tokens
+        const fDec = document.getElementById('fDec');
+        saveMyToken({
+          address: ca || null, name: _deployedTokenName, symbol: _deployedTokenSym,
+          variant: document.getElementById('fVariant')?.value || 'asset',
+          decimals: fDec ? parseInt(fDec.value) : 18,
+          txHash: hash, deployedAt: Date.now(), network: net,
+        });
         document.getElementById('dcActions').style.display = 'flex';
         setDeployBtn('success', '✓ Deployed!', 'Token live on Base Sepolia');
         if (ca) showToast('Token deployed! CA: ' + ca, 'ok');
