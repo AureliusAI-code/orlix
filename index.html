@@ -2792,6 +2792,11 @@ document.querySelectorAll('a[href^="#"]').forEach(function(anchor) {
     const isLight = root.classList.toggle('light');
     localStorage.setItem('orlix_theme', isLight ? 'light' : 'dark');
   });
+  window.addEventListener('storage', e => {
+    if(e.key === 'orlix_theme'){
+      e.newValue === 'light' ? root.classList.add('light') : root.classList.remove('light');
+    }
+  });
 })();
 </script>
 
