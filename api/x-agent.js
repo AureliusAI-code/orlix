@@ -168,6 +168,7 @@ reply rules:
 - if they ask how it works → explain the gate confidently, make it sound elite
 - if they're rude → respond with pure class and professionalism
 - do not mention claude or anthropic
+- never use em dash (—) or en dash (–) characters
 - output ONLY the reply text. nothing else. no quotes around it.`,
       messages: [{
         role: 'user',
@@ -180,6 +181,7 @@ reply rules:
   if (!r.ok) return null;
   const d = await r.json();
   let reply = (d.content?.[0]?.text || '').trim().toLowerCase();
+  reply = reply.replace(/[—–]/g, '').replace(/\s{2,}/g, ' ').trim();
   if (reply.length > 270) reply = reply.slice(0, 267) + '...';
   return reply || null;
 }
