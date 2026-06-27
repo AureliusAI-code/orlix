@@ -150,45 +150,48 @@ module.exports = async (req, res) => {
   if (!query?.trim()) { res.writeHead(400, CORS); return res.end(JSON.stringify({ error: 'Missing token query' })); }
   genre = genre || 'trap';
 
-  const apiKey = process.env.BANKR_LLM_KEY || process.env.ANTHROPIC_API_KEY || '';
-  if (!apiKey) { res.writeHead(503, CORS); return res.end(JSON.stringify({ error: 'Service temporarily unavailable' })); }
-
-  const isAnthropicKey = apiKey.startsWith('sk-ant-');
-  const aiUrl     = isAnthropicKey ? 'https://api.anthropic.com/v1/messages' : 'https://llm.bankr.bot/v1/messages';
-  const aiAuthHdr = isAnthropicKey ? { 'x-api-key': apiKey } : { 'X-API-Key': apiKey };
+  const bankrKey     = process.env.BANKR_LLM_KEY || '';
+  const anthropicKey = process.env.ANTHROPIC_API_KEY || '';
+  if (!bankrKey && !anthropicKey) { res.writeHead(503, CORS); return res.end(JSON.stringify({ error: 'Service temporarily unavailable' })); }
 
   // Fetch token data
   let token = null;
   try { token = await fetchTokenData(query); } catch {}
-
   if (!token) {
-    // Fallback: use the query as-is with no stats
     token = { symbol: query.toUpperCase().replace('$', ''), name: query, priceUsd: null, priceChange24h: null, volume24h: 0, liquidity: 0, marketCap: 0, buys24h: 0, sells24h: 0 };
   }
 
   const prompt = buildPrompt(token, genre);
+  const aiBody = JSON.stringify({
+    model: 'claude-sonnet-4-6',
+    max_tokens: 1500,
+    system: 'You are a world-class songwriter fluent in trap, phonk, pop, drill, hype, and ballad. You write in English only. Your lyrics feel authentic — real artists, real flow, real emotion. You treat token data as creative inspiration, not content to recite. You never pad with generic filler.',
+    messages: [{ role: 'user', content: prompt }],
+  });
 
-  try {
-    const r = await fetch(aiUrl, {
+  const callAI = async (key) => {
+    const isAnthropic = key.startsWith('sk-ant-');
+    const url     = isAnthropic ? 'https://api.anthropic.com/v1/messages' : 'https://llm.bankr.bot/v1/messages';
+    const authHdr = isAnthropic ? { 'x-api-key': key } : { 'X-API-Key': key };
+    const r = await fetch(url, {
       method: 'POST',
-      headers: {
-        ...aiAuthHdr,
-        'anthropic-version': '2023-06-01',
-        'content-type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 1500,
-        system: 'You are a world-class songwriter fluent in trap, phonk, pop, drill, hype, and ballad. You write in English only. Your lyrics feel authentic — real artists, real flow, real emotion. You treat token data as creative inspiration, not content to recite. You never pad with generic filler.',
-        messages: [{ role: 'user', content: prompt }],
-      }),
+      headers: { ...authHdr, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
+      body: aiBody,
       signal: AbortSignal.timeout(30000),
     });
+    if (!r.ok) throw new Error(`AI API ${r.status}`);
+    return r.json();
+  };
 
-    if (!r.ok) throw new Error(`Claude API ${r.status}`);
-    const data = await r.json();
+  try {
+    let data;
+    if (bankrKey) {
+      try { data = await callAI(bankrKey); }
+      catch { if (anthropicKey) data = await callAI(anthropicKey); else throw; }
+    } else {
+      data = await callAI(anthropicKey);
+    }
     const lyrics = data.content?.[0]?.text || '';
-
     res.writeHead(200, CORS);
     res.end(JSON.stringify({ lyrics, token, genre }));
   } catch (e) {

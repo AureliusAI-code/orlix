@@ -35,11 +35,13 @@ a{text-decoration:none}
   background:rgba(8,8,12,.92);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
   border-bottom:1px solid var(--b1);
 }
-.nav-left{display:flex;align-items:center;gap:10px}
+.nav-left{display:flex;align-items:center;gap:8px}
+.nav-mid{display:flex;align-items:center;gap:10px;flex:1;justify-content:center}
+.nav-right{display:flex;align-items:center;gap:8px}
 .nav-badge{display:flex;align-items:center;gap:8px}
 .nav-badge-label{font-size:.875rem;font-weight:700;color:var(--t1);letter-spacing:-.01em}
 .live-tag{font-size:.6rem;font-weight:700;color:#4ade80;background:rgba(74,222,128,.08);border:1px solid rgba(74,222,128,.2);border-radius:4px;padding:2px 7px;letter-spacing:.07em}
-.nav-right{display:flex;align-items:center;gap:8px}
+@media(max-width:640px){.b20-live-badge{display:none}}
 
 /* ── LAYOUT ── */
 .layout{
@@ -204,17 +206,15 @@ select.inp option{background:var(--s2);color:var(--t1)}
 }
 .det-btn:hover{color:var(--t1);border-color:var(--b2)}
 
-/* ── NETWORK TOGGLE ── */
-.net-toggle{display:flex;align-items:center;gap:6px;margin-bottom:14px}
-.net-pill{
-  display:flex;align-items:center;gap:5px;padding:5px 12px;
-  border-radius:999px;border:1px solid var(--b1);background:none;
-  font-size:.7rem;font-weight:600;color:var(--t3);cursor:pointer;
-  transition:all .15s;font-family:var(--font);
-}
-.net-pill.active{background:rgba(240,120,48,.1);border-color:rgba(240,120,48,.3);color:var(--orange)}
-.net-pill.soon{cursor:default;opacity:.45}
-.net-dot{width:5px;height:5px;border-radius:50%;background:currentColor;flex-shrink:0}
+/* ── NAV NETWORK PILLS ── */
+.nav-mid{display:flex;align-items:center;gap:10px}
+.net-nav-wrap{display:flex;align-items:center;background:var(--s2);border:1px solid var(--b1);border-radius:999px;padding:3px;gap:2px}
+.net-nav-pill{display:flex;align-items:center;padding:4px 14px;border-radius:999px;border:1.5px solid transparent;background:none;font-size:.67rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--t3);cursor:pointer;transition:all .15s;font-family:var(--font)}
+.net-nav-pill.active{background:rgba(59,130,246,.12);border-color:rgba(59,130,246,.5);color:#60A5FA}
+.net-nav-pill.disabled{cursor:default;opacity:.35;pointer-events:none}
+.b20-live-badge{font-size:.62rem;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:#60A5FA;border:1px solid rgba(96,165,250,.3);border-radius:999px;padding:4px 11px;white-space:nowrap}
+.nav-home-btn{display:flex;align-items:center;gap:5px;color:var(--t3);border:1px solid var(--b1);border-radius:7px;padding:5px 10px;font-size:.72rem;font-weight:600;text-decoration:none;transition:all .15s;white-space:nowrap;font-family:var(--font);margin-right:2px}
+.nav-home-btn:hover{color:var(--t1);border-color:var(--b2)}
 
 /* ── DEPLOY BTN ── */
 .deploy-btn{
@@ -302,29 +302,6 @@ select.inp option{background:var(--s2);color:var(--t1)}
 .empty-ico{font-size:2rem;margin-bottom:14px;opacity:.3}
 .empty-t{color:var(--t2);font-weight:600;margin-bottom:7px;font-size:.875rem}
 
-/* ── MODAL ── */
-.modal-ov{
-  position:fixed;inset:0;z-index:500;
-  background:rgba(0,0,0,.75);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
-  display:none;align-items:center;justify-content:center;padding:20px;
-}
-.modal-ov.open{display:flex}
-.modal-box{
-  background:var(--s1);border:1px solid var(--b2);border-radius:18px;
-  padding:32px 28px;max-width:400px;width:100%;text-align:center;
-  box-shadow:0 32px 80px rgba(0,0,0,.6);
-}
-.modal-ico{font-size:2.2rem;margin-bottom:16px}
-.modal-title{font-size:1.05rem;font-weight:800;color:var(--t1);margin-bottom:10px;letter-spacing:-.02em}
-.modal-cd{font-family:var(--mono);font-size:1.4rem;color:var(--orange);font-weight:700;margin-bottom:4px}
-.modal-until{font-size:.68rem;color:var(--t3);letter-spacing:.09em;text-transform:uppercase;margin-bottom:18px}
-.modal-sub{font-size:.8rem;color:var(--t3);line-height:1.7;margin-bottom:24px}
-.modal-close{
-  background:var(--s2);border:1px solid var(--b1);color:var(--t2);
-  border-radius:8px;padding:10px 28px;font-size:.82rem;font-weight:600;
-  cursor:pointer;transition:all .15s;
-}
-.modal-close:hover{color:var(--t1);border-color:var(--b2)}
 
 /* ── MOBILE BOTTOM NAV ── */
 .bottom-nav{
@@ -344,13 +321,13 @@ select.inp option{background:var(--s2);color:var(--t1)}
 
 /* ── WALLET FALLBACK ── */
 #wallet-fallback{
-  display:flex;align-items:center;gap:6px;
-  background:var(--s2);border:1px solid var(--b1);border-radius:8px;
-  padding:6px 13px;font-size:.78rem;font-weight:600;color:var(--t2);
-  cursor:pointer;transition:all .15s;white-space:nowrap;
+  display:flex;align-items:center;gap:7px;
+  background:#3B82F6;border:none;border-radius:8px;
+  padding:8px 16px;font-size:.8rem;font-weight:700;color:#fff;
+  cursor:pointer;transition:opacity .15s;white-space:nowrap;
 }
-#wallet-fallback:hover{border-color:var(--b2);color:var(--t1)}
-#wallet-fallback .wf-dot{width:6px;height:6px;border-radius:50%;background:var(--t3);flex-shrink:0}
+#wallet-fallback:hover{opacity:.85}
+#wallet-fallback .wf-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.6);flex-shrink:0}
 
 /* ── RESPONSIVE ── */
 @media(max-width:1100px){
@@ -374,15 +351,28 @@ select.inp option{background:var(--s2);color:var(--t1)}
 <!-- NAV -->
 <nav class="nav">
   <div class="nav-left">
+    <a href="/" class="nav-home-btn">
+      <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 10L10 3l7.5 7"/><path d="M4.5 8.5v8h4v-4h3v4h4v-8"/></svg>
+      Home
+    </a>
     <div class="nav-badge">
       <span class="nav-badge-label" style="font-size:.82rem;font-weight:700;color:var(--t1)">B20 Studio</span>
       <span class="live-tag">LIVE</span>
     </div>
   </div>
+  <div class="nav-mid">
+    <div class="net-nav-wrap">
+      <button class="net-nav-pill active" id="navNetSepolia" onclick="setNetwork('sepolia')">SEPOLIA</button>
+      <button class="net-nav-pill disabled" id="navNetMainnet">MAINNET</button>
+    </div>
+    <span class="b20-live-badge">B20 LIVE ON BASE SEPOLIA</span>
+  </div>
   <div class="nav-right">
     <div id="orlix-wallet" style="display:flex;align-items:center">
       <button id="wallet-fallback" onclick="walletFallback()" style="visibility:hidden">
-        <span class="wf-dot"></span>Connect Wallet
+        <span class="wf-dot"></span>
+        <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="2" y="5" width="16" height="12" rx="2"/><path d="M2 9h16"/><circle cx="14.5" cy="13" r="1" fill="currentColor" stroke="none"/></svg>
+        Connect Wallet
       </button>
     </div>
   </div>
@@ -603,16 +593,6 @@ select.inp option{background:var(--s2);color:var(--t1)}
         </div>
       </div>
 
-      <!-- Network toggle -->
-      <div class="net-toggle" style="margin-top:18px">
-        <button class="net-pill active" id="netTestnet" onclick="setNetwork('sepolia')">
-          <span class="net-dot"></span>Testnet
-        </button>
-        <button class="net-pill soon" id="netMainnet" title="B20 mainnet not yet active">
-          <span class="net-dot"></span>Mainnet <span style="font-size:.6rem;opacity:.7;margin-left:2px">· soon</span>
-        </button>
-      </div>
-
       <!-- Deploy -->
       <button class="deploy-btn" onclick="onDeploy()">
         <span>→ Deploy B20 Token</span>
@@ -695,20 +675,6 @@ select.inp option{background:var(--s2);color:var(--t1)}
   </a>
 </nav>
 
-<!-- DEPLOY MODAL -->
-<div class="modal-ov" id="deployModal" onclick="if(event.target===this)closeModal()">
-  <div class="modal-box">
-    <div class="modal-ico">⏳</div>
-    <div class="modal-title" id="mTitle">Not yet active</div>
-    <div class="modal-cd" id="mCd">—</div>
-    <div class="modal-until" id="mUntil">Until Base Beryl activates the B20 standard</div>
-    <div class="modal-sub" id="mSub">
-      Your token config is ready to go. B20 deploys go live when Base Beryl activates —
-      <strong style="color:var(--orange)">come back then and hit Deploy</strong>.
-    </div>
-    <button class="modal-close" onclick="closeModal()">Got it</button>
-  </div>
-</div>
 
 <script>
 let b20Activated = false;
@@ -724,11 +690,9 @@ const NET = {
 };
 
 function setNetwork(n) {
-  // mainnet disabled until B20 activates
-  if (n === 'mainnet') return;
+  if (n === 'mainnet') return; // mainnet coming soon
   network = n;
-  document.getElementById('netTestnet').classList.toggle('active', n === 'sepolia');
-  document.getElementById('netMainnet').classList.toggle('active', n === 'mainnet');
+  document.getElementById('navNetSepolia').classList.toggle('active', n === 'sepolia');
   updateSubtitle();
 }
 
@@ -835,22 +799,6 @@ async function checkB20Activation() {
   if (!b20Activated) setTimeout(checkB20Activation, 60000);
 }
 
-// ── pre-Beryl modal ───────────────────────────────────────────────────────────
-function showCountdownModal() {
-  const isTestnet = (typeof network !== 'undefined' && network === 'sepolia');
-  const ico = document.querySelector('#deployModal .modal-ico');
-  if (ico) ico.textContent = isTestnet ? '🔒' : '⏳';
-  document.getElementById('mTitle').textContent = isTestnet ? 'Not on Testnet Yet' : 'Activation Pending';
-  const cdEl = document.getElementById('mCd');
-  cdEl.textContent    = isTestnet ? '' : '~1 hour';
-  cdEl.style.display  = isTestnet ? 'none' : '';
-  document.getElementById('mUntil').textContent = isTestnet ? 'Mainnet' : 'Until B20 activates';
-  document.getElementById('mSub').innerHTML = isTestnet
-    ? 'B20 is not yet live on Base Sepolia. The standard will be available on testnet once mainnet activation is confirmed. <strong style="color:var(--orange)">Follow @OrLixAI for updates</strong>.'
-    : 'Beryl activated but the B20 Activation Registry takes ~1 hour to enable. <strong style="color:var(--orange)">Try again shortly</strong> — deploying before activation reverts with FeatureNotActivated.';
-  document.getElementById('deployModal').classList.add('open');
-}
-function closeModal() { document.getElementById('deployModal').classList.remove('open'); }
 
 // ── MAIN DEPLOY FLOW ──────────────────────────────────────────────────────────
 async function onDeploy() {
@@ -1107,13 +1055,23 @@ function _esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').r
 async function walletFallback() {
   if (!window.ethereum) { alert('No wallet detected. Install MetaMask or open in a wallet browser.'); return; }
   try {
+    // Auto-switch to Base Sepolia
+    const sepoliaChain = '0x14a34';
+    try {
+      await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: sepoliaChain }] });
+    } catch (swErr) {
+      if (swErr.code === 4902) {
+        await window.ethereum.request({ method: 'wallet_addEthereumChain', params: [{ chainId: sepoliaChain, chainName: 'Base Sepolia', nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 }, rpcUrls: ['https://sepolia.base.org'], blockExplorerUrls: ['https://sepolia.basescan.org'] }] });
+      }
+    }
     const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
     if (accounts[0]) {
       const addr = accounts[0];
       const fb = document.getElementById('wallet-fallback');
       if (fb) {
         fb.innerHTML = `<span class="wf-dot" style="background:#4ADE80;box-shadow:0 0 5px rgba(74,222,128,.5)"></span>${addr.slice(0,6)}…${addr.slice(-4)}`;
-        fb.style.borderColor = 'rgba(74,222,128,.3)';
+        fb.style.background = 'var(--s2)';
+        fb.style.border = '1px solid rgba(74,222,128,.3)';
         fb.style.color = '#f1f1f3';
       }
       window.dispatchEvent(new CustomEvent('orlix:wallet:connected', { detail: { address: addr } }));
