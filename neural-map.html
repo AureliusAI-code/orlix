@@ -477,9 +477,9 @@ function copyAddr() {
 // ── Three.js City ──────────────────────────────────────────────
 let scene, camera, renderer, controls;
 let clickMeshes = [];
-let buildingGroups = new Map(); // nodeId → {group, node, pos}
+let buildingGroups = new Map();
+let antennaTips = []; // tracked separately — no traverse() in loop
 let cityTime = 0;
-let hoveredNode = null;
 
 let _winTex = null;
 function getWindowTex() {
@@ -548,59 +548,65 @@ function createBuilding(node, x, z) {
   const height = calcHeight(node);
   node._buildingHeight = height;
 
-  const bw = node.isOrlix ? 7 : node.isStable ? 6 : 3.5 + Math.random() * 2;
-  const bd = node.isOrlix ? 7 : node.isStable ? 6 : 3.5 + Math.random() * 2;
+  const bw = node.isOrlix ? 7 : node.isStable ? 6 : 3 + Math.random() * 2.5;
+  const bd = node.isOrlix ? 7 : node.isStable ? 6 : 3 + Math.random() * 2.5;
 
-  // Main building body
+  // Main building body — emissive so it glows without needing PointLights
   const geo = new THREE.BoxGeometry(bw, height, bd);
+  const emStr = node.isOrlix ? 0.28 : node.isStable ? 0.18 : 0.10;
   const mat = new THREE.MeshPhongMaterial({
-    color: 0x0c0c1e,
-    emissive: threeCol.clone().multiplyScalar(0.06),
+    color: 0x080818,
+    emissive: threeCol.clone().multiplyScalar(emStr),
     map: getWindowTex(),
-    shininess: 40,
+    shininess: 15,
   });
   const mesh = new THREE.Mesh(geo, mat);
   mesh.position.y = height / 2;
-  mesh.castShadow = true;
+  mesh.castShadow = false; // no shadows — much faster, fixes overflow
   mesh.userData = node;
   group.add(mesh);
   clickMeshes.push(mesh);
 
-  // Neon edge glow
+  // Neon wireframe edges
   const edgeGeo = new THREE.EdgesGeometry(geo);
-  const edgeMat = new THREE.LineBasicMaterial({
-    color: col, transparent: true,
-    opacity: node.isOrlix ? 0.95 : node.isStable ? 0.7 : 0.45,
-  });
+  const edgeOpacity = node.isOrlix ? 0.9 : node.isStable ? 0.65 : 0.4;
+  const edgeMat = new THREE.LineBasicMaterial({color: col, transparent: true, opacity: edgeOpacity});
   const edges = new THREE.LineSegments(edgeGeo, edgeMat);
   edges.position.y = height / 2;
   group.add(edges);
 
-  // Rooftop glow light
-  const ptLight = new THREE.PointLight(col, node.isOrlix ? 2 : 0.7, node.isOrlix ? 30 : 15);
-  ptLight.position.y = height + 1;
-  group.add(ptLight);
+  // Roof glow plane (MeshBasicMaterial = always visible, no light needed)
+  const roofGeo = new THREE.PlaneGeometry(bw * 0.9, bd * 0.9);
+  const roofMat = new THREE.MeshBasicMaterial({
+    color: col, transparent: true,
+    opacity: node.isOrlix ? 0.75 : node.isStable ? 0.4 : 0.28,
+    side: THREE.DoubleSide,
+  });
+  const roof = new THREE.Mesh(roofGeo, roofMat);
+  roof.rotation.x = -Math.PI / 2;
+  roof.position.y = height + 0.05;
+  group.add(roof);
 
   // Antenna for tall buildings
-  if (height > 25) {
-    const antH = height * 0.18;
-    const antGeo = new THREE.CylinderGeometry(0.04, 0.04, antH, 4);
+  if (height > 28) {
+    const antH = height * 0.16;
+    const antGeo = new THREE.CylinderGeometry(0.05, 0.05, antH, 4);
     const antMat = new THREE.MeshBasicMaterial({color: col});
     const ant = new THREE.Mesh(antGeo, antMat);
     ant.position.y = height + antH / 2;
     group.add(ant);
 
-    const tipGeo = new THREE.SphereGeometry(0.18, 5, 5);
-    const tipMat = new THREE.MeshBasicMaterial({color: 0xFF4040, transparent: true});
+    const tipGeo = new THREE.SphereGeometry(0.22, 6, 6);
+    const tipMat = new THREE.MeshBasicMaterial({color: 0xFF2020, transparent: true, opacity: 1});
     const tip = new THREE.Mesh(tipGeo, tipMat);
     tip.position.y = height + antH;
-    tip.userData.isTip = true;
+    antennaTips.push({mesh: tip, offset: Math.random() * Math.PI * 2});
     group.add(tip);
   }
 
-  // Label sprite above building
+  // Label sprite
   const label = makeLabel(node.symbol, nodeHexStr(node));
-  label.position.y = height + (height > 25 ? height * 0.2 + 3 : 4);
+  label.position.y = height + (height > 28 ? height * 0.18 + 3.5 : 4);
   group.add(label);
 
   return group;
@@ -615,67 +621,66 @@ function initCity(data) {
 
   // Scene
   scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x09090B);
-  scene.fog = new THREE.FogExp2(0x09090B, 0.006);
+  scene.background = new THREE.Color(0x06060F);
+  scene.fog = new THREE.FogExp2(0x06060F, 0.0025); // lighter fog — buildings stay visible
 
   // Camera
   const W = window.innerWidth, H = window.innerHeight;
-  camera = new THREE.PerspectiveCamera(55, W/H, 0.1, 2000);
-  camera.position.set(0, 90, 140);
+  camera = new THREE.PerspectiveCamera(55, W/H, 0.5, 2000);
+  camera.position.set(0, 70, 150);
 
-  // Renderer
+  // Renderer — NO shadow maps (fixes the too-many-lights overflow)
   renderer = new THREE.WebGLRenderer({canvas: document.getElementById('city-canvas'), antialias: true});
   renderer.setSize(W, H);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-  renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.shadowMap.enabled = false;
 
   // Controls
   controls = new THREE.OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
-  controls.dampingFactor = 0.06;
-  controls.target.set(0, 5, 0);
-  controls.minPolarAngle = 0.05;
-  controls.maxPolarAngle = Math.PI / 2.1;
-  controls.minDistance = 15;
-  controls.maxDistance = 400;
+  controls.dampingFactor = 0.07;
+  controls.target.set(0, 12, 0);
+  controls.minPolarAngle = 0.08;
+  controls.maxPolarAngle = Math.PI / 2.05;
+  controls.minDistance = 12;
+  controls.maxDistance = 450;
+  controls.update();
 
-  // Ground
-  const gGeo = new THREE.PlaneGeometry(800, 800);
-  const gMat = new THREE.MeshPhongMaterial({color:0x060614, shininess:120, specular:0x111133});
+  // Ground — flat dark surface, low shininess
+  const gGeo = new THREE.PlaneGeometry(900, 900);
+  const gMat = new THREE.MeshLambertMaterial({color: 0x05050E});
   const ground = new THREE.Mesh(gGeo, gMat);
-  ground.rotation.x = -Math.PI/2;
-  ground.receiveShadow = true;
+  ground.rotation.x = -Math.PI / 2;
   scene.add(ground);
 
-  // Grid
-  const grid = new THREE.GridHelper(800, 80, 0x0e0e28, 0x0a0a1c);
-  grid.position.y = 0.02;
+  // Grid lines
+  const grid = new THREE.GridHelper(900, 90, 0x111128, 0x0c0c1e);
+  grid.position.y = 0.04;
   scene.add(grid);
 
   // Stars
   const starGeo = new THREE.BufferGeometry();
   const starPos = new Float32Array(3000);
-  for (let i=0;i<1000;i++) {
-    starPos[i*3]=(Math.random()-0.5)*1000;
-    starPos[i*3+1]=60+Math.random()*400;
-    starPos[i*3+2]=(Math.random()-0.5)*1000;
+  for (let i = 0; i < 1000; i++) {
+    starPos[i*3]   = (Math.random()-0.5)*1200;
+    starPos[i*3+1] = 80 + Math.random()*500;
+    starPos[i*3+2] = (Math.random()-0.5)*1200;
   }
-  starGeo.setAttribute('position',new THREE.BufferAttribute(starPos,3));
-  const starMat = new THREE.PointsMaterial({color:0xffffff,size:0.4,transparent:true,opacity:0.55});
-  scene.add(new THREE.Points(starGeo,starMat));
+  starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+  const starMat = new THREE.PointsMaterial({color:0xffffff, size:0.5, transparent:true, opacity:0.6});
+  scene.add(new THREE.Points(starGeo, starMat));
 
-  // Lighting
-  scene.add(new THREE.AmbientLight(0x111133, 0.6));
-  const dirLight = new THREE.DirectionalLight(0x334466, 0.4);
-  dirLight.position.set(-60, 100, -60);
-  dirLight.castShadow = true;
-  dirLight.shadow.mapSize.set(1024,1024);
-  scene.add(dirLight);
-  // City atmosphere lights
-  const al1 = new THREE.PointLight(0xF07830, 0.8, 200); al1.position.set(-100,30,-100); scene.add(al1);
-  const al2 = new THREE.PointLight(0x4444cc, 0.6, 200); al2.position.set(100,30,100); scene.add(al2);
-  const al3 = new THREE.PointLight(0x22C55E, 0.4, 150); al3.position.set(0,40,0); scene.add(al3);
+  // Lighting — ONLY scene-level lights (no per-building PointLights)
+  scene.add(new THREE.AmbientLight(0x334466, 2.5)); // strong ambient so buildings are visible
+  const sun = new THREE.DirectionalLight(0x8899ff, 0.7);
+  sun.position.set(-80, 150, 60);
+  sun.castShadow = false;
+  scene.add(sun);
+  // Two wide atmosphere fill lights
+  const atm1 = new THREE.PointLight(0xF07830, 1.2, 500, 1.5);
+  atm1.position.set(0, 100, 0); scene.add(atm1);
+  const atm2 = new THREE.PointLight(0x3344cc, 0.8, 500, 1.5);
+  atm2.position.set(-200, 60, -200); scene.add(atm2);
 
   // Layout buildings in grid
   const sorted = [...data.nodes].sort((a,b)=>(b.mcap||0)-(a.mcap||0));
@@ -799,12 +804,10 @@ function initCity(data) {
     cityTime += 0.016;
     controls.update();
 
-    // Pulse antenna tips
-    scene.traverse(obj => {
-      if (obj.userData && obj.userData.isTip) {
-        obj.material.opacity = Math.sin(cityTime * 2 + obj.id) > 0 ? 1 : 0;
-      }
-    });
+    // Pulse antenna tips — direct array, no scene.traverse()
+    for (const {mesh, offset} of antennaTips) {
+      mesh.material.opacity = Math.sin(cityTime * 2.5 + offset) > 0 ? 1 : 0;
+    }
 
     renderer.render(scene, camera);
   }
