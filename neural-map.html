@@ -137,16 +137,15 @@ canvas{display:block}
 
 /* ── SEARCH ── */
 #searchbar{
-  position:fixed;top:70px;left:50%;transform:translateX(-50%);z-index:150;
-  display:flex;align-items:center;gap:8px;
-  background:rgba(13,13,15,0.92);backdrop-filter:blur(16px);
-  border:1px solid rgba(255,255,255,0.08);border-radius:100px;
-  padding:7px 16px;width:260px;transition:border-color 0.2s,width 0.2s;
+  display:flex;align-items:center;gap:7px;
+  background:rgba(255,255,255,0.04);
+  border:1px solid rgba(255,255,255,0.08);border-radius:8px;
+  padding:5px 12px;width:190px;transition:border-color 0.2s,width 0.2s;
 }
-#searchbar:focus-within{border-color:rgba(240,120,48,0.4);width:300px}
-#sinput{flex:1;background:transparent;border:none;outline:none;font-size:0.8rem;color:#FAFAFA;font-family:'Plus Jakarta Sans',sans-serif}
+#searchbar:focus-within{border-color:rgba(240,120,48,0.4);width:230px}
+#sinput{flex:1;background:transparent;border:none;outline:none;font-size:0.78rem;color:#FAFAFA;font-family:'Plus Jakarta Sans',sans-serif}
 #sinput::placeholder{color:#3F3F46}
-.s-icon{color:#3F3F46;font-size:0.9rem;flex-shrink:0}
+.s-icon{color:#3F3F46;font-size:0.85rem;flex-shrink:0}
 
 /* ── TOOLTIP ── */
 #tt{
@@ -162,6 +161,7 @@ canvas{display:block}
 
 @media(max-width:768px){
   .hdr-stats{display:none}
+  #searchbar{display:none}
   #panel{width:100%;border-left:none;border-top:1px solid rgba(255,255,255,0.06)}
   #legend{display:none}
 }
@@ -184,6 +184,10 @@ canvas{display:block}
     <div class="hdr-stat"><div class="hdr-stat-val" id="s-liq">—</div><div class="hdr-stat-lbl">Total Liq</div></div>
   </div>
   <div class="hdr-right">
+    <div id="searchbar">
+      <span class="s-icon">⌕</span>
+      <input type="text" id="sinput" placeholder="Search token..." autocomplete="off">
+    </div>
     <button id="daynightBtn" class="hbtn" onclick="toggleDayNight()" title="Toggle day/night">🌙 Night</button>
     <a href="/" class="hbtn">← Back</a>
     <a href="/app" class="hbtn hbtn-orange">Launch App →</a>
@@ -199,12 +203,6 @@ canvas{display:block}
   <div class="load-bar-wrap"><div class="load-bar" id="lbar"></div></div>
   <div class="load-status" id="lstatus">Connecting to Base...</div>
   <div class="load-sub">Each building is a token — the taller it is, the bigger the market cap</div>
-</div>
-
-<!-- SEARCH -->
-<div id="searchbar">
-  <span class="s-icon">⌕</span>
-  <input type="text" id="sinput" placeholder="Fly to any token..." autocomplete="off">
 </div>
 
 <!-- DETAIL PANEL -->
@@ -558,25 +556,40 @@ function createPerson(startX, startZ) {
 }
 
 function createFillerBuilding(x, z) {
-  const h = 6 + Math.random() * 50;
-  const bw = 2.5 + Math.random() * 5;
-  const bd = 2.5 + Math.random() * 5;
+  const h = 8 + Math.random() * 60;
+  const bw = 3 + Math.random() * 6;
+  const bd = 3 + Math.random() * 6;
+  const col = NEON_PALETTE[Math.floor(Math.random() * NEON_PALETTE.length)];
+  const threeCol = new THREE.Color(col);
   const geo = new THREE.BoxGeometry(bw, h, bd);
-  const darkCols = [0x0a1020,0x10080a,0x080a18,0x0a0a10,0x0c0814];
-  const emColHex = [0x1a3a6a,0x3a1a4a,0x1a3a2a,0x3a2a10,0x2a1a4a];
-  const ci = Math.floor(Math.random()*5);
+
+  // Transparent holographic body
   const mesh = new THREE.Mesh(geo, new THREE.MeshPhongMaterial({
-    color: darkCols[ci],
-    emissive: new THREE.Color(emColHex[ci]).multiplyScalar(0.4),
-    map: getWindowTex(), shininess: 2
+    color: threeCol.clone().multiplyScalar(0.03),
+    transparent: true, opacity: 0.09, depthWrite: false
   }));
   mesh.position.set(x, h/2, z);
   scene.add(mesh);
-  // Subtle edge glow
+
+  // Neon wireframe edges — same style as main buildings
   const edge = new THREE.LineSegments(new THREE.EdgesGeometry(geo),
-    new THREE.LineBasicMaterial({color: emColHex[ci], transparent:true, opacity:0.35}));
+    new THREE.LineBasicMaterial({color: col, transparent: true, opacity: 0.72}));
   edge.position.set(x, h/2, z);
   scene.add(edge);
+
+  // Window texture (inner glow)
+  const winMesh = new THREE.Mesh(geo.clone(), new THREE.MeshBasicMaterial({
+    map: getWindowTex(), transparent: true, opacity: 0.14, side: THREE.BackSide
+  }));
+  winMesh.position.set(x, h/2, z);
+  scene.add(winMesh);
+
+  // Roof glow
+  const roof = new THREE.Mesh(new THREE.PlaneGeometry(bw * 0.9, bd * 0.9),
+    new THREE.MeshBasicMaterial({color: col, transparent: true, opacity: 0.45, side: THREE.DoubleSide}));
+  roof.rotation.x = -Math.PI/2;
+  roof.position.set(x, h + 0.06, z);
+  scene.add(roof);
 }
 
 let _winTex = null;
@@ -899,8 +912,8 @@ function initCity(data) {
   const sorted = [...data.nodes].sort((a,b)=>(b.mcap||0)-(a.mcap||0));
   const COLS_N = Math.ceil(Math.sqrt(sorted.length * 0.8));
   const ROWS_N = Math.ceil(sorted.length / COLS_N);
-  const BLOCK  = 16;  // building block footprint
-  const STREET = 6;   // street width
+  const BLOCK  = 18;  // building block footprint
+  const STREET = 12;  // street width — wider roads
   const CELL   = BLOCK + STREET;
   const totalW = COLS_N * CELL;
   const totalD = ROWS_N * CELL;
