@@ -48,7 +48,7 @@ async function markReplied(tweetId) {
   const { url, token } = getRedis();
   if (!url) return;
   await redisCmd(url, token, 'SADD', REDIS_KEY, tweetId);
-  await redisCmd(url, token, 'EXPIRE', REDIS_KEY, 86400); // 24h TTL
+  await redisCmd(url, token, 'EXPIRE', REDIS_KEY, 86400);
 }
 
 async function getSinceId() {
@@ -61,6 +61,21 @@ async function setSinceId(id) {
   _sinceIdCache = id;
   const { url, token } = getRedis();
   if (url) await redisCmd(url, token, 'SET', 'xagent:since_id', id);
+}
+
+// Execution lock — prevents two cron runs from processing simultaneously
+async function acquireLock() {
+  const { url, token } = getRedis();
+  if (!url) return true; // no Redis, proceed anyway
+  // SETNX with 90s TTL — only one instance can hold this at a time
+  const result = await redisCmd(url, token, 'SET', 'xagent:lock', '1', 'NX', 'EX', '90');
+  return result === 'OK';
+}
+
+async function releaseLock() {
+  const { url, token } = getRedis();
+  if (!url) return;
+  await redisCmd(url, token, 'DEL', 'xagent:lock');
 }
 
 // ── OAuth 1.0a (needed for posting tweets) ────────────────────
@@ -394,21 +409,27 @@ module.exports = async function handler(req, res) {
     return res.status(200).json({ ok: false, error: 'X_BOT_USERNAME or X_BEARER_TOKEN not set' });
   }
 
+  // Acquire execution lock — prevent two cron runs from processing at the same time
+  const locked = await acquireLock();
+  if (!locked) {
+    return res.status(200).json({ ok: true, skipped: true, reason: 'Another run is in progress' });
+  }
+
   try {
     // Get recent mentions using since_id to avoid re-processing
     const sinceId = await getSinceId();
 
-    const data  = await getMentions(username, sinceId);
+    const data   = await getMentions(username, sinceId);
     const tweets = data.data || [];
     const users  = Object.fromEntries((data.includes?.users || []).map(u => [u.id, u]));
 
     if (!tweets.length) {
+      await releaseLock();
       return res.status(200).json({ ok: true, processed: 0, message: 'No new mentions' });
     }
 
-    // Update since_id to newest tweet before processing
-    const newestId = tweets[0].id;
-    await setSinceId(newestId);
+    // Update since_id BEFORE processing to prevent re-fetch on next run
+    await setSinceId(tweets[0].id);
 
     let replied = 0;
     const errors = [];
@@ -420,32 +441,33 @@ module.exports = async function handler(req, res) {
       const authorName = author?.name || author?.username || 'there';
       const text       = tweet.text || '';
 
-      // Skip if this is own tweet
       if (author?.username?.toLowerCase() === username.toLowerCase()) continue;
 
-      // Only reply if tweet is a genuine question or direct engagement
       if (!isGenuineEngagement(text, username, author?.username || '')) {
-        await markReplied(tweet.id); // mark so we don't re-check next time
+        await markReplied(tweet.id);
         continue;
       }
+
+      // Mark BEFORE generating/posting — prevents double reply if two runs overlap
+      await markReplied(tweet.id);
 
       try {
         const reply = await generateReply(text, authorName);
         if (!reply) { errors.push({ id: tweet.id, error: 'AI returned empty' }); continue; }
 
         await postReply(reply, tweet.id);
-        await markReplied(tweet.id);
         replied++;
 
-        // Small delay between replies to avoid rate limits
         if (replied < tweets.length) await new Promise(r => setTimeout(r, 1500));
       } catch (e) {
         errors.push({ id: tweet.id, error: e.message });
       }
     }
 
+    await releaseLock();
     return res.status(200).json({ ok: true, processed: tweets.length, replied, errors });
   } catch (e) {
+    await releaseLock();
     return res.status(200).json({ ok: false, error: e.message });
   }
 };
