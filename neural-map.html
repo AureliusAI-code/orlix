@@ -482,46 +482,90 @@ let cityTime = 0;
 const NEON_PALETTE = [0xFF00AA,0x00FFCC,0xFF6600,0xFFEE00,0x00AAFF,0xFF3366,0xBB00FF,0x00FF88];
 
 // City life
-let cars = [], people = [];
+let cars = [], people = [], trafficLights = [];
 
-function createCar(ax, az, bx, bz) {
-  const palette = [0xFF3333, 0x33AAFF, 0xFFFF33, 0xFFFFFF, 0xFF8833, 0x33FF88, 0xAA33FF];
-  const col = palette[Math.floor(Math.random() * palette.length)];
+function createCar(ax, az, bx, bz, isBus) {
   const grp = new THREE.Group();
+  const isTruck = !isBus && Math.random() > 0.78;
 
-  const bodyMat = new THREE.MeshBasicMaterial({color: col});
+  let col, bw, bh, bl;
+  if (isBus) {
+    col = [0xFFCC00, 0x3366FF, 0x22AA44][Math.floor(Math.random()*3)];
+    bw = 2.0; bh = 1.4; bl = 5.5;
+  } else if (isTruck) {
+    col = [0xCC4422, 0x445566, 0x887755][Math.floor(Math.random()*3)];
+    bw = 1.8; bh = 1.0; bl = 4.2;
+  } else {
+    const palette = [0xCC2222,0x2255CC,0xCCAA00,0xDDDDDD,0xCC6600,0x226644,0x882288,0x44AACC,0xAA2244];
+    col = palette[Math.floor(Math.random()*palette.length)];
+    bw = 1.35; bh = 0.55; bl = 2.6;
+  }
+
+  const bodyMat = new THREE.MeshPhongMaterial({color: col, shininess: 60, specular: 0x222222});
+  const darkMat = new THREE.MeshPhongMaterial({color: new THREE.Color(col).multiplyScalar(0.55), shininess: 20});
+
   // Body
-  const body = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.55, 2.6), bodyMat);
-  body.position.y = 0.5;
+  const body = new THREE.Mesh(new THREE.BoxGeometry(bw, bh, bl), bodyMat);
+  body.position.y = bh/2 + 0.28;
   grp.add(body);
-  // Roof
-  const roof = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.45, 1.5),
-    new THREE.MeshBasicMaterial({color: new THREE.Color(col).multiplyScalar(0.65)}));
-  roof.position.set(0, 1.0, -0.1);
-  grp.add(roof);
-  // Headlights
-  const hlMat = new THREE.MeshBasicMaterial({color: 0xFFFFCC});
-  const tlMat = new THREE.MeshBasicMaterial({color: 0xFF1111});
-  const lgeo = new THREE.BoxGeometry(0.28, 0.18, 0.1);
-  [-0.52, 0.52].forEach(dx => {
-    const hl = new THREE.Mesh(lgeo, hlMat); hl.position.set(dx, 0.5, 1.35); grp.add(hl);
-    const tl = new THREE.Mesh(lgeo, tlMat); tl.position.set(dx, 0.5, -1.35); grp.add(tl);
+
+  if (!isTruck && !isBus) {
+    // Roof cabin
+    const cabin = new THREE.Mesh(new THREE.BoxGeometry(bw*0.82, bh*0.75, bl*0.55), darkMat);
+    cabin.position.set(0, bh + 0.28 - bh*0.05, -bl*0.06);
+    grp.add(cabin);
+    // Windshield (dark glass)
+    const windGeo = new THREE.BoxGeometry(bw*0.75, bh*0.5, 0.08);
+    const windMesh = new THREE.Mesh(windGeo, new THREE.MeshPhongMaterial({color:0x112233, transparent:true, opacity:0.7, shininess:100}));
+    windMesh.position.set(0, bh*0.9+0.28, bl*0.28);
+    grp.add(windMesh);
+  } else if (isBus) {
+    // Bus windows strip
+    const winStrip = new THREE.Mesh(new THREE.BoxGeometry(bw*0.82, bh*0.38, bl*0.88),
+      new THREE.MeshPhongMaterial({color:0x223344, transparent:true, opacity:0.55, shininess:80}));
+    winStrip.position.set(0, bh*0.75+0.28, 0);
+    grp.add(winStrip);
+  }
+
+  // Headlights — bright white for bloom glow
+  const hlMat = new THREE.MeshBasicMaterial({color: 0xFFFFDD});
+  const tlMat = new THREE.MeshBasicMaterial({color: 0xFF2200});
+  const lgeo = new THREE.BoxGeometry(bw*0.2, bh*0.28, 0.1);
+  const hOff = bw*0.38;
+  [-hOff, hOff].forEach(dx => {
+    const hl = new THREE.Mesh(lgeo, hlMat); hl.position.set(dx, bh/2+0.28, bl/2+0.05); grp.add(hl);
+    const tl = new THREE.Mesh(lgeo, tlMat); tl.position.set(dx, bh/2+0.28, -bl/2-0.05); grp.add(tl);
   });
+  // Headlight beam cone (subtle glow effect)
+  const beamMat = new THREE.MeshBasicMaterial({color:0xFFFFAA, transparent:true, opacity:0.06, side:THREE.BackSide});
+  [-hOff*0.6, hOff*0.6].forEach(dx => {
+    const beam = new THREE.Mesh(new THREE.ConeGeometry(1.2, 5, 6, 1, true), beamMat);
+    beam.rotation.x = Math.PI/2;
+    beam.position.set(dx, bh/2+0.28, bl/2+3);
+    grp.add(beam);
+  });
+
   // Wheels
-  const wgeo = new THREE.CylinderGeometry(0.28, 0.28, 0.18, 8);
-  const wmat = new THREE.MeshBasicMaterial({color: 0x222222});
-  [[-0.75,0.85],[-0.75,-0.75],[0.75,0.85],[0.75,-0.75]].forEach(([wx,wz]) => {
+  const wR = isBus ? 0.38 : isTruck ? 0.34 : 0.27;
+  const wgeo = new THREE.CylinderGeometry(wR, wR, bw*0.14, 8);
+  const wmat = new THREE.MeshPhongMaterial({color:0x1a1a1a, shininess:5});
+  const hubMat = new THREE.MeshPhongMaterial({color:0x888888, shininess:40});
+  const axleOff = bw/2 + wR*0.08;
+  const wz1 = bl*0.35, wz2 = -bl*0.32;
+  [[-axleOff,wz1],[-axleOff,wz2],[axleOff,wz1],[axleOff,wz2]].forEach(([wx,wz]) => {
     const w = new THREE.Mesh(wgeo, wmat);
-    w.rotation.z = Math.PI/2; w.position.set(wx, 0.28, wz); grp.add(w);
+    w.rotation.z = Math.PI/2; w.position.set(wx, wR, wz); grp.add(w);
+    const hub = new THREE.Mesh(new THREE.CylinderGeometry(wR*0.38, wR*0.38, bw*0.15, 5), hubMat);
+    hub.rotation.z = Math.PI/2; hub.position.set(wx, wR, wz); grp.add(hub);
   });
 
   grp.position.y = 0;
   scene.add(grp);
   const t = Math.random();
-  const dir = Math.random() > 0.5 ? 1 : -1;
-  // normalize speed to real units/frame so all cars look same velocity regardless of road length
+  const dir = 1;
   const roadLen = Math.sqrt((bx-ax)*(bx-ax)+(bz-az)*(bz-az));
-  const spd = roadLen > 0 ? (0.05 + Math.random() * 0.04) / roadLen : 0.0003;
+  const baseSpd = isBus ? 0.032 : isTruck ? 0.038 : 0.05 + Math.random() * 0.045;
+  const spd = roadLen > 0 ? baseSpd / roadLen : 0.0003;
   cars.push({grp, ax, az, bx, bz, t, dir, spd});
 }
 
@@ -770,7 +814,7 @@ function initCity(data) {
   if (typeof THREE.EffectComposer !== 'undefined') {
     composer = new THREE.EffectComposer(renderer);
     composer.addPass(new THREE.RenderPass(scene, camera));
-    const bloom = new THREE.UnrealBloomPass(new THREE.Vector2(W, H), 0.55, 0.4, 0.82);
+    const bloom = new THREE.UnrealBloomPass(new THREE.Vector2(W, H), 0.75, 0.45, 0.78);
     composer.addPass(bloom);
   }
 
@@ -890,8 +934,8 @@ function initCity(data) {
   const mInter = new THREE.MeshBasicMaterial({color: 0x19192e});
   const mLineO = new THREE.MeshBasicMaterial({color: 0xF07830, transparent:true, opacity:0.7});
   const mLineB = new THREE.MeshBasicMaterial({color: 0x5566ff, transparent:true, opacity:0.5});
-  const mPole  = new THREE.MeshBasicMaterial({color: 0x556677});
-  const mLamp  = new THREE.MeshBasicMaterial({color: 0xFFEE88});
+  const mPole  = new THREE.MeshPhongMaterial({color: 0x445566, shininess: 20});
+  const mLamp  = new THREE.MeshBasicMaterial({color: 0xFFAA44}); // warm sodium amber
   const mSidew = new THREE.MeshBasicMaterial({color: 0x0c0c1a});
 
   // ── Horizontal streets ─────────────────────────────────────────
@@ -920,10 +964,10 @@ function initCity(data) {
 
     // Cars — two lanes going opposite directions
     const L = span / 2 + 2;
-    const laneOff = 1.1;
-    const nCars = isMain ? 3 : 1;
-    for (let c = 0; c < nCars; c++) createCar(-L, z - laneOff, L, z - laneOff);
-    for (let c = 0; c < nCars; c++) createCar( L, z + laneOff, -L, z + laneOff);
+    const laneOff = isMain ? 1.6 : 1.1;
+    const nCars = isMain ? 7 : 3;
+    for (let ci = 0; ci < nCars; ci++) createCar(-L, z - laneOff, L, z - laneOff, isMain && ci===0);
+    for (let ci = 0; ci < nCars; ci++) createCar( L, z + laneOff, -L, z + laneOff, isMain && ci===0);
   }
 
   // ── Vertical streets ───────────────────────────────────────────
@@ -952,10 +996,10 @@ function initCity(data) {
 
     // Cars — two lanes
     const L = span / 2 + 2;
-    const laneOff = 1.1;
-    const nCars = isMain ? 3 : 1;
-    for (let cc = 0; cc < nCars; cc++) createCar(x - laneOff, -L, x - laneOff, L);
-    for (let cc = 0; cc < nCars; cc++) createCar(x + laneOff,  L, x + laneOff, -L);
+    const laneOff = isMain ? 1.6 : 1.1;
+    const nCars = isMain ? 7 : 3;
+    for (let ci = 0; ci < nCars; ci++) createCar(x - laneOff, -L, x - laneOff, L, isMain && ci===0);
+    for (let ci = 0; ci < nCars; ci++) createCar(x + laneOff,  L, x + laneOff, -L, isMain && ci===0);
   }
 
   // ── Intersection fills ─────────────────────────────────────────
@@ -980,14 +1024,68 @@ function initCity(data) {
         scene.add(sw);
       }
 
-      // Streetlight every other intersection
+      // ── Crosswalks ─────────────────────────────────────────────
+      const cwMat = new THREE.MeshBasicMaterial({color:0xBBBBBB, transparent:true, opacity:0.55});
+      const CW_STRIPES = 5;
+      const stripeW = 0.55;
+      const cwSpan = iw * 0.82;
+      const cwStep = cwSpan / CW_STRIPES;
+      for (let s = 0; s < CW_STRIPES; s++) {
+        const offset = -cwSpan/2 + s * cwStep + stripeW/2;
+        // crossing along Z (perpendicular to horizontal road)
+        const sh = new THREE.Mesh(new THREE.BoxGeometry(iw*1.1, 0.09, stripeW), cwMat);
+        sh.position.set(ix, 0.047, iz + offset);
+        scene.add(sh);
+        // crossing along X (perpendicular to vertical road)
+        const sv = new THREE.Mesh(new THREE.BoxGeometry(stripeW, 0.09, iw*1.1), cwMat);
+        sv.position.set(ix + offset, 0.047, iz);
+        scene.add(sv);
+      }
+
+      // ── Traffic lights at major intersections ──────────────────
+      if (r % 3 === 0 && c % 3 === 0) {
+        const tlGrp = new THREE.Group();
+        const tlPole = new THREE.Mesh(new THREE.CylinderGeometry(0.1,0.1,7,5),
+          new THREE.MeshPhongMaterial({color:0x334444, shininess:15}));
+        tlPole.position.y = 3.5;
+        tlGrp.add(tlPole);
+        const tlBox = new THREE.Mesh(new THREE.BoxGeometry(0.65, 1.9, 0.6),
+          new THREE.MeshPhongMaterial({color:0x1a1a1a}));
+        tlBox.position.y = 7.5;
+        tlGrp.add(tlBox);
+        const tlColors = [0xFF2222, 0xFFAA00, 0x22DD44];
+        const tlBulbs = tlColors.map((c2, i) => {
+          const b = new THREE.Mesh(new THREE.SphereGeometry(0.2,7,7),
+            new THREE.MeshBasicMaterial({color:c2, transparent:true, opacity: i===0 ? 1 : 0.1}));
+          b.position.y = 8.2 - i * 0.65;
+          tlGrp.add(b);
+          return b;
+        });
+        tlGrp.position.set(ix + iw*0.55, 0, iz + iw*0.55);
+        scene.add(tlGrp);
+        trafficLights.push({bulbs: tlBulbs, phase: Math.floor(Math.random()*3), timer: Math.floor(Math.random()*220)});
+      }
+
+      // ── Street lights at every other intersection ───────────────
       if ((r + c) % 2 === 0) {
-        const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 8, 5), mPole);
-        pole.position.set(ix + STREET*0.4, 4, iz + STREET*0.4);
+        // L-shaped arm pole
+        const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.13, 9, 5), mPole);
+        pole.position.set(ix + STREET*0.42, 4.5, iz + STREET*0.42);
         scene.add(pole);
-        const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.38, 6, 6), mLamp);
-        lamp.position.set(ix + STREET*0.4, 8.4, iz + STREET*0.4);
+        const arm = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.15, 0.15),
+          new THREE.MeshPhongMaterial({color:0x445566, shininess:20}));
+        arm.position.set(ix + STREET*0.42 - 1.1, 9, iz + STREET*0.42);
+        scene.add(arm);
+        // Lamp head
+        const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.48, 7, 7), mLamp);
+        lamp.position.set(ix + STREET*0.42 - 2.2, 9, iz + STREET*0.42);
         scene.add(lamp);
+        // Glow disc under lamp (warm pool of light on ground)
+        const glow = new THREE.Mesh(new THREE.CircleGeometry(3.5, 10),
+          new THREE.MeshBasicMaterial({color:0xFF9933, transparent:true, opacity:0.07, side:THREE.DoubleSide}));
+        glow.rotation.x = -Math.PI/2;
+        glow.position.set(ix + STREET*0.42 - 2.2, 0.1, iz + STREET*0.42);
+        scene.add(glow);
       }
     }
   }
@@ -1115,6 +1213,14 @@ function initCity(data) {
     requestAnimationFrame(animate);
     cityTime += 0.016;
     controls.update();
+
+    // Animate traffic lights (red=200f, yellow=35f, green=190f)
+    const TL_DUR = [200, 35, 190];
+    for (const tl of trafficLights) {
+      tl.timer++;
+      if (tl.timer >= TL_DUR[tl.phase]) { tl.timer = 0; tl.phase = (tl.phase + 1) % 3; }
+      tl.bulbs.forEach((b, i) => { b.material.opacity = i === tl.phase ? 1.0 : 0.08; });
+    }
 
     // Pulse antenna tips
     for (const {mesh, offset} of antennaTips) {
