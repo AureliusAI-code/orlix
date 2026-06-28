@@ -486,87 +486,48 @@ let cars = [], people = [], trafficLights = [];
 
 function createCar(ax, az, bx, bz, isBus) {
   const grp = new THREE.Group();
-  const isTruck = !isBus && Math.random() > 0.78;
+  const isTruck = !isBus && Math.random() > 0.82;
 
   let col, bw, bh, bl;
-  if (isBus) {
-    col = [0xFFCC00, 0x3366FF, 0x22AA44][Math.floor(Math.random()*3)];
-    bw = 2.0; bh = 1.4; bl = 5.5;
-  } else if (isTruck) {
-    col = [0xCC4422, 0x445566, 0x887755][Math.floor(Math.random()*3)];
-    bw = 1.8; bh = 1.0; bl = 4.2;
-  } else {
-    const palette = [0xCC2222,0x2255CC,0xCCAA00,0xDDDDDD,0xCC6600,0x226644,0x882288,0x44AACC,0xAA2244];
-    col = palette[Math.floor(Math.random()*palette.length)];
-    bw = 1.35; bh = 0.55; bl = 2.6;
-  }
+  if (isBus)        { col=[0xFFCC00,0x3366FF][Math.floor(Math.random()*2)]; bw=1.9; bh=1.3; bl=5.2; }
+  else if (isTruck) { col=[0xCC4422,0x445566][Math.floor(Math.random()*2)]; bw=1.7; bh=0.9; bl=4.0; }
+  else { col=[0xCC2222,0x2255CC,0xCCAA00,0xDDDDDD,0xCC6600,0x226644,0xAA2244][Math.floor(Math.random()*7)]; bw=1.3; bh=0.52; bl=2.5; }
 
-  const bodyMat = new THREE.MeshPhongMaterial({color: col, shininess: 60, specular: 0x222222});
-  const darkMat = new THREE.MeshPhongMaterial({color: new THREE.Color(col).multiplyScalar(0.55), shininess: 20});
-
-  // Body
-  const body = new THREE.Mesh(new THREE.BoxGeometry(bw, bh, bl), bodyMat);
-  body.position.y = bh/2 + 0.28;
+  // Body (1 mesh)
+  const body = new THREE.Mesh(new THREE.BoxGeometry(bw, bh, bl),
+    new THREE.MeshPhongMaterial({color:col, shininess:50}));
+  body.position.y = bh/2 + 0.27;
   grp.add(body);
 
+  // Cabin (1 mesh for sedans only)
   if (!isTruck && !isBus) {
-    // Roof cabin
-    const cabin = new THREE.Mesh(new THREE.BoxGeometry(bw*0.82, bh*0.75, bl*0.55), darkMat);
-    cabin.position.set(0, bh + 0.28 - bh*0.05, -bl*0.06);
+    const cabin = new THREE.Mesh(new THREE.BoxGeometry(bw*0.8, bh*0.7, bl*0.5),
+      new THREE.MeshPhongMaterial({color:new THREE.Color(col).multiplyScalar(0.55)}));
+    cabin.position.set(0, bh+0.27-bh*0.04, -bl*0.06);
     grp.add(cabin);
-    // Windshield (dark glass)
-    const windGeo = new THREE.BoxGeometry(bw*0.75, bh*0.5, 0.08);
-    const windMesh = new THREE.Mesh(windGeo, new THREE.MeshPhongMaterial({color:0x112233, transparent:true, opacity:0.7, shininess:100}));
-    windMesh.position.set(0, bh*0.9+0.28, bl*0.28);
-    grp.add(windMesh);
-  } else if (isBus) {
-    // Bus windows strip
-    const winStrip = new THREE.Mesh(new THREE.BoxGeometry(bw*0.82, bh*0.38, bl*0.88),
-      new THREE.MeshPhongMaterial({color:0x223344, transparent:true, opacity:0.55, shininess:80}));
-    winStrip.position.set(0, bh*0.75+0.28, 0);
-    grp.add(winStrip);
   }
 
-  // Headlights — bright white for bloom glow
-  const hlMat = new THREE.MeshBasicMaterial({color: 0xFFFFDD});
-  const tlMat = new THREE.MeshBasicMaterial({color: 0xFF2200});
-  const lgeo = new THREE.BoxGeometry(bw*0.2, bh*0.28, 0.1);
-  const hOff = bw*0.38;
-  [-hOff, hOff].forEach(dx => {
-    const hl = new THREE.Mesh(lgeo, hlMat); hl.position.set(dx, bh/2+0.28, bl/2+0.05); grp.add(hl);
-    const tl = new THREE.Mesh(lgeo, tlMat); tl.position.set(dx, bh/2+0.28, -bl/2-0.05); grp.add(tl);
-  });
-  // Headlight beam cone (subtle glow effect)
-  const beamMat = new THREE.MeshBasicMaterial({color:0xFFFFAA, transparent:true, opacity:0.06, side:THREE.BackSide});
-  [-hOff*0.6, hOff*0.6].forEach(dx => {
-    const beam = new THREE.Mesh(new THREE.ConeGeometry(1.2, 5, 6, 1, true), beamMat);
-    beam.rotation.x = Math.PI/2;
-    beam.position.set(dx, bh/2+0.28, bl/2+3);
-    grp.add(beam);
-  });
+  // Headlight + taillight (2 meshes total, bright for bloom)
+  const lgeo = new THREE.BoxGeometry(bw*0.7, bh*0.3, 0.12);
+  const hl = new THREE.Mesh(lgeo, new THREE.MeshBasicMaterial({color:0xFFFFDD}));
+  hl.position.set(0, bh/2+0.27, bl/2+0.06); grp.add(hl);
+  const tl = new THREE.Mesh(lgeo, new THREE.MeshBasicMaterial({color:0xFF2200}));
+  tl.position.set(0, bh/2+0.27, -bl/2-0.06); grp.add(tl);
 
-  // Wheels
-  const wR = isBus ? 0.38 : isTruck ? 0.34 : 0.27;
-  const wgeo = new THREE.CylinderGeometry(wR, wR, bw*0.14, 8);
+  // Wheels — 2 shared axle cylinders (front + back), not 4 individual
+  const wR = isBus ? 0.37 : 0.27;
+  const wgeo = new THREE.CylinderGeometry(wR, wR, bw*1.05, 7);
   const wmat = new THREE.MeshPhongMaterial({color:0x1a1a1a, shininess:5});
-  const hubMat = new THREE.MeshPhongMaterial({color:0x888888, shininess:40});
-  const axleOff = bw/2 + wR*0.08;
-  const wz1 = bl*0.35, wz2 = -bl*0.32;
-  [[-axleOff,wz1],[-axleOff,wz2],[axleOff,wz1],[axleOff,wz2]].forEach(([wx,wz]) => {
-    const w = new THREE.Mesh(wgeo, wmat);
-    w.rotation.z = Math.PI/2; w.position.set(wx, wR, wz); grp.add(w);
-    const hub = new THREE.Mesh(new THREE.CylinderGeometry(wR*0.38, wR*0.38, bw*0.15, 5), hubMat);
-    hub.rotation.z = Math.PI/2; hub.position.set(wx, wR, wz); grp.add(hub);
+  [bl*0.33, -bl*0.3].forEach(wz => {
+    const w = new THREE.Mesh(wgeo, wmat); w.rotation.z = Math.PI/2; w.position.set(0, wR, wz); grp.add(w);
   });
 
-  grp.position.y = 0;
   scene.add(grp);
   const t = Math.random();
-  const dir = 1;
   const roadLen = Math.sqrt((bx-ax)*(bx-ax)+(bz-az)*(bz-az));
-  const baseSpd = isBus ? 0.032 : isTruck ? 0.038 : 0.05 + Math.random() * 0.045;
+  const baseSpd = isBus ? 0.032 : isTruck ? 0.038 : 0.05 + Math.random()*0.04;
   const spd = roadLen > 0 ? baseSpd / roadLen : 0.0003;
-  cars.push({grp, ax, az, bx, bz, t, dir, spd});
+  cars.push({grp, ax, az, bx, bz, t, dir:1, spd});
 }
 
 function createPerson(startX, startZ) {
@@ -803,15 +764,16 @@ function initCity(data) {
 
   // Renderer — no shadows, ACES tone mapping for cinematic look
   renderer = new THREE.WebGLRenderer({canvas: document.getElementById('city-canvas'), antialias: true});
+  const isMobile = W < 768;
   renderer.setSize(W, H);
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setPixelRatio(isMobile ? Math.min(window.devicePixelRatio, 1) : Math.min(window.devicePixelRatio, 2));
   renderer.shadowMap.enabled = false;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 0.82;
   renderer.outputEncoding = THREE.sRGBEncoding;
 
   // Bloom post-processing (UnrealBloomPass — makes neon glow like real neon)
-  if (typeof THREE.EffectComposer !== 'undefined') {
+  if (typeof THREE.EffectComposer !== 'undefined' && !isMobile) {
     composer = new THREE.EffectComposer(renderer);
     composer.addPass(new THREE.RenderPass(scene, camera));
     const bloom = new THREE.UnrealBloomPass(new THREE.Vector2(W, H), 0.75, 0.45, 0.78);
@@ -919,7 +881,7 @@ function initCity(data) {
   const BLOCK  = 18;
   const STREET = 12;
   const CELL   = BLOCK + STREET; // 30 units per block
-  const GRID_N = 18;             // fixed 18×18 grid — roads cover the ENTIRE city
+  const GRID_N = 15;             // 15×15 grid — roads cover the entire city
   const offX   = (GRID_N - 1) * CELL / 2;
   const offZ   = (GRID_N - 1) * CELL / 2;
   // Token building layout — centered within the full grid
@@ -950,24 +912,23 @@ function initCity(data) {
     road.position.set(0, 0.02, z);
     scene.add(road);
 
-    // Dashed center line
-    const dashes = Math.floor(span / 4);
-    for (let d = 0; d < dashes; d++) {
-      if (d % 2 === 0) continue;
-      const dash = new THREE.Mesh(
-        new THREE.BoxGeometry(1.8, 0.07, 0.18),
-        isMain ? mLineO : mLineB
-      );
-      dash.position.set(-span/2 + d*4 + 2, 0.04, z);
-      scene.add(dash);
+    // Dashed center line — only on main roads
+    if (isMain) {
+      const dashes = Math.floor(span / 6);
+      for (let d = 0; d < dashes; d++) {
+        if (d % 2 === 0) continue;
+        const dash = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.07, 0.2), mLineO);
+        dash.position.set(-span/2 + d*6 + 3, 0.04, z);
+        scene.add(dash);
+      }
     }
 
     // Cars — two lanes going opposite directions
     const L = span / 2 + 2;
     const laneOff = isMain ? 1.6 : 1.1;
-    const nCars = isMain ? 7 : 3;
+    const nCars = isMain ? 4 : 1;
     for (let ci = 0; ci < nCars; ci++) createCar(-L, z - laneOff, L, z - laneOff, isMain && ci===0);
-    for (let ci = 0; ci < nCars; ci++) createCar( L, z + laneOff, -L, z + laneOff, isMain && ci===0);
+    for (let ci = 0; ci < nCars; ci++) createCar( L, z + laneOff, -L, z + laneOff, false);
   }
 
   // ── Vertical streets ───────────────────────────────────────────
@@ -982,24 +943,23 @@ function initCity(data) {
     road.position.set(x, 0.02, 0);
     scene.add(road);
 
-    // Dashed center line
-    const dashes = Math.floor(span / 4);
-    for (let d = 0; d < dashes; d++) {
-      if (d % 2 === 0) continue;
-      const dash = new THREE.Mesh(
-        new THREE.BoxGeometry(0.18, 0.07, 1.8),
-        isMain ? mLineO : mLineB
-      );
-      dash.position.set(x, 0.04, -span/2 + d*4 + 2);
-      scene.add(dash);
+    // Dashed center line — only on main roads
+    if (isMain) {
+      const dashes = Math.floor(span / 6);
+      for (let d = 0; d < dashes; d++) {
+        if (d % 2 === 0) continue;
+        const dash = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.07, 2.2), mLineO);
+        dash.position.set(x, 0.04, -span/2 + d*6 + 3);
+        scene.add(dash);
+      }
     }
 
     // Cars — two lanes
     const L = span / 2 + 2;
     const laneOff = isMain ? 1.6 : 1.1;
-    const nCars = isMain ? 7 : 3;
+    const nCars = isMain ? 4 : 1;
     for (let ci = 0; ci < nCars; ci++) createCar(x - laneOff, -L, x - laneOff, L, isMain && ci===0);
-    for (let ci = 0; ci < nCars; ci++) createCar(x + laneOff,  L, x + laneOff, -L, isMain && ci===0);
+    for (let ci = 0; ci < nCars; ci++) createCar(x + laneOff,  L, x + laneOff, -L, false);
   }
 
   // ── Intersection fills ─────────────────────────────────────────
@@ -1116,19 +1076,13 @@ function initCity(data) {
       const bx = c * CELL - offX + (Math.random()-0.5) * BLOCK * 0.45;
       const bz = r * CELL - offZ + (Math.random()-0.5) * BLOCK * 0.45;
       createFillerBuilding(bx, bz);
-      // Denser blocks get a second building
-      if (Math.random() > 0.45) {
-        createFillerBuilding(
-          bx + (Math.random()-0.5) * BLOCK * 0.55,
-          bz + (Math.random()-0.5) * BLOCK * 0.55
-        );
-      }
     }
   }
 
   const citySpan = (GRID_N / 2) * CELL;
 
-  for (let i = 0; i < 60; i++) {
+  const nPeople = isMobile ? 0 : 30;
+  for (let i = 0; i < nPeople; i++) {
     const ang = Math.random() * Math.PI * 2;
     const r2 = Math.random() * citySpan * 0.9;
     createPerson(Math.cos(ang) * r2, Math.sin(ang) * r2);
