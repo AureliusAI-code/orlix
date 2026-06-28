@@ -322,14 +322,14 @@ const fmtPrice = p => {
 };
 
 const nodeHex = n => {
-  if (n.isOrlix) return 0xF07830;   // ORLIX stays orange
-  if (n.isStable) return 0x44AAFF;  // stables: ice blue
+  if (n.isOrlix) return 0xB06020;
+  if (n.isStable) return 0x205080;
   const c = n.change24h || 0;
-  if (c > 10) return 0x00FF88;      // big pump: bright green
-  if (c > 0)  return 0x00FFCC;      // up: cyan-green
-  if (c < -10) return 0xFF2266;     // big dump: hot pink
-  if (c < 0)  return 0xFF66AA;      // down: pink
-  return 0x00CCFF;                   // neutral: pure cyan
+  if (c > 10) return 0x1a6040;
+  if (c > 0)  return 0x204060;
+  if (c < -10) return 0x802040;
+  if (c < 0)  return 0x602040;
+  return 0x203050;
 };
 
 const nodeHexStr = n => '#' + nodeHex(n).toString(16).padStart(6,'0');
@@ -564,32 +564,23 @@ function createFillerBuilding(x, z) {
   const h = 6 + Math.random() * 60;
   const bw = 3.5 + Math.random() * 8;
   const bd = 3.5 + Math.random() * 8;
-  const style = Math.random();
-
-  const darkBases = [0x0e0e1c, 0x10101e, 0x0c0c18, 0x121220, 0x0a0a16, 0x0f0f1a];
-  const emCols   = [0x223344, 0x332211, 0x112233, 0x221133, 0x113322, 0x332233];
-  const dc = darkBases[Math.floor(Math.random() * darkBases.length)];
-  const ec = emCols[Math.floor(Math.random() * emCols.length)];
-  const mat = new THREE.MeshPhongMaterial({
+  const darkTints = [0x0f131d, 0x13100f, 0x0f1310, 0x12100f, 0x10100f, 0x0d0f14];
+  const dc = darkTints[Math.floor(Math.random() * darkTints.length)];
+  const baseMat = () => new THREE.MeshPhongMaterial({
     color: dc,
-    emissive: new THREE.Color(ec).multiplyScalar(0.22),
-    map: getWindowTex(),
-    shininess: 35,
-    specular: new THREE.Color(0x1a2233)
+    emissive: new THREE.Color(0xffffff),
+    emissiveMap: getWindowTex(),
+    emissiveIntensity: 0.32,
+    shininess: 30
   });
-
-  if (style > 0.58) {
-    // Stepped tower — base + upper section
-    const m1 = new THREE.Mesh(new THREE.BoxGeometry(bw, h * 0.65, bd), mat);
-    m1.position.set(x, h * 0.325, z);
-    scene.add(m1);
-    const m2 = new THREE.Mesh(new THREE.BoxGeometry(bw * 0.62, h * 0.35, bd * 0.62), mat.clone());
-    m2.position.set(x, h * 0.65 + h * 0.175, z);
-    scene.add(m2);
+  if (Math.random() > 0.55) {
+    const m1 = new THREE.Mesh(new THREE.BoxGeometry(bw, h * 0.65, bd), baseMat());
+    m1.position.set(x, h * 0.325, z); scene.add(m1);
+    const m2 = new THREE.Mesh(new THREE.BoxGeometry(bw * 0.62, h * 0.35, bd * 0.62), baseMat());
+    m2.position.set(x, h * 0.65 + h * 0.175, z); scene.add(m2);
   } else {
-    const mesh = new THREE.Mesh(new THREE.BoxGeometry(bw, h, bd), mat);
-    mesh.position.set(x, h / 2, z);
-    scene.add(mesh);
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(bw, h, bd), baseMat());
+    mesh.position.set(x, h / 2, z); scene.add(mesh);
   }
 }
 
@@ -597,19 +588,22 @@ let _winTex = null;
 function getWindowTex() {
   if (_winTex) return _winTex;
   const c = document.createElement('canvas');
-  c.width=256; c.height=512;
-  const ctx=c.getContext('2d');
-  ctx.fillStyle='#050510'; ctx.fillRect(0,0,256,512);
-  for (let y=10;y<512;y+=24) {
-    for (let x=10;x<256;x+=20) {
-      if (Math.random()>0.45) {
-        const r=Math.random();
-        ctx.fillStyle=r>0.65?'rgba(255,220,120,0.28)':r>0.4?'rgba(120,160,255,0.22)':'rgba(255,130,50,0.18)';
-        ctx.fillRect(x,y,10,14);
+  c.width = 256; c.height = 512;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#000000';
+  ctx.fillRect(0, 0, 256, 512);
+  for (let y = 12; y < 512; y += 26) {
+    for (let x = 12; x < 256; x += 22) {
+      if (Math.random() > 0.42) {
+        const r = Math.random();
+        if (r > 0.6) ctx.fillStyle = '#EEC866';
+        else if (r > 0.35) ctx.fillStyle = '#6699CC';
+        else ctx.fillStyle = '#CC7733';
+        ctx.fillRect(x, y, 10, 16);
       }
     }
   }
-  _winTex=new THREE.CanvasTexture(c);
+  _winTex = new THREE.CanvasTexture(c);
   return _winTex;
 }
 
@@ -680,65 +674,36 @@ function createBuilding(node, x, z) {
   const bw = node.isOrlix ? 12 : node.isStable ? 11 : 5 + Math.random() * 7;
   const bd = node.isOrlix ? 12 : node.isStable ? 11 : 5 + Math.random() * 7;
 
-  // Podium — solid concrete base
-  const podH = Math.max(4, Math.min(height * 0.25, 14));
-  const podGeo = new THREE.BoxGeometry(bw, podH, bd);
-  const podMesh = new THREE.Mesh(podGeo, new THREE.MeshPhongMaterial({
-    color: 0x080810,
-    emissive: new THREE.Color(0x050508),
-    shininess: 4
-  }));
-  podMesh.position.y = podH / 2;
-  group.add(podMesh);
-
-  // Tower — solid glass curtain wall with lit windows
-  const twW = bw * (0.72 + Math.random() * 0.18);
-  const twD = bd * (0.72 + Math.random() * 0.18);
-  const twH = height - podH;
-  const twGeo = new THREE.BoxGeometry(twW, twH, twD);
-  const twMesh = new THREE.Mesh(twGeo, new THREE.MeshPhongMaterial({
-    color: new THREE.Color(col).multiplyScalar(0.07),
-    emissive: threeCol.clone().multiplyScalar(0.12),
-    map: getWindowTex(),
-    shininess: 90,
+  const geo = new THREE.BoxGeometry(bw, height, bd);
+  const mesh = new THREE.Mesh(geo, new THREE.MeshPhongMaterial({
+    color: threeCol.clone().multiplyScalar(0.55),
+    emissive: new THREE.Color(0xffffff),
+    emissiveMap: getWindowTex(),
+    emissiveIntensity: 0.45,
+    shininess: 85,
     specular: new THREE.Color(0x223344)
   }));
-  twMesh.position.y = podH + twH / 2;
-  twMesh.userData = node;
-  group.add(twMesh);
-  clickMeshes.push(twMesh);
+  mesh.position.y = height / 2;
+  mesh.userData = node;
+  group.add(mesh);
+  clickMeshes.push(mesh);
 
-  // Roof cap
-  const capH = Math.max(1, height * 0.015);
-  const capMesh = new THREE.Mesh(
-    new THREE.BoxGeometry(twW + 0.6, capH, twD + 0.6),
-    new THREE.MeshPhongMaterial({
-      color: new THREE.Color(col).multiplyScalar(0.3),
-      emissive: threeCol.clone().multiplyScalar(0.14),
-      shininess: 25
-    })
-  );
-  capMesh.position.y = height + capH / 2;
-  group.add(capMesh);
-
-  // Antenna on tall buildings
   if (height > 35) {
     const antH = height * 0.13;
     const ant = new THREE.Mesh(
       new THREE.CylinderGeometry(0.07, 0.1, antH, 5),
       new THREE.MeshPhongMaterial({color: 0x778899, shininess: 40})
     );
-    ant.position.y = height + antH / 2 + capH;
+    ant.position.y = height + antH / 2;
     group.add(ant);
     const tip = new THREE.Mesh(new THREE.SphereGeometry(0.22, 6, 6),
       new THREE.MeshBasicMaterial({color: 0xFF2222, transparent: true, opacity: 1}));
-    tip.position.y = height + antH + capH;
+    tip.position.y = height + antH;
     antennaTips.push({mesh: tip, offset: Math.random() * Math.PI * 2});
     group.add(tip);
   }
 
-  // Label sprite
-  const label = makeLabel(node.symbol, nodeHexStr(node));
+  const label = makeLabel(node.symbol, node.isOrlix ? '#F07830' : '#AABBCC');
   label.position.y = height + (height > 28 ? height * 0.18 + 4 : 5);
   group.add(label);
 
@@ -835,7 +800,7 @@ function initCity(data) {
   scene.add(sunSphere);
 
   // ── Lighting ────────────────────────────────────────────────────
-  const ambLight = new THREE.AmbientLight(0x223355, 1.8);
+  const ambLight = new THREE.AmbientLight(0x223355, 1.4);
   scene.add(ambLight);
   const dirLight = new THREE.DirectionalLight(0xaabbdd, 1.2);
   dirLight.position.set(-80, 150, 60);
@@ -892,8 +857,8 @@ function initCity(data) {
 
   // Shared road materials
   const mMain  = new THREE.MeshBasicMaterial({color: 0x14142a});
-  const mSide  = new THREE.MeshBasicMaterial({color: 0x0f0f1e});
-  const mInter = new THREE.MeshBasicMaterial({color: 0x19192e});
+  const mSide  = new THREE.MeshBasicMaterial({color: 0x0e0e1c});
+  const mInter = new THREE.MeshBasicMaterial({color: 0x111120});
   const mLineO = new THREE.MeshBasicMaterial({color: 0xF07830, transparent:true, opacity:0.7});
   const mLineB = new THREE.MeshBasicMaterial({color: 0x5566ff, transparent:true, opacity:0.5});
   const mPole  = new THREE.MeshPhongMaterial({color: 0x445566, shininess: 20});
@@ -973,16 +938,6 @@ function initCity(data) {
       inter.position.set(ix, 0.025, iz);
       scene.add(inter);
 
-      // Sidewalk around block (inset pad)
-      if (r < GRID_N && c < GRID_N) {
-        const sw = new THREE.Mesh(new THREE.BoxGeometry(BLOCK, 0.04, BLOCK), mSidew);
-        sw.position.set(
-          c * CELL - offX,
-          0.02,
-          r * CELL - offZ
-        );
-        scene.add(sw);
-      }
 
 
       // ── Traffic lights at major intersections ──────────────────
