@@ -10,6 +10,12 @@
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
 
 <style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
@@ -469,11 +475,12 @@ function copyAddr() {
 }
 
 // ── Three.js City ──────────────────────────────────────────────
-let scene, camera, renderer, controls;
+let scene, camera, renderer, controls, composer;
 let clickMeshes = [];
 let buildingGroups = new Map();
-let antennaTips = []; // tracked separately — no traverse() in loop
+let antennaTips = [];
 let cityTime = 0;
+const NEON_PALETTE = [0xFF00AA,0x00FFCC,0xFF6600,0xFFEE00,0x00AAFF,0xFF3366,0xBB00FF,0x00FF88];
 
 // City life
 let cars = [], people = [];
@@ -601,8 +608,25 @@ function makeLabel(text, colorStr) {
 
 function calcHeight(node) {
   const mcap = node.mcap || node.vol24h || node.liquidity || 5000;
-  // Log scale: $10K → 20u, $1M → 60u, $1B → 120u
   return Math.max(5, Math.min(130, (Math.log10(Math.max(1000, mcap)) - 3) * 20));
+}
+
+function createNeonSign(text, color) {
+  const cv = document.createElement('canvas');
+  cv.width = 256; cv.height = 80;
+  const ctx = cv.getContext('2d');
+  const cs = '#' + color.toString(16).padStart(6,'0');
+  ctx.fillStyle = 'rgba(0,0,0,0.92)'; ctx.fillRect(0,0,256,80);
+  ctx.strokeStyle = cs; ctx.lineWidth = 3;
+  ctx.strokeRect(4,4,248,72);
+  ctx.font = 'bold 42px "JetBrains Mono",monospace';
+  ctx.fillStyle = cs; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(text, 128, 40);
+  const tex = new THREE.CanvasTexture(cv);
+  return new THREE.Mesh(
+    new THREE.PlaneGeometry(1,1),
+    new THREE.MeshBasicMaterial({map:tex, transparent:true, side:THREE.DoubleSide})
+  );
 }
 
 function createBuilding(node, x, z) {
@@ -614,67 +638,89 @@ function createBuilding(node, x, z) {
   const height = calcHeight(node);
   node._buildingHeight = height;
 
-  const bw = node.isOrlix ? 7 : node.isStable ? 6 : 3 + Math.random() * 2.5;
-  const bd = node.isOrlix ? 7 : node.isStable ? 6 : 3 + Math.random() * 2.5;
+  const bw = node.isOrlix ? 10 : node.isStable ? 9 : 4.5 + Math.random() * 5;
+  const bd = node.isOrlix ? 10 : node.isStable ? 9 : 4.5 + Math.random() * 5;
 
-  // Main building body
-  const geo = new THREE.BoxGeometry(bw, height, bd);
-  const emStr = node.isOrlix ? 0.5 : node.isStable ? 0.3 : 0.18;
-  const mat = new THREE.MeshPhongMaterial({
-    color: 0x06060e,
-    emissive: threeCol.clone().multiplyScalar(emStr),
-    map: getWindowTex(),
-    shininess: 8,
+  // ── Podium (wide base) ────────────────────────────────────────
+  const podH = Math.max(5, Math.min(height * 0.28, 16));
+  const podGeo = new THREE.BoxGeometry(bw, podH, bd);
+  const podMesh = new THREE.Mesh(podGeo, new THREE.MeshPhongMaterial({
+    color: 0x07070f, emissive: threeCol.clone().multiplyScalar(0.08), shininess: 4
+  }));
+  podMesh.position.y = podH / 2;
+  group.add(podMesh);
+  const podEdge = new THREE.LineSegments(new THREE.EdgesGeometry(podGeo),
+    new THREE.LineBasicMaterial({color: col, transparent:true, opacity:0.5}));
+  podEdge.position.y = podH / 2;
+  group.add(podEdge);
+
+  // ── Tower body (narrower) ─────────────────────────────────────
+  const twW = bw * (0.55 + Math.random() * 0.25);
+  const twD = bd * (0.55 + Math.random() * 0.25);
+  const twH = height - podH;
+  const twGeo = new THREE.BoxGeometry(twW, twH, twD);
+  const twMat = new THREE.MeshPhongMaterial({
+    color: 0x050510,
+    emissive: threeCol.clone().multiplyScalar(node.isOrlix ? 0.35 : 0.16),
+    map: getWindowTex(), shininess: 4
   });
-  const mesh = new THREE.Mesh(geo, mat);
-  mesh.position.y = height / 2;
-  mesh.castShadow = false;
-  mesh.userData = node;
-  group.add(mesh);
-  clickMeshes.push(mesh);
+  const twMesh = new THREE.Mesh(twGeo, twMat);
+  twMesh.position.y = podH + twH / 2;
+  twMesh.castShadow = false;
+  twMesh.userData = node;
+  group.add(twMesh);
+  clickMeshes.push(twMesh);
 
-  // Primary neon wireframe edges
-  const edgeGeo = new THREE.EdgesGeometry(geo);
-  const edgeOpacity = node.isOrlix ? 1.0 : node.isStable ? 0.85 : 0.65;
-  const edgeMat = new THREE.LineBasicMaterial({color: col, transparent: true, opacity: edgeOpacity});
-  const edges = new THREE.LineSegments(edgeGeo, edgeMat);
-  edges.position.y = height / 2;
-  group.add(edges);
+  // Tower neon edges (bright — feeds bloom)
+  const twEdge = new THREE.LineSegments(new THREE.EdgesGeometry(twGeo),
+    new THREE.LineBasicMaterial({color: col, transparent:true, opacity: node.isOrlix?1.0:0.88}));
+  twEdge.position.y = podH + twH / 2;
+  group.add(twEdge);
 
-  // Halo glow — slightly larger wireframe at low opacity for bloom effect
-  const s = 1.05;
-  const haloGeo = new THREE.EdgesGeometry(new THREE.BoxGeometry(bw*s, height*s, bd*s));
-  const haloMat = new THREE.LineBasicMaterial({color: col, transparent: true, opacity: 0.18});
-  const halo = new THREE.LineSegments(haloGeo, haloMat);
-  halo.position.y = height / 2;
-  group.add(halo);
+  // Halo edges (bloom spread)
+  const hs = 1.05;
+  const haloEdge = new THREE.LineSegments(
+    new THREE.EdgesGeometry(new THREE.BoxGeometry(twW*hs, twH*hs, twD*hs)),
+    new THREE.LineBasicMaterial({color: col, transparent:true, opacity:0.2})
+  );
+  haloEdge.position.y = podH + twH / 2;
+  group.add(haloEdge);
 
-  // Roof glow plane
-  const roofGeo = new THREE.PlaneGeometry(bw * 0.95, bd * 0.95);
-  const roofMat = new THREE.MeshBasicMaterial({
-    color: col, transparent: true,
-    opacity: node.isOrlix ? 0.95 : node.isStable ? 0.6 : 0.45,
-    side: THREE.DoubleSide,
-  });
-  const roof = new THREE.Mesh(roofGeo, roofMat);
-  roof.rotation.x = -Math.PI / 2;
-  roof.position.y = height + 0.05;
+  // Roof glow (MeshBasicMaterial = always bright = always blooms)
+  const roof = new THREE.Mesh(new THREE.PlaneGeometry(twW*0.92, twD*0.92),
+    new THREE.MeshBasicMaterial({color:col, transparent:true,
+      opacity: node.isOrlix?1.0:0.6, side:THREE.DoubleSide}));
+  roof.rotation.x = -Math.PI/2;
+  roof.position.y = height + 0.06;
   group.add(roof);
 
-  // Antenna for tall buildings
-  if (height > 28) {
-    const antH = height * 0.16;
-    const antGeo = new THREE.CylinderGeometry(0.05, 0.05, antH, 4);
-    const antMat = new THREE.MeshBasicMaterial({color: col});
-    const ant = new THREE.Mesh(antGeo, antMat);
+  // ── Neon sign on tall buildings ───────────────────────────────
+  if (height > 30) {
+    const signCol = node.isOrlix ? col : NEON_PALETTE[Math.floor(Math.random() * NEON_PALETTE.length)];
+    const sign = createNeonSign(node.symbol, signCol);
+    sign.scale.set(twW * 0.88, twW * 0.28, 1);
+    sign.position.set(0, podH + twH * 0.6, twD / 2 + 0.2);
+    group.add(sign);
+    if (height > 60) {
+      const sign2 = createNeonSign(node.symbol, signCol);
+      sign2.scale.set(twD * 0.88, twD * 0.28, 1);
+      sign2.position.set(twW / 2 + 0.2, podH + twH * 0.5, 0);
+      sign2.rotation.y = Math.PI / 2;
+      group.add(sign2);
+    }
+  }
+
+  // ── Antenna (very tall) ───────────────────────────────────────
+  if (height > 40) {
+    const antH = height * 0.15;
+    const ant = new THREE.Mesh(new THREE.CylinderGeometry(0.06,0.06,antH,4),
+      new THREE.MeshBasicMaterial({color: col}));
     ant.position.y = height + antH / 2;
     group.add(ant);
-
-    const tipGeo = new THREE.SphereGeometry(0.22, 6, 6);
-    const tipMat = new THREE.MeshBasicMaterial({color: 0xFF2020, transparent: true, opacity: 1});
-    const tip = new THREE.Mesh(tipGeo, tipMat);
+    const tip = new THREE.Mesh(new THREE.SphereGeometry(0.28,6,6),
+      new THREE.MeshBasicMaterial({color:0xFF1818, transparent:true, opacity:1}));
     tip.position.y = height + antH;
-    antennaTips.push({mesh: tip, offset: Math.random() * Math.PI * 2});
+    antennaTips.push({mesh:tip, offset:Math.random()*Math.PI*2});
     group.add(tip);
   }
 
@@ -703,11 +749,22 @@ function initCity(data) {
   camera = new THREE.PerspectiveCamera(58, W/H, 0.5, 2000);
   camera.position.set(0, 140, 320);
 
-  // Renderer — NO shadow maps (fixes the too-many-lights overflow)
+  // Renderer — no shadows, ACES tone mapping for cinematic look
   renderer = new THREE.WebGLRenderer({canvas: document.getElementById('city-canvas'), antialias: true});
   renderer.setSize(W, H);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.shadowMap.enabled = false;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 0.85;
+  renderer.outputEncoding = THREE.sRGBEncoding;
+
+  // Bloom post-processing (UnrealBloomPass — makes neon glow like real neon)
+  if (typeof THREE.EffectComposer !== 'undefined') {
+    composer = new THREE.EffectComposer(renderer);
+    composer.addPass(new THREE.RenderPass(scene, camera));
+    const bloom = new THREE.UnrealBloomPass(new THREE.Vector2(W, H), 2.4, 0.55, 0.1);
+    composer.addPass(bloom);
+  }
 
   // Controls
   controls = new THREE.OrbitControls(camera, renderer.domElement);
@@ -1016,6 +1073,7 @@ function initCity(data) {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
+    if (composer) composer.setSize(window.innerWidth, window.innerHeight);
   });
 
   // Animate
@@ -1057,7 +1115,7 @@ function initCity(data) {
       p.grp.rotation.y = -p.angle;
     }
 
-    renderer.render(scene, camera);
+    if (composer) composer.render(); else renderer.render(scene, camera);
   }
   animate();
 
