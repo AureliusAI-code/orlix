@@ -393,47 +393,105 @@ const setProgress = (pct, msg) => {
   document.getElementById('lstatus').textContent = msg;
 };
 
+// ── Known Base tokens (seed list for reliable data) ───────────
+const BASE_TOKEN_ADDRS = [
+  '0x4200000000000000000000000000000000000006', // WETH
+  '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913', // USDC
+  '0xcbb7c0000ab88b473b1f5afd9ef808440eed33bf', // cbBTC
+  '0x2ae3f1ec7f1f5012cfeab0185bfc7aa3cf0dec22', // cbETH
+  '0x50c5725949a6f0c72e6c4a641f24049a917db0cb', // DAI
+  '0x532f27101965dd16442e59d40670faf5ebb142e4', // BRETT
+  '0x4ed4e862860bed51a9570b96d89af5e1b0efefed', // DEGEN
+  '0xac1bd2486aaf3b5c0fc3fd868558b082a531b2b4', // TOSHI
+  '0x0578d8a44db98b23bf096a382e016e29a5ce0ffe', // HIGHER
+  '0x940181a94a35a4569e4529a3cdfb74e38fd98631', // AERO
+  '0x6921b130d297cc43754afba22e5eac0fbf8db75b', // DOGINME
+  '0xb1a03eda10342529bbf8eb700a06c60441fef25d', // MIGGLES
+  '0xc1cba3fcea344f92d9239c08c0568f6f2f0ee452', // wstETH
+  '0x22e6966b799c4d5b13be962e1d117b56327fda66', // SKI
+  '0x9a26f5433671751c3276a065f57e5a02d2817973', // KEYCAT
+  '0x768be13e1680b5ebe0024c42c896e3db59ec0149', // SKI2
+  '0xd07379a755a8f11b57610154861d694b2a0f615a', // ZORA
+  '0x4158734d47fc9692176b17969a5a197cca5943eb', // BALD
+  '0x8aacf0f6a5c01cf4e0c85c57db5a413fde149da3', // ORLIX
+  '0x3c281a39944a2319aa653d81cfd93ca10983d234', // BUILD
+  '0x7d49a065d17d6d4a55dc13649901fdbb98b2afba', // BASED
+  '0x1c7a460413dd4e964f96d8dfc56e7223ce88cd85', // SEAM
+  '0xe3086852a4b125803c815a158249ae468a3254ca', // MOCHI
+];
+
 // ── Data layer ─────────────────────────────────────────────────
-function fetchWithTimeout(url, ms = 10000) {
+function fetchWithTimeout(url, ms = 12000) {
   const ctrl = new AbortController();
   const id = setTimeout(() => ctrl.abort(), ms);
   return fetch(url, { signal: ctrl.signal }).finally(() => clearTimeout(id));
 }
 
-async function fetchEcosystem() {
-  const queries = ['WETH','USDC','ORLIX','brett','degen','toshi','aerodrome','virtuals','higher','ski'];
-  setProgress(8, 'Querying DexScreener...');
+function chunk(arr, size) {
+  const out = [];
+  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
+  return out;
+}
 
-  const results = await Promise.allSettled(
-    queries.map(q =>
+async function fetchEcosystem() {
+  setProgress(8, 'Fetching Base token data...');
+
+  const allPairs = [];
+
+  // Strategy 1: fetch by known token addresses (most reliable)
+  const addrChunks = chunk(BASE_TOKEN_ADDRS, 10);
+  const tokenResults = await Promise.allSettled(
+    addrChunks.map(addrs =>
+      fetchWithTimeout(`https://api.dexscreener.com/latest/dex/tokens/${addrs.join(',')}`)
+        .then(r => r.json())
+        .then(d => (d.pairs||[]).filter(p => p.chainId === 'base'))
+        .catch(() => [])
+    )
+  );
+  allPairs.push(...tokenResults.flatMap(r => r.status==='fulfilled' ? r.value : []));
+
+  setProgress(50, 'Searching trending tokens...');
+
+  // Strategy 2: keyword searches for additional tokens
+  const searches = ['base meme','ORLIX','virtuals','clanker'];
+  const searchResults = await Promise.allSettled(
+    searches.map(q =>
       fetchWithTimeout(`https://api.dexscreener.com/latest/dex/search?q=${encodeURIComponent(q)}`)
         .then(r => r.json())
         .then(d => (d.pairs||[]).filter(p => p.chainId === 'base'))
         .catch(() => [])
     )
   );
+  allPairs.push(...searchResults.flatMap(r => r.status==='fulfilled' ? r.value : []));
 
-  setProgress(45, 'Processing pairs...');
-  const all = results.flatMap(r => r.status==='fulfilled' ? r.value : []);
+  setProgress(72, 'Processing pairs...');
 
-  // Deduplicate
+  // Deduplicate by pairAddress
   const seen = new Set();
-  const pairs = all
-    .filter(p => { if (seen.has(p.pairAddress)) return false; seen.add(p.pairAddress); return true; })
-    .filter(p => (p.liquidity?.usd || 0) >= 300)
+  const pairs = allPairs
+    .filter(p => p.pairAddress && !seen.has(p.pairAddress) && seen.add(p.pairAddress))
+    .filter(p => (p.liquidity?.usd || 0) >= 100)
     .sort((a,b) => (b.volume?.h24||0) - (a.volume?.h24||0))
-    .slice(0, 250);
+    .slice(0, 300);
 
-  // Fallback seed data so graph is never empty
-  if (pairs.length === 0) {
-    return [{
-      pairAddress: '0xseed1', chainId: 'base', dexId: 'uniswap',
-      baseToken:  { address: ORLIX_ADDR, name: 'Orlix AI', symbol: 'ORLIX' },
-      quoteToken: { address: '0x4200000000000000000000000000000000000006', name: 'Wrapped Ether', symbol: 'WETH' },
-      priceUsd: '0.0001', priceChange: { h24: 5 }, fdv: 1000000,
-      volume: { h24: 50000 }, liquidity: { usd: 200000 },
-    }];
+  // Fallback so graph is never blank
+  if (pairs.length < 2) {
+    pairs.push(
+      {
+        pairAddress:'0xfallback1', chainId:'base', dexId:'uniswap',
+        baseToken:{address:ORLIX_ADDR,name:'Orlix AI',symbol:'ORLIX'},
+        quoteToken:{address:'0x4200000000000000000000000000000000000006',name:'Wrapped Ether',symbol:'WETH'},
+        priceUsd:'0.0001',priceChange:{h24:5},fdv:1000000,volume:{h24:50000},liquidity:{usd:200000},
+      },
+      {
+        pairAddress:'0xfallback2', chainId:'base', dexId:'uniswap',
+        baseToken:{address:'0x532f27101965dd16442e59d40670faf5ebb142e4',name:'Brett',symbol:'BRETT'},
+        quoteToken:{address:'0x4200000000000000000000000000000000000006',name:'Wrapped Ether',symbol:'WETH'},
+        priceUsd:'0.15',priceChange:{h24:3},fdv:150000000,volume:{h24:5000000},liquidity:{usd:3000000},
+      }
+    );
   }
+
   return pairs;
 }
 
