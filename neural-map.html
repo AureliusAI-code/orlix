@@ -324,14 +324,14 @@ const fmtPrice = p => {
 };
 
 const nodeHex = n => {
-  if (n.isOrlix) return 0xF07830;
-  if (n.isStable) return 0x818CF8;
+  if (n.isOrlix) return 0xF07830;   // ORLIX stays orange
+  if (n.isStable) return 0x44AAFF;  // stables: ice blue
   const c = n.change24h || 0;
-  if (c > 10) return 0x22C55E;
-  if (c > 0)  return 0x4ADE80;
-  if (c < -10) return 0xEF4444;
-  if (c < 0)  return 0xF87171;
-  return 0x64748B;
+  if (c > 10) return 0x00FF88;      // big pump: bright green
+  if (c > 0)  return 0x00FFCC;      // up: cyan-green
+  if (c < -10) return 0xFF2266;     // big dump: hot pink
+  if (c < 0)  return 0xFF66AA;      // down: pink
+  return 0x00CCFF;                   // neutral: pure cyan
 };
 
 const nodeHexStr = n => '#' + nodeHex(n).toString(16).padStart(6,'0');
@@ -520,7 +520,9 @@ function createCar(ax, az, bx, bz) {
   scene.add(grp);
   const t = Math.random();
   const dir = Math.random() > 0.5 ? 1 : -1;
-  const spd = 0.004 + Math.random() * 0.005;
+  // normalize speed to real units/frame so all cars look same velocity regardless of road length
+  const roadLen = Math.sqrt((bx-ax)*(bx-ax)+(bz-az)*(bz-az));
+  const spd = roadLen > 0 ? (0.05 + Math.random() * 0.04) / roadLen : 0.0003;
   cars.push({grp, ax, az, bx, bz, t, dir, spd});
 }
 
@@ -552,6 +554,28 @@ function createPerson(startX, startZ) {
     timer: Math.floor(Math.random() * 80),
     interval: 55 + Math.floor(Math.random() * 90)
   });
+}
+
+function createFillerBuilding(x, z) {
+  const h = 6 + Math.random() * 50;
+  const bw = 2.5 + Math.random() * 5;
+  const bd = 2.5 + Math.random() * 5;
+  const geo = new THREE.BoxGeometry(bw, h, bd);
+  const darkCols = [0x0a1020,0x10080a,0x080a18,0x0a0a10,0x0c0814];
+  const emColHex = [0x1a3a6a,0x3a1a4a,0x1a3a2a,0x3a2a10,0x2a1a4a];
+  const ci = Math.floor(Math.random()*5);
+  const mesh = new THREE.Mesh(geo, new THREE.MeshPhongMaterial({
+    color: darkCols[ci],
+    emissive: new THREE.Color(emColHex[ci]).multiplyScalar(0.4),
+    map: getWindowTex(), shininess: 2
+  }));
+  mesh.position.set(x, h/2, z);
+  scene.add(mesh);
+  // Subtle edge glow
+  const edge = new THREE.LineSegments(new THREE.EdgesGeometry(geo),
+    new THREE.LineBasicMaterial({color: emColHex[ci], transparent:true, opacity:0.35}));
+  edge.position.set(x, h/2, z);
+  scene.add(edge);
 }
 
 let _winTex = null;
@@ -645,7 +669,8 @@ function createBuilding(node, x, z) {
   const podH = Math.max(5, Math.min(height * 0.28, 16));
   const podGeo = new THREE.BoxGeometry(bw, podH, bd);
   const podMesh = new THREE.Mesh(podGeo, new THREE.MeshPhongMaterial({
-    color: 0x07070f, emissive: threeCol.clone().multiplyScalar(0.08), shininess: 4
+    color: new THREE.Color(col).multiplyScalar(0.03),
+    transparent: true, opacity: 0.1, depthWrite: false
   }));
   podMesh.position.y = podH / 2;
   group.add(podMesh);
@@ -654,44 +679,51 @@ function createBuilding(node, x, z) {
   podEdge.position.y = podH / 2;
   group.add(podEdge);
 
-  // ── Tower body (narrower) ─────────────────────────────────────
+  // ── Tower body — holographic: transparent glass shell ─────────
   const twW = bw * (0.55 + Math.random() * 0.25);
   const twD = bd * (0.55 + Math.random() * 0.25);
   const twH = height - podH;
   const twGeo = new THREE.BoxGeometry(twW, twH, twD);
-  const twMat = new THREE.MeshPhongMaterial({
-    color: 0x050510,
-    emissive: threeCol.clone().multiplyScalar(node.isOrlix ? 0.35 : 0.16),
-    map: getWindowTex(), shininess: 4
-  });
-  const twMesh = new THREE.Mesh(twGeo, twMat);
+  // Nearly transparent body — wireframe is the star
+  const twMesh = new THREE.Mesh(twGeo, new THREE.MeshPhongMaterial({
+    color: new THREE.Color(col).multiplyScalar(0.04),
+    emissive: threeCol.clone().multiplyScalar(0.06),
+    transparent: true, opacity: node.isOrlix ? 0.25 : 0.12,
+    side: THREE.DoubleSide, depthWrite: false
+  }));
   twMesh.position.y = podH + twH / 2;
-  twMesh.castShadow = false;
   twMesh.userData = node;
   group.add(twMesh);
   clickMeshes.push(twMesh);
 
-  // Tower neon edges (bright — feeds bloom)
+  // Primary neon wireframe — VERY bright for holographic feel
   const twEdge = new THREE.LineSegments(new THREE.EdgesGeometry(twGeo),
-    new THREE.LineBasicMaterial({color: col, transparent:true, opacity: node.isOrlix?1.0:0.88}));
+    new THREE.LineBasicMaterial({color: col, transparent:true, opacity: node.isOrlix?1.0:0.92}));
   twEdge.position.y = podH + twH / 2;
   group.add(twEdge);
 
-  // Halo edges (bloom spread)
-  const hs = 1.05;
+  // Outer glow wireframe
+  const hs = 1.04;
   const haloEdge = new THREE.LineSegments(
     new THREE.EdgesGeometry(new THREE.BoxGeometry(twW*hs, twH*hs, twD*hs)),
-    new THREE.LineBasicMaterial({color: col, transparent:true, opacity:0.2})
+    new THREE.LineBasicMaterial({color: col, transparent:true, opacity:0.22})
   );
   haloEdge.position.y = podH + twH / 2;
   group.add(haloEdge);
 
-  // Roof glow (MeshBasicMaterial = always bright = always blooms)
-  const roof = new THREE.Mesh(new THREE.PlaneGeometry(twW*0.92, twD*0.92),
+  // Window-light texture overlay (subtle warm glow inside)
+  const winMesh = new THREE.Mesh(twGeo.clone(), new THREE.MeshBasicMaterial({
+    map: getWindowTex(), transparent:true, opacity:0.18, side:THREE.BackSide
+  }));
+  winMesh.position.y = podH + twH / 2;
+  group.add(winMesh);
+
+  // Roof glow plane
+  const roof = new THREE.Mesh(new THREE.PlaneGeometry(twW*0.95, twD*0.95),
     new THREE.MeshBasicMaterial({color:col, transparent:true,
-      opacity: node.isOrlix?1.0:0.6, side:THREE.DoubleSide}));
+      opacity: node.isOrlix?0.95:0.55, side:THREE.DoubleSide}));
   roof.rotation.x = -Math.PI/2;
-  roof.position.y = height + 0.06;
+  roof.position.y = height + 0.08;
   group.add(roof);
 
   // ── Neon sign on tall buildings ───────────────────────────────
@@ -741,13 +773,13 @@ function initCity(data) {
 
   // Scene
   scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x06060F);
-  scene.fog = new THREE.FogExp2(0x06060F, 0.0025); // lighter fog — buildings stay visible
+  scene.background = new THREE.Color(0x020510); // deep navy — like night city reference
+  scene.fog = new THREE.FogExp2(0x020818, 0.0012);
 
   // Camera — lower angle = more dramatic city feel
   const W = window.innerWidth, H = window.innerHeight;
-  camera = new THREE.PerspectiveCamera(58, W/H, 0.5, 2000);
-  camera.position.set(0, 140, 320);
+  camera = new THREE.PerspectiveCamera(68, W/H, 0.5, 3000); // wide FOV = feels bigger
+  camera.position.set(30, 45, 210); // low & close — buildings tower overhead
 
   // Renderer — no shadows, ACES tone mapping for cinematic look
   renderer = new THREE.WebGLRenderer({canvas: document.getElementById('city-canvas'), antialias: true});
@@ -770,11 +802,11 @@ function initCity(data) {
   controls = new THREE.OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
   controls.dampingFactor = 0.07;
-  controls.target.set(0, 30, 0);
+  controls.target.set(0, 25, -30);
   controls.minPolarAngle = 0.08;
   controls.maxPolarAngle = Math.PI / 2.05;
-  controls.minDistance = 12;
-  controls.maxDistance = 450;
+  controls.minDistance = 8;
+  controls.maxDistance = 800;
   controls.update();
 
   // Ground — flat dark surface, low shininess
@@ -991,8 +1023,23 @@ function initCity(data) {
     buildingGroups.set(node.id, {group:grp, node, pos:{x:bx,z:bz}});
   });
 
-  // ── Pedestrians on sidewalks ───────────────────────────────────
+  // ── Filler buildings for density ──────────────────────────────
+  for (let i = 0; i < 280; i++) {
+    const row = Math.floor(Math.random() * ROWS_N);
+    const col = Math.floor(Math.random() * COLS_N);
+    const bx = col * CELL - offX + (Math.random() - 0.5) * BLOCK * 0.65;
+    const bz = row * CELL - offZ + (Math.random() - 0.5) * BLOCK * 0.65;
+    createFillerBuilding(bx, bz);
+  }
+
+  // Background ring buildings — city extends to the horizon
   const citySpan = Math.max(totalW, totalD) / 2;
+  for (let i = 0; i < 350; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const r = citySpan + 18 + Math.random() * 130;
+    createFillerBuilding(Math.cos(angle) * r, Math.sin(angle) * r);
+  }
+
   for (let i = 0; i < 60; i++) {
     const ang = Math.random() * Math.PI * 2;
     const r2 = Math.random() * citySpan * 0.9;
