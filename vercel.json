@@ -47,8 +47,9 @@
     { "source": "/gallery.html",      "destination": "/app#gallery",  "permanent": true },
     { "source": "/token.html",        "destination": "/token",        "permanent": true },
     { "source": "/song.html",         "destination": "/app#song",     "permanent": true },
-    { "source": "/b20-studio.html",   "destination": "/b20",          "permanent": true },
-    { "source": "/b20-demo.html",     "destination": "/b20-demo",     "permanent": true }
+    { "source": "/b20-studio.html",    "destination": "/b20",           "permanent": true },
+    { "source": "/b20-demo.html",     "destination": "/b20-demo",      "permanent": true },
+    { "source": "/neural-map.html",   "destination": "/neural-map",    "permanent": true }
   ],
   "rewrites": [
     { "source": "/app",          "destination": "/app.html" },
@@ -59,6 +60,7 @@
     { "source": "/terms",        "destination": "/terms.html" },
     { "source": "/token",        "destination": "/token.html" },
     { "source": "/b20",          "destination": "/b20-studio.html" },
-    { "source": "/montage",      "destination": "/montage.html" }
+    { "source": "/montage",      "destination": "/montage.html" },
+    { "source": "/neural-map",   "destination": "/neural-map.html" }
   ]
 }

@@ -3,18 +3,19 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Orlix Neural Map — Base Ecosystem Live</title>
-<meta name="description" content="Live 3D visualization of the entire Base ecosystem. Every token, every connection, every liquidity flow — mapped in real-time by Orlix AI.">
+<title>Orlix Neural Map — Base City Live</title>
+<meta name="description" content="Live 3D city visualization of the Base ecosystem. Every token is a skyscraper — the taller the building, the bigger the market cap. Powered by Orlix AI.">
 <link rel="icon" type="image/x-icon" href="/favicon.ico">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/3d-force-graph@1.73.4/dist/3d-force-graph.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three-spritetext@1.9.1/dist/three-spritetext.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 
 <style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
 html,body{width:100%;height:100%;overflow:hidden;background:#09090B;font-family:'Plus Jakarta Sans',sans-serif;color:#FAFAFA;-webkit-font-smoothing:antialiased}
 a{color:inherit;text-decoration:none}
+canvas{display:block}
 
 /* ── HEADER ── */
 #hdr{
@@ -54,8 +55,8 @@ a{color:inherit;text-decoration:none}
 .hbtn-orange{background:rgba(240,120,48,0.1);color:#F07830;border-color:rgba(240,120,48,0.25)}
 .hbtn-orange:hover{background:rgba(240,120,48,0.18);border-color:rgba(240,120,48,0.4)}
 
-/* ── GRAPH ── */
-#graph{position:fixed;top:0;left:0;width:100%;height:100%}
+/* ── CANVAS ── */
+#city-canvas{position:fixed;top:0;left:0;width:100%;height:100%}
 
 /* ── LOADING ── */
 #loading{
@@ -85,75 +86,33 @@ a{color:inherit;text-decoration:none}
   overflow:hidden;
 }
 #panel.open{transform:translateX(0)}
-
-.p-head{
-  padding:18px 18px 14px;
-  border-bottom:1px solid rgba(255,255,255,0.05);
-  display:flex;align-items:flex-start;justify-content:space-between;
-  gap:10px;
-}
+.p-head{padding:18px 18px 14px;border-bottom:1px solid rgba(255,255,255,0.05);display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
 .p-token-meta{flex:1;min-width:0}
 .p-name{font-size:0.98rem;font-weight:800;color:#FAFAFA;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.p-sym{
-  display:inline-flex;align-items:center;
-  font-size:0.68rem;font-family:'JetBrains Mono',monospace;color:#3F3F46;
-  background:rgba(255,255,255,0.04);padding:2px 7px;border-radius:4px;
-  border:1px solid rgba(255,255,255,0.06);
-}
-.p-close{
-  width:26px;height:26px;border-radius:7px;border:1px solid rgba(255,255,255,0.08);
-  background:transparent;color:#3F3F46;cursor:pointer;display:flex;align-items:center;justify-content:center;
-  font-size:0.85rem;transition:all 0.18s;flex-shrink:0;
-}
+.p-sym{display:inline-flex;align-items:center;font-size:0.68rem;font-family:'JetBrains Mono',monospace;color:#3F3F46;background:rgba(255,255,255,0.04);padding:2px 7px;border-radius:4px;border:1px solid rgba(255,255,255,0.06)}
+.p-close{width:26px;height:26px;border-radius:7px;border:1px solid rgba(255,255,255,0.08);background:transparent;color:#3F3F46;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:0.85rem;transition:all 0.18s;flex-shrink:0}
 .p-close:hover{color:#FAFAFA;border-color:rgba(255,255,255,0.16);background:rgba(255,255,255,0.04)}
-
-.p-price-block{
-  padding:14px 18px;
-  border-bottom:1px solid rgba(255,255,255,0.05);
-}
+.p-price-block{padding:14px 18px;border-bottom:1px solid rgba(255,255,255,0.05)}
 .p-price{font-size:1.7rem;font-weight:800;letter-spacing:-0.03em;color:#FAFAFA;line-height:1;margin-bottom:5px}
 .p-chg-pos{font-size:0.78rem;font-weight:600;color:#4ADE80;font-family:'JetBrains Mono',monospace}
 .p-chg-neg{font-size:0.78rem;font-weight:600;color:#F87171;font-family:'JetBrains Mono',monospace}
-
-.p-stats{
-  padding:12px 18px;
-  border-bottom:1px solid rgba(255,255,255,0.05);
-  display:flex;flex-direction:column;gap:9px;
-}
+.p-stats{padding:12px 18px;border-bottom:1px solid rgba(255,255,255,0.05);display:flex;flex-direction:column;gap:9px}
 .p-row{display:flex;justify-content:space-between;align-items:center}
 .p-key{font-size:0.72rem;color:#3F3F46}
 .p-val{font-size:0.78rem;font-weight:600;color:#A1A1AA;font-family:'JetBrains Mono',monospace}
-
-.p-health{
-  padding:12px 18px;
-  border-bottom:1px solid rgba(255,255,255,0.05);
-}
+.p-health{padding:12px 18px;border-bottom:1px solid rgba(255,255,255,0.05)}
 .p-health-lbl{font-size:0.62rem;text-transform:uppercase;letter-spacing:0.08em;color:#3F3F46;margin-bottom:9px}
 .p-bar-wrap{height:5px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden;margin-bottom:7px}
 .p-bar{height:100%;border-radius:3px;transition:width 0.7s cubic-bezier(0.4,0,0.2,1)}
 .p-score-row{display:flex;justify-content:space-between;align-items:center}
 .p-score-num{font-size:1.1rem;font-weight:800;font-family:'JetBrains Mono',monospace}
 .p-grade{font-size:0.68rem;font-weight:700;padding:2px 8px;border-radius:5px;letter-spacing:0.05em}
-
-.p-address{
-  padding:10px 18px;
-  border-bottom:1px solid rgba(255,255,255,0.05);
-}
+.p-address{padding:10px 18px;border-bottom:1px solid rgba(255,255,255,0.05)}
 .p-addr-lbl{font-size:0.62rem;text-transform:uppercase;letter-spacing:0.08em;color:#3F3F46;margin-bottom:6px}
-.p-addr-val{
-  font-size:0.65rem;font-family:'JetBrains Mono',monospace;color:#52525B;
-  background:rgba(255,255,255,0.03);padding:6px 9px;border-radius:6px;
-  border:1px solid rgba(255,255,255,0.05);word-break:break-all;line-height:1.5;
-  cursor:pointer;transition:background 0.18s;
-}
+.p-addr-val{font-size:0.65rem;font-family:'JetBrains Mono',monospace;color:#52525B;background:rgba(255,255,255,0.03);padding:6px 9px;border-radius:6px;border:1px solid rgba(255,255,255,0.05);word-break:break-all;line-height:1.5;cursor:pointer;transition:background 0.18s}
 .p-addr-val:hover{background:rgba(255,255,255,0.06);color:#71717A}
-
 .p-actions{padding:14px 18px;display:flex;flex-direction:column;gap:7px;margin-top:auto}
-.p-btn{
-  display:flex;align-items:center;justify-content:center;gap:6px;
-  padding:9px;border-radius:9px;font-size:0.78rem;font-weight:600;
-  text-decoration:none;transition:all 0.18s;cursor:pointer;border:none;
-}
+.p-btn{display:flex;align-items:center;justify-content:center;gap:6px;padding:9px;border-radius:9px;font-size:0.78rem;font-weight:600;text-decoration:none;transition:all 0.18s;cursor:pointer;border:none}
 .p-btn-orange{background:rgba(240,120,48,0.1);color:#F07830;border:1px solid rgba(240,120,48,0.22)}
 .p-btn-orange:hover{background:rgba(240,120,48,0.18)}
 .p-btn-gray{background:rgba(255,255,255,0.03);color:#71717A;border:1px solid rgba(255,255,255,0.07)}
@@ -162,25 +121,21 @@ a{color:inherit;text-decoration:none}
 /* ── LEGEND ── */
 #legend{
   position:fixed;bottom:20px;left:20px;z-index:150;
-  background:rgba(13,13,15,0.9);
-  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
-  border:1px solid rgba(255,255,255,0.06);
-  border-radius:12px;padding:12px 14px;
-  display:flex;flex-direction:column;gap:7px;
+  background:rgba(13,13,15,0.9);backdrop-filter:blur(16px);
+  border:1px solid rgba(255,255,255,0.06);border-radius:12px;
+  padding:12px 14px;display:flex;flex-direction:column;gap:7px;
 }
 .leg-title{font-size:0.58rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#3F3F46;margin-bottom:2px}
 .leg-item{display:flex;align-items:center;gap:7px;font-size:0.68rem;color:#71717A}
-.leg-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.leg-dot{width:7px;height:7px;border-radius:2px;flex-shrink:0}
 
 /* ── SEARCH ── */
 #searchbar{
   position:fixed;top:70px;left:50%;transform:translateX(-50%);z-index:150;
   display:flex;align-items:center;gap:8px;
-  background:rgba(13,13,15,0.92);
-  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
-  border:1px solid rgba(255,255,255,0.08);
-  border-radius:100px;padding:7px 16px;width:260px;
-  transition:border-color 0.2s,width 0.2s;
+  background:rgba(13,13,15,0.92);backdrop-filter:blur(16px);
+  border:1px solid rgba(255,255,255,0.08);border-radius:100px;
+  padding:7px 16px;width:260px;transition:border-color 0.2s,width 0.2s;
 }
 #searchbar:focus-within{border-color:rgba(240,120,48,0.4);width:300px}
 #sinput{flex:1;background:transparent;border:none;outline:none;font-size:0.8rem;color:#FAFAFA;font-family:'Plus Jakarta Sans',sans-serif}
@@ -203,17 +158,11 @@ a{color:inherit;text-decoration:none}
 #hint{
   position:fixed;bottom:20px;right:20px;z-index:150;
   background:rgba(13,13,15,0.8);border:1px solid rgba(255,255,255,0.05);
-  border-radius:10px;padding:10px 14px;
-  display:flex;flex-direction:column;gap:5px;
+  border-radius:10px;padding:10px 14px;display:flex;flex-direction:column;gap:5px;
 }
 .hint-row{display:flex;align-items:center;gap:8px;font-size:0.65rem;color:#3F3F46}
-.hint-key{
-  font-family:'JetBrains Mono',monospace;font-size:0.6rem;
-  background:rgba(255,255,255,0.06);padding:1px 6px;border-radius:4px;
-  border:1px solid rgba(255,255,255,0.08);color:#52525B;white-space:nowrap;
-}
+.hint-key{font-family:'JetBrains Mono',monospace;font-size:0.6rem;background:rgba(255,255,255,0.06);padding:1px 6px;border-radius:4px;border:1px solid rgba(255,255,255,0.08);color:#52525B;white-space:nowrap}
 
-/* ── RESPONSIVE ── */
 @media(max-width:768px){
   .hdr-stats{display:none}
   #panel{width:100%;border-left:none;border-top:1px solid rgba(255,255,255,0.06)}
@@ -232,48 +181,33 @@ a{color:inherit;text-decoration:none}
     <div class="hdr-title">Neural Map</div>
     <div class="live-badge"><div class="live-dot"></div>Live</div>
   </div>
-
   <div class="hdr-stats">
-    <div class="hdr-stat">
-      <div class="hdr-stat-val" id="s-nodes">—</div>
-      <div class="hdr-stat-lbl">Tokens</div>
-    </div>
-    <div class="hdr-stat">
-      <div class="hdr-stat-val" id="s-links">—</div>
-      <div class="hdr-stat-lbl">Connections</div>
-    </div>
-    <div class="hdr-stat">
-      <div class="hdr-stat-val" id="s-vol">—</div>
-      <div class="hdr-stat-lbl">24h Volume</div>
-    </div>
-    <div class="hdr-stat">
-      <div class="hdr-stat-val" id="s-liq">—</div>
-      <div class="hdr-stat-lbl">Total Liq</div>
-    </div>
+    <div class="hdr-stat"><div class="hdr-stat-val" id="s-nodes">—</div><div class="hdr-stat-lbl">Buildings</div></div>
+    <div class="hdr-stat"><div class="hdr-stat-val" id="s-links">—</div><div class="hdr-stat-lbl">Roads</div></div>
+    <div class="hdr-stat"><div class="hdr-stat-val" id="s-vol">—</div><div class="hdr-stat-lbl">24h Volume</div></div>
+    <div class="hdr-stat"><div class="hdr-stat-val" id="s-liq">—</div><div class="hdr-stat-lbl">Total Liq</div></div>
   </div>
-
   <div class="hdr-right">
     <a href="/" class="hbtn">← Back</a>
     <a href="/app" class="hbtn hbtn-orange">Launch App →</a>
   </div>
 </div>
 
-<!-- GRAPH CANVAS -->
-<div id="graph"></div>
+<canvas id="city-canvas"></canvas>
 
 <!-- LOADING -->
 <div id="loading">
-  <div class="load-icon">🧠</div>
-  <div class="load-title">Building Neural Map</div>
+  <div class="load-icon">🏙️</div>
+  <div class="load-title">Building Base City</div>
   <div class="load-bar-wrap"><div class="load-bar" id="lbar"></div></div>
   <div class="load-status" id="lstatus">Connecting to Base...</div>
-  <div class="load-sub">Mapping every token, wallet, and liquidity flow on Base in real-time</div>
+  <div class="load-sub">Each building is a token — the taller it is, the bigger the market cap</div>
 </div>
 
 <!-- SEARCH -->
 <div id="searchbar">
   <span class="s-icon">⌕</span>
-  <input type="text" id="sinput" placeholder="Search any token..." autocomplete="off">
+  <input type="text" id="sinput" placeholder="Fly to any token..." autocomplete="off">
 </div>
 
 <!-- DETAIL PANEL -->
@@ -294,7 +228,7 @@ a{color:inherit;text-decoration:none}
     <div class="p-row"><span class="p-key">24h Volume</span><span class="p-val" id="p-vol">—</span></div>
     <div class="p-row"><span class="p-key">Liquidity</span><span class="p-val" id="p-liq">—</span></div>
     <div class="p-row"><span class="p-key">Connections</span><span class="p-val" id="p-conn">—</span></div>
-    <div class="p-row"><span class="p-key">DEX</span><span class="p-val" id="p-dex">—</span></div>
+    <div class="p-row"><span class="p-key">Building Height</span><span class="p-val" id="p-height">—</span></div>
   </div>
   <div class="p-health">
     <div class="p-health-lbl">Health Score</div>
@@ -316,26 +250,25 @@ a{color:inherit;text-decoration:none}
 
 <!-- LEGEND -->
 <div id="legend">
-  <div class="leg-title">Node Color</div>
-  <div class="leg-item"><div class="leg-dot" style="background:#F07830;box-shadow:0 0 6px #F07830"></div>$ORLIX</div>
-  <div class="leg-item"><div class="leg-dot" style="background:#A78BFA;box-shadow:0 0 6px #A78BFA"></div>WETH / Stablecoin</div>
-  <div class="leg-item"><div class="leg-dot" style="background:#4ADE80"></div>Up &gt;10%</div>
-  <div class="leg-item"><div class="leg-dot" style="background:#86EFAC"></div>Up 0–10%</div>
-  <div class="leg-item"><div class="leg-dot" style="background:#A1A1AA"></div>Neutral</div>
-  <div class="leg-item"><div class="leg-dot" style="background:#FCA5A5"></div>Down 0–10%</div>
-  <div class="leg-item"><div class="leg-dot" style="background:#F87171"></div>Down &gt;10%</div>
-  <div class="leg-title" style="margin-top:4px">Node Size</div>
-  <div class="leg-item" style="font-size:0.62rem">Larger = higher market cap</div>
-  <div class="leg-title" style="margin-top:4px">Particles</div>
-  <div class="leg-item" style="font-size:0.62rem">Flow = active volume</div>
+  <div class="leg-title">Building Height</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#F07830;height:14px"></div>Massive mcap</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#F07830;height:8px"></div>Large mcap</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#F07830;height:4px"></div>Small mcap</div>
+  <div class="leg-title" style="margin-top:4px">Building Color</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#F07830"></div>$ORLIX</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#818CF8"></div>WETH / Stablecoin</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#22C55E"></div>Up &gt;10%</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#4ADE80"></div>Up 0–10%</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#64748B"></div>Neutral</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#F87171"></div>Down</div>
 </div>
 
-<!-- CONTROLS HINT -->
+<!-- CONTROLS -->
 <div id="hint">
-  <div class="hint-row"><span class="hint-key">Drag</span> Rotate view</div>
-  <div class="hint-row"><span class="hint-key">Scroll</span> Zoom in/out</div>
-  <div class="hint-row"><span class="hint-key">Click</span> Token details</div>
-  <div class="hint-row"><span class="hint-key">Search</span> Find any token</div>
+  <div class="hint-row"><span class="hint-key">Drag</span> Orbit city</div>
+  <div class="hint-row"><span class="hint-key">Scroll</span> Zoom</div>
+  <div class="hint-row"><span class="hint-key">Click</span> Token info</div>
+  <div class="hint-row"><span class="hint-key">Search</span> Fly to token</div>
 </div>
 
 <!-- TOOLTIP -->
@@ -349,43 +282,65 @@ a{color:inherit;text-decoration:none}
 // ── Constants ──────────────────────────────────────────────────
 const ORLIX_ADDR = '0x8aacf0f6a5c01cf4e0c85c57db5a413fde149da3';
 const STABLE_SET = new Set([
-  '0x4200000000000000000000000000000000000006', // WETH
-  '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913', // USDC
-  '0xd9aaec86b65d86f6a7b5b1b0c42ffa531710b6ca', // USDbC
-  '0xcbb7c0000ab88b473b1f5afd9ef808440eed33bf', // cbBTC
-  '0x50c5725949a6f0c72e6c4a641f24049a917db0cb', // DAI
-  '0x4d15a3a2286d883dcf87c403d6f33e8c87451c58', // TUSD
+  '0x4200000000000000000000000000000000000006',
+  '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913',
+  '0xd9aaec86b65d86f6a7b5b1b0c42ffa531710b6ca',
+  '0xcbb7c0000ab88b473b1f5afd9ef808440eed33bf',
+  '0x50c5725949a6f0c72e6c4a641f24049a917db0cb',
+  '0x2ae3f1ec7f1f5012cfeab0185bfc7aa3cf0dec22',
 ]);
+
+const BASE_TOKEN_ADDRS = [
+  '0x4200000000000000000000000000000000000006',
+  '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913',
+  '0xcbb7c0000ab88b473b1f5afd9ef808440eed33bf',
+  '0x2ae3f1ec7f1f5012cfeab0185bfc7aa3cf0dec22',
+  '0x50c5725949a6f0c72e6c4a641f24049a917db0cb',
+  '0x532f27101965dd16442e59d40670faf5ebb142e4',
+  '0x4ed4e862860bed51a9570b96d89af5e1b0efefed',
+  '0xac1bd2486aaf3b5c0fc3fd868558b082a531b2b4',
+  '0x0578d8a44db98b23bf096a382e016e29a5ce0ffe',
+  '0x940181a94a35a4569e4529a3cdfb74e38fd98631',
+  '0x6921b130d297cc43754afba22e5eac0fbf8db75b',
+  '0xb1a03eda10342529bbf8eb700a06c60441fef25d',
+  '0xc1cba3fcea344f92d9239c08c0568f6f2f0ee452',
+  '0x22e6966b799c4d5b13be962e1d117b56327fda66',
+  '0x9a26f5433671751c3276a065f57e5a02d2817973',
+  '0xd07379a755a8f11b57610154861d694b2a0f615a',
+  '0x4158734d47fc9692176b17969a5a197cca5943eb',
+  '0x8aacf0f6a5c01cf4e0c85c57db5a413fde149da3',
+  '0x3c281a39944a2319aa653d81cfd93ca10983d234',
+  '0x1c7a460413dd4e964f96d8dfc56e7223ce88cd85',
+  '0xe3086852a4b125803c815a158249ae468a3254ca',
+];
 
 // ── Utils ──────────────────────────────────────────────────────
 const fmt = n => {
-  if (!n) return 'N/A';
-  n = Number(n);
+  if (!n) return 'N/A'; n = Number(n);
   if (n >= 1e9) return `$${(n/1e9).toFixed(2)}B`;
   if (n >= 1e6) return `$${(n/1e6).toFixed(2)}M`;
   if (n >= 1e3) return `$${(n/1e3).toFixed(1)}K`;
   return `$${n.toFixed(4)}`;
 };
 
-const nodeColor = n => {
-  if (n.isOrlix) return '#F07830';
-  if (n.isStable) return '#A78BFA';
+const nodeHex = n => {
+  if (n.isOrlix) return 0xF07830;
+  if (n.isStable) return 0x818CF8;
   const c = n.change24h || 0;
-  if (c > 10)  return '#4ADE80';
-  if (c > 0)   return '#86EFAC';
-  if (c < -10) return '#F87171';
-  if (c < 0)   return '#FCA5A5';
-  return '#A1A1AA';
+  if (c > 10) return 0x22C55E;
+  if (c > 0)  return 0x4ADE80;
+  if (c < -10) return 0xEF4444;
+  if (c < 0)  return 0xF87171;
+  return 0x64748B;
 };
 
+const nodeHexStr = n => '#' + nodeHex(n).toString(16).padStart(6,'0');
+
 const calcHealth = n => {
-  const liq = n.liquidity || 0, vol = n.vol24h || 0, chg = n.change24h || 0;
-  const ls = Math.min(25, Math.floor(liq / 40000));
-  const vs = liq > 0 ? Math.min(25, Math.floor((vol/liq)*25)) : 0;
-  const ts = chg > 10 ? 25 : chg > 0 ? 15 : chg > -10 ? 8 : 0;
-  const score = Math.min(100, ls + vs + 15 + ts);
+  const liq = n.liquidity||0, vol = n.vol24h||0, chg = n.change24h||0;
+  const score = Math.min(100, Math.min(25,Math.floor(liq/40000)) + (liq>0?Math.min(25,Math.floor((vol/liq)*25)):0) + 15 + (chg>10?25:chg>0?15:chg>-10?8:0));
   const grade = score>=80?'A':score>=65?'B':score>=45?'C':score>=25?'D':'F';
-  return { score, grade };
+  return {score, grade};
 };
 
 const setProgress = (pct, msg) => {
@@ -393,381 +348,495 @@ const setProgress = (pct, msg) => {
   document.getElementById('lstatus').textContent = msg;
 };
 
-// ── Known Base tokens (seed list for reliable data) ───────────
-const BASE_TOKEN_ADDRS = [
-  '0x4200000000000000000000000000000000000006', // WETH
-  '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913', // USDC
-  '0xcbb7c0000ab88b473b1f5afd9ef808440eed33bf', // cbBTC
-  '0x2ae3f1ec7f1f5012cfeab0185bfc7aa3cf0dec22', // cbETH
-  '0x50c5725949a6f0c72e6c4a641f24049a917db0cb', // DAI
-  '0x532f27101965dd16442e59d40670faf5ebb142e4', // BRETT
-  '0x4ed4e862860bed51a9570b96d89af5e1b0efefed', // DEGEN
-  '0xac1bd2486aaf3b5c0fc3fd868558b082a531b2b4', // TOSHI
-  '0x0578d8a44db98b23bf096a382e016e29a5ce0ffe', // HIGHER
-  '0x940181a94a35a4569e4529a3cdfb74e38fd98631', // AERO
-  '0x6921b130d297cc43754afba22e5eac0fbf8db75b', // DOGINME
-  '0xb1a03eda10342529bbf8eb700a06c60441fef25d', // MIGGLES
-  '0xc1cba3fcea344f92d9239c08c0568f6f2f0ee452', // wstETH
-  '0x22e6966b799c4d5b13be962e1d117b56327fda66', // SKI
-  '0x9a26f5433671751c3276a065f57e5a02d2817973', // KEYCAT
-  '0x768be13e1680b5ebe0024c42c896e3db59ec0149', // SKI2
-  '0xd07379a755a8f11b57610154861d694b2a0f615a', // ZORA
-  '0x4158734d47fc9692176b17969a5a197cca5943eb', // BALD
-  '0x8aacf0f6a5c01cf4e0c85c57db5a413fde149da3', // ORLIX
-  '0x3c281a39944a2319aa653d81cfd93ca10983d234', // BUILD
-  '0x7d49a065d17d6d4a55dc13649901fdbb98b2afba', // BASED
-  '0x1c7a460413dd4e964f96d8dfc56e7223ce88cd85', // SEAM
-  '0xe3086852a4b125803c815a158249ae468a3254ca', // MOCHI
-];
-
-// ── Data layer ─────────────────────────────────────────────────
-function fetchWithTimeout(url, ms = 12000) {
-  const ctrl = new AbortController();
-  const id = setTimeout(() => ctrl.abort(), ms);
-  return fetch(url, { signal: ctrl.signal }).finally(() => clearTimeout(id));
+// ── Data fetching ──────────────────────────────────────────────
+function fetchWT(url, ms=12000) {
+  const c = new AbortController();
+  const t = setTimeout(() => c.abort(), ms);
+  return fetch(url, {signal:c.signal}).finally(() => clearTimeout(t));
 }
 
-function chunk(arr, size) {
+function chunk(arr, n) {
   const out = [];
-  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
+  for (let i=0;i<arr.length;i+=n) out.push(arr.slice(i,i+n));
   return out;
 }
 
 async function fetchEcosystem() {
   setProgress(8, 'Fetching Base token data...');
+  const all = [];
 
-  const allPairs = [];
-
-  // Strategy 1: fetch by known token addresses (most reliable)
-  const addrChunks = chunk(BASE_TOKEN_ADDRS, 10);
-  const tokenResults = await Promise.allSettled(
-    addrChunks.map(addrs =>
-      fetchWithTimeout(`https://api.dexscreener.com/latest/dex/tokens/${addrs.join(',')}`)
-        .then(r => r.json())
-        .then(d => (d.pairs||[]).filter(p => p.chainId === 'base'))
-        .catch(() => [])
+  const tok = await Promise.allSettled(
+    chunk(BASE_TOKEN_ADDRS, 10).map(a =>
+      fetchWT(`https://api.dexscreener.com/latest/dex/tokens/${a.join(',')}`)
+        .then(r=>r.json()).then(d=>(d.pairs||[]).filter(p=>p.chainId==='base')).catch(()=>[])
     )
   );
-  allPairs.push(...tokenResults.flatMap(r => r.status==='fulfilled' ? r.value : []));
+  all.push(...tok.flatMap(r=>r.status==='fulfilled'?r.value:[]));
 
-  setProgress(50, 'Searching trending tokens...');
+  setProgress(55, 'Loading trending tokens...');
 
-  // Strategy 2: keyword searches for additional tokens
-  const searches = ['base meme','ORLIX','virtuals','clanker'];
-  const searchResults = await Promise.allSettled(
-    searches.map(q =>
-      fetchWithTimeout(`https://api.dexscreener.com/latest/dex/search?q=${encodeURIComponent(q)}`)
-        .then(r => r.json())
-        .then(d => (d.pairs||[]).filter(p => p.chainId === 'base'))
-        .catch(() => [])
+  const srch = await Promise.allSettled(
+    ['base meme','virtuals','clanker','ORLIX'].map(q =>
+      fetchWT(`https://api.dexscreener.com/latest/dex/search?q=${encodeURIComponent(q)}`)
+        .then(r=>r.json()).then(d=>(d.pairs||[]).filter(p=>p.chainId==='base')).catch(()=>[])
     )
   );
-  allPairs.push(...searchResults.flatMap(r => r.status==='fulfilled' ? r.value : []));
+  all.push(...srch.flatMap(r=>r.status==='fulfilled'?r.value:[]));
 
-  setProgress(72, 'Processing pairs...');
+  setProgress(72, 'Constructing city layout...');
 
-  // Deduplicate by pairAddress
   const seen = new Set();
-  const pairs = allPairs
-    .filter(p => p.pairAddress && !seen.has(p.pairAddress) && seen.add(p.pairAddress))
-    .filter(p => (p.liquidity?.usd || 0) >= 100)
-    .sort((a,b) => (b.volume?.h24||0) - (a.volume?.h24||0))
+  const pairs = all
+    .filter(p=>p.pairAddress&&!seen.has(p.pairAddress)&&seen.add(p.pairAddress))
+    .filter(p=>(p.liquidity?.usd||0)>=100)
+    .sort((a,b)=>(b.volume?.h24||0)-(a.volume?.h24||0))
     .slice(0, 300);
 
-  // Fallback so graph is never blank
   if (pairs.length < 2) {
     pairs.push(
-      {
-        pairAddress:'0xfallback1', chainId:'base', dexId:'uniswap',
-        baseToken:{address:ORLIX_ADDR,name:'Orlix AI',symbol:'ORLIX'},
-        quoteToken:{address:'0x4200000000000000000000000000000000000006',name:'Wrapped Ether',symbol:'WETH'},
-        priceUsd:'0.0001',priceChange:{h24:5},fdv:1000000,volume:{h24:50000},liquidity:{usd:200000},
-      },
-      {
-        pairAddress:'0xfallback2', chainId:'base', dexId:'uniswap',
-        baseToken:{address:'0x532f27101965dd16442e59d40670faf5ebb142e4',name:'Brett',symbol:'BRETT'},
-        quoteToken:{address:'0x4200000000000000000000000000000000000006',name:'Wrapped Ether',symbol:'WETH'},
-        priceUsd:'0.15',priceChange:{h24:3},fdv:150000000,volume:{h24:5000000},liquidity:{usd:3000000},
-      }
+      {pairAddress:'0xfb1',chainId:'base',dexId:'uniswap',baseToken:{address:ORLIX_ADDR,name:'Orlix AI',symbol:'ORLIX'},quoteToken:{address:'0x4200000000000000000000000000000000000006',name:'Wrapped Ether',symbol:'WETH'},priceUsd:'0.0001',priceChange:{h24:5},fdv:1000000,volume:{h24:50000},liquidity:{usd:200000}},
+      {pairAddress:'0xfb2',chainId:'base',dexId:'uniswap',baseToken:{address:'0x532f27101965dd16442e59d40670faf5ebb142e4',name:'Brett',symbol:'BRETT'},quoteToken:{address:'0x4200000000000000000000000000000000000006',name:'Wrapped Ether',symbol:'WETH'},priceUsd:'0.15',priceChange:{h24:3},fdv:150000000,volume:{h24:5000000},liquidity:{usd:3000000}}
     );
   }
-
   return pairs;
 }
 
 function buildGraph(pairs) {
   const nodeMap = new Map();
   const links = [];
-
-  const upsertNode = (token, pair, isBase) => {
-    const addr = (token.address||'').toLowerCase();
-    if (!addr || addr === '0x0000000000000000000000000000000000000000') return;
-    const liq = pair.liquidity?.usd || 0;
-    const vol = pair.volume?.h24 || 0;
-    const chg = pair.priceChange?.h24 || 0;
-
+  const up = (tok, pair, isBase) => {
+    const addr = (tok.address||'').toLowerCase();
+    if (!addr || addr==='0x0000000000000000000000000000000000000000') return;
+    const liq=pair.liquidity?.usd||0, vol=pair.volume?.h24||0, chg=pair.priceChange?.h24||0;
     if (!nodeMap.has(addr)) {
-      nodeMap.set(addr, {
-        id: addr,
-        name: token.name || token.symbol || addr.slice(0,6),
-        symbol: (token.symbol || '?').toUpperCase(),
-        address: addr,
-        price: isBase ? (Number(pair.priceUsd||0) > 0 ? `$${Number(pair.priceUsd).toPrecision(4)}` : 'N/A') : null,
-        change24h: isBase ? chg : 0,
-        mcap: isBase ? (pair.fdv || 0) : 0,
-        vol24h: isBase ? vol : 0,
-        liquidity: isBase ? liq : 0,
-        pairAddr: pair.pairAddress,
-        dexId: pair.dexId || '—',
-        isOrlix: addr === ORLIX_ADDR.toLowerCase(),
-        isStable: STABLE_SET.has(addr),
-        connections: 0,
-        val: 1,
-      });
+      nodeMap.set(addr, {id:addr,name:tok.name||tok.symbol||addr.slice(0,6),symbol:(tok.symbol||'?').toUpperCase(),address:addr,
+        price:isBase&&Number(pair.priceUsd||0)>0?`$${Number(pair.priceUsd).toPrecision(4)}`:'N/A',
+        change24h:isBase?chg:0,mcap:isBase?(pair.fdv||0):0,vol24h:isBase?vol:0,liquidity:isBase?liq:0,
+        pairAddr:pair.pairAddress,dexId:pair.dexId||'—',
+        isOrlix:addr===ORLIX_ADDR.toLowerCase(),isStable:STABLE_SET.has(addr),connections:0});
     } else {
-      const ex = nodeMap.get(addr);
-      if (isBase && liq > (ex.liquidity||0)) {
-        ex.price = Number(pair.priceUsd||0) > 0 ? `$${Number(pair.priceUsd).toPrecision(4)}` : ex.price;
-        ex.change24h = chg;
-        ex.mcap = pair.fdv || ex.mcap;
-        ex.liquidity = liq;
-        ex.pairAddr = pair.pairAddress;
-        ex.dexId = pair.dexId || ex.dexId;
+      const ex=nodeMap.get(addr);
+      if (isBase && liq>(ex.liquidity||0)) {
+        ex.price=Number(pair.priceUsd||0)>0?`$${Number(pair.priceUsd).toPrecision(4)}`:ex.price;
+        ex.change24h=chg; ex.mcap=pair.fdv||ex.mcap; ex.liquidity=liq;
+        ex.pairAddr=pair.pairAddress; ex.dexId=pair.dexId||ex.dexId;
       }
-      if (isBase) ex.vol24h = (ex.vol24h||0) + vol;
+      if (isBase) ex.vol24h=(ex.vol24h||0)+vol;
     }
   };
-
   for (const p of pairs) {
-    upsertNode(p.baseToken, p, true);
-    upsertNode(p.quoteToken, p, false);
-    const src = (p.baseToken.address||'').toLowerCase();
-    const tgt = (p.quoteToken.address||'').toLowerCase();
-    if (!src || !tgt || src === tgt) continue;
-    const liq = p.liquidity?.usd || 0;
-    if (liq < 200) continue;
-    links.push({ source: src, target: tgt, liq, vol: p.volume?.h24||0, dex: p.dexId||'' });
-    if (nodeMap.has(src)) nodeMap.get(src).connections++;
-    if (nodeMap.has(tgt)) nodeMap.get(tgt).connections++;
+    up(p.baseToken,p,true); up(p.quoteToken,p,false);
+    const s=(p.baseToken.address||'').toLowerCase(), t=(p.quoteToken.address||'').toLowerCase();
+    if (!s||!t||s===t||(p.liquidity?.usd||0)<200) continue;
+    links.push({source:s,target:t,liq:p.liquidity?.usd||0,vol:p.volume?.h24||0});
+    if (nodeMap.has(s)) nodeMap.get(s).connections++;
+    if (nodeMap.has(t)) nodeMap.get(t).connections++;
   }
-
-  // Compute node size (val) — log scale
-  for (const n of nodeMap.values()) {
-    const metric = n.mcap || n.vol24h || n.liquidity || 500;
-    n.val = Math.max(0.4, (Math.log10(Math.max(10, metric)) - 2.5) * 1.8);
-    if (n.isOrlix)  n.val = Math.max(n.val * 3, 8);
-    if (n.isStable) n.val = Math.max(n.val * 2, 6);
-    n.val = Math.min(n.val, 18); // cap max
-  }
-
-  return { nodes: [...nodeMap.values()], links };
+  return {nodes:[...nodeMap.values()],links};
 }
 
 // ── Panel ──────────────────────────────────────────────────────
 function openPanel(node) {
   document.getElementById('p-name').textContent = node.name;
   document.getElementById('p-sym').textContent = node.symbol;
-  document.getElementById('p-price').textContent = node.price || 'N/A';
-
-  const chgEl = document.getElementById('p-chg');
-  const c = node.change24h || 0;
-  chgEl.className = c >= 0 ? 'p-chg-pos' : 'p-chg-neg';
-  chgEl.textContent = `${c >= 0 ? '+' : ''}${c.toFixed(2)}% (24h)`;
-
+  document.getElementById('p-price').textContent = node.price||'N/A';
+  const c = node.change24h||0;
+  const ce = document.getElementById('p-chg');
+  ce.className = c>=0?'p-chg-pos':'p-chg-neg';
+  ce.textContent = `${c>=0?'+':''}${c.toFixed(2)}% (24h)`;
   document.getElementById('p-mcap').textContent = fmt(node.mcap);
   document.getElementById('p-vol').textContent = fmt(node.vol24h);
   document.getElementById('p-liq').textContent = fmt(node.liquidity);
   document.getElementById('p-conn').textContent = `${node.connections} pairs`;
-  document.getElementById('p-dex').textContent = node.dexId || '—';
-
-  const { score, grade } = calcHealth(node);
-  const bar = document.getElementById('p-bar');
-  const scoreEl = document.getElementById('p-score');
-  const gradeEl = document.getElementById('p-grade');
-  bar.style.width = score + '%';
-  const col = score >= 65 ? '#4ADE80' : score >= 45 ? '#F07830' : '#F87171';
-  bar.style.background = col;
-  scoreEl.textContent = `${score}/100`;
-  scoreEl.style.color = col;
-  gradeEl.textContent = `Grade ${grade}`;
-  gradeEl.style.background = score>=65?'rgba(74,222,128,0.1)':score>=45?'rgba(240,120,48,0.1)':'rgba(248,113,113,0.1)';
-  gradeEl.style.color = col;
-
-  document.getElementById('p-addr').textContent = node.address;
-  document.getElementById('p-dex-link').href = node.pairAddr
-    ? `https://dexscreener.com/base/${node.pairAddr}`
-    : `https://dexscreener.com/base/${node.address}`;
-  document.getElementById('p-scan-link').href = `https://basescan.org/token/${node.address}`;
-
+  const h = node._buildingHeight || 0;
+  document.getElementById('p-height').textContent = `${h.toFixed(1)} units`;
+  const {score,grade} = calcHealth(node);
+  const bar=document.getElementById('p-bar'), sn=document.getElementById('p-score'), ge=document.getElementById('p-grade');
+  const col=score>=65?'#4ADE80':score>=45?'#F07830':'#F87171';
+  bar.style.width=score+'%'; bar.style.background=col;
+  sn.textContent=`${score}/100`; sn.style.color=col;
+  ge.textContent=`Grade ${grade}`;
+  ge.style.background=score>=65?'rgba(74,222,128,0.1)':score>=45?'rgba(240,120,48,0.1)':'rgba(248,113,113,0.1)';
+  ge.style.color=col;
+  document.getElementById('p-addr').textContent=node.address;
+  document.getElementById('p-dex-link').href=node.pairAddr?`https://dexscreener.com/base/${node.pairAddr}`:`https://dexscreener.com/base/${node.address}`;
+  document.getElementById('p-scan-link').href=`https://basescan.org/token/${node.address}`;
   document.getElementById('panel').classList.add('open');
 }
 
-function closePanel() {
-  document.getElementById('panel').classList.remove('open');
-}
+function closePanel() { document.getElementById('panel').classList.remove('open'); }
 
 function copyAddr() {
-  const addr = document.getElementById('p-addr').textContent;
-  navigator.clipboard.writeText(addr).then(() => {
-    const el = document.getElementById('p-addr');
-    el.textContent = 'Copied!';
-    setTimeout(() => { el.textContent = addr; }, 1500);
+  const a=document.getElementById('p-addr').textContent;
+  navigator.clipboard.writeText(a).then(()=>{
+    const el=document.getElementById('p-addr'); el.textContent='Copied!';
+    setTimeout(()=>{el.textContent=a;},1500);
   });
 }
 
-// ── Graph ──────────────────────────────────────────────────────
-let G, gData, highlighted = null, rotating = true, rotAngle = 0;
+// ── Three.js City ──────────────────────────────────────────────
+let scene, camera, renderer, controls;
+let clickMeshes = [];
+let buildingGroups = new Map();
+let antennaTips = []; // tracked separately — no traverse() in loop
+let cityTime = 0;
 
-function initGraph(data) {
-  gData = data;
+let _winTex = null;
+function getWindowTex() {
+  if (_winTex) return _winTex;
+  const c = document.createElement('canvas');
+  c.width=256; c.height=512;
+  const ctx=c.getContext('2d');
+  ctx.fillStyle='#08081a'; ctx.fillRect(0,0,256,512);
+  for (let y=8;y<512;y+=22) {
+    for (let x=8;x<256;x+=18) {
+      if (Math.random()>0.3) {
+        const r=Math.random();
+        ctx.fillStyle=r>0.65?'rgba(255,255,170,0.55)':r>0.4?'rgba(150,180,255,0.45)':'rgba(255,140,60,0.35)';
+        ctx.fillRect(x,y,11,15);
+      }
+    }
+  }
+  _winTex=new THREE.CanvasTexture(c);
+  return _winTex;
+}
 
+function makeLabel(text, colorStr) {
+  const cv=document.createElement('canvas');
+  cv.width=256; cv.height=72;
+  const ctx=cv.getContext('2d');
+  ctx.clearRect(0,0,256,72);
+  ctx.font='bold 26px "Plus Jakarta Sans",sans-serif';
+  const m=ctx.measureText(text);
+  const pw=m.width+22, ph=42, px=(256-pw)/2, py=(72-ph)/2;
+  ctx.fillStyle='rgba(9,9,11,0.82)';
+  // Rounded rect manually
+  const r=7;
+  ctx.beginPath();
+  ctx.moveTo(px+r,py); ctx.lineTo(px+pw-r,py);
+  ctx.quadraticCurveTo(px+pw,py,px+pw,py+r);
+  ctx.lineTo(px+pw,py+ph-r);
+  ctx.quadraticCurveTo(px+pw,py+ph,px+pw-r,py+ph);
+  ctx.lineTo(px+r,py+ph);
+  ctx.quadraticCurveTo(px,py+ph,px,py+ph-r);
+  ctx.lineTo(px,py+r);
+  ctx.quadraticCurveTo(px,py,px+r,py);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle=colorStr; ctx.lineWidth=1.5; ctx.stroke();
+  ctx.fillStyle=colorStr; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(text,128,36);
+  const tex=new THREE.CanvasTexture(cv);
+  const mat=new THREE.SpriteMaterial({map:tex,transparent:true,depthTest:false});
+  const sp=new THREE.Sprite(mat);
+  sp.scale.set(10,2.8,1);
+  return sp;
+}
+
+function calcHeight(node) {
+  const mcap = node.mcap || node.vol24h || node.liquidity || 5000;
+  // Log scale: $1K → 2 units, $1B → ~60 units
+  return Math.max(2, Math.min(80, (Math.log10(Math.max(1000, mcap)) - 3) * 14));
+}
+
+function createBuilding(node, x, z) {
+  const group = new THREE.Group();
+  group.position.set(x, 0, z);
+
+  const col = nodeHex(node);
+  const threeCol = new THREE.Color(col);
+  const height = calcHeight(node);
+  node._buildingHeight = height;
+
+  const bw = node.isOrlix ? 7 : node.isStable ? 6 : 3 + Math.random() * 2.5;
+  const bd = node.isOrlix ? 7 : node.isStable ? 6 : 3 + Math.random() * 2.5;
+
+  // Main building body — emissive so it glows without needing PointLights
+  const geo = new THREE.BoxGeometry(bw, height, bd);
+  const emStr = node.isOrlix ? 0.28 : node.isStable ? 0.18 : 0.10;
+  const mat = new THREE.MeshPhongMaterial({
+    color: 0x080818,
+    emissive: threeCol.clone().multiplyScalar(emStr),
+    map: getWindowTex(),
+    shininess: 15,
+  });
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.position.y = height / 2;
+  mesh.castShadow = false; // no shadows — much faster, fixes overflow
+  mesh.userData = node;
+  group.add(mesh);
+  clickMeshes.push(mesh);
+
+  // Neon wireframe edges
+  const edgeGeo = new THREE.EdgesGeometry(geo);
+  const edgeOpacity = node.isOrlix ? 0.9 : node.isStable ? 0.65 : 0.4;
+  const edgeMat = new THREE.LineBasicMaterial({color: col, transparent: true, opacity: edgeOpacity});
+  const edges = new THREE.LineSegments(edgeGeo, edgeMat);
+  edges.position.y = height / 2;
+  group.add(edges);
+
+  // Roof glow plane (MeshBasicMaterial = always visible, no light needed)
+  const roofGeo = new THREE.PlaneGeometry(bw * 0.9, bd * 0.9);
+  const roofMat = new THREE.MeshBasicMaterial({
+    color: col, transparent: true,
+    opacity: node.isOrlix ? 0.75 : node.isStable ? 0.4 : 0.28,
+    side: THREE.DoubleSide,
+  });
+  const roof = new THREE.Mesh(roofGeo, roofMat);
+  roof.rotation.x = -Math.PI / 2;
+  roof.position.y = height + 0.05;
+  group.add(roof);
+
+  // Antenna for tall buildings
+  if (height > 28) {
+    const antH = height * 0.16;
+    const antGeo = new THREE.CylinderGeometry(0.05, 0.05, antH, 4);
+    const antMat = new THREE.MeshBasicMaterial({color: col});
+    const ant = new THREE.Mesh(antGeo, antMat);
+    ant.position.y = height + antH / 2;
+    group.add(ant);
+
+    const tipGeo = new THREE.SphereGeometry(0.22, 6, 6);
+    const tipMat = new THREE.MeshBasicMaterial({color: 0xFF2020, transparent: true, opacity: 1});
+    const tip = new THREE.Mesh(tipGeo, tipMat);
+    tip.position.y = height + antH;
+    antennaTips.push({mesh: tip, offset: Math.random() * Math.PI * 2});
+    group.add(tip);
+  }
+
+  // Label sprite
+  const label = makeLabel(node.symbol, nodeHexStr(node));
+  label.position.y = height + (height > 28 ? height * 0.18 + 3.5 : 4);
+  group.add(label);
+
+  return group;
+}
+
+function initCity(data) {
+  // Stats
   document.getElementById('s-nodes').textContent = data.nodes.length;
   document.getElementById('s-links').textContent = data.links.length;
-  document.getElementById('s-vol').textContent = fmt(data.nodes.reduce((s,n) => s + (n.vol24h||0), 0));
-  document.getElementById('s-liq').textContent = fmt(data.nodes.reduce((s,n) => s + (n.liquidity||0), 0));
+  document.getElementById('s-vol').textContent = fmt(data.nodes.reduce((s,n)=>s+(n.vol24h||0),0));
+  document.getElementById('s-liq').textContent = fmt(data.nodes.reduce((s,n)=>s+(n.liquidity||0),0));
 
-  G = ForceGraph3D()(document.getElementById('graph'))
-    .backgroundColor('#09090B')
-    .graphData(data)
-    .nodeVal(n => n.val * n.val)
-    .nodeColor(n => highlighted && n.id !== highlighted ? 'rgba(80,80,80,0.18)' : nodeColor(n))
-    .nodeOpacity(0.95)
-    .nodeResolution(16)
-    .nodeLabel(n => `${n.name} (${n.symbol})`)
-    .nodeThreeObject(n => {
-      if (typeof SpriteText === 'undefined') return null;
-      if (n.val > 1.8 || n.isOrlix || n.isStable) {
-        try {
-          const sprite = new SpriteText(n.symbol);
-          sprite.color = n.isOrlix ? '#F07830' : n.isStable ? '#A78BFA' : 'rgba(255,255,255,0.55)';
-          sprite.textHeight = Math.max(1.8, Math.min(5, n.val * 0.9));
-          sprite.position.y = -(Math.sqrt(n.val * n.val) * 3 + 4);
-          return sprite;
-        } catch(e) { return null; }
-      }
-      return null;
-    })
-    .nodeThreeObjectExtend(true)
-    .linkColor(l => {
-      const v = l.vol || 0;
-      if (v > 1e6)  return 'rgba(240,120,48,0.5)';
-      if (v > 2e5)  return 'rgba(240,120,48,0.3)';
-      if (v > 5e4)  return 'rgba(167,139,250,0.2)';
-      return 'rgba(255,255,255,0.05)';
-    })
-    .linkWidth(l => Math.max(0.15, Math.log10(Math.max(1, (l.liq||0)/500)) * 0.25))
-    .linkDirectionalParticles(l => {
-      const v = l.vol || 0;
-      if (v > 5e5) return 5;
-      if (v > 1e5) return 3;
-      if (v > 2e4) return 2;
-      if (v > 5e3) return 1;
-      return 0;
-    })
-    .linkDirectionalParticleWidth(1.8)
-    .linkDirectionalParticleColor(l => {
-      const v = l.vol || 0;
-      return v > 1e5 ? '#F07830' : '#A78BFA';
-    })
-    .linkDirectionalParticleSpeed(0.004)
-    .onNodeClick(node => {
-      openPanel(node);
-      G.centerAt(node.x, node.y, node.z, 700);
-      G.zoom(3, 700);
-      rotating = false;
-    })
-    .onBackgroundClick(() => {
-      closePanel();
-      highlighted = null;
-      G.nodeColor(n => nodeColor(n));
-    })
-    .onNodeHover(node => {
-      const tt = document.getElementById('tt');
-      document.getElementById('graph').style.cursor = node ? 'pointer' : 'default';
-      if (node) {
-        document.getElementById('tt-name').textContent = `${node.name} (${node.symbol})`;
-        document.getElementById('tt-price').textContent = node.price || 'N/A';
-        const c = node.change24h || 0;
-        const chgEl = document.getElementById('tt-chg');
-        chgEl.className = 'tt-chg ' + (c >= 0 ? 'pos' : 'neg');
-        chgEl.textContent = `${c >= 0 ? '+' : ''}${c.toFixed(2)}% (24h)`;
-        tt.style.display = 'block';
-      } else {
-        tt.style.display = 'none';
-      }
-    });
+  // Scene
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x06060F);
+  scene.fog = new THREE.FogExp2(0x06060F, 0.0025); // lighter fog — buildings stay visible
 
-  // Mouse → tooltip position
+  // Camera
+  const W = window.innerWidth, H = window.innerHeight;
+  camera = new THREE.PerspectiveCamera(55, W/H, 0.5, 2000);
+  camera.position.set(0, 70, 150);
+
+  // Renderer — NO shadow maps (fixes the too-many-lights overflow)
+  renderer = new THREE.WebGLRenderer({canvas: document.getElementById('city-canvas'), antialias: true});
+  renderer.setSize(W, H);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.shadowMap.enabled = false;
+
+  // Controls
+  controls = new THREE.OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.07;
+  controls.target.set(0, 12, 0);
+  controls.minPolarAngle = 0.08;
+  controls.maxPolarAngle = Math.PI / 2.05;
+  controls.minDistance = 12;
+  controls.maxDistance = 450;
+  controls.update();
+
+  // Ground — flat dark surface, low shininess
+  const gGeo = new THREE.PlaneGeometry(900, 900);
+  const gMat = new THREE.MeshLambertMaterial({color: 0x05050E});
+  const ground = new THREE.Mesh(gGeo, gMat);
+  ground.rotation.x = -Math.PI / 2;
+  scene.add(ground);
+
+  // Grid lines
+  const grid = new THREE.GridHelper(900, 90, 0x111128, 0x0c0c1e);
+  grid.position.y = 0.04;
+  scene.add(grid);
+
+  // Stars
+  const starGeo = new THREE.BufferGeometry();
+  const starPos = new Float32Array(3000);
+  for (let i = 0; i < 1000; i++) {
+    starPos[i*3]   = (Math.random()-0.5)*1200;
+    starPos[i*3+1] = 80 + Math.random()*500;
+    starPos[i*3+2] = (Math.random()-0.5)*1200;
+  }
+  starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+  const starMat = new THREE.PointsMaterial({color:0xffffff, size:0.5, transparent:true, opacity:0.6});
+  scene.add(new THREE.Points(starGeo, starMat));
+
+  // Lighting — ONLY scene-level lights (no per-building PointLights)
+  scene.add(new THREE.AmbientLight(0x334466, 2.5)); // strong ambient so buildings are visible
+  const sun = new THREE.DirectionalLight(0x8899ff, 0.7);
+  sun.position.set(-80, 150, 60);
+  sun.castShadow = false;
+  scene.add(sun);
+  // Two wide atmosphere fill lights
+  const atm1 = new THREE.PointLight(0xF07830, 1.2, 500, 1.5);
+  atm1.position.set(0, 100, 0); scene.add(atm1);
+  const atm2 = new THREE.PointLight(0x3344cc, 0.8, 500, 1.5);
+  atm2.position.set(-200, 60, -200); scene.add(atm2);
+
+  // Layout buildings in grid
+  const sorted = [...data.nodes].sort((a,b)=>(b.mcap||0)-(a.mcap||0));
+  const cols = Math.ceil(Math.sqrt(sorted.length * 1.4));
+  const SPACING = 13;
+  const offset = ((cols-1)*SPACING)/2;
+  const posMap = new Map();
+
+  sorted.forEach((node, i) => {
+    const row = Math.floor(i/cols);
+    const col = i%cols;
+    const jx = (Math.random()-0.5)*2;
+    const jz = (Math.random()-0.5)*2;
+    const x = col*SPACING - offset + jx;
+    const z = row*SPACING - offset + jz;
+    posMap.set(node.id, {x, z});
+    const grp = createBuilding(node, x, z);
+    scene.add(grp);
+    buildingGroups.set(node.id, {group:grp, node, pos:{x,z}});
+  });
+
+  // Roads between connected tokens
+  const roadMat = new THREE.LineBasicMaterial({color:0x1a1a3e,transparent:true,opacity:0.35});
+  let roadCount = 0;
+  for (const link of data.links) {
+    if (roadCount > 400) break;
+    const a = posMap.get(link.source), b = posMap.get(link.target);
+    if (!a||!b) continue;
+    const pts = [new THREE.Vector3(a.x,0.05,a.z), new THREE.Vector3(b.x,0.05,b.z)];
+    const geo = new THREE.BufferGeometry().setFromPoints(pts);
+    // High-volume roads glow orange
+    const vol = link.vol||0;
+    const mat = vol > 500000
+      ? new THREE.LineBasicMaterial({color:0xF07830,transparent:true,opacity:0.5})
+      : vol > 100000
+        ? new THREE.LineBasicMaterial({color:0x4444ff,transparent:true,opacity:0.3})
+        : roadMat;
+    scene.add(new THREE.Line(geo, mat));
+    roadCount++;
+  }
+
+  // Raycaster for clicks
+  const raycaster = new THREE.Raycaster();
+  const mouse = new THREE.Vector2();
+
+  renderer.domElement.addEventListener('click', e => {
+    const rect = renderer.domElement.getBoundingClientRect();
+    mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+    mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+    raycaster.setFromCamera(mouse, camera);
+    const hits = raycaster.intersectObjects(clickMeshes, false);
+    if (hits.length > 0) {
+      const node = hits[0].object.userData;
+      if (node && node.name) {
+        openPanel(node);
+        const entry = buildingGroups.get(node.id);
+        if (entry) {
+          const {x,z} = entry.pos;
+          controls.target.set(x, 0, z);
+        }
+      }
+    }
+  });
+
+  // Hover tooltip
+  renderer.domElement.addEventListener('mousemove', e => {
+    const rect = renderer.domElement.getBoundingClientRect();
+    mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+    mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+    raycaster.setFromCamera(mouse, camera);
+    const hits = raycaster.intersectObjects(clickMeshes, false);
+    const tt = document.getElementById('tt');
+    if (hits.length > 0 && hits[0].object.userData.name) {
+      const n = hits[0].object.userData;
+      renderer.domElement.style.cursor = 'pointer';
+      document.getElementById('tt-name').textContent = `${n.name} (${n.symbol})`;
+      document.getElementById('tt-price').textContent = n.price||'N/A';
+      const c = n.change24h||0;
+      const ce = document.getElementById('tt-chg');
+      ce.className='tt-chg '+(c>=0?'pos':'neg');
+      ce.textContent = `${c>=0?'+':''}${c.toFixed(2)}%`;
+      tt.style.display='block';
+    } else {
+      renderer.domElement.style.cursor = 'default';
+      tt.style.display='none';
+    }
+  });
+
   document.addEventListener('mousemove', e => {
     const tt = document.getElementById('tt');
-    const x = Math.min(e.clientX + 18, window.innerWidth - 190);
-    const y = Math.min(e.clientY + 14, window.innerHeight - 100);
-    tt.style.left = x + 'px';
-    tt.style.top  = y + 'px';
+    tt.style.left = Math.min(e.clientX+16, window.innerWidth-200)+'px';
+    tt.style.top  = Math.min(e.clientY+12, window.innerHeight-80)+'px';
   });
 
-  // Auto-rotate camera
-  const rotInterval = setInterval(() => {
-    if (!rotating) return;
-    rotAngle += 0.0015;
-    const cam = G.camera();
-    const dist = cam.position.length();
-    G.cameraPosition({ x: dist * Math.sin(rotAngle), z: dist * Math.cos(rotAngle) });
-  }, 16);
-
-  document.getElementById('graph').addEventListener('mousedown', () => { rotating = false; });
-  document.getElementById('graph').addEventListener('touchstart', () => { rotating = false; });
-
-  // Search
+  // Search — fly camera to building
   document.getElementById('sinput').addEventListener('input', e => {
     const q = e.target.value.toLowerCase().trim();
-    if (!q) {
-      highlighted = null;
-      G.nodeColor(n => nodeColor(n));
-      return;
-    }
-    const match = gData.nodes.find(n =>
-      n.symbol?.toLowerCase() === q ||
-      n.symbol?.toLowerCase().startsWith(q) ||
-      n.name?.toLowerCase().includes(q) ||
-      n.address?.toLowerCase() === q
-    );
-    if (match) {
-      highlighted = match.id;
-      G.nodeColor(n => highlighted && n.id !== highlighted ? 'rgba(80,80,80,0.18)' : nodeColor(n));
-      openPanel(match);
-      setTimeout(() => {
-        G.centerAt(match.x, match.y, match.z, 800);
-        G.zoom(3.5, 800);
-      }, 100);
+    if (!q) return;
+    for (const [id, entry] of buildingGroups) {
+      const n = entry.node;
+      if (n.symbol?.toLowerCase().startsWith(q) || n.name?.toLowerCase().includes(q) || n.address===q) {
+        openPanel(n);
+        const {x,z} = entry.pos;
+        controls.target.set(x, 0, z);
+        camera.position.set(x+25, 40, z+25);
+        break;
+      }
     }
   });
 
+  // Resize
+  window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  });
+
+  // Animate
+  function animate() {
+    requestAnimationFrame(animate);
+    cityTime += 0.016;
+    controls.update();
+
+    // Pulse antenna tips — direct array, no scene.traverse()
+    for (const {mesh, offset} of antennaTips) {
+      mesh.material.opacity = Math.sin(cityTime * 2.5 + offset) > 0 ? 1 : 0;
+    }
+
+    renderer.render(scene, camera);
+  }
+  animate();
+
   // Hide loading
-  setProgress(100, 'Neural map ready');
+  setProgress(100, 'Base City ready');
   setTimeout(() => {
     const l = document.getElementById('loading');
     l.style.opacity = '0';
-    setTimeout(() => l.style.display = 'none', 600);
-  }, 500);
+    setTimeout(() => l.style.display='none', 600);
+  }, 400);
 }
 
 // ── Boot ───────────────────────────────────────────────────────
 (async () => {
   try {
-    if (typeof ForceGraph3D === 'undefined') {
-      throw new Error('3D library failed to load — check internet connection and try refreshing.');
-    }
+    if (typeof THREE === 'undefined') throw new Error('THREE.js failed to load — check connection');
+    if (typeof THREE.OrbitControls === 'undefined') throw new Error('OrbitControls failed to load');
     const pairs = await fetchEcosystem();
-    setProgress(68, `Building ${pairs.length} connections...`);
+    setProgress(80, `Building ${pairs.length} skyscrapers...`);
     const data = buildGraph(pairs);
-    setProgress(88, `${data.nodes.length} tokens mapped...`);
-    initGraph(data);
+    setProgress(92, `Rendering city (${data.nodes.length} buildings)...`);
+    initCity(data);
   } catch (err) {
     console.error('[NeuralMap]', err);
     document.getElementById('lbar').style.background = '#F87171';
     document.getElementById('lstatus').textContent = 'Error: ' + err.message;
-    document.querySelector('.load-sub').textContent = 'Refresh the page to try again.';
+    document.querySelector('.load-sub').textContent = 'Refresh to try again.';
   }
 })();
 </script>
