@@ -476,6 +476,7 @@ function copyAddr() {
 
 // ── Three.js City ──────────────────────────────────────────────
 let scene, camera, renderer, controls, composer;
+let useBloom = true;
 let clickMeshes = [];
 let buildingGroups = new Map();
 let antennaTips = [];
@@ -878,6 +879,8 @@ function initCity(data) {
       dirLight.color.set(0xaabbff); dirLight.intensity = 1.0;
       stars.visible = true; moon.visible = true; sunSphere.visible = false;
       atm1.color.set(0xF07830); atm1.intensity = 1.8;
+      useBloom = true;
+      renderer.toneMappingExposure = 0.85;
       btn.textContent = '🌙 Night';
     } else {
       scene.background = new THREE.Color(0x87CEEB);
@@ -886,6 +889,8 @@ function initCity(data) {
       dirLight.color.set(0xffffff); dirLight.intensity = 2.5;
       stars.visible = false; moon.visible = false; sunSphere.visible = true;
       atm1.color.set(0xFFAA44); atm1.intensity = 2.5;
+      useBloom = false;
+      renderer.toneMappingExposure = 1.4;
       btn.textContent = '☀️ Day';
     }
   };
@@ -1162,7 +1167,7 @@ function initCity(data) {
       p.grp.rotation.y = -p.angle;
     }
 
-    if (composer) composer.render(); else renderer.render(scene, camera);
+    if (composer && useBloom) composer.render(); else renderer.render(scene, camera);
   }
   animate();
 
