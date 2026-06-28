@@ -19,6 +19,7 @@ const REDIS_KEY = 'xagent:replied'; // Set of replied tweet IDs
 // In-memory fallback (survives warm invocations within same instance)
 const _repliedCache = new Set();
 let   _sinceIdCache = null;
+let   _lastRunAt    = 0; // ms timestamp of last successful run start
 
 // ── Redis helpers ──────────────────────────────────────────────
 function getRedis() {
@@ -51,10 +52,26 @@ async function markReplied(tweetId) {
   await redisCmd(url, token, 'EXPIRE', REDIS_KEY, 86400);
 }
 
+// Return a Snowflake tweet ID corresponding to `secondsAgo` seconds in the past.
+// Used as a fallback since_id when Redis is not configured.
+function computeSinceIdFromAgo(secondsAgo) {
+  const twitterEpoch = BigInt(1288834974657);
+  const cutoffMs = BigInt(Date.now() - secondsAgo * 1000);
+  if (cutoffMs <= twitterEpoch) return '1';
+  return ((cutoffMs - twitterEpoch) << BigInt(22)).toString();
+}
+
 async function getSinceId() {
   const { url, token } = getRedis();
-  if (url) return await redisCmd(url, token, 'GET', 'xagent:since_id');
-  return _sinceIdCache;
+  if (url) {
+    const stored = await redisCmd(url, token, 'GET', 'xagent:since_id');
+    if (stored) return stored;
+  }
+  // Warm instance: use in-memory cache
+  if (_sinceIdCache) return _sinceIdCache;
+  // Cold start with no Redis: only look at tweets from the last 90 seconds.
+  // Prevents re-processing old tweets that cause the unlimited duplicate-reply loop.
+  return computeSinceIdFromAgo(90);
 }
 
 async function setSinceId(id) {
@@ -389,9 +406,13 @@ function isGenuineEngagement(text, username, authorUsername = '') {
 module.exports = async function handler(req, res) {
   // Allow GET for health check
   if (req.method === 'GET') {
+    const { url } = getRedis();
     return res.status(200).json({
       ok: true,
       configured: !!(process.env.X_BEARER_TOKEN && process.env.X_API_KEY && process.env.X_ACCESS_TOKEN),
+      redis: url
+        ? 'configured'
+        : 'NOT configured — add UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN in Vercel env vars to prevent duplicate replies',
     });
   }
 
@@ -408,6 +429,14 @@ module.exports = async function handler(req, res) {
   if (!username || !process.env.X_BEARER_TOKEN) {
     return res.status(200).json({ ok: false, error: 'X_BOT_USERNAME or X_BEARER_TOKEN not set' });
   }
+
+  // Same-instance guard: if this Vercel instance handled a run < 55s ago, skip.
+  // (Different instances use Redis lock below.)
+  const now = Date.now();
+  if (_lastRunAt && now - _lastRunAt < 55000) {
+    return res.status(200).json({ ok: true, skipped: true, reason: 'Same instance ran too recently' });
+  }
+  _lastRunAt = now;
 
   // Acquire execution lock — prevent two cron runs from processing at the same time
   const locked = await acquireLock();
