@@ -36,7 +36,7 @@ canvas{display:block}
 .hdr-logo{display:flex;align-items:center}
 .hdr-logo img{height:32px}
 .hdr-divider{width:1px;height:20px;background:rgba(255,255,255,0.08)}
-.hdr-title{font-size:0.78rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#F07830}
+.hdr-title{font-size:0.78rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#F07830;white-space:nowrap}
 .live-badge{
   display:inline-flex;align-items:center;gap:5px;
   font-size:0.62rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;
@@ -723,9 +723,9 @@ function createBuilding(node, x, z) {
   const podH = Math.max(4, Math.min(height * 0.25, 14));
   const podGeo = new THREE.BoxGeometry(bw, podH, bd);
   const podMesh = new THREE.Mesh(podGeo, new THREE.MeshPhongMaterial({
-    color: 0x141420,
-    emissive: threeCol.clone().multiplyScalar(0.04),
-    shininess: 6
+    color: 0x080810,
+    emissive: new THREE.Color(0x050508),
+    shininess: 4
   }));
   podMesh.position.y = podH / 2;
   group.add(podMesh);
@@ -736,11 +736,11 @@ function createBuilding(node, x, z) {
   const twH = height - podH;
   const twGeo = new THREE.BoxGeometry(twW, twH, twD);
   const twMesh = new THREE.Mesh(twGeo, new THREE.MeshPhongMaterial({
-    color: new THREE.Color(col).multiplyScalar(0.18),
-    emissive: threeCol.clone().multiplyScalar(0.09),
+    color: new THREE.Color(col).multiplyScalar(0.07),
+    emissive: threeCol.clone().multiplyScalar(0.12),
     map: getWindowTex(),
-    shininess: 75,
-    specular: new THREE.Color(0x334455)
+    shininess: 90,
+    specular: new THREE.Color(0x223344)
   }));
   twMesh.position.y = podH + twH / 2;
   twMesh.userData = node;
@@ -807,7 +807,7 @@ function initCity(data) {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.shadowMap.enabled = false;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.1;
+  renderer.toneMappingExposure = 0.82;
   renderer.outputEncoding = THREE.sRGBEncoding;
 
   // Bloom post-processing (UnrealBloomPass — makes neon glow like real neon)
@@ -873,9 +873,9 @@ function initCity(data) {
   scene.add(sunSphere);
 
   // ── Lighting ────────────────────────────────────────────────────
-  const ambLight = new THREE.AmbientLight(0x334466, 4.5);
+  const ambLight = new THREE.AmbientLight(0x223355, 1.8);
   scene.add(ambLight);
-  const dirLight = new THREE.DirectionalLight(0xccddff, 1.8);
+  const dirLight = new THREE.DirectionalLight(0xaabbdd, 1.2);
   dirLight.position.set(-80, 150, 60);
   dirLight.castShadow = false;
   scene.add(dirLight);
@@ -894,12 +894,12 @@ function initCity(data) {
     if (isNight) {
       scene.background = new THREE.Color(0x06060F);
       scene.fog = new THREE.FogExp2(0x06060F, 0.0025);
-      ambLight.color.set(0x2233aa); ambLight.intensity = 3.0;
-      dirLight.color.set(0xaabbff); dirLight.intensity = 1.0;
+      ambLight.color.set(0x223355); ambLight.intensity = 1.8;
+      dirLight.color.set(0xaabbdd); dirLight.intensity = 1.2;
       stars.visible = true; moon.visible = true; sunSphere.visible = false;
       atm1.color.set(0xF07830); atm1.intensity = 1.8;
       useBloom = true;
-      renderer.toneMappingExposure = 0.85;
+      renderer.toneMappingExposure = 0.82;
       btn.textContent = '🌙 Night';
     } else {
       scene.background = new THREE.Color(0x87CEEB);
@@ -1024,8 +1024,10 @@ function initCity(data) {
         scene.add(sw);
       }
 
-      // ── Crosswalks ─────────────────────────────────────────────
-      const cwMat = new THREE.MeshBasicMaterial({color:0xBBBBBB, transparent:true, opacity:0.55});
+      // ── Crosswalks — only at main intersections ────────────────
+      if (!iMain) { /* skip minor intersections */ }
+      else
+      { const cwMat = new THREE.MeshBasicMaterial({color:0xAAAAAA, transparent:true, opacity:0.45});
       const CW_STRIPES = 5;
       const stripeW = 0.55;
       const cwSpan = iw * 0.82;
@@ -1041,6 +1043,7 @@ function initCity(data) {
         sv.position.set(ix + offset, 0.047, iz);
         scene.add(sv);
       }
+      } // end crosswalk else
 
       // ── Traffic lights at major intersections ──────────────────
       if (r % 3 === 0 && c % 3 === 0) {
