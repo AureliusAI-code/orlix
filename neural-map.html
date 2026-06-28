@@ -474,6 +474,78 @@ let buildingGroups = new Map();
 let antennaTips = []; // tracked separately — no traverse() in loop
 let cityTime = 0;
 
+// City life
+let cars = [], people = [];
+
+function createCar(ax, az, bx, bz) {
+  const palette = [0xFF3333, 0x33AAFF, 0xFFFF33, 0xFFFFFF, 0xFF8833, 0x33FF88, 0xAA33FF];
+  const col = palette[Math.floor(Math.random() * palette.length)];
+  const grp = new THREE.Group();
+
+  const bodyMat = new THREE.MeshBasicMaterial({color: col});
+  // Body
+  const body = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.55, 2.6), bodyMat);
+  body.position.y = 0.5;
+  grp.add(body);
+  // Roof
+  const roof = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.45, 1.5),
+    new THREE.MeshBasicMaterial({color: new THREE.Color(col).multiplyScalar(0.65)}));
+  roof.position.set(0, 1.0, -0.1);
+  grp.add(roof);
+  // Headlights
+  const hlMat = new THREE.MeshBasicMaterial({color: 0xFFFFCC});
+  const tlMat = new THREE.MeshBasicMaterial({color: 0xFF1111});
+  const lgeo = new THREE.BoxGeometry(0.28, 0.18, 0.1);
+  [-0.52, 0.52].forEach(dx => {
+    const hl = new THREE.Mesh(lgeo, hlMat); hl.position.set(dx, 0.5, 1.35); grp.add(hl);
+    const tl = new THREE.Mesh(lgeo, tlMat); tl.position.set(dx, 0.5, -1.35); grp.add(tl);
+  });
+  // Wheels
+  const wgeo = new THREE.CylinderGeometry(0.28, 0.28, 0.18, 8);
+  const wmat = new THREE.MeshBasicMaterial({color: 0x222222});
+  [[-0.75,0.85],[-0.75,-0.75],[0.75,0.85],[0.75,-0.75]].forEach(([wx,wz]) => {
+    const w = new THREE.Mesh(wgeo, wmat);
+    w.rotation.z = Math.PI/2; w.position.set(wx, 0.28, wz); grp.add(w);
+  });
+
+  grp.position.y = 0;
+  scene.add(grp);
+  const t = Math.random();
+  const dir = Math.random() > 0.5 ? 1 : -1;
+  const spd = 0.004 + Math.random() * 0.005;
+  cars.push({grp, ax, az, bx, bz, t, dir, spd});
+}
+
+function createPerson(startX, startZ) {
+  const grp = new THREE.Group();
+  const cols = [0x4488FF, 0xFF8844, 0x44EE88, 0xFF44AA, 0xFFCC44, 0xAA44FF, 0x44CCFF];
+  const col = cols[Math.floor(Math.random() * cols.length)];
+  // Body
+  const body = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.17, 0.21, 1.1, 5),
+    new THREE.MeshBasicMaterial({color: col})
+  );
+  body.position.y = 0.75;
+  grp.add(body);
+  // Head
+  const head = new THREE.Mesh(
+    new THREE.SphereGeometry(0.21, 5, 5),
+    new THREE.MeshBasicMaterial({color: 0xFFCCAA})
+  );
+  head.position.y = 1.6;
+  grp.add(head);
+
+  grp.position.set(startX, 0, startZ);
+  scene.add(grp);
+  people.push({
+    grp, x: startX, z: startZ,
+    angle: Math.random() * Math.PI * 2,
+    spd: 0.035 + Math.random() * 0.04,
+    timer: Math.floor(Math.random() * 80),
+    interval: 55 + Math.floor(Math.random() * 90)
+  });
+}
+
 let _winTex = null;
 function getWindowTex() {
   if (_winTex) return _winTex;
@@ -704,24 +776,59 @@ function initCity(data) {
     buildingGroups.set(node.id, {group:grp, node, pos:{x,z}});
   });
 
-  // Roads between connected tokens
-  const roadMat = new THREE.LineBasicMaterial({color:0x1a1a3e,transparent:true,opacity:0.35});
+  // Roads — real asphalt surfaces + center lines + cars
+  const asfMat = new THREE.MeshBasicMaterial({color: 0x111120});
+  const asfHighMat = new THREE.MeshBasicMaterial({color: 0x181830});
+  const ctLineMat = new THREE.MeshBasicMaterial({color: 0xF07830, transparent: true, opacity: 0.45});
+  const ctLineMatB = new THREE.MeshBasicMaterial({color: 0x4455ff, transparent: true, opacity: 0.3});
   let roadCount = 0;
+
   for (const link of data.links) {
-    if (roadCount > 400) break;
+    if (roadCount > 300) break;
     const a = posMap.get(link.source), b = posMap.get(link.target);
-    if (!a||!b) continue;
-    const pts = [new THREE.Vector3(a.x,0.05,a.z), new THREE.Vector3(b.x,0.05,b.z)];
-    const geo = new THREE.BufferGeometry().setFromPoints(pts);
-    // High-volume roads glow orange
-    const vol = link.vol||0;
-    const mat = vol > 500000
-      ? new THREE.LineBasicMaterial({color:0xF07830,transparent:true,opacity:0.5})
-      : vol > 100000
-        ? new THREE.LineBasicMaterial({color:0x4444ff,transparent:true,opacity:0.3})
-        : roadMat;
-    scene.add(new THREE.Line(geo, mat));
+    if (!a || !b) continue;
+    const dx = b.x - a.x, dz = b.z - a.z;
+    const len = Math.sqrt(dx*dx + dz*dz);
+    if (len < 2) continue;
+    const angle = Math.atan2(dx, dz);
+    const vol = link.vol || 0;
+    const isHighway = vol > 500000;
+    const isMajor = vol > 100000;
+    const roadW = isHighway ? 3.2 : isMajor ? 2.4 : 1.8;
+    const mx = (a.x+b.x)/2, mz = (a.z+b.z)/2;
+
+    // Asphalt surface
+    const rGeo = new THREE.BoxGeometry(roadW, 0.04, len);
+    const rMesh = new THREE.Mesh(rGeo, isHighway ? asfHighMat : asfMat);
+    rMesh.position.set(mx, 0.02, mz);
+    rMesh.rotation.y = angle;
+    scene.add(rMesh);
+
+    // Center line on major roads
+    if (isHighway || isMajor) {
+      const lMesh = new THREE.Mesh(
+        new THREE.BoxGeometry(0.1, 0.06, len),
+        isHighway ? ctLineMat : ctLineMatB
+      );
+      lMesh.position.set(mx, 0.05, mz);
+      lMesh.rotation.y = angle;
+      scene.add(lMesh);
+    }
+
+    // Spawn car on this road
+    if (roadCount < 80 && (isHighway || Math.random() > 0.45)) {
+      createCar(a.x, a.z, b.x, b.z);
+      if (isHighway) createCar(a.x, a.z, b.x, b.z); // highways get 2 cars
+    }
     roadCount++;
+  }
+
+  // Pedestrians scattered around city base
+  const citySpan = (cols * SPACING) / 2;
+  for (let i = 0; i < 50; i++) {
+    const ang = Math.random() * Math.PI * 2;
+    const r = Math.random() * citySpan * 0.88;
+    createPerson(Math.cos(ang) * r, Math.sin(ang) * r);
   }
 
   // Raycaster for clicks
@@ -806,9 +913,37 @@ function initCity(data) {
     cityTime += 0.016;
     controls.update();
 
-    // Pulse antenna tips — direct array, no scene.traverse()
+    // Pulse antenna tips
     for (const {mesh, offset} of antennaTips) {
       mesh.material.opacity = Math.sin(cityTime * 2.5 + offset) > 0 ? 1 : 0;
+    }
+
+    // Move cars along their road
+    for (const c of cars) {
+      c.t += c.spd * c.dir;
+      if (c.t >= 1) { c.t = 1; c.dir = -1; }
+      if (c.t <= 0) { c.t = 0; c.dir = 1; }
+      const x = c.ax + (c.bx - c.ax) * c.t;
+      const z = c.az + (c.bz - c.az) * c.t;
+      c.grp.position.set(x, 0, z);
+      c.grp.rotation.y = Math.atan2((c.bx - c.ax) * c.dir, (c.bz - c.az) * c.dir);
+    }
+
+    // Move pedestrians
+    const bound = 95;
+    for (const p of people) {
+      p.timer++;
+      if (p.timer >= p.interval) {
+        p.angle += (Math.random() - 0.5) * Math.PI * 1.6;
+        p.timer = 0;
+        p.interval = 55 + Math.floor(Math.random() * 90);
+      }
+      p.x += Math.cos(p.angle) * p.spd;
+      p.z += Math.sin(p.angle) * p.spd;
+      if (Math.abs(p.x) > bound) { p.x -= Math.cos(p.angle) * p.spd * 4; p.angle = Math.PI - p.angle; }
+      if (Math.abs(p.z) > bound) { p.z -= Math.sin(p.angle) * p.spd * 4; p.angle = -p.angle; }
+      p.grp.position.set(p.x, 0, p.z);
+      p.grp.rotation.y = -p.angle;
     }
 
     renderer.render(scene, camera);
