@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Orlix Neural Map — Base City Live</title>
+<title>Base City — Live 3D Base Ecosystem</title>
 <meta name="description" content="Live 3D city visualization of the Base ecosystem. Every token is a skyscraper — the taller the building, the bigger the market cap. Powered by Orlix AI.">
 <link rel="icon" type="image/x-icon" href="/favicon.ico">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -168,7 +168,7 @@ canvas{display:block}
   <div class="hdr-left">
     <a href="/" class="hdr-logo"><img src="/orlix-logo.png" alt="ORLIX"></a>
     <div class="hdr-divider"></div>
-    <div class="hdr-title">Neural Map</div>
+    <div class="hdr-title">Base City</div>
     <div class="live-badge"><div class="live-dot"></div>Live</div>
   </div>
   <div class="hdr-stats">
@@ -178,6 +178,7 @@ canvas{display:block}
     <div class="hdr-stat"><div class="hdr-stat-val" id="s-liq">—</div><div class="hdr-stat-lbl">Total Liq</div></div>
   </div>
   <div class="hdr-right">
+    <button id="daynightBtn" class="hbtn" onclick="toggleDayNight()" title="Toggle day/night">🌙 Night</button>
     <a href="/" class="hbtn">← Back</a>
     <a href="/app" class="hbtn hbtn-orange">Launch App →</a>
   </div>
@@ -700,7 +701,7 @@ function initCity(data) {
   // Camera — lower angle = more dramatic city feel
   const W = window.innerWidth, H = window.innerHeight;
   camera = new THREE.PerspectiveCamera(58, W/H, 0.5, 2000);
-  camera.position.set(0, 55, 200);
+  camera.position.set(0, 140, 320);
 
   // Renderer — NO shadow maps (fixes the too-many-lights overflow)
   renderer = new THREE.WebGLRenderer({canvas: document.getElementById('city-canvas'), antialias: true});
@@ -712,7 +713,7 @@ function initCity(data) {
   controls = new THREE.OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
   controls.dampingFactor = 0.07;
-  controls.target.set(0, 20, 0);
+  controls.target.set(0, 30, 0);
   controls.minPolarAngle = 0.08;
   controls.maxPolarAngle = Math.PI / 2.05;
   controls.minDistance = 12;
@@ -726,29 +727,49 @@ function initCity(data) {
   ground.rotation.x = -Math.PI / 2;
   scene.add(ground);
 
-  // Grid lines — brighter for cyberpunk feel
-  const grid = new THREE.GridHelper(900, 90, 0x1c1c50, 0x0f0f2a);
-  grid.position.y = 0.04;
-  scene.add(grid);
-
-  // Stars
+  // ── Sky objects (stars, moon, sun) ──────────────────────────────
   const starGeo = new THREE.BufferGeometry();
   const starPos = new Float32Array(3000);
   for (let i = 0; i < 1000; i++) {
-    starPos[i*3]   = (Math.random()-0.5)*1200;
-    starPos[i*3+1] = 80 + Math.random()*500;
-    starPos[i*3+2] = (Math.random()-0.5)*1200;
+    starPos[i*3]   = (Math.random()-0.5)*1400;
+    starPos[i*3+1] = 120 + Math.random()*500;
+    starPos[i*3+2] = (Math.random()-0.5)*1400;
   }
   starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
-  const starMat = new THREE.PointsMaterial({color:0xffffff, size:0.5, transparent:true, opacity:0.6});
-  scene.add(new THREE.Points(starGeo, starMat));
+  const starMat = new THREE.PointsMaterial({color:0xffffff, size:0.55, transparent:true, opacity:0.75});
+  const stars = new THREE.Points(starGeo, starMat);
+  scene.add(stars);
 
-  // Lighting
-  scene.add(new THREE.AmbientLight(0x2233aa, 3.0));
-  const sun = new THREE.DirectionalLight(0xaabbff, 1.0);
-  sun.position.set(-80, 150, 60);
-  sun.castShadow = false;
-  scene.add(sun);
+  // Moon
+  const moonGeo = new THREE.SphereGeometry(18, 16, 16);
+  const moonMat = new THREE.MeshBasicMaterial({color: 0xEEEECC});
+  const moon = new THREE.Mesh(moonGeo, moonMat);
+  moon.position.set(-350, 280, -400);
+  scene.add(moon);
+  // Moon craters
+  const craterMat = new THREE.MeshBasicMaterial({color: 0xC8C8A0});
+  [[8,6,14,-2],[5,-8,10,8],[-6,3,-18,4]].forEach(([cx,cy,cz,cr]) => {
+    const c = new THREE.Mesh(new THREE.SphereGeometry(Math.abs(cr)*0.9,8,8), craterMat);
+    c.position.set(moon.position.x+cx*2, moon.position.y+cy*2, moon.position.z+cz*0.5+18);
+    scene.add(c);
+  });
+
+  // Sun (hidden at start — night mode default)
+  const sunSphere = new THREE.Mesh(
+    new THREE.SphereGeometry(22, 16, 16),
+    new THREE.MeshBasicMaterial({color: 0xFFDD44})
+  );
+  sunSphere.position.set(350, 280, -350);
+  sunSphere.visible = false;
+  scene.add(sunSphere);
+
+  // ── Lighting ────────────────────────────────────────────────────
+  const ambLight = new THREE.AmbientLight(0x2233aa, 3.0);
+  scene.add(ambLight);
+  const dirLight = new THREE.DirectionalLight(0xaabbff, 1.0);
+  dirLight.position.set(-80, 150, 60);
+  dirLight.castShadow = false;
+  scene.add(dirLight);
   const atm1 = new THREE.PointLight(0xF07830, 1.8, 600, 1.2);
   atm1.position.set(0, 120, 0); scene.add(atm1);
   const atm2 = new THREE.PointLight(0x4455ff, 1.2, 600, 1.2);
@@ -756,79 +777,169 @@ function initCity(data) {
   const atm3 = new THREE.PointLight(0x22ffaa, 0.6, 400, 1.5);
   atm3.position.set(200, 60, 200); scene.add(atm3);
 
-  // Layout buildings in grid
+  // ── Day / Night toggle ──────────────────────────────────────────
+  let isNight = true;
+  window.toggleDayNight = function() {
+    isNight = !isNight;
+    const btn = document.getElementById('daynightBtn');
+    if (isNight) {
+      scene.background = new THREE.Color(0x06060F);
+      scene.fog = new THREE.FogExp2(0x06060F, 0.0025);
+      ambLight.color.set(0x2233aa); ambLight.intensity = 3.0;
+      dirLight.color.set(0xaabbff); dirLight.intensity = 1.0;
+      stars.visible = true; moon.visible = true; sunSphere.visible = false;
+      atm1.color.set(0xF07830); atm1.intensity = 1.8;
+      btn.textContent = '🌙 Night';
+    } else {
+      scene.background = new THREE.Color(0x87CEEB);
+      scene.fog = new THREE.FogExp2(0xadd8e6, 0.0015);
+      ambLight.color.set(0xfff5e0); ambLight.intensity = 5.0;
+      dirLight.color.set(0xffffff); dirLight.intensity = 2.5;
+      stars.visible = false; moon.visible = false; sunSphere.visible = true;
+      atm1.color.set(0xFFAA44); atm1.intensity = 2.5;
+      btn.textContent = '☀️ Day';
+    }
+  };
+
+  // ── Manhattan-style city grid ──────────────────────────────────
   const sorted = [...data.nodes].sort((a,b)=>(b.mcap||0)-(a.mcap||0));
-  const cols = Math.ceil(Math.sqrt(sorted.length * 1.4));
-  const SPACING = 11; // tighter = denser city
-  const offset = ((cols-1)*SPACING)/2;
-  const posMap = new Map();
+  const COLS_N = Math.ceil(Math.sqrt(sorted.length * 0.8));
+  const ROWS_N = Math.ceil(sorted.length / COLS_N);
+  const BLOCK  = 16;  // building block footprint
+  const STREET = 6;   // street width
+  const CELL   = BLOCK + STREET;
+  const totalW = COLS_N * CELL;
+  const totalD = ROWS_N * CELL;
+  const offX   = (totalW - CELL) / 2;
+  const offZ   = (totalD - CELL) / 2;
 
-  sorted.forEach((node, i) => {
-    const row = Math.floor(i/cols);
-    const col = i%cols;
-    const jx = (Math.random()-0.5)*2;
-    const jz = (Math.random()-0.5)*2;
-    const x = col*SPACING - offset + jx;
-    const z = row*SPACING - offset + jz;
-    posMap.set(node.id, {x, z});
-    const grp = createBuilding(node, x, z);
-    scene.add(grp);
-    buildingGroups.set(node.id, {group:grp, node, pos:{x,z}});
-  });
+  // Shared road materials
+  const mMain  = new THREE.MeshBasicMaterial({color: 0x14142a});
+  const mSide  = new THREE.MeshBasicMaterial({color: 0x0f0f1e});
+  const mInter = new THREE.MeshBasicMaterial({color: 0x19192e});
+  const mLineO = new THREE.MeshBasicMaterial({color: 0xF07830, transparent:true, opacity:0.7});
+  const mLineB = new THREE.MeshBasicMaterial({color: 0x5566ff, transparent:true, opacity:0.5});
+  const mPole  = new THREE.MeshBasicMaterial({color: 0x556677});
+  const mLamp  = new THREE.MeshBasicMaterial({color: 0xFFEE88});
+  const mSidew = new THREE.MeshBasicMaterial({color: 0x0c0c1a});
 
-  // Roads — real asphalt surfaces + center lines + cars
-  const asfMat = new THREE.MeshBasicMaterial({color: 0x111120});
-  const asfHighMat = new THREE.MeshBasicMaterial({color: 0x181830});
-  const ctLineMat = new THREE.MeshBasicMaterial({color: 0xF07830, transparent: true, opacity: 0.45});
-  const ctLineMatB = new THREE.MeshBasicMaterial({color: 0x4455ff, transparent: true, opacity: 0.3});
-  let roadCount = 0;
+  // ── Horizontal streets ─────────────────────────────────────────
+  for (let r = 0; r <= ROWS_N; r++) {
+    const z = r * CELL - offZ - BLOCK/2 - STREET/2;
+    const isMain = r % 3 === 0;
+    const sw = isMain ? STREET * 1.4 : STREET;
+    const mat = isMain ? mMain : mSide;
+    const span = totalW + STREET * 2.5;
 
-  for (const link of data.links) {
-    if (roadCount > 300) break;
-    const a = posMap.get(link.source), b = posMap.get(link.target);
-    if (!a || !b) continue;
-    const dx = b.x - a.x, dz = b.z - a.z;
-    const len = Math.sqrt(dx*dx + dz*dz);
-    if (len < 2) continue;
-    const angle = Math.atan2(dx, dz);
-    const vol = link.vol || 0;
-    const isHighway = vol > 500000;
-    const isMajor = vol > 100000;
-    const roadW = isHighway ? 3.2 : isMajor ? 2.4 : 1.8;
-    const mx = (a.x+b.x)/2, mz = (a.z+b.z)/2;
+    const road = new THREE.Mesh(new THREE.BoxGeometry(span, 0.06, sw), mat);
+    road.position.set(0, 0.02, z);
+    scene.add(road);
 
-    // Asphalt surface
-    const rGeo = new THREE.BoxGeometry(roadW, 0.04, len);
-    const rMesh = new THREE.Mesh(rGeo, isHighway ? asfHighMat : asfMat);
-    rMesh.position.set(mx, 0.02, mz);
-    rMesh.rotation.y = angle;
-    scene.add(rMesh);
-
-    // Center line on major roads
-    if (isHighway || isMajor) {
-      const lMesh = new THREE.Mesh(
-        new THREE.BoxGeometry(0.1, 0.06, len),
-        isHighway ? ctLineMat : ctLineMatB
+    // Dashed center line
+    const dashes = Math.floor(span / 4);
+    for (let d = 0; d < dashes; d++) {
+      if (d % 2 === 0) continue;
+      const dash = new THREE.Mesh(
+        new THREE.BoxGeometry(1.8, 0.07, 0.18),
+        isMain ? mLineO : mLineB
       );
-      lMesh.position.set(mx, 0.05, mz);
-      lMesh.rotation.y = angle;
-      scene.add(lMesh);
+      dash.position.set(-span/2 + d*4 + 2, 0.04, z);
+      scene.add(dash);
     }
 
-    // Spawn car on this road
-    if (roadCount < 80 && (isHighway || Math.random() > 0.45)) {
-      createCar(a.x, a.z, b.x, b.z);
-      if (isHighway) createCar(a.x, a.z, b.x, b.z); // highways get 2 cars
-    }
-    roadCount++;
+    // Cars — two lanes going opposite directions
+    const L = span / 2 + 2;
+    const laneOff = 1.1;
+    const nCars = isMain ? 3 : 1;
+    for (let c = 0; c < nCars; c++) createCar(-L, z - laneOff, L, z - laneOff);
+    for (let c = 0; c < nCars; c++) createCar( L, z + laneOff, -L, z + laneOff);
   }
 
-  // Pedestrians scattered around city base
-  const citySpan = (cols * SPACING) / 2;
-  for (let i = 0; i < 50; i++) {
+  // ── Vertical streets ───────────────────────────────────────────
+  for (let c = 0; c <= COLS_N; c++) {
+    const x = c * CELL - offX - BLOCK/2 - STREET/2;
+    const isMain = c % 3 === 0;
+    const sw = isMain ? STREET * 1.4 : STREET;
+    const mat = isMain ? mMain : mSide;
+    const span = totalD + STREET * 2.5;
+
+    const road = new THREE.Mesh(new THREE.BoxGeometry(sw, 0.06, span), mat);
+    road.position.set(x, 0.02, 0);
+    scene.add(road);
+
+    // Dashed center line
+    const dashes = Math.floor(span / 4);
+    for (let d = 0; d < dashes; d++) {
+      if (d % 2 === 0) continue;
+      const dash = new THREE.Mesh(
+        new THREE.BoxGeometry(0.18, 0.07, 1.8),
+        isMain ? mLineO : mLineB
+      );
+      dash.position.set(x, 0.04, -span/2 + d*4 + 2);
+      scene.add(dash);
+    }
+
+    // Cars — two lanes
+    const L = span / 2 + 2;
+    const laneOff = 1.1;
+    const nCars = isMain ? 3 : 1;
+    for (let cc = 0; cc < nCars; cc++) createCar(x - laneOff, -L, x - laneOff, L);
+    for (let cc = 0; cc < nCars; cc++) createCar(x + laneOff,  L, x + laneOff, -L);
+  }
+
+  // ── Intersection fills ─────────────────────────────────────────
+  for (let r = 0; r <= ROWS_N; r++) {
+    for (let c = 0; c <= COLS_N; c++) {
+      const ix = c * CELL - offX - BLOCK/2 - STREET/2;
+      const iz = r * CELL - offZ - BLOCK/2 - STREET/2;
+      const iMain = (r % 3 === 0) || (c % 3 === 0);
+      const iw = iMain ? STREET * 1.4 : STREET;
+      const inter = new THREE.Mesh(new THREE.BoxGeometry(iw, 0.07, iw), mInter);
+      inter.position.set(ix, 0.025, iz);
+      scene.add(inter);
+
+      // Sidewalk around block (inset pad)
+      if (r < ROWS_N && c < COLS_N) {
+        const sw = new THREE.Mesh(new THREE.BoxGeometry(BLOCK, 0.04, BLOCK), mSidew);
+        sw.position.set(
+          c * CELL - offX,
+          0.02,
+          r * CELL - offZ
+        );
+        scene.add(sw);
+      }
+
+      // Streetlight every other intersection
+      if ((r + c) % 2 === 0) {
+        const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 8, 5), mPole);
+        pole.position.set(ix + STREET*0.4, 4, iz + STREET*0.4);
+        scene.add(pole);
+        const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.38, 6, 6), mLamp);
+        lamp.position.set(ix + STREET*0.4, 8.4, iz + STREET*0.4);
+        scene.add(lamp);
+      }
+    }
+  }
+
+  // ── Place buildings in their city blocks ───────────────────────
+  const posMap = new Map();
+  sorted.forEach((node, i) => {
+    const row = Math.floor(i / COLS_N);
+    const col = i % COLS_N;
+    const bx = col * CELL - offX + (Math.random()-0.5) * 2.5;
+    const bz = row * CELL - offZ + (Math.random()-0.5) * 2.5;
+    posMap.set(node.id, {x: bx, z: bz});
+    const grp = createBuilding(node, bx, bz);
+    scene.add(grp);
+    buildingGroups.set(node.id, {group:grp, node, pos:{x:bx,z:bz}});
+  });
+
+  // ── Pedestrians on sidewalks ───────────────────────────────────
+  const citySpan = Math.max(totalW, totalD) / 2;
+  for (let i = 0; i < 60; i++) {
     const ang = Math.random() * Math.PI * 2;
-    const r = Math.random() * citySpan * 0.88;
-    createPerson(Math.cos(ang) * r, Math.sin(ang) * r);
+    const r2 = Math.random() * citySpan * 0.9;
+    createPerson(Math.cos(ang) * r2, Math.sin(ang) * r2);
   }
 
   // Raycaster for clicks
