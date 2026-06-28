@@ -599,13 +599,13 @@ function getWindowTex() {
   const c = document.createElement('canvas');
   c.width=256; c.height=512;
   const ctx=c.getContext('2d');
-  ctx.fillStyle='#08081a'; ctx.fillRect(0,0,256,512);
-  for (let y=8;y<512;y+=22) {
-    for (let x=8;x<256;x+=18) {
-      if (Math.random()>0.3) {
+  ctx.fillStyle='#050510'; ctx.fillRect(0,0,256,512);
+  for (let y=10;y<512;y+=24) {
+    for (let x=10;x<256;x+=20) {
+      if (Math.random()>0.45) {
         const r=Math.random();
-        ctx.fillStyle=r>0.65?'rgba(255,255,170,0.55)':r>0.4?'rgba(150,180,255,0.45)':'rgba(255,140,60,0.35)';
-        ctx.fillRect(x,y,11,15);
+        ctx.fillStyle=r>0.65?'rgba(255,220,120,0.28)':r>0.4?'rgba(120,160,255,0.22)':'rgba(255,130,50,0.18)';
+        ctx.fillRect(x,y,10,14);
       }
     }
   }
@@ -984,26 +984,6 @@ function initCity(data) {
         scene.add(sw);
       }
 
-      // ── Crosswalks — only at main intersections ────────────────
-      if (!iMain) { /* skip minor intersections */ }
-      else
-      { const cwMat = new THREE.MeshBasicMaterial({color:0xAAAAAA, transparent:true, opacity:0.45});
-      const CW_STRIPES = 5;
-      const stripeW = 0.55;
-      const cwSpan = iw * 0.82;
-      const cwStep = cwSpan / CW_STRIPES;
-      for (let s = 0; s < CW_STRIPES; s++) {
-        const offset = -cwSpan/2 + s * cwStep + stripeW/2;
-        // crossing along Z (perpendicular to horizontal road)
-        const sh = new THREE.Mesh(new THREE.BoxGeometry(iw*1.1, 0.09, stripeW), cwMat);
-        sh.position.set(ix, 0.047, iz + offset);
-        scene.add(sh);
-        // crossing along X (perpendicular to vertical road)
-        const sv = new THREE.Mesh(new THREE.BoxGeometry(stripeW, 0.09, iw*1.1), cwMat);
-        sv.position.set(ix + offset, 0.047, iz);
-        scene.add(sv);
-      }
-      } // end crosswalk else
 
       // ── Traffic lights at major intersections ──────────────────
       if (r % 3 === 0 && c % 3 === 0) {
