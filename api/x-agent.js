@@ -338,6 +338,7 @@ match the energy of the tweet — casual gets casual, serious gets serious.
 emojis only when they fit naturally.${tokenContext}
 
 rules:
+- never open with "thanks for asking", "great question", "sure!", "of course", "happy to help", or any filler opener — just answer immediately
 - if health check request: give score/grade + top 2-3 signals. concise.
 - if token data: share key numbers naturally + one sharp insight
 - if no token data but token asked: invite them to drop the ca
