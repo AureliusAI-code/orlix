@@ -8,8 +8,8 @@
 <link rel="icon" type="image/x-icon" href="/favicon.ico">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<script src="https://unpkg.com/3d-force-graph@1.73.4/dist/3d-force-graph.min.js"></script>
-<script src="https://unpkg.com/three-spritetext@1.9.1/dist/three-spritetext.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/3d-force-graph@1.73.4/dist/3d-force-graph.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three-spritetext@1.9.1/dist/three-spritetext.min.js"></script>
 
 <style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
@@ -394,13 +394,19 @@ const setProgress = (pct, msg) => {
 };
 
 // ── Data layer ─────────────────────────────────────────────────
+function fetchWithTimeout(url, ms = 10000) {
+  const ctrl = new AbortController();
+  const id = setTimeout(() => ctrl.abort(), ms);
+  return fetch(url, { signal: ctrl.signal }).finally(() => clearTimeout(id));
+}
+
 async function fetchEcosystem() {
   const queries = ['WETH','USDC','ORLIX','brett','degen','toshi','aerodrome','virtuals','higher','ski'];
   setProgress(8, 'Querying DexScreener...');
 
   const results = await Promise.allSettled(
     queries.map(q =>
-      fetch(`https://api.dexscreener.com/latest/dex/search?q=${encodeURIComponent(q)}`, {signal: AbortSignal.timeout(9000)})
+      fetchWithTimeout(`https://api.dexscreener.com/latest/dex/search?q=${encodeURIComponent(q)}`)
         .then(r => r.json())
         .then(d => (d.pairs||[]).filter(p => p.chainId === 'base'))
         .catch(() => [])
@@ -412,11 +418,23 @@ async function fetchEcosystem() {
 
   // Deduplicate
   const seen = new Set();
-  return all
+  const pairs = all
     .filter(p => { if (seen.has(p.pairAddress)) return false; seen.add(p.pairAddress); return true; })
     .filter(p => (p.liquidity?.usd || 0) >= 300)
     .sort((a,b) => (b.volume?.h24||0) - (a.volume?.h24||0))
     .slice(0, 250);
+
+  // Fallback seed data so graph is never empty
+  if (pairs.length === 0) {
+    return [{
+      pairAddress: '0xseed1', chainId: 'base', dexId: 'uniswap',
+      baseToken:  { address: ORLIX_ADDR, name: 'Orlix AI', symbol: 'ORLIX' },
+      quoteToken: { address: '0x4200000000000000000000000000000000000006', name: 'Wrapped Ether', symbol: 'WETH' },
+      priceUsd: '0.0001', priceChange: { h24: 5 }, fdv: 1000000,
+      volume: { h24: 50000 }, liquidity: { usd: 200000 },
+    }];
+  }
+  return pairs;
 }
 
 function buildGraph(pairs) {
@@ -557,14 +575,17 @@ function initGraph(data) {
     .nodeColor(n => highlighted && n.id !== highlighted ? 'rgba(80,80,80,0.18)' : nodeColor(n))
     .nodeOpacity(0.95)
     .nodeResolution(16)
-    .nodeLabel(() => '')
+    .nodeLabel(n => `${n.name} (${n.symbol})`)
     .nodeThreeObject(n => {
+      if (typeof SpriteText === 'undefined') return null;
       if (n.val > 1.8 || n.isOrlix || n.isStable) {
-        const sprite = new SpriteText(n.symbol);
-        sprite.color = n.isOrlix ? '#F07830' : n.isStable ? '#A78BFA' : 'rgba(255,255,255,0.55)';
-        sprite.textHeight = Math.max(1.8, Math.min(5, n.val * 0.9));
-        sprite.position.y = -(Math.sqrt(n.val * n.val) * 3 + 4);
-        return sprite;
+        try {
+          const sprite = new SpriteText(n.symbol);
+          sprite.color = n.isOrlix ? '#F07830' : n.isStable ? '#A78BFA' : 'rgba(255,255,255,0.55)';
+          sprite.textHeight = Math.max(1.8, Math.min(5, n.val * 0.9));
+          sprite.position.y = -(Math.sqrt(n.val * n.val) * 3 + 4);
+          return sprite;
+        } catch(e) { return null; }
       }
       return null;
     })
@@ -676,14 +697,19 @@ function initGraph(data) {
 // ── Boot ───────────────────────────────────────────────────────
 (async () => {
   try {
+    if (typeof ForceGraph3D === 'undefined') {
+      throw new Error('3D library failed to load — check internet connection and try refreshing.');
+    }
     const pairs = await fetchEcosystem();
     setProgress(68, `Building ${pairs.length} connections...`);
     const data = buildGraph(pairs);
     setProgress(88, `${data.nodes.length} tokens mapped...`);
     initGraph(data);
   } catch (err) {
-    console.error(err);
+    console.error('[NeuralMap]', err);
+    document.getElementById('lbar').style.background = '#F87171';
     document.getElementById('lstatus').textContent = 'Error: ' + err.message;
+    document.querySelector('.load-sub').textContent = 'Refresh the page to try again.';
   }
 })();
 </script>
