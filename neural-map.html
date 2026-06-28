@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Orlix Neural Map — Base Ecosystem Live</title>
+<meta name="description" content="Live 3D visualization of the entire Base ecosystem. Every token, every connection, every liquidity flow — mapped in real-time by Orlix AI.">
+<link rel="icon" type="image/x-icon" href="/favicon.ico">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/3d-force-graph@1.73.4/dist/3d-force-graph.min.js"></script>
+<script src="https://unpkg.com/three-spritetext@1.9.1/dist/three-spritetext.min.js"></script>
+
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden;background:#09090B;font-family:'Plus Jakarta Sans',sans-serif;color:#FAFAFA;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+
+/* ── HEADER ── */
+#hdr{
+  position:fixed;top:0;left:0;right:0;z-index:200;
+  height:58px;display:flex;align-items:center;justify-content:space-between;
+  padding:0 20px;
+  background:rgba(9,9,11,0.88);
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  border-bottom:1px solid rgba(255,255,255,0.06);
+}
+.hdr-left{display:flex;align-items:center;gap:14px}
+.hdr-logo{display:flex;align-items:center}
+.hdr-logo img{height:32px}
+.hdr-divider{width:1px;height:20px;background:rgba(255,255,255,0.08)}
+.hdr-title{font-size:0.78rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#F07830}
+.live-badge{
+  display:inline-flex;align-items:center;gap:5px;
+  font-size:0.62rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;
+  padding:3px 9px;border-radius:100px;
+  background:rgba(74,222,128,0.1);color:#4ADE80;border:1px solid rgba(74,222,128,0.2);
+}
+.live-dot{width:5px;height:5px;border-radius:50%;background:#4ADE80;animation:livePulse 2s ease-in-out infinite}
+@keyframes livePulse{0%,100%{opacity:1;box-shadow:0 0 5px #4ADE80}50%{opacity:0.35;box-shadow:none}}
+
+.hdr-stats{display:flex;align-items:center;gap:24px}
+.hdr-stat{text-align:center}
+.hdr-stat-val{font-size:0.88rem;font-weight:700;font-family:'JetBrains Mono',monospace;color:#FAFAFA;line-height:1}
+.hdr-stat-lbl{font-size:0.58rem;color:#3F3F46;text-transform:uppercase;letter-spacing:0.08em;margin-top:2px}
+
+.hdr-right{display:flex;align-items:center;gap:8px}
+.hbtn{
+  font-size:0.75rem;font-weight:600;padding:6px 14px;border-radius:8px;
+  border:1px solid rgba(255,255,255,0.08);background:transparent;color:#71717A;
+  cursor:pointer;transition:all 0.18s;display:inline-flex;align-items:center;gap:5px;
+}
+.hbtn:hover{border-color:rgba(255,255,255,0.16);color:#FAFAFA;background:rgba(255,255,255,0.04)}
+.hbtn-orange{background:rgba(240,120,48,0.1);color:#F07830;border-color:rgba(240,120,48,0.25)}
+.hbtn-orange:hover{background:rgba(240,120,48,0.18);border-color:rgba(240,120,48,0.4)}
+
+/* ── GRAPH ── */
+#graph{position:fixed;top:0;left:0;width:100%;height:100%}
+
+/* ── LOADING ── */
+#loading{
+  position:fixed;inset:0;z-index:500;
+  background:#09090B;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;
+  transition:opacity 0.6s ease;
+}
+.load-icon{font-size:2.4rem;animation:breathe 2.5s ease-in-out infinite}
+@keyframes breathe{0%,100%{transform:scale(1);filter:drop-shadow(0 0 0px #F07830)}50%{transform:scale(1.08);filter:drop-shadow(0 0 20px #F07830)}}
+.load-title{font-size:1rem;font-weight:700;color:#FAFAFA}
+.load-sub{font-size:0.78rem;color:#3F3F46;max-width:280px;text-align:center;line-height:1.6}
+.load-bar-wrap{width:260px;height:3px;background:rgba(255,255,255,0.06);border-radius:2px;overflow:hidden}
+.load-bar{height:100%;background:linear-gradient(90deg,#F07830,#A78BFA);border-radius:2px;transition:width 0.4s ease;width:0%}
+.load-status{font-size:0.68rem;color:#3F3F46;font-family:'JetBrains Mono',monospace}
+
+/* ── DETAIL PANEL ── */
+#panel{
+  position:fixed;top:58px;right:0;bottom:0;z-index:150;
+  width:300px;
+  background:rgba(13,13,15,0.96);
+  backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+  border-left:1px solid rgba(255,255,255,0.06);
+  display:flex;flex-direction:column;
+  transform:translateX(100%);
+  transition:transform 0.32s cubic-bezier(0.4,0,0.2,1);
+  overflow:hidden;
+}
+#panel.open{transform:translateX(0)}
+
+.p-head{
+  padding:18px 18px 14px;
+  border-bottom:1px solid rgba(255,255,255,0.05);
+  display:flex;align-items:flex-start;justify-content:space-between;
+  gap:10px;
+}
+.p-token-meta{flex:1;min-width:0}
+.p-name{font-size:0.98rem;font-weight:800;color:#FAFAFA;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.p-sym{
+  display:inline-flex;align-items:center;
+  font-size:0.68rem;font-family:'JetBrains Mono',monospace;color:#3F3F46;
+  background:rgba(255,255,255,0.04);padding:2px 7px;border-radius:4px;
+  border:1px solid rgba(255,255,255,0.06);
+}
+.p-close{
+  width:26px;height:26px;border-radius:7px;border:1px solid rgba(255,255,255,0.08);
+  background:transparent;color:#3F3F46;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  font-size:0.85rem;transition:all 0.18s;flex-shrink:0;
+}
+.p-close:hover{color:#FAFAFA;border-color:rgba(255,255,255,0.16);background:rgba(255,255,255,0.04)}
+
+.p-price-block{
+  padding:14px 18px;
+  border-bottom:1px solid rgba(255,255,255,0.05);
+}
+.p-price{font-size:1.7rem;font-weight:800;letter-spacing:-0.03em;color:#FAFAFA;line-height:1;margin-bottom:5px}
+.p-chg-pos{font-size:0.78rem;font-weight:600;color:#4ADE80;font-family:'JetBrains Mono',monospace}
+.p-chg-neg{font-size:0.78rem;font-weight:600;color:#F87171;font-family:'JetBrains Mono',monospace}
+
+.p-stats{
+  padding:12px 18px;
+  border-bottom:1px solid rgba(255,255,255,0.05);
+  display:flex;flex-direction:column;gap:9px;
+}
+.p-row{display:flex;justify-content:space-between;align-items:center}
+.p-key{font-size:0.72rem;color:#3F3F46}
+.p-val{font-size:0.78rem;font-weight:600;color:#A1A1AA;font-family:'JetBrains Mono',monospace}
+
+.p-health{
+  padding:12px 18px;
+  border-bottom:1px solid rgba(255,255,255,0.05);
+}
+.p-health-lbl{font-size:0.62rem;text-transform:uppercase;letter-spacing:0.08em;color:#3F3F46;margin-bottom:9px}
+.p-bar-wrap{height:5px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden;margin-bottom:7px}
+.p-bar{height:100%;border-radius:3px;transition:width 0.7s cubic-bezier(0.4,0,0.2,1)}
+.p-score-row{display:flex;justify-content:space-between;align-items:center}
+.p-score-num{font-size:1.1rem;font-weight:800;font-family:'JetBrains Mono',monospace}
+.p-grade{font-size:0.68rem;font-weight:700;padding:2px 8px;border-radius:5px;letter-spacing:0.05em}
+
+.p-address{
+  padding:10px 18px;
+  border-bottom:1px solid rgba(255,255,255,0.05);
+}
+.p-addr-lbl{font-size:0.62rem;text-transform:uppercase;letter-spacing:0.08em;color:#3F3F46;margin-bottom:6px}
+.p-addr-val{
+  font-size:0.65rem;font-family:'JetBrains Mono',monospace;color:#52525B;
+  background:rgba(255,255,255,0.03);padding:6px 9px;border-radius:6px;
+  border:1px solid rgba(255,255,255,0.05);word-break:break-all;line-height:1.5;
+  cursor:pointer;transition:background 0.18s;
+}
+.p-addr-val:hover{background:rgba(255,255,255,0.06);color:#71717A}
+
+.p-actions{padding:14px 18px;display:flex;flex-direction:column;gap:7px;margin-top:auto}
+.p-btn{
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  padding:9px;border-radius:9px;font-size:0.78rem;font-weight:600;
+  text-decoration:none;transition:all 0.18s;cursor:pointer;border:none;
+}
+.p-btn-orange{background:rgba(240,120,48,0.1);color:#F07830;border:1px solid rgba(240,120,48,0.22)}
+.p-btn-orange:hover{background:rgba(240,120,48,0.18)}
+.p-btn-gray{background:rgba(255,255,255,0.03);color:#71717A;border:1px solid rgba(255,255,255,0.07)}
+.p-btn-gray:hover{background:rgba(255,255,255,0.07);color:#FAFAFA}
+
+/* ── LEGEND ── */
+#legend{
+  position:fixed;bottom:20px;left:20px;z-index:150;
+  background:rgba(13,13,15,0.9);
+  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  border:1px solid rgba(255,255,255,0.06);
+  border-radius:12px;padding:12px 14px;
+  display:flex;flex-direction:column;gap:7px;
+}
+.leg-title{font-size:0.58rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#3F3F46;margin-bottom:2px}
+.leg-item{display:flex;align-items:center;gap:7px;font-size:0.68rem;color:#71717A}
+.leg-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+
+/* ── SEARCH ── */
+#searchbar{
+  position:fixed;top:70px;left:50%;transform:translateX(-50%);z-index:150;
+  display:flex;align-items:center;gap:8px;
+  background:rgba(13,13,15,0.92);
+  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  border:1px solid rgba(255,255,255,0.08);
+  border-radius:100px;padding:7px 16px;width:260px;
+  transition:border-color 0.2s,width 0.2s;
+}
+#searchbar:focus-within{border-color:rgba(240,120,48,0.4);width:300px}
+#sinput{flex:1;background:transparent;border:none;outline:none;font-size:0.8rem;color:#FAFAFA;font-family:'Plus Jakarta Sans',sans-serif}
+#sinput::placeholder{color:#3F3F46}
+.s-icon{color:#3F3F46;font-size:0.9rem;flex-shrink:0}
+
+/* ── TOOLTIP ── */
+#tt{
+  position:fixed;z-index:90;pointer-events:none;
+  background:rgba(13,13,15,0.96);backdrop-filter:blur(16px);
+  border:1px solid rgba(255,255,255,0.08);border-radius:10px;
+  padding:9px 13px;min-width:150px;display:none;
+}
+.tt-name{font-size:0.82rem;font-weight:700;color:#FAFAFA;margin-bottom:3px}
+.tt-price{font-size:0.72rem;font-family:'JetBrains Mono',monospace;color:#71717A}
+.tt-chg{font-size:0.72rem;font-family:'JetBrains Mono',monospace}
+.pos{color:#4ADE80}.neg{color:#F87171}
+
+/* ── CONTROLS HINT ── */
+#hint{
+  position:fixed;bottom:20px;right:20px;z-index:150;
+  background:rgba(13,13,15,0.8);border:1px solid rgba(255,255,255,0.05);
+  border-radius:10px;padding:10px 14px;
+  display:flex;flex-direction:column;gap:5px;
+}
+.hint-row{display:flex;align-items:center;gap:8px;font-size:0.65rem;color:#3F3F46}
+.hint-key{
+  font-family:'JetBrains Mono',monospace;font-size:0.6rem;
+  background:rgba(255,255,255,0.06);padding:1px 6px;border-radius:4px;
+  border:1px solid rgba(255,255,255,0.08);color:#52525B;white-space:nowrap;
+}
+
+/* ── RESPONSIVE ── */
+@media(max-width:768px){
+  .hdr-stats{display:none}
+  #panel{width:100%;border-left:none;border-top:1px solid rgba(255,255,255,0.06)}
+  #legend{display:none}
+  #hint{display:none}
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div id="hdr">
+  <div class="hdr-left">
+    <a href="/" class="hdr-logo"><img src="/orlix-logo.png" alt="ORLIX"></a>
+    <div class="hdr-divider"></div>
+    <div class="hdr-title">Neural Map</div>
+    <div class="live-badge"><div class="live-dot"></div>Live</div>
+  </div>
+
+  <div class="hdr-stats">
+    <div class="hdr-stat">
+      <div class="hdr-stat-val" id="s-nodes">—</div>
+      <div class="hdr-stat-lbl">Tokens</div>
+    </div>
+    <div class="hdr-stat">
+      <div class="hdr-stat-val" id="s-links">—</div>
+      <div class="hdr-stat-lbl">Connections</div>
+    </div>
+    <div class="hdr-stat">
+      <div class="hdr-stat-val" id="s-vol">—</div>
+      <div class="hdr-stat-lbl">24h Volume</div>
+    </div>
+    <div class="hdr-stat">
+      <div class="hdr-stat-val" id="s-liq">—</div>
+      <div class="hdr-stat-lbl">Total Liq</div>
+    </div>
+  </div>
+
+  <div class="hdr-right">
+    <a href="/" class="hbtn">← Back</a>
+    <a href="/app" class="hbtn hbtn-orange">Launch App →</a>
+  </div>
+</div>
+
+<!-- GRAPH CANVAS -->
+<div id="graph"></div>
+
+<!-- LOADING -->
+<div id="loading">
+  <div class="load-icon">🧠</div>
+  <div class="load-title">Building Neural Map</div>
+  <div class="load-bar-wrap"><div class="load-bar" id="lbar"></div></div>
+  <div class="load-status" id="lstatus">Connecting to Base...</div>
+  <div class="load-sub">Mapping every token, wallet, and liquidity flow on Base in real-time</div>
+</div>
+
+<!-- SEARCH -->
+<div id="searchbar">
+  <span class="s-icon">⌕</span>
+  <input type="text" id="sinput" placeholder="Search any token..." autocomplete="off">
+</div>
+
+<!-- DETAIL PANEL -->
+<div id="panel">
+  <div class="p-head">
+    <div class="p-token-meta">
+      <div class="p-name" id="p-name">—</div>
+      <span class="p-sym" id="p-sym">—</span>
+    </div>
+    <button class="p-close" onclick="closePanel()">✕</button>
+  </div>
+  <div class="p-price-block">
+    <div class="p-price" id="p-price">—</div>
+    <div id="p-chg">—</div>
+  </div>
+  <div class="p-stats">
+    <div class="p-row"><span class="p-key">Market Cap</span><span class="p-val" id="p-mcap">—</span></div>
+    <div class="p-row"><span class="p-key">24h Volume</span><span class="p-val" id="p-vol">—</span></div>
+    <div class="p-row"><span class="p-key">Liquidity</span><span class="p-val" id="p-liq">—</span></div>
+    <div class="p-row"><span class="p-key">Connections</span><span class="p-val" id="p-conn">—</span></div>
+    <div class="p-row"><span class="p-key">DEX</span><span class="p-val" id="p-dex">—</span></div>
+  </div>
+  <div class="p-health">
+    <div class="p-health-lbl">Health Score</div>
+    <div class="p-bar-wrap"><div class="p-bar" id="p-bar"></div></div>
+    <div class="p-score-row">
+      <div class="p-score-num" id="p-score">—</div>
+      <div class="p-grade" id="p-grade">—</div>
+    </div>
+  </div>
+  <div class="p-address">
+    <div class="p-addr-lbl">Contract Address</div>
+    <div class="p-addr-val" id="p-addr" onclick="copyAddr()">—</div>
+  </div>
+  <div class="p-actions">
+    <a id="p-dex-link" href="#" target="_blank" class="p-btn p-btn-orange">View on DexScreener ↗</a>
+    <a id="p-scan-link" href="#" target="_blank" class="p-btn p-btn-gray">BaseScan ↗</a>
+  </div>
+</div>
+
+<!-- LEGEND -->
+<div id="legend">
+  <div class="leg-title">Node Color</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#F07830;box-shadow:0 0 6px #F07830"></div>$ORLIX</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#A78BFA;box-shadow:0 0 6px #A78BFA"></div>WETH / Stablecoin</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#4ADE80"></div>Up &gt;10%</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#86EFAC"></div>Up 0–10%</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#A1A1AA"></div>Neutral</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#FCA5A5"></div>Down 0–10%</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#F87171"></div>Down &gt;10%</div>
+  <div class="leg-title" style="margin-top:4px">Node Size</div>
+  <div class="leg-item" style="font-size:0.62rem">Larger = higher market cap</div>
+  <div class="leg-title" style="margin-top:4px">Particles</div>
+  <div class="leg-item" style="font-size:0.62rem">Flow = active volume</div>
+</div>
+
+<!-- CONTROLS HINT -->
+<div id="hint">
+  <div class="hint-row"><span class="hint-key">Drag</span> Rotate view</div>
+  <div class="hint-row"><span class="hint-key">Scroll</span> Zoom in/out</div>
+  <div class="hint-row"><span class="hint-key">Click</span> Token details</div>
+  <div class="hint-row"><span class="hint-key">Search</span> Find any token</div>
+</div>
+
+<!-- TOOLTIP -->
+<div id="tt">
+  <div class="tt-name" id="tt-name"></div>
+  <div class="tt-price" id="tt-price"></div>
+  <div class="tt-chg" id="tt-chg"></div>
+</div>
+
+<script>
+// ── Constants ──────────────────────────────────────────────────
+const ORLIX_ADDR = '0x8aacf0f6a5c01cf4e0c85c57db5a413fde149da3';
+const STABLE_SET = new Set([
+  '0x4200000000000000000000000000000000000006', // WETH
+  '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913', // USDC
+  '0xd9aaec86b65d86f6a7b5b1b0c42ffa531710b6ca', // USDbC
+  '0xcbb7c0000ab88b473b1f5afd9ef808440eed33bf', // cbBTC
+  '0x50c5725949a6f0c72e6c4a641f24049a917db0cb', // DAI
+  '0x4d15a3a2286d883dcf87c403d6f33e8c87451c58', // TUSD
+]);
+
+// ── Utils ──────────────────────────────────────────────────────
+const fmt = n => {
+  if (!n) return 'N/A';
+  n = Number(n);
+  if (n >= 1e9) return `$${(n/1e9).toFixed(2)}B`;
+  if (n >= 1e6) return `$${(n/1e6).toFixed(2)}M`;
+  if (n >= 1e3) return `$${(n/1e3).toFixed(1)}K`;
+  return `$${n.toFixed(4)}`;
+};
+
+const nodeColor = n => {
+  if (n.isOrlix) return '#F07830';
+  if (n.isStable) return '#A78BFA';
+  const c = n.change24h || 0;
+  if (c > 10)  return '#4ADE80';
+  if (c > 0)   return '#86EFAC';
+  if (c < -10) return '#F87171';
+  if (c < 0)   return '#FCA5A5';
+  return '#A1A1AA';
+};
+
+const calcHealth = n => {
+  const liq = n.liquidity || 0, vol = n.vol24h || 0, chg = n.change24h || 0;
+  const ls = Math.min(25, Math.floor(liq / 40000));
+  const vs = liq > 0 ? Math.min(25, Math.floor((vol/liq)*25)) : 0;
+  const ts = chg > 10 ? 25 : chg > 0 ? 15 : chg > -10 ? 8 : 0;
+  const score = Math.min(100, ls + vs + 15 + ts);
+  const grade = score>=80?'A':score>=65?'B':score>=45?'C':score>=25?'D':'F';
+  return { score, grade };
+};
+
+const setProgress = (pct, msg) => {
+  document.getElementById('lbar').style.width = pct + '%';
+  document.getElementById('lstatus').textContent = msg;
+};
+
+// ── Data layer ─────────────────────────────────────────────────
+async function fetchEcosystem() {
+  const queries = ['WETH','USDC','ORLIX','brett','degen','toshi','aerodrome','virtuals','higher','ski'];
+  setProgress(8, 'Querying DexScreener...');
+
+  const results = await Promise.allSettled(
+    queries.map(q =>
+      fetch(`https://api.dexscreener.com/latest/dex/search?q=${encodeURIComponent(q)}`, {signal: AbortSignal.timeout(9000)})
+        .then(r => r.json())
+        .then(d => (d.pairs||[]).filter(p => p.chainId === 'base'))
+        .catch(() => [])
+    )
+  );
+
+  setProgress(45, 'Processing pairs...');
+  const all = results.flatMap(r => r.status==='fulfilled' ? r.value : []);
+
+  // Deduplicate
+  const seen = new Set();
+  return all
+    .filter(p => { if (seen.has(p.pairAddress)) return false; seen.add(p.pairAddress); return true; })
+    .filter(p => (p.liquidity?.usd || 0) >= 300)
+    .sort((a,b) => (b.volume?.h24||0) - (a.volume?.h24||0))
+    .slice(0, 250);
+}
+
+function buildGraph(pairs) {
+  const nodeMap = new Map();
+  const links = [];
+
+  const upsertNode = (token, pair, isBase) => {
+    const addr = (token.address||'').toLowerCase();
+    if (!addr || addr === '0x0000000000000000000000000000000000000000') return;
+    const liq = pair.liquidity?.usd || 0;
+    const vol = pair.volume?.h24 || 0;
+    const chg = pair.priceChange?.h24 || 0;
+
+    if (!nodeMap.has(addr)) {
+      nodeMap.set(addr, {
+        id: addr,
+        name: token.name || token.symbol || addr.slice(0,6),
+        symbol: (token.symbol || '?').toUpperCase(),
+        address: addr,
+        price: isBase ? (Number(pair.priceUsd||0) > 0 ? `$${Number(pair.priceUsd).toPrecision(4)}` : 'N/A') : null,
+        change24h: isBase ? chg : 0,
+        mcap: isBase ? (pair.fdv || 0) : 0,
+        vol24h: isBase ? vol : 0,
+        liquidity: isBase ? liq : 0,
+        pairAddr: pair.pairAddress,
+        dexId: pair.dexId || '—',
+        isOrlix: addr === ORLIX_ADDR.toLowerCase(),
+        isStable: STABLE_SET.has(addr),
+        connections: 0,
+        val: 1,
+      });
+    } else {
+      const ex = nodeMap.get(addr);
+      if (isBase && liq > (ex.liquidity||0)) {
+        ex.price = Number(pair.priceUsd||0) > 0 ? `$${Number(pair.priceUsd).toPrecision(4)}` : ex.price;
+        ex.change24h = chg;
+        ex.mcap = pair.fdv || ex.mcap;
+        ex.liquidity = liq;
+        ex.pairAddr = pair.pairAddress;
+        ex.dexId = pair.dexId || ex.dexId;
+      }
+      if (isBase) ex.vol24h = (ex.vol24h||0) + vol;
+    }
+  };
+
+  for (const p of pairs) {
+    upsertNode(p.baseToken, p, true);
+    upsertNode(p.quoteToken, p, false);
+    const src = (p.baseToken.address||'').toLowerCase();
+    const tgt = (p.quoteToken.address||'').toLowerCase();
+    if (!src || !tgt || src === tgt) continue;
+    const liq = p.liquidity?.usd || 0;
+    if (liq < 200) continue;
+    links.push({ source: src, target: tgt, liq, vol: p.volume?.h24||0, dex: p.dexId||'' });
+    if (nodeMap.has(src)) nodeMap.get(src).connections++;
+    if (nodeMap.has(tgt)) nodeMap.get(tgt).connections++;
+  }
+
+  // Compute node size (val) — log scale
+  for (const n of nodeMap.values()) {
+    const metric = n.mcap || n.vol24h || n.liquidity || 500;
+    n.val = Math.max(0.4, (Math.log10(Math.max(10, metric)) - 2.5) * 1.8);
+    if (n.isOrlix)  n.val = Math.max(n.val * 3, 8);
+    if (n.isStable) n.val = Math.max(n.val * 2, 6);
+    n.val = Math.min(n.val, 18); // cap max
+  }
+
+  return { nodes: [...nodeMap.values()], links };
+}
+
+// ── Panel ──────────────────────────────────────────────────────
+function openPanel(node) {
+  document.getElementById('p-name').textContent = node.name;
+  document.getElementById('p-sym').textContent = node.symbol;
+  document.getElementById('p-price').textContent = node.price || 'N/A';
+
+  const chgEl = document.getElementById('p-chg');
+  const c = node.change24h || 0;
+  chgEl.className = c >= 0 ? 'p-chg-pos' : 'p-chg-neg';
+  chgEl.textContent = `${c >= 0 ? '+' : ''}${c.toFixed(2)}% (24h)`;
+
+  document.getElementById('p-mcap').textContent = fmt(node.mcap);
+  document.getElementById('p-vol').textContent = fmt(node.vol24h);
+  document.getElementById('p-liq').textContent = fmt(node.liquidity);
+  document.getElementById('p-conn').textContent = `${node.connections} pairs`;
+  document.getElementById('p-dex').textContent = node.dexId || '—';
+
+  const { score, grade } = calcHealth(node);
+  const bar = document.getElementById('p-bar');
+  const scoreEl = document.getElementById('p-score');
+  const gradeEl = document.getElementById('p-grade');
+  bar.style.width = score + '%';
+  const col = score >= 65 ? '#4ADE80' : score >= 45 ? '#F07830' : '#F87171';
+  bar.style.background = col;
+  scoreEl.textContent = `${score}/100`;
+  scoreEl.style.color = col;
+  gradeEl.textContent = `Grade ${grade}`;
+  gradeEl.style.background = score>=65?'rgba(74,222,128,0.1)':score>=45?'rgba(240,120,48,0.1)':'rgba(248,113,113,0.1)';
+  gradeEl.style.color = col;
+
+  document.getElementById('p-addr').textContent = node.address;
+  document.getElementById('p-dex-link').href = node.pairAddr
+    ? `https://dexscreener.com/base/${node.pairAddr}`
+    : `https://dexscreener.com/base/${node.address}`;
+  document.getElementById('p-scan-link').href = `https://basescan.org/token/${node.address}`;
+
+  document.getElementById('panel').classList.add('open');
+}
+
+function closePanel() {
+  document.getElementById('panel').classList.remove('open');
+}
+
+function copyAddr() {
+  const addr = document.getElementById('p-addr').textContent;
+  navigator.clipboard.writeText(addr).then(() => {
+    const el = document.getElementById('p-addr');
+    el.textContent = 'Copied!';
+    setTimeout(() => { el.textContent = addr; }, 1500);
+  });
+}
+
+// ── Graph ──────────────────────────────────────────────────────
+let G, gData, highlighted = null, rotating = true, rotAngle = 0;
+
+function initGraph(data) {
+  gData = data;
+
+  document.getElementById('s-nodes').textContent = data.nodes.length;
+  document.getElementById('s-links').textContent = data.links.length;
+  document.getElementById('s-vol').textContent = fmt(data.nodes.reduce((s,n) => s + (n.vol24h||0), 0));
+  document.getElementById('s-liq').textContent = fmt(data.nodes.reduce((s,n) => s + (n.liquidity||0), 0));
+
+  G = ForceGraph3D()(document.getElementById('graph'))
+    .backgroundColor('#09090B')
+    .graphData(data)
+    .nodeVal(n => n.val * n.val)
+    .nodeColor(n => highlighted && n.id !== highlighted ? 'rgba(80,80,80,0.18)' : nodeColor(n))
+    .nodeOpacity(0.95)
+    .nodeResolution(16)
+    .nodeLabel(() => '')
+    .nodeThreeObject(n => {
+      if (n.val > 1.8 || n.isOrlix || n.isStable) {
+        const sprite = new SpriteText(n.symbol);
+        sprite.color = n.isOrlix ? '#F07830' : n.isStable ? '#A78BFA' : 'rgba(255,255,255,0.55)';
+        sprite.textHeight = Math.max(1.8, Math.min(5, n.val * 0.9));
+        sprite.position.y = -(Math.sqrt(n.val * n.val) * 3 + 4);
+        return sprite;
+      }
+      return null;
+    })
+    .nodeThreeObjectExtend(true)
+    .linkColor(l => {
+      const v = l.vol || 0;
+      if (v > 1e6)  return 'rgba(240,120,48,0.5)';
+      if (v > 2e5)  return 'rgba(240,120,48,0.3)';
+      if (v > 5e4)  return 'rgba(167,139,250,0.2)';
+      return 'rgba(255,255,255,0.05)';
+    })
+    .linkWidth(l => Math.max(0.15, Math.log10(Math.max(1, (l.liq||0)/500)) * 0.25))
+    .linkDirectionalParticles(l => {
+      const v = l.vol || 0;
+      if (v > 5e5) return 5;
+      if (v > 1e5) return 3;
+      if (v > 2e4) return 2;
+      if (v > 5e3) return 1;
+      return 0;
+    })
+    .linkDirectionalParticleWidth(1.8)
+    .linkDirectionalParticleColor(l => {
+      const v = l.vol || 0;
+      return v > 1e5 ? '#F07830' : '#A78BFA';
+    })
+    .linkDirectionalParticleSpeed(0.004)
+    .onNodeClick(node => {
+      openPanel(node);
+      G.centerAt(node.x, node.y, node.z, 700);
+      G.zoom(3, 700);
+      rotating = false;
+    })
+    .onBackgroundClick(() => {
+      closePanel();
+      highlighted = null;
+      G.nodeColor(n => nodeColor(n));
+    })
+    .onNodeHover(node => {
+      const tt = document.getElementById('tt');
+      document.getElementById('graph').style.cursor = node ? 'pointer' : 'default';
+      if (node) {
+        document.getElementById('tt-name').textContent = `${node.name} (${node.symbol})`;
+        document.getElementById('tt-price').textContent = node.price || 'N/A';
+        const c = node.change24h || 0;
+        const chgEl = document.getElementById('tt-chg');
+        chgEl.className = 'tt-chg ' + (c >= 0 ? 'pos' : 'neg');
+        chgEl.textContent = `${c >= 0 ? '+' : ''}${c.toFixed(2)}% (24h)`;
+        tt.style.display = 'block';
+      } else {
+        tt.style.display = 'none';
+      }
+    });
+
+  // Mouse → tooltip position
+  document.addEventListener('mousemove', e => {
+    const tt = document.getElementById('tt');
+    const x = Math.min(e.clientX + 18, window.innerWidth - 190);
+    const y = Math.min(e.clientY + 14, window.innerHeight - 100);
+    tt.style.left = x + 'px';
+    tt.style.top  = y + 'px';
+  });
+
+  // Auto-rotate camera
+  const rotInterval = setInterval(() => {
+    if (!rotating) return;
+    rotAngle += 0.0015;
+    const cam = G.camera();
+    const dist = cam.position.length();
+    G.cameraPosition({ x: dist * Math.sin(rotAngle), z: dist * Math.cos(rotAngle) });
+  }, 16);
+
+  document.getElementById('graph').addEventListener('mousedown', () => { rotating = false; });
+  document.getElementById('graph').addEventListener('touchstart', () => { rotating = false; });
+
+  // Search
+  document.getElementById('sinput').addEventListener('input', e => {
+    const q = e.target.value.toLowerCase().trim();
+    if (!q) {
+      highlighted = null;
+      G.nodeColor(n => nodeColor(n));
+      return;
+    }
+    const match = gData.nodes.find(n =>
+      n.symbol?.toLowerCase() === q ||
+      n.symbol?.toLowerCase().startsWith(q) ||
+      n.name?.toLowerCase().includes(q) ||
+      n.address?.toLowerCase() === q
+    );
+    if (match) {
+      highlighted = match.id;
+      G.nodeColor(n => highlighted && n.id !== highlighted ? 'rgba(80,80,80,0.18)' : nodeColor(n));
+      openPanel(match);
+      setTimeout(() => {
+        G.centerAt(match.x, match.y, match.z, 800);
+        G.zoom(3.5, 800);
+      }, 100);
+    }
+  });
+
+  // Hide loading
+  setProgress(100, 'Neural map ready');
+  setTimeout(() => {
+    const l = document.getElementById('loading');
+    l.style.opacity = '0';
+    setTimeout(() => l.style.display = 'none', 600);
+  }, 500);
+}
+
+// ── Boot ───────────────────────────────────────────────────────
+(async () => {
+  try {
+    const pairs = await fetchEcosystem();
+    setProgress(68, `Building ${pairs.length} connections...`);
+    const data = buildGraph(pairs);
+    setProgress(88, `${data.nodes.length} tokens mapped...`);
+    initGraph(data);
+  } catch (err) {
+    console.error(err);
+    document.getElementById('lstatus').textContent = 'Error: ' + err.message;
+  }
+})();
+</script>
+</body>
+</html>
