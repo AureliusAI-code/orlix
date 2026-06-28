@@ -179,6 +179,87 @@ async function fetchTokenData(query) {
   } catch { return null; }
 }
 
+// ── Persona detection ─────────────────────────────────────────
+function detectPersona(text) {
+  if (/deploy|launch|contract|github|audit|solidity|erc20|security|code|build|dev\b/i.test(text)) return 'developer';
+  if (/trade|buy|sell|price|chart|entry|exit|position|long|short|dca|ta\b|technical|pump|dump/i.test(text)) return 'trader';
+  if (/collab|partner|community|followers|brand|market|promote|viral|awareness|shill|kol/i.test(text)) return 'marketer';
+  return 'default';
+}
+
+const PERSONA_PROMPTS = {
+  developer: `you are orlix ai speaking as an onchain developer. you think in contracts, security, and code. you care about audits, deployer wallets, contract ownership, and whether the code is actually solid. when analyzing, you go deep on the technical side.`,
+  trader:    `you are orlix ai speaking as a sharp crypto trader. you think in setups, risk/reward, liquidity depth, and price action. you care about buy/sell pressure, support levels, and whether the smart money is in or out. you're direct and never sugarcoat.`,
+  marketer:  `you are orlix ai speaking as a crypto marketing strategist. you think in narratives, communities, and momentum. you care about social engagement, holder growth, and whether the story is strong enough to sustain price. you're enthusiastic but data-grounded.`,
+  default:   `you are orlix ai, the smart friend in the group chat who knows base and crypto inside out. casual, real, no corporate speak.`,
+};
+
+// ── Project Health Score ───────────────────────────────────────
+function isHealthCheck(text) {
+  return /health|safe\?|legit\?|rug|audit|worth it|trust|check.*project|project.*check|is.*good|score/i.test(text);
+}
+
+async function getDevWalletInfo(contractAddress) {
+  const apiKey = process.env.BASESCAN_API_KEY || '';
+  if (!apiKey || !/^0x[0-9a-fA-F]{40}$/i.test(contractAddress)) return null;
+  try {
+    const r = await fetch(
+      `https://api.basescan.org/api?module=contract&action=getcontractcreation&contractaddresses=${contractAddress}&apikey=${apiKey}`,
+      { signal: AbortSignal.timeout(5000) }
+    );
+    const d = await r.json();
+    if (d.status !== '1' || !d.result?.[0]) return null;
+    const dev = d.result[0].contractCreator;
+
+    const txR = await fetch(
+      `https://api.basescan.org/api?module=account&action=txlist&address=${dev}&sort=desc&page=1&offset=3&apikey=${apiKey}`,
+      { signal: AbortSignal.timeout(5000) }
+    );
+    const txD = await txR.json();
+    const lastTx = txD.result?.[0];
+    const hoursAgo = lastTx
+      ? Math.floor((Date.now() / 1000 - parseInt(lastTx.timeStamp)) / 3600)
+      : null;
+    return { wallet: `${dev.slice(0,6)}...${dev.slice(-4)}`, hoursAgo };
+  } catch { return null; }
+}
+
+function buildHealthScore(tokenData, devInfo) {
+  const parseUSD = (str) => {
+    if (!str || str === 'N/A') return 0;
+    const n = parseFloat(str.replace(/[$,]/g, '')) || 0;
+    if (str.includes('B')) return n * 1e9;
+    if (str.includes('M')) return n * 1e6;
+    if (str.includes('K')) return n * 1e3;
+    return n;
+  };
+
+  const liqUSD  = parseUSD(tokenData.liquidity);
+  const volUSD  = parseUSD(tokenData.vol24h);
+  const change  = parseFloat(tokenData.change24h) || 0;
+  const total   = (tokenData.buys || 0) + (tokenData.sells || 0);
+  const buyRatio = total > 0 ? tokenData.buys / total : 0.5;
+
+  // Score 0-25 each
+  const liqScore   = Math.min(25, Math.floor(liqUSD / 40000));
+  const volScore   = liqUSD > 0 ? Math.min(25, Math.floor((volUSD / liqUSD) * 25)) : 0;
+  const buyScore   = Math.round(buyRatio * 25);
+  const trendScore = change > 10 ? 25 : change > 0 ? 15 : change > -10 ? 8 : 0;
+  const score      = liqScore + volScore + buyScore + trendScore;
+  const grade      = score >= 80 ? 'A' : score >= 65 ? 'B' : score >= 45 ? 'C' : score >= 25 ? 'D' : 'F';
+
+  const flags = [];
+  if (liqUSD < 10000)  flags.push('⚠️ low liquidity');
+  if (buyRatio > 0.65) flags.push('✅ strong buys');
+  if (buyRatio < 0.35) flags.push('🔴 heavy sells');
+  if (change > 15)     flags.push('📈 strong momentum');
+  if (change < -20)    flags.push('📉 sharp drop');
+  if (devInfo?.hoursAgo !== null && devInfo?.hoursAgo < 3) flags.push('⚠️ dev wallet active');
+  if (devInfo?.hoursAgo !== null && devInfo?.hoursAgo > 168) flags.push('✅ dev wallet quiet');
+
+  return { score, grade, flags };
+}
+
 // ── AI reply generator ────────────────────────────────────────
 async function generateReply(mentionText, authorName) {
   const llmKey = process.env.BANKR_LLM_KEY || process.env.ANTHROPIC_API_KEY || '';
@@ -188,17 +269,27 @@ async function generateReply(mentionText, authorName) {
   const apiUrl     = isAnthropicKey ? 'https://api.anthropic.com/v1/messages' : 'https://llm.bankr.bot/v1/messages';
   const authHeader = isAnthropicKey ? { 'x-api-key': llmKey } : { 'X-API-Key': llmKey };
 
-  const isID = /\b(apa|ini|itu|harga|tolong|gimana|berapa|token|kripto|bagaimana)\b/i.test(mentionText);
+  const isID     = /\b(apa|ini|itu|harga|tolong|gimana|berapa|token|kripto|bagaimana)\b/i.test(mentionText);
+  const persona  = detectPersona(mentionText);
+  const healthCheck = isHealthCheck(mentionText);
 
-  // Detect token query ($TICKER or 0x CA)
+  // Detect token query
   const caMatch     = mentionText.match(/0x[0-9a-fA-F]{40}/i);
   const tickerMatch = mentionText.match(/\$([A-Za-z]{2,10})/);
   let tokenData = null;
   if (caMatch) tokenData = await fetchTokenData(caMatch[0]);
   else if (tickerMatch) tokenData = await fetchTokenData(tickerMatch[1]);
 
+  // Project health context
+  let healthContext = '';
+  if (healthCheck && tokenData) {
+    const devInfo = caMatch ? await getDevWalletInfo(caMatch[0]) : null;
+    const health  = buildHealthScore(tokenData, devInfo);
+    healthContext = `\nProject health score: ${health.score}/100 (Grade ${health.grade})\nSignals: ${health.flags.join(', ') || 'none'}${devInfo ? `\nDev wallet (${devInfo.wallet}): last active ${devInfo.hoursAgo}h ago` : ''}\nFormat reply as a quick health report. Lead with the grade and score, then key signals.`;
+  }
+
   const tokenContext = tokenData
-    ? `\nLive token data on Base:\n- ${tokenData.name} (${tokenData.symbol})\n- Price: ${tokenData.price}\n- Mcap: ${tokenData.mcap} | 24h vol: ${tokenData.vol24h}\n- 24h change: ${tokenData.change24h}\n- Liquidity: ${tokenData.liquidity}\n- Buys/Sells 24h: ${tokenData.buys}/${tokenData.sells}\nInclude these numbers naturally in your reply.`
+    ? `\nLive data (Base): ${tokenData.name} (${tokenData.symbol}) | ${tokenData.price} | mcap ${tokenData.mcap} | 24h vol ${tokenData.vol24h} | ${tokenData.change24h} | liq ${tokenData.liquidity} | buys ${tokenData.buys} sells ${tokenData.sells}${healthContext}`
     : '';
 
   const r = await fetch(apiUrl, {
@@ -207,38 +298,23 @@ async function generateReply(mentionText, authorName) {
     body: JSON.stringify({
       model: 'claude-haiku-4-5-20251001',
       max_tokens: 200,
-      system: `you are orlix ai, an onchain intelligence agent living on x (twitter). you're the smart friend in the group chat who knows base and crypto inside out.
-${isID ? 'balas dalam bahasa indonesia yang santai dan natural, seperti teman yang paham crypto.' : 'reply in english. casual, real, no corporate speak.'}
+      system: `${PERSONA_PROMPTS[persona]}
+${isID ? 'balas dalam bahasa indonesia yang santai dan natural.' : 'reply in english. casual, real.'}
 
-vibe:
-- always lowercase. always. no exceptions.
-- you have a real personality — not a robot, not a stiff analyst
-- match the energy: someone hypes you up? hype back. someone asks a real question? give a real answer.
-- short and punchy for casual stuff. longer when someone wants real info.
-- you genuinely care about the community and the people in it
-- you can be funny, sharp, or warm depending on what the moment calls for
-- emojis are fine when they fit naturally, don't force them
-- never hashtags. never corporate speak. never em dashes.
-- speak like a real person texting, not like a press release${tokenContext}
+always lowercase. no hashtags. no em dashes. speak like a real person texting.
+match the energy of the tweet — casual gets casual, serious gets serious.
+emojis only when they fit naturally.${tokenContext}
 
-what you know:
-- orlix ai reads on-chain data in real time: price, liquidity, buy/sell pressure, risk signals
-- any token on base: just drop the ca and you'll show what the chart can't
-- need 10m $orlix on base to unlock full access — it's exclusive by design
-- telegram: orlixai.xyz with /analyze /watch /price
-- built on base
-
-how to reply:
-- casual tweet? match the vibe, keep it short, make them smile or think
-- token question with data available? share the numbers like you're texting a friend, add one real insight
-- token question without data? ask them to drop the ca, make it feel like an invitation not a command
-- someone appreciating you? appreciate them back, genuinely
-- someone asking how orlix works? make the gate sound exclusive and worth it
+rules:
+- if health check request: give score/grade + top 2-3 signals. concise.
+- if token data: share key numbers naturally + one sharp insight
+- if no token data but token asked: invite them to drop the ca
+- if casual: match vibe, be genuine
 - never mention claude or anthropic
-- output ONLY the reply. nothing else. no quotes around it.`,
+- output ONLY the reply. nothing else.`,
       messages: [{
         role: 'user',
-        content: `${authorName} said: "${mentionText}"\n\nreply as orlix ai:`,
+        content: `${authorName} said: "${mentionText}"\n\nreply as orlix ai (persona: ${persona}):`,
       }],
     }),
     signal: AbortSignal.timeout(20000),
@@ -248,9 +324,8 @@ how to reply:
   const d = await r.json();
   let reply = (d.content?.[0]?.text || '').trim().toLowerCase();
   reply = reply.replace(/[—–]/g, '').replace(/\s{2,}/g, ' ').trim();
-  // Trim to last complete sentence if too long
   if (reply.length > 270) {
-    const cut = reply.slice(0, 267);
+    const cut  = reply.slice(0, 267);
     const last = cut.search(/[.!?][^.!?]*$/);
     reply = last > 60 ? cut.slice(0, last + 1) : cut.trimEnd();
   }
