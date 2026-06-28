@@ -154,20 +154,10 @@ canvas{display:block}
 .tt-chg{font-size:0.72rem;font-family:'JetBrains Mono',monospace}
 .pos{color:#4ADE80}.neg{color:#F87171}
 
-/* ── CONTROLS HINT ── */
-#hint{
-  position:fixed;bottom:20px;right:20px;z-index:150;
-  background:rgba(13,13,15,0.8);border:1px solid rgba(255,255,255,0.05);
-  border-radius:10px;padding:10px 14px;display:flex;flex-direction:column;gap:5px;
-}
-.hint-row{display:flex;align-items:center;gap:8px;font-size:0.65rem;color:#3F3F46}
-.hint-key{font-family:'JetBrains Mono',monospace;font-size:0.6rem;background:rgba(255,255,255,0.06);padding:1px 6px;border-radius:4px;border:1px solid rgba(255,255,255,0.08);color:#52525B;white-space:nowrap}
-
 @media(max-width:768px){
   .hdr-stats{display:none}
   #panel{width:100%;border-left:none;border-top:1px solid rgba(255,255,255,0.06)}
   #legend{display:none}
-  #hint{display:none}
 }
 </style>
 </head>
@@ -263,13 +253,6 @@ canvas{display:block}
   <div class="leg-item"><div class="leg-dot" style="background:#F87171"></div>Down</div>
 </div>
 
-<!-- CONTROLS -->
-<div id="hint">
-  <div class="hint-row"><span class="hint-key">Drag</span> Orbit city</div>
-  <div class="hint-row"><span class="hint-key">Scroll</span> Zoom</div>
-  <div class="hint-row"><span class="hint-key">Click</span> Token info</div>
-  <div class="hint-row"><span class="hint-key">Search</span> Fly to token</div>
-</div>
 
 <!-- TOOLTIP -->
 <div id="tt">
@@ -321,6 +304,16 @@ const fmt = n => {
   if (n >= 1e6) return `$${(n/1e6).toFixed(2)}M`;
   if (n >= 1e3) return `$${(n/1e3).toFixed(1)}K`;
   return `$${n.toFixed(4)}`;
+};
+
+const fmtPrice = p => {
+  if (!p || p <= 0) return 'N/A';
+  p = Number(p);
+  if (p >= 1000) return `$${p.toLocaleString('en',{maximumFractionDigits:2})}`;
+  if (p >= 1)    return `$${p.toFixed(2)}`;
+  if (p >= 0.001) return `$${p.toFixed(4)}`;
+  if (p >= 0.000001) return `$${p.toFixed(8)}`;
+  return `$${p.toFixed(12).replace(/0+$/,'')}`;
 };
 
 const nodeHex = n => {
@@ -410,14 +403,14 @@ function buildGraph(pairs) {
     const liq=pair.liquidity?.usd||0, vol=pair.volume?.h24||0, chg=pair.priceChange?.h24||0;
     if (!nodeMap.has(addr)) {
       nodeMap.set(addr, {id:addr,name:tok.name||tok.symbol||addr.slice(0,6),symbol:(tok.symbol||'?').toUpperCase(),address:addr,
-        price:isBase&&Number(pair.priceUsd||0)>0?`$${Number(pair.priceUsd).toPrecision(4)}`:'N/A',
+        price:isBase&&Number(pair.priceUsd||0)>0?fmtPrice(Number(pair.priceUsd)):'N/A',
         change24h:isBase?chg:0,mcap:isBase?(pair.fdv||0):0,vol24h:isBase?vol:0,liquidity:isBase?liq:0,
         pairAddr:pair.pairAddress,dexId:pair.dexId||'—',
         isOrlix:addr===ORLIX_ADDR.toLowerCase(),isStable:STABLE_SET.has(addr),connections:0});
     } else {
       const ex=nodeMap.get(addr);
       if (isBase && liq>(ex.liquidity||0)) {
-        ex.price=Number(pair.priceUsd||0)>0?`$${Number(pair.priceUsd).toPrecision(4)}`:ex.price;
+        ex.price=Number(pair.priceUsd||0)>0?fmtPrice(Number(pair.priceUsd)):ex.price;
         ex.change24h=chg; ex.mcap=pair.fdv||ex.mcap; ex.liquidity=liq;
         ex.pairAddr=pair.pairAddress; ex.dexId=pair.dexId||ex.dexId;
       }
@@ -535,8 +528,8 @@ function makeLabel(text, colorStr) {
 
 function calcHeight(node) {
   const mcap = node.mcap || node.vol24h || node.liquidity || 5000;
-  // Log scale: $1K → 2 units, $1B → ~60 units
-  return Math.max(2, Math.min(80, (Math.log10(Math.max(1000, mcap)) - 3) * 14));
+  // Log scale: $10K → 20u, $1M → 60u, $1B → 120u
+  return Math.max(5, Math.min(130, (Math.log10(Math.max(1000, mcap)) - 3) * 20));
 }
 
 function createBuilding(node, x, z) {
@@ -551,35 +544,43 @@ function createBuilding(node, x, z) {
   const bw = node.isOrlix ? 7 : node.isStable ? 6 : 3 + Math.random() * 2.5;
   const bd = node.isOrlix ? 7 : node.isStable ? 6 : 3 + Math.random() * 2.5;
 
-  // Main building body — emissive so it glows without needing PointLights
+  // Main building body
   const geo = new THREE.BoxGeometry(bw, height, bd);
-  const emStr = node.isOrlix ? 0.28 : node.isStable ? 0.18 : 0.10;
+  const emStr = node.isOrlix ? 0.5 : node.isStable ? 0.3 : 0.18;
   const mat = new THREE.MeshPhongMaterial({
-    color: 0x080818,
+    color: 0x06060e,
     emissive: threeCol.clone().multiplyScalar(emStr),
     map: getWindowTex(),
-    shininess: 15,
+    shininess: 8,
   });
   const mesh = new THREE.Mesh(geo, mat);
   mesh.position.y = height / 2;
-  mesh.castShadow = false; // no shadows — much faster, fixes overflow
+  mesh.castShadow = false;
   mesh.userData = node;
   group.add(mesh);
   clickMeshes.push(mesh);
 
-  // Neon wireframe edges
+  // Primary neon wireframe edges
   const edgeGeo = new THREE.EdgesGeometry(geo);
-  const edgeOpacity = node.isOrlix ? 0.9 : node.isStable ? 0.65 : 0.4;
+  const edgeOpacity = node.isOrlix ? 1.0 : node.isStable ? 0.85 : 0.65;
   const edgeMat = new THREE.LineBasicMaterial({color: col, transparent: true, opacity: edgeOpacity});
   const edges = new THREE.LineSegments(edgeGeo, edgeMat);
   edges.position.y = height / 2;
   group.add(edges);
 
-  // Roof glow plane (MeshBasicMaterial = always visible, no light needed)
-  const roofGeo = new THREE.PlaneGeometry(bw * 0.9, bd * 0.9);
+  // Halo glow — slightly larger wireframe at low opacity for bloom effect
+  const s = 1.05;
+  const haloGeo = new THREE.EdgesGeometry(new THREE.BoxGeometry(bw*s, height*s, bd*s));
+  const haloMat = new THREE.LineBasicMaterial({color: col, transparent: true, opacity: 0.18});
+  const halo = new THREE.LineSegments(haloGeo, haloMat);
+  halo.position.y = height / 2;
+  group.add(halo);
+
+  // Roof glow plane
+  const roofGeo = new THREE.PlaneGeometry(bw * 0.95, bd * 0.95);
   const roofMat = new THREE.MeshBasicMaterial({
     color: col, transparent: true,
-    opacity: node.isOrlix ? 0.75 : node.isStable ? 0.4 : 0.28,
+    opacity: node.isOrlix ? 0.95 : node.isStable ? 0.6 : 0.45,
     side: THREE.DoubleSide,
   });
   const roof = new THREE.Mesh(roofGeo, roofMat);
@@ -624,10 +625,10 @@ function initCity(data) {
   scene.background = new THREE.Color(0x06060F);
   scene.fog = new THREE.FogExp2(0x06060F, 0.0025); // lighter fog — buildings stay visible
 
-  // Camera
+  // Camera — lower angle = more dramatic city feel
   const W = window.innerWidth, H = window.innerHeight;
-  camera = new THREE.PerspectiveCamera(55, W/H, 0.5, 2000);
-  camera.position.set(0, 70, 150);
+  camera = new THREE.PerspectiveCamera(58, W/H, 0.5, 2000);
+  camera.position.set(0, 55, 200);
 
   // Renderer — NO shadow maps (fixes the too-many-lights overflow)
   renderer = new THREE.WebGLRenderer({canvas: document.getElementById('city-canvas'), antialias: true});
@@ -639,7 +640,7 @@ function initCity(data) {
   controls = new THREE.OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
   controls.dampingFactor = 0.07;
-  controls.target.set(0, 12, 0);
+  controls.target.set(0, 20, 0);
   controls.minPolarAngle = 0.08;
   controls.maxPolarAngle = Math.PI / 2.05;
   controls.minDistance = 12;
@@ -653,8 +654,8 @@ function initCity(data) {
   ground.rotation.x = -Math.PI / 2;
   scene.add(ground);
 
-  // Grid lines
-  const grid = new THREE.GridHelper(900, 90, 0x111128, 0x0c0c1e);
+  // Grid lines — brighter for cyberpunk feel
+  const grid = new THREE.GridHelper(900, 90, 0x1c1c50, 0x0f0f2a);
   grid.position.y = 0.04;
   scene.add(grid);
 
@@ -670,22 +671,23 @@ function initCity(data) {
   const starMat = new THREE.PointsMaterial({color:0xffffff, size:0.5, transparent:true, opacity:0.6});
   scene.add(new THREE.Points(starGeo, starMat));
 
-  // Lighting — ONLY scene-level lights (no per-building PointLights)
-  scene.add(new THREE.AmbientLight(0x334466, 2.5)); // strong ambient so buildings are visible
-  const sun = new THREE.DirectionalLight(0x8899ff, 0.7);
+  // Lighting
+  scene.add(new THREE.AmbientLight(0x2233aa, 3.0));
+  const sun = new THREE.DirectionalLight(0xaabbff, 1.0);
   sun.position.set(-80, 150, 60);
   sun.castShadow = false;
   scene.add(sun);
-  // Two wide atmosphere fill lights
-  const atm1 = new THREE.PointLight(0xF07830, 1.2, 500, 1.5);
-  atm1.position.set(0, 100, 0); scene.add(atm1);
-  const atm2 = new THREE.PointLight(0x3344cc, 0.8, 500, 1.5);
-  atm2.position.set(-200, 60, -200); scene.add(atm2);
+  const atm1 = new THREE.PointLight(0xF07830, 1.8, 600, 1.2);
+  atm1.position.set(0, 120, 0); scene.add(atm1);
+  const atm2 = new THREE.PointLight(0x4455ff, 1.2, 600, 1.2);
+  atm2.position.set(-200, 80, -200); scene.add(atm2);
+  const atm3 = new THREE.PointLight(0x22ffaa, 0.6, 400, 1.5);
+  atm3.position.set(200, 60, 200); scene.add(atm3);
 
   // Layout buildings in grid
   const sorted = [...data.nodes].sort((a,b)=>(b.mcap||0)-(a.mcap||0));
   const cols = Math.ceil(Math.sqrt(sorted.length * 1.4));
-  const SPACING = 13;
+  const SPACING = 11; // tighter = denser city
   const offset = ((cols-1)*SPACING)/2;
   const posMap = new Map();
 
