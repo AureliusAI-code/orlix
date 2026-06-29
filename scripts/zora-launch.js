@@ -59,7 +59,7 @@ const COIN = {
     'Powered by Claude · orlix.xyz'
   ),
   // Orlix logo hosted on-site — Zora will mirror to IPFS
-  imageUrl:    'https://orlix.xyz/orlix-logo.png',
+  imageUrl:    'https://orlix.xyz/orlix-logo.jpeg',
   website:     'https://orlix.xyz',
   twitter:     'https://x.com/OrlixAI',
 };
