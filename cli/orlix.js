@@ -13,48 +13,61 @@ const readline = require('readline');
 const API = 'https://orlix.xyz/api';
 
 // ── ANSI palette ───────────────────────────────────────────────
+const tc = (r, g, b) => `\x1b[38;2;${r};${g};${b}m`;  // true color
+
 const A = {
   reset:   '\x1b[0m',
   bold:    '\x1b[1m',
   dim:     '\x1b[2m',
-  blue:    '\x1b[94m',
-  cyan:    '\x1b[96m',
+  // orange brand palette
+  o1:      tc(255, 214,  60),  // yellow-gold  (top)
+  o2:      tc(255, 178,   0),  // amber
+  o3:      tc(255, 140,   0),  // orange       (mid)
+  o4:      tc(255,  98,   0),  // deep orange
+  o5:      tc(220,  70,   0),  // burnt orange (bottom)
+  // UI colors
   green:   '\x1b[92m',
   red:     '\x1b[91m',
   yellow:  '\x1b[93m',
   magenta: '\x1b[95m',
   gray:    '\x1b[90m',
   white:   '\x1b[97m',
+  cyan:    '\x1b[96m',
 };
 
+// short helpers
+const or = s => `${A.o3}${A.bold}${s}${A.reset}`;   // orange (primary brand)
 const b  = s => `${A.bold}${s}${A.reset}`;
-const bl = s => `${A.blue}${A.bold}${s}${A.reset}`;
-const cy = s => `${A.cyan}${s}${A.reset}`;
+const cy = s => `${A.o2}${s}${A.reset}`;             // cyan → amber for values
 const gr = s => `${A.green}${s}${A.reset}`;
 const re = s => `${A.red}${s}${A.reset}`;
 const ye = s => `${A.yellow}${s}${A.reset}`;
 const mg = s => `${A.magenta}${s}${A.reset}`;
 const dm = s => `${A.dim}${A.gray}${s}${A.reset}`;
 const wh = s => `${A.white}${A.bold}${s}${A.reset}`;
+// keep bl as alias for or (used throughout for prompt colors)
+const bl = or;
 
 function stripAnsi(s) {
-  return String(s).replace(/\x1b\[[0-9;]*m/g, '');
+  return String(s).replace(/\x1b\[[0-9;]*[A-Za-z]/g, '');
 }
 
 // ── Banner ─────────────────────────────────────────────────────
 function banner() {
   process.stdout.write('\n');
+  // 6-row gradient: yellow-gold → amber → orange → deep orange → burnt
+  const rows = [A.o1, A.o1, A.o2, A.o3, A.o4, A.o5];
   const art = [
-    `${A.blue}${A.bold}██████╗ ██████╗ ██╗     ██╗██╗  ██╗${A.reset}`,
-    `${A.blue}${A.bold}██╔═══██╗██╔══██╗██║     ██║╚██╗██╔╝${A.reset}`,
-    `${A.cyan}${A.bold}██║   ██║██████╔╝██║     ██║ ╚███╔╝ ${A.reset}`,
-    `${A.cyan}${A.bold}██║   ██║██╔══██╗██║     ██║ ██╔██╗ ${A.reset}`,
-    `${A.white}${A.bold}╚██████╔╝██║  ██║███████╗██║██╔╝ ██╗${A.reset}`,
-    `${A.white}${A.bold} ╚═════╝ ╚═╝  ╚═╝╚══════╝╚═╝╚═╝  ╚═╝${A.reset}`,
+    ' ██████╗ ██████╗ ██╗     ██╗██╗  ██╗',
+    '██╔═══██╗██╔══██╗██║     ██║╚██╗██╔╝',
+    '██║   ██║██████╔╝██║     ██║ ╚███╔╝ ',
+    '██║   ██║██╔══██╗██║     ██║ ██╔██╗ ',
+    '╚██████╔╝██║  ██║███████╗██║██╔╝ ██╗',
+    ' ╚═════╝ ╚═╝  ╚═╝╚══════╝╚═╝╚═╝  ╚═╝',
   ];
-  art.forEach(l => console.log('  ' + l));
+  art.forEach((l, i) => console.log(`  ${rows[i]}${A.bold}${l}${A.reset}`));
   console.log(`  ${dm('─'.repeat(38))}`);
-  console.log(`  ${dm('Base Chain Intelligence')}  ${A.blue}●${A.reset}  ${dm('orlix.xyz')}`);
+  console.log(`  ${dm('Base Chain Intelligence')}  ${A.o3}●${A.reset}  ${dm('orlix.xyz')}`);
   console.log();
 }
 
@@ -69,7 +82,7 @@ function spin(msg) {
   process.stdout.write('\x1b[?25l');
   _spinTimer = setInterval(() => {
     const f = FRAMES[_spinIdx++ % FRAMES.length];
-    process.stdout.write(`\r  ${A.blue}${f}${A.reset}  ${A.gray}${msg}${A.reset}   `);
+    process.stdout.write(`\r  ${A.o3}${f}${A.reset}  ${A.gray}${msg}${A.reset}   `);
   }, 80);
 }
 
@@ -560,7 +573,7 @@ async function cmdChat(message, opts) {
     process.exit(1);
   }
 
-  console.log(`  ${dm('You')} ${A.blue}›${A.reset} ${wh(message)}\n`);
+  console.log(`  ${dm('You')} ${A.o3}›${A.reset} ${wh(message)}\n`);
 
   if (opts.json) {
     spin('Waiting for response...');
@@ -579,7 +592,7 @@ async function cmdChat(message, opts) {
     return;
   }
 
-  process.stdout.write(`  ${bl('Orlix')} ${A.blue}›${A.reset} `);
+  process.stdout.write(`  ${bl('Orlix')} ${A.o3}›${A.reset} `);
 
   let printed = false;
   let dotTimer = null;
@@ -588,7 +601,7 @@ async function cmdChat(message, opts) {
   const dots = ['   ', '.  ', '.. ', '...'];
   let di = 0;
   dotTimer = setInterval(() => {
-    process.stdout.write(`\r  ${bl('Orlix')} ${A.blue}›${A.reset} ${A.gray}${dots[di++ % dots.length]}${A.reset}`);
+    process.stdout.write(`\r  ${bl('Orlix')} ${A.o3}›${A.reset} ${A.gray}${dots[di++ % dots.length]}${A.reset}`);
   }, 300);
 
   try {
@@ -597,7 +610,7 @@ async function cmdChat(message, opts) {
       text => {
         if (!printed) {
           clearInterval(dotTimer);
-          process.stdout.write(`\r  ${bl('Orlix')} ${A.blue}›${A.reset} `);
+          process.stdout.write(`\r  ${bl('Orlix')} ${A.o3}›${A.reset} `);
           printed = true;
         }
         process.stdout.write(A.white + text + A.reset);
@@ -608,7 +621,7 @@ async function cmdChat(message, opts) {
 
     // If streaming gave nothing, print the full reply
     if (!printed && reply) {
-      process.stdout.write(`\r  ${bl('Orlix')} ${A.blue}›${A.reset} ${A.white}${reply}${A.reset}`);
+      process.stdout.write(`\r  ${bl('Orlix')} ${A.o3}›${A.reset} ${A.white}${reply}${A.reset}`);
     }
 
     process.stdout.write('\n\n');
