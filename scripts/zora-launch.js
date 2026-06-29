@@ -24,6 +24,7 @@ const {
   createZoraUploaderForCreator,
   CreateConstants,
   getCoin,
+  setApiKey,
 } = require('@zoralabs/coins-sdk');
 
 const { createWalletClient, createPublicClient, http, parseEther } = require('viem');
@@ -43,7 +44,8 @@ function env(key, fallback) {
   return v || fallback;
 }
 
-const PRIVATE_KEY = env('ORLIX_PRIVATE_KEY') || env('PRIVATE_KEY');
+const PRIVATE_KEY  = env('ORLIX_PRIVATE_KEY') || env('PRIVATE_KEY');
+const ZORA_API_KEY = process.env.ZORA_API_KEY || '';
 const account     = privateKeyToAccount(PRIVATE_KEY.startsWith('0x') ? PRIVATE_KEY : `0x${PRIVATE_KEY}`);
 const PAYOUT      = (process.env.PAYOUT_ADDRESS || account.address);
 const REFERRER    = process.env.PLATFORM_REFERRER || '0x0000000000000000000000000000000000000000';
@@ -117,6 +119,15 @@ async function main() {
   if (DRY_RUN) {
     log(`${O}[DRY RUN]${RST} No transaction will be sent`);
     console.log();
+  }
+
+  // Set Zora API key
+  if (ZORA_API_KEY) {
+    setApiKey(ZORA_API_KEY);
+    ok('Zora API key set');
+  } else if (!DRY_RUN) {
+    err('ZORA_API_KEY not set — get one at zora.co/settings/developer');
+    process.exit(1);
   }
 
   // 1. Show config
