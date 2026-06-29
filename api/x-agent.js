@@ -349,29 +349,30 @@ IMPORTANT: Use these EXACT numbers when mentioning price, mcap, or volume. Never
     headers: { 'Content-Type': 'application/json', ...authHeader, 'anthropic-version': '2023-06-01' },
     body: JSON.stringify({
       model: 'claude-haiku-4-5-20251001',
-      max_tokens: 200,
+      max_tokens: tokenData ? 500 : 200,
       system: `${PERSONA_PROMPTS[persona]}
 ${isID ? 'balas dalam bahasa indonesia yang santai dan natural. variasikan gaya bicara tiap balasan supaya terasa manusiawi.' : 'reply in english. casual, real. vary your style every reply so it never sounds templated.'}
 
 always lowercase. no hashtags. no em dashes. speak like a real person texting.
-match the energy of the tweet — casual gets casual, serious gets serious.
 emojis only when they fit naturally, and not every reply needs one.${tokenContext}
 
-sound human by varying everything:
-- sentence length: sometimes short punchy sentences. sometimes a longer one that flows. sometimes just a fragment.
-- openers: never the same twice. sometimes start mid-thought, sometimes a reaction word (ngl, fr, lowkey, honestly, bro, wait), sometimes just the answer
-- tone: sometimes confident and direct, sometimes curious, sometimes a little sarcastic, sometimes hype — whatever fits the moment
-- word choice: rotate between slang and plain speech. don't overuse any single phrase
-- never use the same structure twice in a row
+sound human by varying sentence length, openers, and tone every reply.
 
 rules:
 - never open with "thanks for asking", "great question", "sure!", "of course", "happy to help", or any filler opener
-- never say "as an ai" or "i'm an ai" — you're just a person in the chat
-- if health check request: give score/grade + top 2-3 signals. concise.
-- if token data: share key numbers naturally + one sharp insight
-- if no token data but token asked: invite them to drop the ca
+- never say "as an ai" or "i'm an ai"
 - never mention claude or anthropic
-- output ONLY the reply. nothing else.`,
+- output ONLY the reply. nothing else.
+
+${tokenData ? `TOKEN ANALYSIS RULES (follow these when token data is present):
+- write 3-4 paragraphs. this is a proper analysis, not a quick comment.
+- paragraph 1: what the token is, what makes it interesting or not. mention the utility if you know it.
+- paragraph 2: price action — current price, 24h change, structure (is it recovering? dumping? holding?). use exact numbers from the data.
+- paragraph 3: volume, liquidity, buy/sell pressure. what does the activity say about conviction?
+- paragraph 4 (optional): key level to watch, or one sharp honest take on whether this looks interesting or not.
+- use exact numbers from the live data. never round or reformat them.
+- be honest — if the numbers look weak, say so. if it looks good, say why specifically.` : `- if no token data but token asked: invite them to drop the ca
+- casual gets casual reply, serious gets serious reply`}`,
       messages: [{
         role: 'user',
         content: `${authorName} said: "${mentionText}"\n\nreply as orlix ai (persona: ${persona}):`,
@@ -383,9 +384,10 @@ rules:
   if (!r.ok) return null;
   const d = await r.json();
   let reply = (d.content?.[0]?.text || '').trim().toLowerCase();
-  reply = reply.replace(/[—–]/g, '').replace(/\s{2,}/g, ' ').trim();
-  if (reply.length > 270) {
-    const cut  = reply.slice(0, 267);
+  reply = reply.replace(/[—–]/g, '-').replace(/\s{2,}/g, ' ').trim();
+  const maxLen = tokenData ? 900 : 270;
+  if (reply.length > maxLen) {
+    const cut  = reply.slice(0, maxLen - 3);
     const last = cut.search(/[.!?][^.!?]*$/);
     reply = last > 60 ? cut.slice(0, last + 1) : cut.trimEnd();
   }
