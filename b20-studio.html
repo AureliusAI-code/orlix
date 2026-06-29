@@ -217,6 +217,7 @@ select.inp option{background:var(--s2);color:var(--t1)}
 }
 .net-pill:hover:not(.active){color:var(--t2);background:var(--s3)}
 .net-pill.active.sepolia{background:var(--orange);color:#fff;box-shadow:0 1px 6px rgba(240,120,48,.4)}
+.net-pill.active.vibenet{background:#7c3aed;color:#fff;box-shadow:0 1px 6px rgba(124,58,237,.4)}
 .net-pill.active.mainnet{background:var(--s4);color:var(--t1);box-shadow:0 1px 3px rgba(0,0,0,.25)}
 /* mainnet warning banner */
 .mainnet-bar{
@@ -480,6 +481,7 @@ select.inp option{background:var(--s2);color:var(--t1)}
   <div class="nav-mid">
     <div class="net-pills">
       <button class="net-pill active sepolia" id="navNetSepolia" onclick="setNetwork('sepolia')">Sepolia</button>
+      <button class="net-pill vibenet" id="navNetVibenet" onclick="setNetwork('vibenet')">Vibenet</button>
       <button class="net-pill mainnet" id="navNetMainnet" onclick="setNetwork('mainnet')">Mainnet</button>
     </div>
   </div>
@@ -496,9 +498,13 @@ select.inp option{background:var(--s2);color:var(--t1)}
           <span>Base Sepolia</span>
           <span class="wnd-badge live">LIVE</span>
         </div>
+        <div class="wnd-item" onclick="walletFallback('vibenet')">
+          <span>Base Vibenet</span>
+          <span class="wnd-badge live">LIVE</span>
+        </div>
         <div class="wnd-item wnd-item-soon" onclick="setNetwork('mainnet')">
           <span>Base Mainnet</span>
-          <span class="wnd-badge soon">SOON</span>
+          <span class="wnd-badge soon">DELAYED</span>
         </div>
       </div>
     </div>
@@ -543,12 +549,16 @@ select.inp option{background:var(--s2);color:var(--t1)}
     <!-- NETWORK STATUS BANNERS -->
     <div id="mainnetBar" class="mainnet-bar" style="display:none">
       <svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="10" cy="10" r="7.5"/><path d="M10 6.5v4"/><circle cx="10" cy="13.5" r=".8" fill="currentColor" stroke="none"/></svg>
-      B20 not yet active on Base Mainnet — deploy is disabled.
-      Switch to <button onclick="setNetwork('sepolia')">Sepolia</button> to deploy now.
+      B20 mainnet activation delayed by Base due to stability incident. Deploy disabled.
+      Switch to <button onclick="setNetwork('sepolia')">Sepolia</button> or <button onclick="setNetwork('vibenet')">Vibenet</button>.
     </div>
     <div id="sepoliaBar" class="sepolia-bar">
       <span class="sepolia-live"><span class="sepolia-dot"></span>B20 Live on Base Sepolia</span>
       <a class="faucet-link" href="https://portal.cdp.coinbase.com/products/faucet" target="_blank" rel="noopener">Faucet ↗</a>
+    </div>
+    <div id="vibenetBar" class="sepolia-bar" style="display:none">
+      <span class="sepolia-live"><span class="sepolia-dot"></span>B20 Live on Vibenet</span>
+      <a class="faucet-link" href="https://faucet.vibes.base.org" target="_blank" rel="noopener">Faucet ↗</a>
     </div>
 
     <!-- AI AUTO-FILL -->
@@ -789,7 +799,7 @@ select.inp option{background:var(--s2);color:var(--t1)}
   <div id="tabTokens" style="display:none">
     <div class="pg-label">My Tokens</div>
     <h1 class="pg-title">My B20 Tokens</h1>
-    <p class="pg-sub">Tokens you deploy on Base Sepolia. Click Mint to add supply.</p>
+    <p class="pg-sub">Tokens you deploy on Base testnets. Click Mint to add supply.</p>
     <div id="myTokensGrid" class="launched-grid" style="margin-top:18px"></div>
   </div>
 
@@ -906,8 +916,9 @@ let deploying = false;
 let deployedTxHash = null;
 
 const NET = {
-  mainnet: { chainId: '0x2105', name: 'Base',         rpc: 'https://mainnet.base.org',        explorer: 'https://basescan.org' },
-  sepolia: { chainId: '0x14a34', name: 'Base Sepolia', rpc: 'https://sepolia.base.org',        explorer: 'https://sepolia.basescan.org' },
+  mainnet: { chainId: '0x2105',    name: 'Base',         rpc: 'https://mainnet.base.org',       explorer: 'https://basescan.org',               faucet: null },
+  sepolia: { chainId: '0x14a34',   name: 'Base Sepolia', rpc: 'https://sepolia.base.org',       explorer: 'https://sepolia.basescan.org',        faucet: 'https://portal.cdp.coinbase.com/products/faucet' },
+  vibenet: { chainId: '0x509F455', name: 'Base Vibenet', rpc: 'https://rpc.vibes.base.org',     explorer: 'https://explorer.vibes.base.org',     faucet: 'https://faucet.vibes.base.org' },
 };
 
 function setNetwork(n) {
@@ -915,15 +926,18 @@ function setNetwork(n) {
   // Update pill buttons
   const sepBtn  = document.getElementById('navNetSepolia');
   const mainBtn = document.getElementById('navNetMainnet');
+  const vibBtn  = document.getElementById('navNetVibenet');
   if (sepBtn)  sepBtn.className  = 'net-pill' + (n === 'sepolia'  ? ' active sepolia'  : ' sepolia');
-  if (mainBtn) mainBtn.className = 'net-pill' + (n === 'mainnet' ? ' active mainnet' : ' mainnet');
-  // Status dot
+  if (mainBtn) mainBtn.className = 'net-pill' + (n === 'mainnet'  ? ' active mainnet'  : ' mainnet');
+  if (vibBtn)  vibBtn.className  = 'net-pill' + (n === 'vibenet'  ? ' active vibenet'  : ' vibenet');
   // Show/hide network banners
   const mainBar = document.getElementById('mainnetBar');
   const sepBar  = document.getElementById('sepoliaBar');
+  const vibBar  = document.getElementById('vibenetBar');
   if (mainBar) mainBar.style.display = n === 'mainnet' ? '' : 'none';
   if (sepBar)  sepBar.style.display  = n === 'sepolia'  ? '' : 'none';
-  // Disable deploy button on mainnet
+  if (vibBar)  vibBar.style.display  = n === 'vibenet'  ? '' : 'none';
+  // Disable deploy button on mainnet only
   const btn = document.querySelector('.deploy-btn');
   if (btn) {
     btn.disabled = n === 'mainnet';
@@ -931,13 +945,15 @@ function setNetwork(n) {
       btn.classList.add('dep-loading');
       btn.onclick = null;
       const sub = document.getElementById('deploySubtitle');
-      if (sub) sub.textContent = 'Switch to Sepolia to deploy';
+      if (sub) sub.textContent = 'Switch to Sepolia or Vibenet to deploy';
     } else {
       btn.classList.remove('dep-loading');
       btn.onclick = onDeploy;
       updateSubtitle();
     }
   }
+  // Load tokens for current network in New Launched tab if visible
+  if (document.getElementById('tabNew')?.style.display !== 'none') loadNewTokens();
 }
 
 function showToast() {} // notifications disabled
@@ -1031,11 +1047,12 @@ function setDeployBtn(state, label, sub) {
 function updateSubtitle() {
   const el = document.getElementById('deploySubtitle');
   if (!el) return;
+  const netName = NET[network]?.name || 'Base Sepolia';
   if (!b20Activated) {
-    el.textContent = walletAddress ? 'Checking B20 activation on Sepolia…' : 'Connect wallet to deploy on Sepolia';
+    el.textContent = walletAddress ? `Checking B20 activation on ${netName}…` : `Connect wallet to deploy on ${netName}`;
     return;
   }
-  el.textContent = walletAddress ? 'Base Sepolia ready — deploy your token' : 'Connect wallet to deploy';
+  el.textContent = walletAddress ? `${netName} ready — deploy your token` : 'Connect wallet to deploy';
 }
 
 async function checkB20Activation() {
@@ -1145,7 +1162,7 @@ async function onDeploy() {
       data.warnings.forEach(w => console.warn('[B20]', w));
     }
     if (!data.activated) {
-      showToast('Activation check inconclusive — broadcasting tx to Base Sepolia', 'info');
+      showToast(`Activation check inconclusive — broadcasting tx to ${NET[network]?.name || 'Base'}`, 'info');
     }
 
     const tx = data.deployment?.tx;
@@ -1197,7 +1214,7 @@ async function onDeploy() {
     deployedTxHash = hash;
 
     // ── Step 4: Success — show card, poll for receipt ─────────────────────────
-    setDeployBtn('success', '✓ Submitted!', 'Confirming on Base Sepolia…');
+    setDeployBtn('success', '✓ Submitted!', `Confirming on ${NET[network]?.name || 'Base'}…`);
     showDeployedCard(hash, network, data.predictedAddress);
     pollReceipt(hash, network, data.predictedAddress);
 
@@ -1220,7 +1237,7 @@ function showDeployedCard(hash, net, predictedCA) {
   _deployedTokenSym  = document.getElementById('fSym')?.value?.trim() || '';
   document.getElementById('dcCheck').textContent = '⏳';
   document.getElementById('dcCheck').className = 'dc-check pending';
-  document.getElementById('dcTitle').textContent = 'Token deployed on Base Sepolia';
+  document.getElementById('dcTitle').textContent = `Token deployed on ${NET[network]?.name || 'Base'}`;
   document.getElementById('dcTxHash').textContent = hash;
   document.getElementById('dcTxLink').href = explorer + '/tx/' + hash;
   // Always hide CA and actions until receipt confirms — avoids showing "CA exists" when tx hasn't landed
@@ -1266,7 +1283,7 @@ async function pollReceipt(hash, net, predictedCA) {
           txHash: hash, deployedAt: Date.now(), network: net,
         });
         document.getElementById('dcActions').style.display = 'flex';
-        setDeployBtn('success', '✓ Deployed!', 'Token live on Base Sepolia');
+        setDeployBtn('success', '✓ Deployed!', `Token live on ${NET[network]?.name || 'Base'}`);
         return;
       } else if (d.status === 'failed') {
         document.getElementById('dcCheck').textContent = '✗';
@@ -1471,15 +1488,19 @@ function filterLaunched(type, el) {
   renderLaunchedGrid();
 }
 
+let _launchedNet = null;
+function loadNewTokens() { _launchedLoaded = false; loadLaunched(); }
+
 async function loadLaunched() {
-  if (_launchedLoaded) { renderLaunchedGrid(); return; }
-  document.getElementById('launchedGrid').innerHTML = '<div class="launched-spin">Fetching from Base…</div>';
+  if (_launchedLoaded && _launchedNet === network) { renderLaunchedGrid(); return; }
+  document.getElementById('launchedGrid').innerHTML = '<div class="launched-spin">Fetching from ' + (NET[network]?.name || 'Base') + '…</div>';
   try {
-    const r = await fetch(`${location.origin}/api/b20-tokens`);
+    const r = await fetch(`${location.origin}/api/b20-tokens?network=${network}`);
     if (r.ok) {
       const d = await r.json();
       _launchedAll = d.tokens || [];
       _launchedLoaded = true;
+      _launchedNet = network;
     }
   } catch(_) {}
   renderLaunchedGrid();
@@ -1515,10 +1536,11 @@ async function walletFallback(net) {
   if (!window.ethereum) { alert('No wallet detected. Install MetaMask or open in a wallet browser.'); return; }
   try {
     // Switch to selected network first
-    const chainId = net === 'sepolia' ? '0x14a34' : '0x2105';
-    const chainName = net === 'sepolia' ? 'Base Sepolia' : 'Base';
-    const rpc = net === 'sepolia' ? 'https://sepolia.base.org' : 'https://mainnet.base.org';
-    const explorer = net === 'sepolia' ? 'https://sepolia.basescan.org' : 'https://basescan.org';
+    const netCfg = NET[net] || NET.sepolia;
+    const chainId = netCfg.chainId;
+    const chainName = netCfg.name;
+    const rpc = netCfg.rpc;
+    const explorer = netCfg.explorer;
     try {
       await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId }] });
     } catch (swErr) {

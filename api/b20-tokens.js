@@ -6,13 +6,19 @@ const CORS = {
   'Content-Type': 'application/json',
 };
 
-// B20 Beryl precompile on Base mainnet
+// B20 Beryl precompile (same address on all networks)
 const B20_PRECOMPILE = '0x4200000000000000000000000000000000000B20';
-const BASE_RPC = 'https://mainnet.base.org';
-const BASESCAN_API = 'https://api.basescan.org/api';
+const NETWORKS = {
+  mainnet: { rpc: 'https://mainnet.base.org',   basescan: 'https://api.basescan.org/api' },
+  sepolia: { rpc: 'https://sepolia.base.org',   basescan: 'https://api-sepolia.basescan.org/api' },
+  vibenet: { rpc: 'https://rpc.vibes.base.org', basescan: null },
+};
+
+let _currentNet = 'mainnet';
 
 async function rpcCall(method, params) {
-  const r = await fetch(BASE_RPC, {
+  const rpcUrl = NETWORKS[_currentNet]?.rpc ?? NETWORKS.mainnet.rpc;
+  const r = await fetch(rpcUrl, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
@@ -95,10 +101,11 @@ function decodeString(hex) {
 // We fall back to BaseScan internal txs to the precompile
 async function fetchRecentTokens(limit = 20) {
   const key = process.env.BASESCAN_API_KEY || '';
+  const basescanUrl = NETWORKS[_currentNet]?.basescan;
 
-  if (key) {
+  if (key && basescanUrl) {
     // Use BaseScan to get internal transactions to the B20 precompile
-    const url = `${BASESCAN_API}?module=account&action=txlistinternal&address=${B20_PRECOMPILE}&sort=desc&page=1&offset=${limit}&apikey=${key}`;
+    const url = `${basescanUrl}?module=account&action=txlistinternal&address=${B20_PRECOMPILE}&sort=desc&page=1&offset=${limit}&apikey=${key}`;
     const r = await fetch(url, { signal: AbortSignal.timeout(8000) });
     if (r.ok) {
       const data = await r.json();
@@ -191,6 +198,8 @@ module.exports = async (req, res) => {
 
   try {
     const limit = Math.min(parseInt(req.query?.limit || '20', 10), 50);
+    const reqNet = req.query?.network || 'mainnet';
+    _currentNet = ['mainnet', 'sepolia', 'vibenet'].includes(reqNet) ? reqNet : 'mainnet';
     const raw = await fetchRecentTokens(limit);
 
     if (raw.length === 0) {
@@ -222,7 +231,7 @@ module.exports = async (req, res) => {
     }));
 
     res.writeHead(200, CORS);
-    res.end(JSON.stringify({ tokens }));
+    res.end(JSON.stringify({ tokens, network: _currentNet }));
   } catch (e) {
     res.writeHead(502, CORS);
     res.end(JSON.stringify({ error: e.message || 'Failed to fetch tokens' }));

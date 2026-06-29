@@ -6,7 +6,8 @@ const CORS = {
   'Content-Type': 'application/json',
 };
 
-const BERYL_MAINNET_TS = new Date('2026-06-25T00:00:00Z').getTime();
+// Mainnet activation delayed by Base — no fixed date yet
+const BERYL_MAINNET_TS = null;
 
 const KNOWN_B20 = [];
 
@@ -16,7 +17,7 @@ module.exports = async (req, res) => {
 
   const action = req.query.action || 'info';
   const now = Date.now();
-  const mainnetLive = now >= BERYL_MAINNET_TS;
+  const mainnetLive = false; // Delayed by Base — Activation Registry not yet enabled on mainnet
 
   res.writeHead(200, CORS);
 
@@ -27,12 +28,11 @@ module.exports = async (req, res) => {
       upgrade: 'Beryl',
       mainnetDate: null,
       mainnetLive,
-      msUntilMainnet: mainnetLive ? 0 : BERYL_MAINNET_TS - now,
-      testnet: {
-        name: 'Base Sepolia',
-        chainId: 84532,
-        explorer: 'https://sepolia.basescan.org',
-      },
+      mainnetNote: 'B20 mainnet activation delayed by Base due to stability incident. Sepolia and Vibenet are live.',
+      testnets: [
+        { name: 'Base Sepolia', chainId: 84532, rpc: 'https://sepolia.base.org', explorer: 'https://sepolia.basescan.org', faucet: 'https://portal.cdp.coinbase.com/products/faucet' },
+        { name: 'Vibenet',      chainId: 84538453, rpc: 'https://rpc.vibes.base.org', explorer: 'https://explorer.vibes.base.org', faucet: 'https://faucet.vibes.base.org' },
+      ],
       variants: [
         {
           name: 'Asset',
@@ -65,20 +65,15 @@ module.exports = async (req, res) => {
   }
 
   if (action === 'tokens') {
-    if (!mainnetLive) {
-      return res.end(JSON.stringify({
-        tokens: [],
-        total: 0,
-        mainnetLive: false,
-        message: 'B20 tokens go live when Base activates the standard.',
-        msUntilMainnet: BERYL_MAINNET_TS - now,
-        testnetExplorer: 'https://sepolia.basescan.org',
-      }));
-    }
     return res.end(JSON.stringify({
       tokens: KNOWN_B20,
       total: KNOWN_B20.length,
-      mainnetLive: true,
+      mainnetLive: false,
+      message: 'B20 mainnet activation pending. Deploy on Sepolia or Vibenet.',
+      testnets: [
+        { name: 'Base Sepolia', explorer: 'https://sepolia.basescan.org' },
+        { name: 'Vibenet',      explorer: 'https://explorer.vibes.base.org' },
+      ],
       ts: now,
     }));
   }
