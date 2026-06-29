@@ -257,20 +257,23 @@ async function fetchGas(net) {
   const tip25    = BigInt(rewards[0] ?? '0x0');
   const tip75    = BigInt(rewards[2] ?? '0x0');
 
-  const priorityFee  = tip50 > 0n ? tip50 : 1000000n;
-  const maxFeePerGas = baseFee * 2n + priorityFee;
+  // Devnets (Vibenet) may report 0 baseFee — fallback to gasPrice or minimum 1 gwei
+  const minGasPrice = gasPriceWei > 0n ? gasPriceWei : 1000000000n; // 1 gwei floor
+  const effectiveBase = baseFee > 0n ? baseFee : minGasPrice;
+  const priorityFee  = tip50 > 0n ? tip50 : 1000000n; // 0.001 gwei min tip
+  const maxFeePerGas = effectiveBase * 2n + priorityFee;
 
   const gwei = (n) => (Number(n) / 1e9).toFixed(4);
   const hex  = (n) => '0x' + n.toString(16);
 
   return {
     blockNumber,
-    baseFeeGwei:         gwei(baseFee),
+    baseFeeGwei:         gwei(effectiveBase),
     gasPriceGwei:        gwei(gasPriceWei),
     maxFeePerGas:        hex(maxFeePerGas),
     maxPriorityFeePerGas:hex(priorityFee),
     tips: { slow: gwei(tip25), normal: gwei(tip50), fast: gwei(tip75) },
-    raw: { baseFee: hex(baseFee), maxFeePerGas: hex(maxFeePerGas), maxPriorityFeePerGas: hex(priorityFee) },
+    raw: { baseFee: hex(effectiveBase), maxFeePerGas: hex(maxFeePerGas), maxPriorityFeePerGas: hex(priorityFee) },
   };
 }
 

@@ -1188,7 +1188,7 @@ async function onDeploy() {
 
     // Verify chain
     const chainId = await window.ethereum.request({ method: 'eth_chainId' });
-    if (chainId !== net.chainId) {
+    if (chainId.toLowerCase() !== net.chainId.toLowerCase()) {
       setDeployBtn('error', '', `Switch to ${net.name} in your wallet, then try again`);
       deploying = false;
       return;
@@ -1207,20 +1207,24 @@ async function onDeploy() {
       to:    tx.to,
       data:  tx.data,
       value: hexVal,
-      gas:   data.deployment?.gasEstimate || '0x927C0', // 600k default, dynamic from API
+      gas:   tx.gas || data.deployment?.gasEstimate || '0x927C0',
+      ...(tx.maxFeePerGas         ? { maxFeePerGas:         tx.maxFeePerGas }         : {}),
+      ...(tx.maxPriorityFeePerGas ? { maxPriorityFeePerGas: tx.maxPriorityFeePerGas } : {}),
     };
 
     const hash = await window.ethereum.request({ method: 'eth_sendTransaction', params: [txParams] });
     deployedTxHash = hash;
 
-    // ── Step 4: Success — show card, poll for receipt ─────────────────────────
+    // ── Step 4: Success — show card, poll for receipt ──────────────────────────────────────────────
     setDeployBtn('success', '✓ Submitted!', `Confirming on ${NET[network]?.name || 'Base'}…`);
     showDeployedCard(hash, network, data.predictedAddress);
     pollReceipt(hash, network, data.predictedAddress);
 
   } catch (e) {
-    const msg = e.code === 4001 ? 'Rejected — try again'
-      : e.code === -32603 ? 'Transaction error — check your ETH balance'
+    const isReject = e.code === 4001 || e.code === 4100;
+    const isRpcErr = e.code === -32603 || e.code === -32000;
+    const msg = isReject ? 'Rejected — try again'
+      : isRpcErr ? ('RPC error: ' + (e.data?.message || e.message || 'check ETH balance').slice(0, 60))
       : (e.message || 'Unknown error').slice(0, 80);
     setDeployBtn('error', '', msg);
   } finally {
