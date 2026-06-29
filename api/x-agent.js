@@ -366,6 +366,7 @@ rules:
 
 ${tokenData ? `TOKEN ANALYSIS RULES (follow these when token data is present):
 - write 3-4 paragraphs. this is a proper analysis, not a quick comment.
+- separate each paragraph with a blank line (\\n\\n). this is required — no wall of text.
 - paragraph 1: what the token is, what makes it interesting or not. mention the utility if you know it.
 - paragraph 2: price action — current price, 24h change, structure (is it recovering? dumping? holding?). use exact numbers from the data.
 - paragraph 3: volume, liquidity, buy/sell pressure. what does the activity say about conviction?
@@ -384,7 +385,9 @@ ${tokenData ? `TOKEN ANALYSIS RULES (follow these when token data is present):
   if (!r.ok) return null;
   const d = await r.json();
   let reply = (d.content?.[0]?.text || '').trim().toLowerCase();
-  reply = reply.replace(/[—–]/g, '-').replace(/\s{2,}/g, ' ').trim();
+  reply = reply.replace(/[—–]/g, '-');
+  // Preserve paragraph breaks, collapse only inline multiple spaces
+  reply = reply.replace(/\n{3,}/g, '\n\n').replace(/[ \t]{2,}/g, ' ').trim();
   const maxLen = tokenData ? 900 : 270;
   if (reply.length > maxLen) {
     const cut  = reply.slice(0, maxLen - 3);
