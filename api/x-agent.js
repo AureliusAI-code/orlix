@@ -197,16 +197,28 @@ async function fetchTokenData(query) {
 
     if (!pairs.length) return null;
     const p = pairs[0];
+    // Format micro-prices properly — never use scientific notation
+    const fmtPrice = (usd) => {
+      if (!usd) return 'N/A';
+      const n = Number(usd);
+      if (n >= 1) return `$${n.toFixed(4)}`;
+      if (n >= 0.01) return `$${n.toFixed(6)}`;
+      // Count leading zeros after decimal point
+      const decimals = Math.max(8, -Math.floor(Math.log10(n)) + 3);
+      return `$${n.toFixed(Math.min(decimals, 12))}`;
+    };
     return {
       name:     p.baseToken?.name || query,
       symbol:   p.baseToken?.symbol || query,
-      price:    p.priceUsd ? `$${Number(p.priceUsd).toPrecision(4)}` : 'N/A',
+      price:    fmtPrice(p.priceUsd),
+      low24h:   fmtPrice(p.priceChange?.h24 != null ? p.priceUsd * (1 - Math.max(0, -Number(p.priceChange.h24)) / 100) : null),
       mcap:     fmtNum(p.fdv),
       vol24h:   fmtNum(p.volume?.h24),
       change24h: p.priceChange?.h24 != null ? `${Number(p.priceChange.h24) >= 0 ? '+' : ''}${Number(p.priceChange.h24).toFixed(2)}%` : 'N/A',
       liquidity: fmtNum(p.liquidity?.usd),
       buys:     p.txns?.h24?.buys || 0,
       sells:    p.txns?.h24?.sells || 0,
+      dexUrl:   p.url || null,
     };
   } catch { return null; }
 }
@@ -321,7 +333,15 @@ async function generateReply(mentionText, authorName) {
   }
 
   const tokenContext = tokenData
-    ? `\nLive data (Base): ${tokenData.name} (${tokenData.symbol}) | ${tokenData.price} | mcap ${tokenData.mcap} | 24h vol ${tokenData.vol24h} | ${tokenData.change24h} | liq ${tokenData.liquidity} | buys ${tokenData.buys} sells ${tokenData.sells}${healthContext}`
+    ? `\nLive token data from DexScreener (Base chain):
+- Name: ${tokenData.name} (${tokenData.symbol})
+- Price: ${tokenData.price}
+- 24h change: ${tokenData.change24h}
+- Market cap: ${tokenData.mcap}
+- 24h volume: ${tokenData.vol24h}
+- Liquidity: ${tokenData.liquidity}
+- 24h txns: ${tokenData.buys} buys / ${tokenData.sells} sells
+IMPORTANT: Use these EXACT numbers when mentioning price, mcap, or volume. Never reformat or estimate them. Volume is in USD (e.g. "$22.0K" means twenty-two thousand dollars, not twenty-two).${healthContext}`
     : '';
 
   const r = await fetch(apiUrl, {
