@@ -18,13 +18,9 @@
 'use strict';
 
 const {
-  createCoinCall,
   createCoin,
-  CoinMetadataBuilder,
-  createZoraUploaderForCreator,
   CreateConstants,
   getCoin,
-  setApiKey,
 } = require('@zoralabs/coins-sdk');
 
 const { createWalletClient, createPublicClient, http, parseEther } = require('viem');
@@ -44,8 +40,7 @@ function env(key, fallback) {
   return v || fallback;
 }
 
-const PRIVATE_KEY  = env('ORLIX_PRIVATE_KEY') || env('PRIVATE_KEY');
-const ZORA_API_KEY = process.env.ZORA_API_KEY || '';
+const PRIVATE_KEY = env('ORLIX_PRIVATE_KEY') || env('PRIVATE_KEY');
 const account     = privateKeyToAccount(PRIVATE_KEY.startsWith('0x') ? PRIVATE_KEY : `0x${PRIVATE_KEY}`);
 const PAYOUT      = (process.env.PAYOUT_ADDRESS || account.address);
 const REFERRER    = process.env.PLATFORM_REFERRER || '0x0000000000000000000000000000000000000000';
@@ -121,15 +116,6 @@ async function main() {
     console.log();
   }
 
-  // Set Zora API key
-  if (ZORA_API_KEY) {
-    setApiKey(ZORA_API_KEY);
-    ok('Zora API key set');
-  } else if (!DRY_RUN) {
-    err('ZORA_API_KEY not set — get one at zora.co/settings/developer');
-    process.exit(1);
-  }
-
   // 1. Show config
   log(`${W}Coin${RST}`);
   info(`Name:     ${COIN.name}`);
@@ -139,34 +125,14 @@ async function main() {
   info(`Network:  Base Mainnet (${base.id})`);
   console.log();
 
-  // 2. Build + upload metadata
-  log(`${W}Building metadata...${RST}`);
-
-  const builder = new CoinMetadataBuilder({
-    name:        COIN.name,
-    description: COIN.description,
-    image:       COIN.imageUrl,
-  });
-
-  // Set agent-type properties (Zora reads these for the AGENT badge)
-  builder.withProperties({
-    type:    'agent',
-    website: COIN.website,
-    twitter: COIN.twitter,
-  });
-
-  let metadataURI;
-
+  // 2. Metadata hosted on orlix.xyz (no API key needed)
+  const metadataURI = 'https://orlix.xyz/coin-metadata.json';
+  log(`${W}Metadata${RST}`);
+  info(`URI: ${metadataURI}`);
   if (DRY_RUN) {
-    // In dry-run, skip actual upload
-    metadataURI = 'ipfs://dry-run-placeholder';
-    info('Skipping IPFS upload (dry run)');
+    info('Skipping validation (dry run)');
   } else {
-    log(`${W}Uploading metadata to IPFS via Zora...${RST}`);
-    const uploader = createZoraUploaderForCreator(account.address);
-    const uploadResult = await builder.upload(uploader);
-    metadataURI = uploadResult.uri;
-    ok(`Metadata URI: ${DIM}${metadataURI}${RST}`);
+    ok('Using hosted metadata at orlix.xyz');
   }
 
   console.log();
@@ -183,7 +149,7 @@ async function main() {
     chainId:              base.id,
     payoutRecipientOverride: PAYOUT,
     platformReferrer:     REFERRER,
-    skipMetadataValidation: DRY_RUN,
+    skipMetadataValidation: true,
   };
 
   if (DRY_RUN) {

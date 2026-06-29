@@ -1,0 +1,12 @@
+{
+  "name": "Orlix",
+  "symbol": "ORLIX",
+  "description": "Base chain intelligence. Real-time on-chain analytics, B20 token deployment, and autonomous AI agent — all built on Base. Powered by Claude · orlix.xyz",
+  "image": "https://orlix.xyz/orlix-logo.jpeg",
+  "properties": {
+    "type": "agent",
+    "website": "https://orlix.xyz",
+    "twitter": "https://x.com/OrlixAI",
+    "category": "AI Agent"
+  }
+}
