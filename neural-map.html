@@ -864,14 +864,6 @@ function addRooftopDetails(group, topY, bw, bd, height) {
       group.add(ac);
     }
   }
-  // Helipad for very tall buildings
-  if (height > 70) {
-    const hpGeo = new THREE.CylinderGeometry(2.5, 2.5, 0.15, 16);
-    const hpMat = new THREE.MeshBasicMaterial({color:0xFFCC00});
-    const hp = new THREE.Mesh(hpGeo, hpMat);
-    hp.position.y = topY + 0.1;
-    group.add(hp);
-  }
 }
 
 // ── Tree ──────────────────────────────────────────────────────
