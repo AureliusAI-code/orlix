@@ -25,7 +25,9 @@ function getRedis() {
 }
 
 async function redisCmd(url, token, ...args) {
-  const r = await fetch(`${url}/${args.join('/')}`, {
+  // Encode each path segment — keys contain ':' (e.g. rl:chat:m:<ip>); an
+  // unencoded path makes Upstash reject the request and silently breaks limiting.
+  const r = await fetch(`${url}/${args.map(encodeURIComponent).join('/')}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!r.ok) throw new Error('redis ' + r.status);
