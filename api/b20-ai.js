@@ -1,21 +1,11 @@
 // /api/b20-ai — Parse natural language token description → B20 form fields (Claude Haiku)
-
-// Simple in-memory rate limit: max 5 requests per IP per minute
-const _rl = new Map();
-function rateLimit(ip) {
-  const now = Date.now();
-  const key = ip || 'unknown';
-  const entry = _rl.get(key) || { count: 0, reset: now + 60000 };
-  if (now > entry.reset) { entry.count = 0; entry.reset = now + 60000; }
-  entry.count++;
-  _rl.set(key, entry);
-  return entry.count > 5;
-}
+const { checkLimits, allowedOrigin } = require('./_guard');
 
 const CORS = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': 'https://orlixai.xyz',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type',
+  'Vary': 'Origin',
   'Content-Type': 'application/json',
 };
 
@@ -49,16 +39,16 @@ Rules:
 - When in doubt about policies: false`;
 
 module.exports = async (req, res) => {
+  CORS['Access-Control-Allow-Origin'] = allowedOrigin(req);
   if (req.method === 'OPTIONS') { res.writeHead(204, CORS); return res.end(); }
   if (req.method !== 'POST') {
     res.writeHead(405, CORS);
     return res.end(JSON.stringify({ error: 'POST only' }));
   }
 
-  const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress;
-  if (rateLimit(ip)) {
-    res.writeHead(429, CORS); return res.end(JSON.stringify({ error: 'Too many requests — try again in a minute' }));
-  }
+  // Shared Redis-backed guard (replaces the old bypassable in-memory limiter)
+  const _lim = await checkLimits(req, { bucket: 'b20ai', perMin: 8, perDay: 80, globalDay: 1500 });
+  if (_lim.blocked) { res.writeHead(_lim.status, CORS); return res.end(JSON.stringify({ error: _lim.reason })); }
 
   let body = '';
   req.on('data', c => {

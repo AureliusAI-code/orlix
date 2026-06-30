@@ -1,8 +1,10 @@
 // /api/b20-tokens — Recently deployed B20 tokens on Base mainnet
+const { checkLimits, allowedOrigin } = require('./_guard');
 const CORS = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': 'https://orlixai.xyz',
   'Access-Control-Allow-Methods': 'GET, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type',
+  'Vary': 'Origin',
   'Content-Type': 'application/json',
 };
 
@@ -190,11 +192,15 @@ async function enrichTimestamps(tokens) {
 }
 
 module.exports = async (req, res) => {
+  CORS['Access-Control-Allow-Origin'] = allowedOrigin(req);
   if (req.method === 'OPTIONS') { res.writeHead(204, CORS); return res.end(); }
   if (req.method !== 'GET') {
     res.writeHead(405, CORS);
     return res.end(JSON.stringify({ error: 'GET only' }));
   }
+
+  const _lim = await checkLimits(req, { bucket: 'b20tokens', perMin: 40, perDay: 800, globalDay: 20000 });
+  if (_lim.blocked) { res.writeHead(_lim.status, CORS); return res.end(JSON.stringify({ error: _lim.reason })); }
 
   try {
     const limit = Math.min(parseInt(req.query?.limit || '20', 10), 50);

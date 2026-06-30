@@ -1,13 +1,19 @@
 // /api/bankr-tokens.js — Bankr new tokens via GMGN API
+const { checkLimits, allowedOrigin } = require('./_guard');
 const CORS = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': 'https://orlixai.xyz',
   'Access-Control-Allow-Methods': 'GET, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type',
+  'Vary': 'Origin',
   'Content-Type': 'application/json',
 };
 
 module.exports = async (req, res) => {
+  CORS['Access-Control-Allow-Origin'] = allowedOrigin(req);
   if (req.method === 'OPTIONS') { res.writeHead(204, CORS); return res.end(); }
+
+  const _lim = await checkLimits(req, { bucket: 'bankrtokens', perMin: 40, perDay: 800, globalDay: 20000 });
+  if (_lim.blocked) { res.writeHead(_lim.status, CORS); return res.end(JSON.stringify({ error: _lim.reason })); }
 
   const apiKey = process.env.GMGN_API_KEY;
   if (!apiKey) {

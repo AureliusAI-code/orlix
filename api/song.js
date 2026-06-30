@@ -1,8 +1,10 @@
 // /api/song.js — generate song lyrics for a Base token using real DexScreener data
+const { checkLimits, allowedOrigin } = require('./_guard');
 const CORS = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': 'https://orlixai.xyz',
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  'Vary': 'Origin',
   'Content-Type': 'application/json',
 };
 
@@ -134,8 +136,16 @@ Non-negotiable:
 }
 
 module.exports = async (req, res) => {
+  CORS['Access-Control-Allow-Origin'] = allowedOrigin(req);
   if (req.method === 'OPTIONS') { res.writeHead(204, CORS); return res.end(); }
   if (req.method !== 'POST') { res.writeHead(405, CORS); return res.end(JSON.stringify({ error: 'Method not allowed' })); }
+
+  // Reject oversized bodies, then guard against abuse (expensive: Sonnet @1500 tok, 30s)
+  if (parseInt(req.headers['content-length'] || '0', 10) > 64 * 1024) {
+    res.writeHead(413, CORS); return res.end(JSON.stringify({ error: 'Request too large' }));
+  }
+  const _lim = await checkLimits(req, { bucket: 'song', perMin: 4, perDay: 25, globalDay: 400 });
+  if (_lim.blocked) { res.writeHead(_lim.status, CORS); return res.end(JSON.stringify({ error: _lim.reason })); }
 
   // Vercel pre-parses JSON bodies into req.body; fall back to raw stream for other envs
   let query, genre;
@@ -191,7 +201,7 @@ module.exports = async (req, res) => {
     let data;
     if (bankrKey) {
       try { data = await callAI(bankrKey); }
-      catch { if (anthropicKey) data = await callAI(anthropicKey); else throw; }
+      catch (e) { if (anthropicKey) data = await callAI(anthropicKey); else throw e; }
     } else {
       data = await callAI(anthropicKey);
     }

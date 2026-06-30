@@ -1,9 +1,14 @@
 // /api/search — proxies Brave Search API
+const { checkLimits, allowedOrigin } = require('./_guard');
 module.exports = async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Origin', allowedOrigin(req));
+  res.setHeader('Vary', 'Origin');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(204).end();
+
+  const _lim = await checkLimits(req, { bucket: 'search', perMin: 30, perDay: 600, globalDay: 20000 });
+  if (_lim.blocked) return res.status(_lim.status).json({ error: _lim.reason });
 
   const q = (req.query.q || '').trim();
   if (!q) return res.status(400).json({ error: 'Missing query parameter q' });

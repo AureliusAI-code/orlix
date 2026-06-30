@@ -1,4 +1,5 @@
 // Token Analyzer — Base RPC + DexScreener + AI verdict (upgraded)
+const { checkLimits, allowedOrigin } = require('./_guard');
 const BASE_RPC = 'https://mainnet.base.org';
 
 async function rpc(method, params = []) {
@@ -147,9 +148,14 @@ When data suggests risk, be explicit. When data looks healthy, say so with reaso
 }
 
 module.exports = async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Origin', allowedOrigin(req));
+  res.setHeader('Vary', 'Origin');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   if (req.method === 'OPTIONS') return res.status(204).end();
+
+  // Abuse guard — one call = one paid Sonnet completion
+  const _lim = await checkLimits(req, { bucket: 'analyze', perMin: 25, perDay: 400, globalDay: 10000 });
+  if (_lim.blocked) return res.status(_lim.status).json({ error: _lim.reason });
 
   const address = ((req.query.address || '') + '').trim().toLowerCase();
   if (!address || !/^0x[0-9a-f]{40}$/i.test(address)) {

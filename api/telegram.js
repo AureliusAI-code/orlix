@@ -452,11 +452,12 @@ module.exports = async function handler(req, res) {
   const token = TG_TOKEN();
   if (!token) return res.status(200).json({ ok: true });
 
+  // Fail CLOSED: the webhook secret MUST be configured and match. Without this,
+  // anyone could forge Telegram updates and drain LLM credits.
+  // Set TELEGRAM_WEBHOOK_SECRET in Vercel env AND on the Telegram webhook.
   const webhookSecret = process.env.TELEGRAM_WEBHOOK_SECRET || '';
-  if (webhookSecret) {
-    const incoming = req.headers['x-telegram-bot-api-secret-token'] || '';
-    if (incoming !== webhookSecret) return res.status(200).json({ ok: true });
-  }
+  const incoming = req.headers['x-telegram-bot-api-secret-token'] || '';
+  if (!webhookSecret || incoming !== webhookSecret) return res.status(200).json({ ok: true });
 
   const update  = req.body || {};
   const message = update.message || update.edited_message;

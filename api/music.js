@@ -1,8 +1,10 @@
 // /api/music.js — generate music via Mubert TTM API (free tier)
+const { checkLimits, allowedOrigin } = require('./_guard');
 const CORS = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': 'https://orlixai.xyz',
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type',
+  'Vary': 'Origin',
   'Content-Type': 'application/json',
 };
 
@@ -32,8 +34,13 @@ async function mubertPost(path, params, apiKey) {
 }
 
 module.exports = async (req, res) => {
+  CORS['Access-Control-Allow-Origin'] = allowedOrigin(req);
   if (req.method === 'OPTIONS') { res.writeHead(204, CORS); return res.end(); }
   if (req.method !== 'POST') { res.writeHead(405, CORS); return res.end(JSON.stringify({ error: 'POST only' })); }
+
+  // Abuse guard — paid Mubert call + up to 50s polling per request
+  const _lim = await checkLimits(req, { bucket: 'music', perMin: 4, perDay: 20, globalDay: 300 });
+  if (_lim.blocked) { res.writeHead(_lim.status, CORS); return res.end(JSON.stringify({ error: _lim.reason })); }
 
   const apiKey = process.env.MUBERT_API_KEY;
   if (!apiKey) {

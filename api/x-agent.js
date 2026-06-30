@@ -451,10 +451,12 @@ module.exports = async function handler(req, res) {
 
   if (req.method !== 'POST') return res.status(405).end();
 
-  // Verify cron secret
+  // Verify cron secret — FAIL CLOSED. The secret must be set and match, else
+  // anyone could trigger agent runs that spend LLM + X API quota.
+  // Set X_CRON_SECRET in Vercel env and send it as the x-cron-secret header.
   const secret   = process.env.X_CRON_SECRET || '';
   const incoming = req.headers['x-cron-secret'] || req.query.secret || '';
-  if (secret && incoming !== secret) {
+  if (!secret || incoming !== secret) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 

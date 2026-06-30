@@ -4,6 +4,8 @@
 //   claude-* → llm.bankr.bot/v1/messages  (BANKR_LLM_KEY) — Anthropic format + Base MCP tools
 //   all else → llm.bankr.bot/v1/chat/completions (BANKR_LLM_KEY) — OpenAI-compatible
 
+const { checkLimits, allowedOrigin } = require('./_guard');
+
 // ── Tool definitions (Base MCP tools for Claude) ──────────────────────────────
 const ALL_TOOLS = [
   {
@@ -809,7 +811,8 @@ async function pipeStream(upstream, res) {
 
 // ── Main handler ──────────────────────────────────────────────────────────────
 module.exports = async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin',  '*');
+  res.setHeader('Access-Control-Allow-Origin',  allowedOrigin(req));
+  res.setHeader('Vary', 'Origin');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-api-key, Authorization');
   res.setHeader('x-orlix-proxy', '1');
@@ -819,6 +822,10 @@ module.exports = async function handler(req, res) {
 
   const contentLength = parseInt(req.headers['content-length'] || '0', 10);
   if (contentLength > 2 * 1024 * 1024) return res.status(413).json({ error: 'Request too large' });
+
+  // Abuse guard — stops anonymous bots from draining LLM credits
+  const _lim = await checkLimits(req, { bucket: 'chat', perMin: 20, perDay: 300, globalDay: 8000 });
+  if (_lim.blocked) return res.status(_lim.status).json({ error: { message: _lim.reason } });
 
   const bodyObj = typeof req.body === 'object' && req.body !== null
     ? req.body : JSON.parse(req.body || '{}');
