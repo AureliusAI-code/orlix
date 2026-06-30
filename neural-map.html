@@ -187,6 +187,16 @@ canvas{display:block}
   #panel{width:100%;border-left:none;border-top:1px solid rgba(255,255,255,0.06)}
   #legend{display:none}
   #fly-hint{display:none!important}
+  /* Compact header so nothing gets cut off on phones */
+  #hdr{height:52px;padding:0 10px}
+  .hdr-logo img{height:24px}
+  .hdr-divider{display:none}
+  .hdr-title{font-size:0.6rem;letter-spacing:0.08em}
+  .hdr-left{gap:8px}
+  .hdr-right{gap:6px}
+  .hbtn{padding:7px 9px;font-size:0.72rem}
+  .hbtn .hbtn-txt{display:none}      /* icon-only buttons on mobile */
+  .hbtn-launch{display:none}          /* drop Launch App in the city view */
 }
 </style>
 </head>
@@ -211,10 +221,10 @@ canvas{display:block}
       <span class="s-icon">⌕</span>
       <input type="text" id="sinput" placeholder="Search token..." autocomplete="off">
     </div>
-    <button id="flyBtn" class="hbtn hbtn-orange" onclick="toggleFlyMode()">✈ Fly</button>
-    <button id="daynightBtn" class="hbtn" onclick="toggleDayNight()" title="Toggle day/night">🌙 Night</button>
-    <a href="/" class="hbtn">← Back</a>
-    <a href="/app" class="hbtn hbtn-orange">Launch App →</a>
+    <button id="flyBtn" class="hbtn hbtn-orange" onclick="toggleFlyMode()"><span class="hbtn-ico">✈</span><span class="hbtn-txt"> Fly</span></button>
+    <button id="daynightBtn" class="hbtn" onclick="toggleDayNight()" title="Toggle day/night"><span class="hbtn-ico">🌙</span><span class="hbtn-txt"> Night</span></button>
+    <a href="/" class="hbtn hbtn-back"><span class="hbtn-ico">←</span><span class="hbtn-txt"> Back</span></a>
+    <a href="/app" class="hbtn hbtn-orange hbtn-launch">Launch App →</a>
   </div>
 </div>
 
@@ -617,7 +627,7 @@ function toggleFlyMode() {
   if (flyMode.active) {
     controls.enabled = false;
     btn.classList.add('hbtn-active');
-    btn.textContent = '✕ Exit Fly';
+    btn.innerHTML = '<span class="hbtn-ico">✕</span><span class="hbtn-txt"> Exit</span>';
     hint.style.display = 'block';
     // Sync yaw/pitch from current camera orientation
     const euler = new THREE.Euler().setFromQuaternion(camera.quaternion, 'YXZ');
@@ -629,7 +639,7 @@ function toggleFlyMode() {
     controls.enabled = true;
     controls.target.set(0, 15, 0);
     btn.classList.remove('hbtn-active');
-    btn.textContent = '✈ Fly';
+    btn.innerHTML = '<span class="hbtn-ico">✈</span><span class="hbtn-txt"> Fly</span>';
     hint.style.display = 'none';
   }
 }
@@ -1540,7 +1550,7 @@ function initCity(data) {
       atm1.color.set(0xF07830); atm1.intensity = 1.8;
       useBloom = true;
       renderer.toneMappingExposure = 0.9;
-      btn.textContent = '🌙 Night';
+      btn.innerHTML = '<span class="hbtn-ico">🌙</span><span class="hbtn-txt"> Night</span>';
     } else {
       // Warm golden-hour clear day — soft, premium, not washed out
       scene.background = new THREE.Color(0xAFCAE6);
@@ -1554,7 +1564,7 @@ function initCity(data) {
       atm1.color.set(0xFFC766); atm1.intensity = 1.3;
       useBloom = false;
       renderer.toneMappingExposure = 1.02;
-      btn.textContent = '☀️ Day';
+      btn.innerHTML = '<span class="hbtn-ico">☀️</span><span class="hbtn-txt"> Day</span>';
     }
   };
 
@@ -1739,11 +1749,12 @@ function initCity(data) {
   const raycaster = new THREE.Raycaster();
   const mouse = new THREE.Vector2();
 
-  renderer.domElement.addEventListener('click', e => {
+  // Shared pick — open the panel for the building at screen coords
+  function pickBuilding(clientX, clientY) {
     if (flyMode.active) return;
     const rect = renderer.domElement.getBoundingClientRect();
-    mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-    mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+    mouse.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+    mouse.y = -((clientY - rect.top) / rect.height) * 2 + 1;
     raycaster.setFromCamera(mouse, camera);
     const hits = raycaster.intersectObjects(clickMeshes, false);
     if (hits.length > 0) {
@@ -1751,13 +1762,30 @@ function initCity(data) {
       if (node && node.name) {
         openPanel(node);
         const entry = buildingGroups.get(node.id);
-        if (entry) {
-          const {x,z} = entry.pos;
-          controls.target.set(x, 0, z);
-        }
+        if (entry) { const {x,z} = entry.pos; controls.target.set(x, 0, z); }
       }
     }
-  });
+  }
+
+  renderer.domElement.addEventListener('click', e => pickBuilding(e.clientX, e.clientY));
+
+  // Touch (mobile): treat a tap (small move, short hold) as a building pick.
+  // Passive listeners so OrbitControls still rotates/zooms with drags & pinch.
+  let _tap = null;
+  renderer.domElement.addEventListener('touchstart', e => {
+    if (e.touches.length === 1) {
+      const t = e.touches[0];
+      _tap = { x: t.clientX, y: t.clientY, t: Date.now() };
+    } else { _tap = null; }
+  }, { passive: true });
+  renderer.domElement.addEventListener('touchend', e => {
+    if (!_tap || flyMode.active) { _tap = null; return; }
+    const t = e.changedTouches[0];
+    const moved = Math.hypot(t.clientX - _tap.x, t.clientY - _tap.y);
+    const held  = Date.now() - _tap.t;
+    if (moved < 16 && held < 500) pickBuilding(t.clientX, t.clientY);
+    _tap = null;
+  }, { passive: true });
 
   // Hover — tooltip + building glow
   renderer.domElement.addEventListener('mousemove', e => {
