@@ -582,6 +582,9 @@ const NEON_PALETTE = [0xFF00AA,0x00FFCC,0xFF6600,0xFFEE00,0x00AAFF,0xFF3366,0xBB
 // City life
 let cars = [], people = [], trafficLights = [];
 
+// Scenic environment (diorama)
+let ships = [], oceanMesh = null, oceanBaseY = null, envTime = 0;
+
 // Particle system
 let pSystem = null, pPositions = null, pVelocities = null, pOrigins = null, pColors = null;
 const P_COUNT = 500;
@@ -604,7 +607,7 @@ const intro = {
   frame: 0,
   totalFrames: 260,
   startPos: new THREE.Vector3(30, 170, 250),
-  endPos: new THREE.Vector3(0, 38, 115),
+  endPos: new THREE.Vector3(0, 60, 175),
 };
 
 function toggleFlyMode() {
@@ -846,6 +849,200 @@ function createTree(x, z) {
   }
   grp.position.set(x, 0, z);
   scene.add(grp);
+}
+
+// ── Scenic diorama (mountains, hills, river, ocean, ships) ─────
+function buildScenery() {
+  // Shared water material (deep blue, glossy, slightly transparent)
+  const waterMat = new THREE.MeshPhongMaterial({
+    color: 0x0a2a4a,
+    shininess: 220,
+    specular: new THREE.Color(0x4488cc),
+    transparent: true,
+    opacity: 0.88
+  });
+
+  // ── Ocean — on the +Z side of the city ─────────────────────
+  const ocean = new THREE.Mesh(new THREE.PlaneGeometry(1400, 600, 60, 30), waterMat);
+  ocean.rotation.x = -Math.PI / 2;
+  ocean.position.set(0, -0.3, 470); // far side, z from ~170 outward
+  scene.add(ocean);
+  oceanMesh = ocean;
+  oceanBaseY = -0.3;
+  // store flat reference positions for wave animation
+  ocean.geometry.userData.base = ocean.geometry.attributes.position.array.slice();
+
+  // Shoreline transition strip (lighter sand/foam where land meets sea)
+  const shore = new THREE.Mesh(
+    new THREE.PlaneGeometry(900, 26),
+    new THREE.MeshPhongMaterial({ color: 0x1a3a3a, shininess: 30 })
+  );
+  shore.rotation.x = -Math.PI / 2;
+  shore.position.set(0, -0.25, 172);
+  scene.add(shore);
+
+  // ── River — winds from the mountains down to the ocean ──────
+  // Runs along the -X side of the city (x ~ -150), snaking in z toward the sea.
+  const riverPts = [
+    [-205, -200], [-185, -120], [-165, -40], [-158, 40], [-160, 110], [-150, 170]
+  ];
+  for (let i = 0; i < riverPts.length - 1; i++) {
+    const [ax, az] = riverPts[i];
+    const [bx, bz] = riverPts[i + 1];
+    const mx = (ax + bx) / 2, mz = (az + bz) / 2;
+    const dx = bx - ax, dz = bz - az;
+    const len = Math.sqrt(dx * dx + dz * dz) + 8;
+    const seg = new THREE.Mesh(new THREE.BoxGeometry(14, 0.4, len), waterMat);
+    seg.position.set(mx, -0.2, mz);
+    seg.rotation.y = -Math.atan2(dx, dz);
+    scene.add(seg);
+  }
+  // Two small bridges crossing the river
+  const bridgeMat = new THREE.MeshPhongMaterial({ color: 0x2a2622, shininess: 15 });
+  [[-168, -30], [-156, 90]].forEach(([bx, bz]) => {
+    const b = new THREE.Mesh(new THREE.BoxGeometry(20, 1.2, 6), bridgeMat);
+    b.position.set(bx, 1.0, bz);
+    scene.add(b);
+  });
+
+  // ── Mountains — ring around the city, EXCEPT the ocean (+Z) side ──
+  const rockMats = [
+    new THREE.MeshPhongMaterial({ color: 0x2a2e33, shininess: 8 }),
+    new THREE.MeshPhongMaterial({ color: 0x33373d, shininess: 8 })
+  ];
+  const snowMat = new THREE.MeshPhongMaterial({ color: 0xeef2f6, shininess: 20 });
+  const M = 18;
+  for (let i = 0; i < M; i++) {
+    // angle range avoids the ocean side (+Z, around angle PI/2 in our mapping)
+    const ang = (i / M) * Math.PI * 2;
+    const dirZ = Math.sin(ang);
+    if (dirZ > 0.45) continue; // skip mountains that would sit in the sea
+    const r = 200 + Math.random() * 60;
+    const x = Math.cos(ang) * r;
+    const z = dirZ * r;
+    const h = 25 + Math.random() * 45;
+    const baseR = h * (0.55 + Math.random() * 0.25);
+    const segs = 5 + Math.floor(Math.random() * 3);
+    const mat = rockMats[Math.floor(Math.random() * rockMats.length)];
+    const mtn = new THREE.Mesh(new THREE.ConeGeometry(baseR, h, segs), mat);
+    mtn.position.set(x, h / 2 - 1, z);
+    mtn.rotation.y = Math.random() * Math.PI;
+    scene.add(mtn);
+    // snow cap on the taller peaks
+    if (h > 48) {
+      const capH = h * 0.3;
+      const cap = new THREE.Mesh(new THREE.ConeGeometry(baseR * 0.34, capH, segs), snowMat);
+      cap.position.set(x, h - capH / 2 - 1, z);
+      cap.rotation.y = mtn.rotation.y;
+      scene.add(cap);
+    }
+  }
+
+  // ── Hills — green belt between city edge (~150) and mountains (~200) ──
+  const hillMats = [
+    new THREE.MeshPhongMaterial({ color: 0x14331c, shininess: 4 }),
+    new THREE.MeshPhongMaterial({ color: 0x183a20, shininess: 4 }),
+    new THREE.MeshPhongMaterial({ color: 0x102b18, shininess: 4 })
+  ];
+  for (let i = 0; i < 26; i++) {
+    const ang = Math.random() * Math.PI * 2;
+    if (Math.sin(ang) > 0.5) continue; // keep ocean side clear-ish
+    const r = 155 + Math.random() * 45;
+    const x = Math.cos(ang) * r;
+    const z = Math.sin(ang) * r;
+    const hr = 8 + Math.random() * 16;
+    const hh = 4 + Math.random() * 10;
+    const hill = new THREE.Mesh(
+      new THREE.SphereGeometry(hr, 10, 8),
+      hillMats[Math.floor(Math.random() * hillMats.length)]
+    );
+    hill.scale.set(1, hh / hr, 1);
+    hill.position.set(x, -1, z);
+    scene.add(hill);
+  }
+
+  // ── Forests — tree clusters on the green belt (not on ocean side) ──
+  let planted = 0;
+  for (let c = 0; c < 12 && planted < 56; c++) {
+    const ang = Math.random() * Math.PI * 2;
+    if (Math.sin(ang) > 0.45) continue;
+    const r = 158 + Math.random() * 78;
+    const cx = Math.cos(ang) * r;
+    const cz = Math.sin(ang) * r;
+    const n = 3 + Math.floor(Math.random() * 4);
+    for (let k = 0; k < n && planted < 56; k++) {
+      createTree(cx + (Math.random() - 0.5) * 22, cz + (Math.random() - 0.5) * 22);
+      planted++;
+    }
+  }
+
+  // ── Ships — boats sailing slowly back and forth on the ocean ──
+  const shipCount = 4;
+  for (let i = 0; i < shipCount; i++) {
+    const grp = new THREE.Group();
+    // Hull — tapered box body
+    const hull = new THREE.Mesh(
+      new THREE.BoxGeometry(7, 3, 16),
+      new THREE.MeshPhongMaterial({ color: 0x241a12, shininess: 20 })
+    );
+    hull.position.y = 1.5;
+    grp.add(hull);
+    // Bow wedge (pointed front)
+    const bow = new THREE.Mesh(
+      new THREE.ConeGeometry(3.3, 7, 4),
+      new THREE.MeshPhongMaterial({ color: 0x2a2016, shininess: 20 })
+    );
+    bow.rotation.x = -Math.PI / 2;
+    bow.rotation.y = Math.PI / 4;
+    bow.position.set(0, 1.5, 11);
+    bow.scale.set(1, 0.85, 1);
+    grp.add(bow);
+    // Cabin
+    const cabin = new THREE.Mesh(
+      new THREE.BoxGeometry(4.5, 3.5, 6),
+      new THREE.MeshPhongMaterial({ color: 0x6a5030, shininess: 25 })
+    );
+    cabin.position.set(0, 4.5, -2);
+    grp.add(cabin);
+    // Mast
+    const mast = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.25, 0.25, 16, 6),
+      new THREE.MeshPhongMaterial({ color: 0x3a2c1c })
+    );
+    mast.position.set(0, 11, 3);
+    grp.add(mast);
+    // Sail
+    const sail = new THREE.Mesh(
+      new THREE.PlaneGeometry(7, 10),
+      new THREE.MeshPhongMaterial({ color: 0xe8e2d2, side: THREE.DoubleSide, shininess: 5 })
+    );
+    sail.position.set(0, 12, 3);
+    grp.add(sail);
+    // Warm bow light
+    const lamp = new THREE.Mesh(
+      new THREE.SphereGeometry(0.7, 8, 8),
+      new THREE.MeshBasicMaterial({ color: 0xffcc66 })
+    );
+    lamp.position.set(0, 3, 13);
+    grp.add(lamp);
+    grp.add(new THREE.PointLight(0xffaa44, 0.9, 60));
+    grp.children[grp.children.length - 1].position.set(0, 4, 12);
+
+    // Straight path across the ocean (z stays > 180)
+    const ax = -380 + Math.random() * 260;
+    const az = 240 + Math.random() * 360;
+    const bx = ax + 220 + Math.random() * 200;
+    const bz = az + (Math.random() - 0.5) * 120;
+    grp.position.set(ax, 0, az);
+    scene.add(grp);
+    ships.push({
+      grp, ax, az, bx, bz,
+      t: Math.random(),
+      dir: Math.random() < 0.5 ? 1 : -1,
+      spd: 0.0009 + Math.random() * 0.0011,
+      phase: Math.random() * Math.PI * 2
+    });
+  }
 }
 
 // ── Filler building ───────────────────────────────────────────
@@ -1185,7 +1382,7 @@ function initCity(data) {
   // Scene
   scene = new THREE.Scene();
   scene.background = new THREE.Color(0x05060E);
-  scene.fog = new THREE.FogExp2(0x05060E, 0.0032);
+  scene.fog = new THREE.FogExp2(0x05060E, 0.0024);
 
   // Camera — starts at intro start pos
   const W = window.innerWidth, H = window.innerHeight;
@@ -1219,12 +1416,12 @@ function initCity(data) {
   controls.minPolarAngle = 0.1;
   controls.maxPolarAngle = Math.PI / 2.12;
   controls.minDistance = 10;
-  controls.maxDistance = 260;
+  controls.maxDistance = 340;
   controls.enabled = false; // disabled during cinematic intro
   controls.update();
 
   // Ground — wet street look, sized to the city (was a huge empty plane)
-  const gGeo = new THREE.PlaneGeometry(460, 460);
+  const gGeo = new THREE.PlaneGeometry(320, 320);
   const gMat = new THREE.MeshPhongMaterial({
     color: 0x05050E,
     shininess: 250,
@@ -1233,6 +1430,16 @@ function initCity(data) {
   const ground = new THREE.Mesh(gGeo, gMat);
   ground.rotation.x = -Math.PI / 2;
   scene.add(ground);
+
+  // Surrounding natural terrain — countryside around the city
+  const terrainMat = new THREE.MeshPhongMaterial({ color: 0x0c1f14, shininess: 6 });
+  const terrain = new THREE.Mesh(new THREE.PlaneGeometry(1400, 1400), terrainMat);
+  terrain.rotation.x = -Math.PI / 2;
+  terrain.position.y = -0.5;
+  scene.add(terrain);
+
+  // ── Scenic diorama: ocean, river, mountains, hills, forests, ships ──
+  buildScenery();
 
   // Horizon glow cylinder
   const hGeo = new THREE.CylinderGeometry(340, 340, 120, 32, 1, true);
@@ -1259,11 +1466,11 @@ function initCity(data) {
   const stars = new THREE.Points(starGeo, starMat);
   scene.add(stars);
 
-  // Moon
-  const moonGeo = new THREE.SphereGeometry(18, 16, 16);
+  // Moon — pulled close so it hangs over the mountains
+  const moonGeo = new THREE.SphereGeometry(22, 16, 16);
   const moonMat = new THREE.MeshBasicMaterial({color: 0xEEEECC});
   const moon = new THREE.Mesh(moonGeo, moonMat);
-  moon.position.set(-350, 280, -400);
+  moon.position.set(-130, 150, -190);
   scene.add(moon);
   const craterMat = new THREE.MeshBasicMaterial({color: 0xC8C8A0});
   [[8,6,14,-2],[5,-8,10,8],[-6,3,-18,4]].forEach(([cx,cy,cz,cr]) => {
@@ -1313,7 +1520,7 @@ function initCity(data) {
     if (isNight) {
       // Deep neon night
       scene.background = new THREE.Color(0x05060E);
-      scene.fog = new THREE.FogExp2(0x05060E, 0.0032);
+      scene.fog = new THREE.FogExp2(0x05060E, 0.0024);
       ambLight.color.set(0x2a3a55); ambLight.intensity = 1.6;
       dirLight.color.set(0x9fb4d8); dirLight.intensity = 1.0;
       stars.visible = true; moon.visible = true; sunSphere.visible = false;
@@ -1675,6 +1882,36 @@ function initCity(data) {
 
     // Particles
     animateParticles();
+
+    // ── Scenic environment: ocean waves + ships ───────────────
+    envTime += 0.016;
+    if (oceanMesh) {
+      const pos = oceanMesh.geometry.attributes.position;
+      const base = oceanMesh.geometry.userData.base;
+      for (let i = 0; i < pos.count; i++) {
+        const ix = i * 3;
+        const bx = base[ix], by = base[ix + 1];
+        // gentle rolling waves over the flat plane (local x/y before rotation)
+        const wave = Math.sin(bx * 0.025 + envTime * 1.3) * 0.9
+                   + Math.cos(by * 0.03 + envTime * 0.9) * 0.7;
+        pos.array[ix + 2] = wave;
+      }
+      pos.needsUpdate = true;
+    }
+    if (ships.length) {
+      for (const s of ships) {
+        s.t += s.spd * s.dir;
+        if (s.t >= 1) { s.t = 1; s.dir = -1; }
+        if (s.t <= 0) { s.t = 0; s.dir = 1; }
+        const x = s.ax + (s.bx - s.ax) * s.t;
+        const z = s.az + (s.bz - s.az) * s.t;
+        const bob = Math.sin(envTime * 1.6 + s.phase);
+        s.grp.position.set(x, bob * 0.6, z);
+        s.grp.rotation.y = Math.atan2((s.bx - s.ax) * s.dir, (s.bz - s.az) * s.dir);
+        s.grp.rotation.z = bob * 0.04;
+        s.grp.rotation.x = Math.cos(envTime * 1.3 + s.phase) * 0.03;
+      }
+    }
 
     if (composer && useBloom) composer.render(); else renderer.render(scene, camera);
   }
