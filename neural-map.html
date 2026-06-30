@@ -697,7 +697,7 @@ function createPerson(lane, perpOff, bound) {
 
   const perp = lane.coord + lane.side * perpOff;
   const a    = (Math.random() * 2 - 1) * bound;
-  const CURB = 0.18;
+  const CURB = 0.2;
   grp.scale.setScalar(2.2);  // bigger so pedestrians read at city scale
   grp.position.set(lane.horizontal ? a : perp, CURB, lane.horizontal ? perp : a);
   scene.add(grp);
@@ -1595,7 +1595,7 @@ function initCity(data) {
   const mLamp   = new THREE.MeshBasicMaterial({ color: 0xFFAA44 });
   const sidewalkMat = new THREE.MeshPhongMaterial({ color: 0x232733, shininess: 6 });
   const roadLen = totalSpan + STREET * 2;
-  const SIDEWALK_OFF = 4.4;  // street-center → sidewalk lane (cars run at ±2.3, road half = 5.5)
+  const SIDEWALK_OFF = 4.0;  // street-center → block-edge sidewalk lane (matches block frames)
 
   function drawStreet(coord, horizontal) {
     const geo  = horizontal ? new THREE.BoxGeometry(roadLen, 0.06, STREET)
@@ -1603,15 +1603,6 @@ function initCity(data) {
     const road = new THREE.Mesh(geo, roadMat);
     road.position.set(horizontal ? 0 : coord, 0.03, horizontal ? coord : 0);
     scene.add(road);
-    // Raised sidewalks (curbs) on both edges — pedestrians walk here
-    for (const s of [-1, 1]) {
-      const off = coord + s * SIDEWALK_OFF;
-      const sg = horizontal ? new THREE.BoxGeometry(roadLen, 0.18, 1.5)
-                            : new THREE.BoxGeometry(1.5, 0.18, roadLen);
-      const sw = new THREE.Mesh(sg, sidewalkMat);
-      sw.position.set(horizontal ? 0 : off, 0.09, horizontal ? off : 0);
-      scene.add(sw);
-    }
     // Dashed center line
     const dashes = Math.floor(roadLen / 7);
     for (let d = 0; d < dashes; d++) {
@@ -1634,6 +1625,30 @@ function initCity(data) {
     }
   }
   centers.forEach(c => { drawStreet(c, true); drawStreet(c, false); });
+
+  // ── Sidewalks — a raised curb framing EACH block, never crossing the road ──
+  // (Earlier full-length strips overlapped at intersections → boxes in the road
+  //  + z-fighting flicker. Per-block frames sit beside the buildings, road stays clear.)
+  const SW_W = 1.6, SW_H = 0.2, SW_GAP = 0.7;
+  for (let br = 0; br < BLOCKS; br++) {
+    for (let bc = 0; bc < BLOCKS; bc++) {
+      const x0 = bc * period - half, x1 = x0 + blockSpan;
+      const z0 = br * period - half, z1 = z0 + blockSpan;
+      const cx = (x0 + x1) / 2, cz = (z0 + z1) / 2;
+      // top & bottom edges (run along x)
+      for (const zEdge of [z0 - SW_GAP - SW_W / 2, z1 + SW_GAP + SW_W / 2]) {
+        const m = new THREE.Mesh(new THREE.BoxGeometry(blockSpan, SW_H, SW_W), sidewalkMat);
+        m.position.set(cx, SW_H / 2, zEdge);
+        scene.add(m);
+      }
+      // left & right edges (run along z)
+      for (const xEdge of [x0 - SW_GAP - SW_W / 2, x1 + SW_GAP + SW_W / 2]) {
+        const m = new THREE.Mesh(new THREE.BoxGeometry(SW_W, SW_H, blockSpan), sidewalkMat);
+        m.position.set(xEdge, SW_H / 2, cz);
+        scene.add(m);
+      }
+    }
+  }
 
   // Street lamps + traffic lights at every street intersection
   for (const cz of centers) {
