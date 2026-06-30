@@ -676,7 +676,9 @@ function createCar(ax, az, bx, bz, isBus) {
   cars.push({grp, ax, az, bx, bz, t, dir:1, spd});
 }
 
-function createPerson(startX, startZ) {
+// A pedestrian assigned to a sidewalk lane — walks ALONG the street, never mid-road.
+// lane = { horizontal, coord, side }; perp = coord + side*SIDEWALK_OFF.
+function createPerson(lane, perpOff, bound) {
   const grp = new THREE.Group();
   const cols = [0x4488FF, 0xFF8844, 0x44EE88, 0xFF44AA, 0xFFCC44, 0xAA44FF, 0x44CCFF];
   const col = cols[Math.floor(Math.random() * cols.length)];
@@ -693,14 +695,16 @@ function createPerson(startX, startZ) {
   head.position.y = 1.6;
   grp.add(head);
 
-  grp.position.set(startX, 0, startZ);
+  const perp = lane.coord + lane.side * perpOff;
+  const a    = (Math.random() * 2 - 1) * bound;
+  const CURB = 0.12;
+  grp.position.set(lane.horizontal ? a : perp, CURB, lane.horizontal ? perp : a);
   scene.add(grp);
   people.push({
-    grp, x: startX, z: startZ,
-    angle: Math.random() * Math.PI * 2,
-    spd: 0.035 + Math.random() * 0.04,
-    timer: Math.floor(Math.random() * 80),
-    interval: 55 + Math.floor(Math.random() * 90)
+    grp, horizontal: lane.horizontal, perp, a, bound, curb: CURB,
+    dir: Math.random() < 0.5 ? 1 : -1,
+    spd: 0.05 + Math.random() * 0.05,
+    pause: 0,
   });
 }
 
@@ -1590,7 +1594,9 @@ function initCity(data) {
   const mLineO  = new THREE.MeshBasicMaterial({ color: 0xF07830, transparent:true, opacity:0.55 });
   const mPole   = new THREE.MeshPhongMaterial({ color: 0x556677, shininess: 25 });
   const mLamp   = new THREE.MeshBasicMaterial({ color: 0xFFAA44 });
+  const sidewalkMat = new THREE.MeshPhongMaterial({ color: 0x2b2f3a, shininess: 12 });
   const roadLen = totalSpan + STREET * 2;
+  const SIDEWALK_OFF = 4.3;  // street-center → sidewalk lane (cars run at ±2.3, road half = 5.5)
 
   function drawStreet(coord, horizontal) {
     const geo  = horizontal ? new THREE.BoxGeometry(roadLen, 0.06, STREET)
@@ -1598,6 +1604,15 @@ function initCity(data) {
     const road = new THREE.Mesh(geo, roadMat);
     road.position.set(horizontal ? 0 : coord, 0.03, horizontal ? coord : 0);
     scene.add(road);
+    // Raised sidewalks (curbs) on both edges — pedestrians walk here
+    for (const s of [-1, 1]) {
+      const off = coord + s * SIDEWALK_OFF;
+      const sg = horizontal ? new THREE.BoxGeometry(roadLen, 0.12, 1.9)
+                            : new THREE.BoxGeometry(1.9, 0.12, roadLen);
+      const sw = new THREE.Mesh(sg, sidewalkMat);
+      sw.position.set(horizontal ? 0 : off, 0.06, horizontal ? off : 0);
+      scene.add(sw);
+    }
     // Dashed center line
     const dashes = Math.floor(roadLen / 7);
     for (let d = 0; d < dashes; d++) {
@@ -1678,11 +1693,19 @@ function initCity(data) {
     else createFillerBuilding(s.x, s.z);
   }
 
-  // Pedestrians scattered through the streets
-  const nPeople = isMobile ? 0 : 36;
+  // Pedestrians — placed on sidewalk lanes beside each street, never mid-road
+  const pedLanes = [];
+  for (const coord of centers) {
+    for (const side of [-1, 1]) {
+      pedLanes.push({ horizontal: true,  coord, side });
+      pedLanes.push({ horizontal: false, coord, side });
+    }
+  }
+  const pedBound = half - 3;
+  const nPeople = isMobile ? 0 : 46;
   for (let i = 0; i < nPeople; i++) {
-    createPerson((Math.random()-0.5) * totalSpan * 0.85,
-                 (Math.random()-0.5) * totalSpan * 0.85);
+    const lane = pedLanes[Math.floor(Math.random() * pedLanes.length)];
+    createPerson(lane, SIDEWALK_OFF, pedBound);
   }
 
   // Particles from building tops
@@ -1863,21 +1886,23 @@ function initCity(data) {
       c.grp.rotation.y = Math.atan2((c.bx - c.ax) * c.dir, (c.bz - c.az) * c.dir);
     }
 
-    // Pedestrians
-    const bound = 95;
+    // Pedestrians — walk back and forth along their sidewalk lane
     for (const p of people) {
-      p.timer++;
-      if (p.timer >= p.interval) {
-        p.angle += (Math.random() - 0.5) * Math.PI * 1.6;
-        p.timer = 0;
-        p.interval = 55 + Math.floor(Math.random() * 90);
+      if (p.pause > 0) {
+        p.pause--;
+      } else {
+        p.a += p.spd * p.dir;
+        if (p.a >  p.bound) { p.a =  p.bound; p.dir = -1; }
+        if (p.a < -p.bound) { p.a = -p.bound; p.dir =  1; }
+        if (Math.random() < 0.0015) p.pause = 20 + Math.floor(Math.random() * 50);
       }
-      p.x += Math.cos(p.angle) * p.spd;
-      p.z += Math.sin(p.angle) * p.spd;
-      if (Math.abs(p.x) > bound) { p.x -= Math.cos(p.angle) * p.spd * 4; p.angle = Math.PI - p.angle; }
-      if (Math.abs(p.z) > bound) { p.z -= Math.sin(p.angle) * p.spd * 4; p.angle = -p.angle; }
-      p.grp.position.set(p.x, 0, p.z);
-      p.grp.rotation.y = -p.angle;
+      if (p.horizontal) {
+        p.grp.position.set(p.a, p.curb, p.perp);
+        p.grp.rotation.y = p.dir > 0 ? Math.PI / 2 : -Math.PI / 2;
+      } else {
+        p.grp.position.set(p.perp, p.curb, p.a);
+        p.grp.rotation.y = p.dir > 0 ? 0 : Math.PI;
+      }
     }
 
     // Particles
