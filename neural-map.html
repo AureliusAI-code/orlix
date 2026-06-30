@@ -340,6 +340,37 @@ const BASE_TOKEN_ADDRS = [
   '0xe3086852a4b125803c815a158249ae468a3254ca',
 ];
 
+// ── Anti-fake filters ──────────────────────────────────────────
+// A legit Base token trades against one of these (WETH / major stables).
+// Scam/honeypot tokens usually pair against random junk.
+const QUOTE_OK = new Set([
+  '0x4200000000000000000000000000000000000006', // WETH
+  '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913', // USDC
+  '0xd9aaec86b65d86f6a7b5b1b0c42ffa531710b6ca', // USDbC
+  '0x50c5725949a6f0c72e6c4a641f24049a917db0cb', // DAI
+  '0xcbb7c0000ab88b473b1f5afd9ef808440eed33bf', // cbBTC
+  '0x2ae3f1ec7f1f5012cfeab0185bfc7aa3cf0dec22', // cbETH
+]);
+
+const MIN_LIQ = 20000;   // min liquidity ($) — kills $100 honeypots
+const MIN_VOL = 1000;    // min 24h volume ($) — kills dead tokens
+const VALID_SYM = /^[A-Za-z0-9.$_-]{1,12}$/;  // sane ticker only
+
+// Reject anything that smells fake; keep the real $ORLIX, drop impostors.
+function isLegitPair(p) {
+  if (!p || p.chainId !== 'base' || !p.baseToken || !p.quoteToken) return false;
+  if ((p.liquidity?.usd || 0) < MIN_LIQ) return false;
+  if ((p.volume?.h24   || 0) < MIN_VOL) return false;
+  if (!(Number(p.fdv) > 0)) return false;
+  if (!QUOTE_OK.has((p.quoteToken.address || '').toLowerCase())) return false;
+  const sym = p.baseToken.symbol || '';
+  if (!VALID_SYM.test(sym)) return false;
+  // Drop fake ORLIX clones — only the real contract is allowed to be ORLIX
+  if (sym.toUpperCase() === 'ORLIX'
+      && (p.baseToken.address || '').toLowerCase() !== ORLIX_ADDR.toLowerCase()) return false;
+  return true;
+}
+
 // ── Utils ──────────────────────────────────────────────────────
 const fmt = n => {
   if (!n) return 'N/A'; n = Number(n);
@@ -411,22 +442,45 @@ async function fetchEcosystem() {
 
   setProgress(55, 'Loading trending tokens...');
 
+  // Targeted queries for REAL Base tokens (not generic "base meme" which is
+  // 90% scams). Filters below remove any junk these still pull in.
   const srch = await Promise.allSettled(
-    ['base meme','virtuals','clanker','ORLIX'].map(q =>
-      fetchWT(`https://api.dexscreener.com/latest/dex/search?q=${encodeURIComponent(q)}`)
-        .then(r=>r.json()).then(d=>(d.pairs||[]).filter(p=>p.chainId==='base')).catch(()=>[])
-    )
+    ['ORLIX','brett','toshi','degen','virtuals','aerodrome','keycat','higher','clanker','mochi']
+      .map(q =>
+        fetchWT(`https://api.dexscreener.com/latest/dex/search?q=${encodeURIComponent(q)}`)
+          .then(r=>r.json()).then(d=>(d.pairs||[]).filter(p=>p.chainId==='base')).catch(()=>[])
+      )
   );
   all.push(...srch.flatMap(r=>r.status==='fulfilled'?r.value:[]));
 
-  setProgress(72, 'Constructing city layout...');
+  setProgress(72, 'Filtering out fake tokens...');
 
+  // 1) dedupe by pair, 2) drop fakes via isLegitPair
   const seen = new Set();
-  const pairs = all
+  const legit = all
     .filter(p=>p.pairAddress&&!seen.has(p.pairAddress)&&seen.add(p.pairAddress))
-    .filter(p=>(p.liquidity?.usd||0)>=100)
-    .sort((a,b)=>(b.volume?.h24||0)-(a.volume?.h24||0))
-    .slice(0, 300);
+    .filter(isLegitPair);
+
+  // 3) keep only the highest-liquidity pair per token ADDRESS
+  const bestByAddr = new Map();
+  for (const p of legit) {
+    const a = (p.baseToken.address||'').toLowerCase();
+    const cur = bestByAddr.get(a);
+    if (!cur || (p.liquidity?.usd||0) > (cur.liquidity?.usd||0)) bestByAddr.set(a, p);
+  }
+
+  // 4) keep only the highest-liquidity token per SYMBOL — kills same-name clones
+  //    (e.g. a dozen fake "ORLIX" / "BRETT" copies collapse to the real one)
+  const bestBySym = new Map();
+  for (const p of bestByAddr.values()) {
+    const s = (p.baseToken.symbol||'').toUpperCase();
+    const cur = bestBySym.get(s);
+    if (!cur || (p.liquidity?.usd||0) > (cur.liquidity?.usd||0)) bestBySym.set(s, p);
+  }
+
+  const pairs = [...bestBySym.values()]
+    .sort((a,b)=>(b.liquidity?.usd||0)-(a.liquidity?.usd||0))
+    .slice(0, 60);
 
   if (pairs.length < 2) {
     pairs.push(
