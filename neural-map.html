@@ -527,7 +527,7 @@ let cars = [], people = [], trafficLights = [];
 
 // Particle system
 let pSystem = null, pPositions = null, pVelocities = null, pOrigins = null, pColors = null;
-const P_COUNT = 3000;
+const P_COUNT = 500;
 
 // Fly mode state
 const flyMode = {
@@ -545,9 +545,9 @@ const flyMode = {
 const intro = {
   active: true,
   frame: 0,
-  totalFrames: 280,
-  startPos: new THREE.Vector3(0, 400, 600),
-  endPos: new THREE.Vector3(30, 45, 210),
+  totalFrames: 260,
+  startPos: new THREE.Vector3(60, 280, 420),
+  endPos: new THREE.Vector3(40, 55, 180),
 };
 
 function toggleFlyMode() {
@@ -567,7 +567,7 @@ function toggleFlyMode() {
     flyMode.keys = {};
   } else {
     controls.enabled = true;
-    controls.target.set(0, 25, -30);
+    controls.target.set(0, 15, 0);
     btn.classList.remove('hbtn-active');
     btn.textContent = '✈ Fly';
     hint.style.display = 'none';
@@ -726,7 +726,9 @@ function createNeonSign(text, color, width, height) {
 // ── Height calculation ────────────────────────────────────────
 function calcHeight(node) {
   const mcap = node.mcap || node.vol24h || node.liquidity || 5000;
-  return Math.max(5, Math.min(130, (Math.log10(Math.max(1000, mcap)) - 3) * 20));
+  // Compress range: 8–80 units, smooth log curve
+  const raw = (Math.log10(Math.max(1000, mcap)) - 3) * 16;
+  return Math.max(8, Math.min(80, raw));
 }
 
 // ── Rooftop details ───────────────────────────────────────────
@@ -791,25 +793,26 @@ function createTree(x, z) {
 
 // ── Filler building ───────────────────────────────────────────
 function createFillerBuilding(x, z) {
-  const h = 6 + Math.random() * 60;
-  const bw = 3.5 + Math.random() * 8;
-  const bd = 3.5 + Math.random() * 8;
-  const darkTints = [0x0f131d, 0x13100f, 0x0f1310, 0x12100f, 0x10100f, 0x0d0f14];
+  // Fixed 9×9 base — matches grid rhythm, no random offsets
+  const bw = 9, bd = 9;
+  const h = 8 + Math.random() * 32;
+  const darkTints = [0x0c1018, 0x0f0f18, 0x0e1214, 0x10100e, 0x0d1010, 0x0c0e18];
   const dc = darkTints[Math.floor(Math.random() * darkTints.length)];
-  const baseMat = () => new THREE.MeshPhongMaterial({
+  const mat = () => new THREE.MeshPhongMaterial({
     color: dc,
     emissive: new THREE.Color(0xffffff),
     emissiveMap: getWindowTex(),
-    emissiveIntensity: 0.32,
-    shininess: 30
+    emissiveIntensity: 0.28,
+    shininess: 40
   });
-  if (Math.random() > 0.55) {
-    const m1 = new THREE.Mesh(new THREE.BoxGeometry(bw, h * 0.65, bd), baseMat());
-    m1.position.set(x, h * 0.325, z); scene.add(m1);
-    const m2 = new THREE.Mesh(new THREE.BoxGeometry(bw * 0.62, h * 0.35, bd * 0.62), baseMat());
-    m2.position.set(x, h * 0.65 + h * 0.175, z); scene.add(m2);
+  // 50% chance of simple stepped top for variety without chaos
+  if (Math.random() > 0.5) {
+    const m1 = new THREE.Mesh(new THREE.BoxGeometry(bw, h * 0.7, bd), mat());
+    m1.position.set(x, h * 0.35, z); scene.add(m1);
+    const m2 = new THREE.Mesh(new THREE.BoxGeometry(bw * 0.65, h * 0.3, bd * 0.65), mat());
+    m2.position.set(x, h * 0.7 + h * 0.15, z); scene.add(m2);
   } else {
-    const mesh = new THREE.Mesh(new THREE.BoxGeometry(bw, h, bd), baseMat());
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(bw, h, bd), mat());
     mesh.position.set(x, h / 2, z); scene.add(mesh);
   }
 }
@@ -824,8 +827,9 @@ function createBuilding(node, x, z) {
   const height = calcHeight(node);
   node._buildingHeight = height;
 
-  const bw = node.isOrlix ? 13 : node.isStable ? 12 : 5 + Math.random() * 7;
-  const bd = node.isOrlix ? 13 : node.isStable ? 12 : 5 + Math.random() * 7;
+  // Fixed uniform base — all token buildings same footprint, fits inside 18-unit block with street margin
+  const bw = node.isOrlix ? 13 : node.isStable ? 11 : 10;
+  const bd = node.isOrlix ? 13 : node.isStable ? 11 : 10;
 
   buildingMeshMap.set(node.id, []);
 
@@ -929,7 +933,7 @@ function createBuilding(node, x, z) {
     // Low wide podium + slim tower
     const podH = height * 0.25;
     const towerH = height * 0.75;
-    const podW = bw * 1.4, podD = bd * 1.4;
+    const podW = bw, podD = bd;
     const mat1 = makeMat();
     const pod = new THREE.Mesh(new THREE.BoxGeometry(podW, podH, podD), mat1);
     pod.position.y = podH/2;
@@ -1037,12 +1041,12 @@ function initParticles(buildingPositions) {
   pGeo.setAttribute('position', new THREE.BufferAttribute(pPositions, 3));
   pGeo.setAttribute('color', new THREE.BufferAttribute(pColors, 3));
   const pMat = new THREE.PointsMaterial({
-    size: 0.55,
+    size: 0.28,
     vertexColors: true,
     blending: THREE.AdditiveBlending,
     depthWrite: false,
     transparent: true,
-    opacity: 0.8
+    opacity: 0.5
   });
   pSystem = new THREE.Points(pGeo, pMat);
   scene.add(pSystem);
@@ -1146,7 +1150,7 @@ function initCity(data) {
   if (typeof THREE.EffectComposer !== 'undefined' && !isMobile) {
     composer = new THREE.EffectComposer(renderer);
     composer.addPass(new THREE.RenderPass(scene, camera));
-    bloomPass = new THREE.UnrealBloomPass(new THREE.Vector2(W, H), 1.4, 0.5, 0.55);
+    bloomPass = new THREE.UnrealBloomPass(new THREE.Vector2(W, H), 0.85, 0.4, 0.72);
     composer.addPass(bloomPass);
   }
 
@@ -1154,11 +1158,11 @@ function initCity(data) {
   controls = new THREE.OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
   controls.dampingFactor = 0.07;
-  controls.target.set(0, 25, -30);
-  controls.minPolarAngle = 0.08;
-  controls.maxPolarAngle = Math.PI / 2.05;
-  controls.minDistance = 8;
-  controls.maxDistance = 800;
+  controls.target.set(0, 15, 0);
+  controls.minPolarAngle = 0.1;
+  controls.maxPolarAngle = Math.PI / 2.12;
+  controls.minDistance = 10;
+  controls.maxDistance = 600;
   controls.enabled = false; // disabled during cinematic intro
   controls.update();
 
@@ -1413,8 +1417,9 @@ function initCity(data) {
     const row = rowStart + Math.floor(i / COLS_N);
     const col = colStart + (i % COLS_N);
     if (row >= GRID_N || col >= GRID_N) return;
-    const bx = col * CELL - offX + (Math.random()-0.5) * 2;
-    const bz = row * CELL - offZ + (Math.random()-0.5) * 2;
+    // Exact grid snap — no random offset
+    const bx = col * CELL - offX;
+    const bz = row * CELL - offZ;
     occupiedBlocks.add(`${row},${col}`);
     posMap.set(node.id, {x: bx, z: bz});
     const grp = createBuilding(node, bx, bz);
@@ -1428,8 +1433,9 @@ function initCity(data) {
   for (let r = 0; r < GRID_N; r++) {
     for (let c = 0; c < GRID_N; c++) {
       if (occupiedBlocks.has(`${r},${c}`)) continue;
-      const bx = c * CELL - offX + (Math.random()-0.5) * BLOCK * 0.45;
-      const bz = r * CELL - offZ + (Math.random()-0.5) * BLOCK * 0.45;
+      // Exact grid snap for filler buildings too
+      const bx = c * CELL - offX;
+      const bz = r * CELL - offZ;
       if (Math.random() < 0.15) {
         createTree(bx, bz);
       } else {
