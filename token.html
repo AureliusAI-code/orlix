@@ -36,7 +36,7 @@
   --radius:12px;--radius-sm:8px;
 }
 :root.light{--bg:#F8F8FA;--bg-2:#EFEFF2;--bg-3:#E6E6EB;--bg-4:#DCDCE2;--border:rgba(0,0,0,.08);--border-b:rgba(0,0,0,.14);--text-1:#18181B;--text-2:#52525B;--text-3:#A1A1AA;--orange-dim:rgba(240,120,48,.12);--orange-glow:rgba(240,120,48,.14);--purple-dim:rgba(167,139,250,.12);--green-dim:rgba(74,222,128,.12);--red-dim:rgba(248,113,113,.12)}
-:root.light .nav-logo img{filter:invert(1)}
+:root.light .nav-logo img{filter:invert(1)}.wm{display:block}.wm-light{display:none}:root.light .wm-dark{display:none}:root.light .wm-light{display:block}:root.light .wm{filter:none!important}
 :root.light .tb-brand img{filter:invert(1)}
 :root.light .nav{background:rgba(248,248,250,.92)!important}
 :root.light .nav-links a:hover{background:rgba(0,0,0,.05)}
@@ -172,7 +172,7 @@ footer{border-top:1px solid var(--border);padding:40px 0 56px}
 
 <nav class="nav">
   <div class="wrap nav-in">
-    <a href="/" class="nav-logo"><img src="/orlix-wordmark.png" alt="ORLIX" style="height:40px;display:block;margin-left:-2px"></a>
+    <a href="/" class="nav-logo"><img class="wm wm-dark" src="/orlix-wordmark.png" alt="ORLIX" style="height:40px;margin-left:-2px"><img class="wm wm-light" src="/orlix-wordmark-light.png" alt="ORLIX" style="height:40px;margin-left:-2px"></a>
     <div class="nav-links hide-sm">
       <a href="docs.html">Docs</a>
       <a href="changelog.html">Changelog</a>
