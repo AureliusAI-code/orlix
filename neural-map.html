@@ -60,6 +60,7 @@ canvas{display:block}
 .hbtn:hover{border-color:rgba(255,255,255,0.16);color:#FAFAFA;background:rgba(255,255,255,0.04)}
 .hbtn-orange{background:rgba(240,120,48,0.1);color:#F07830;border-color:rgba(240,120,48,0.25)}
 .hbtn-orange:hover{background:rgba(240,120,48,0.18);border-color:rgba(240,120,48,0.4)}
+.hbtn-active{background:rgba(240,120,48,0.22)!important;color:#F07830!important;border-color:rgba(240,120,48,0.5)!important}
 
 /* ── CANVAS ── */
 #city-canvas{position:fixed;top:0;left:0;width:100%;height:100%}
@@ -159,11 +160,33 @@ canvas{display:block}
 .tt-chg{font-size:0.72rem;font-family:'JetBrains Mono',monospace}
 .pos{color:#4ADE80}.neg{color:#F87171}
 
+/* ── FLY HINT ── */
+#fly-hint{
+  position:fixed;bottom:30px;left:50%;transform:translateX(-50%);z-index:160;
+  display:none;
+  background:rgba(9,9,11,0.88);
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  border:1px solid rgba(240,120,48,0.35);border-radius:14px;
+  padding:12px 20px;
+  text-align:center;
+  pointer-events:none;
+}
+#fly-hint .fh-row{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap}
+#fly-hint .fk{
+  display:inline-flex;align-items:center;justify-content:center;
+  font-family:'JetBrains Mono',monospace;font-size:0.68rem;font-weight:700;
+  background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.14);
+  border-radius:5px;padding:2px 7px;color:#FAFAFA;min-width:28px;
+}
+#fly-hint .fl{font-size:0.68rem;color:#71717A}
+#fly-hint .fh-title{font-size:0.62rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#F07830;margin-bottom:8px}
+
 @media(max-width:768px){
   .hdr-stats{display:none}
   #searchbar{display:none}
   #panel{width:100%;border-left:none;border-top:1px solid rgba(255,255,255,0.06)}
   #legend{display:none}
+  #fly-hint{display:none!important}
 }
 </style>
 </head>
@@ -188,6 +211,7 @@ canvas{display:block}
       <span class="s-icon">⌕</span>
       <input type="text" id="sinput" placeholder="Search token..." autocomplete="off">
     </div>
+    <button id="flyBtn" class="hbtn hbtn-orange" onclick="toggleFlyMode()">✈ Fly</button>
     <button id="daynightBtn" class="hbtn" onclick="toggleDayNight()" title="Toggle day/night">🌙 Night</button>
     <a href="/" class="hbtn">← Back</a>
     <a href="/app" class="hbtn hbtn-orange">Launch App →</a>
@@ -258,12 +282,26 @@ canvas{display:block}
   <div class="leg-item"><div class="leg-dot" style="background:#F87171"></div>Down</div>
 </div>
 
-
 <!-- TOOLTIP -->
 <div id="tt">
   <div class="tt-name" id="tt-name"></div>
   <div class="tt-price" id="tt-price"></div>
   <div class="tt-chg" id="tt-chg"></div>
+</div>
+
+<!-- FLY HINT -->
+<div id="fly-hint">
+  <div class="fh-title">✈ Fly Mode</div>
+  <div class="fh-row">
+    <span class="fk">W</span><span class="fk">A</span><span class="fk">S</span><span class="fk">D</span>
+    <span class="fl">Move</span>
+    <span class="fk">Space</span><span class="fl">/</span><span class="fk">C</span>
+    <span class="fl">Up/Down</span>
+    <span class="fk">Shift</span><span class="fl">Boost</span>
+    <span class="fl">|</span>
+    <span class="fl">Mouse drag to look</span>
+    <span class="fk">ESC</span><span class="fl">Orbit mode</span>
+  </div>
 </div>
 
 <script>
@@ -473,16 +511,68 @@ function copyAddr() {
 }
 
 // ── Three.js City ──────────────────────────────────────────────
-let scene, camera, renderer, controls, composer;
+let scene, camera, renderer, controls, composer, bloomPass;
 let useBloom = true;
 let clickMeshes = [];
 let buildingGroups = new Map();
+let buildingMeshMap = new Map(); // nodeId -> mesh[]
+let hoveredNodeId = null;
 let antennaTips = [];
+let neonSigns = [];
 let cityTime = 0;
 const NEON_PALETTE = [0xFF00AA,0x00FFCC,0xFF6600,0xFFEE00,0x00AAFF,0xFF3366,0xBB00FF,0x00FF88];
 
 // City life
 let cars = [], people = [], trafficLights = [];
+
+// Particle system
+let pSystem = null, pPositions = null, pVelocities = null, pOrigins = null, pColors = null;
+const P_COUNT = 3000;
+
+// Fly mode state
+const flyMode = {
+  active: false,
+  keys: {},
+  yaw: 0,
+  pitch: -0.15,
+  vel: new THREE.Vector3(),
+  isDragging: false,
+  lastMX: 0,
+  lastMY: 0,
+};
+
+// Cinematic intro
+const intro = {
+  active: true,
+  frame: 0,
+  totalFrames: 280,
+  startPos: new THREE.Vector3(0, 400, 600),
+  endPos: new THREE.Vector3(30, 45, 210),
+};
+
+function toggleFlyMode() {
+  flyMode.active = !flyMode.active;
+  const btn = document.getElementById('flyBtn');
+  const hint = document.getElementById('fly-hint');
+  if (flyMode.active) {
+    controls.enabled = false;
+    btn.classList.add('hbtn-active');
+    btn.textContent = '✕ Exit Fly';
+    hint.style.display = 'block';
+    // Sync yaw/pitch from current camera orientation
+    const euler = new THREE.Euler().setFromQuaternion(camera.quaternion, 'YXZ');
+    flyMode.yaw = euler.y;
+    flyMode.pitch = euler.x;
+    flyMode.vel.set(0,0,0);
+    flyMode.keys = {};
+  } else {
+    controls.enabled = true;
+    controls.target.set(0, 25, -30);
+    btn.classList.remove('hbtn-active');
+    btn.textContent = '✈ Fly';
+    hint.style.display = 'none';
+  }
+}
 
 function createCar(ax, az, bx, bz, isBus) {
   const grp = new THREE.Group();
@@ -493,13 +583,11 @@ function createCar(ax, az, bx, bz, isBus) {
   else if (isTruck) { col=[0xCC4422,0x445566][Math.floor(Math.random()*2)]; bw=1.7; bh=0.9; bl=4.0; }
   else { col=[0xCC2222,0x2255CC,0xCCAA00,0xDDDDDD,0xCC6600,0x226644,0xAA2244][Math.floor(Math.random()*7)]; bw=1.3; bh=0.52; bl=2.5; }
 
-  // Body (1 mesh)
   const body = new THREE.Mesh(new THREE.BoxGeometry(bw, bh, bl),
     new THREE.MeshPhongMaterial({color:col, shininess:50}));
   body.position.y = bh/2 + 0.27;
   grp.add(body);
 
-  // Cabin (1 mesh for sedans only)
   if (!isTruck && !isBus) {
     const cabin = new THREE.Mesh(new THREE.BoxGeometry(bw*0.8, bh*0.7, bl*0.5),
       new THREE.MeshPhongMaterial({color:new THREE.Color(col).multiplyScalar(0.55)}));
@@ -507,14 +595,12 @@ function createCar(ax, az, bx, bz, isBus) {
     grp.add(cabin);
   }
 
-  // Headlight + taillight (2 meshes total, bright for bloom)
   const lgeo = new THREE.BoxGeometry(bw*0.7, bh*0.3, 0.12);
   const hl = new THREE.Mesh(lgeo, new THREE.MeshBasicMaterial({color:0xFFFFDD}));
   hl.position.set(0, bh/2+0.27, bl/2+0.06); grp.add(hl);
   const tl = new THREE.Mesh(lgeo, new THREE.MeshBasicMaterial({color:0xFF2200}));
   tl.position.set(0, bh/2+0.27, -bl/2-0.06); grp.add(tl);
 
-  // Wheels — 2 shared axle cylinders (front + back), not 4 individual
   const wR = isBus ? 0.37 : 0.27;
   const wgeo = new THREE.CylinderGeometry(wR, wR, bw*1.05, 7);
   const wmat = new THREE.MeshPhongMaterial({color:0x1a1a1a, shininess:5});
@@ -534,14 +620,12 @@ function createPerson(startX, startZ) {
   const grp = new THREE.Group();
   const cols = [0x4488FF, 0xFF8844, 0x44EE88, 0xFF44AA, 0xFFCC44, 0xAA44FF, 0x44CCFF];
   const col = cols[Math.floor(Math.random() * cols.length)];
-  // Body
   const body = new THREE.Mesh(
     new THREE.CylinderGeometry(0.17, 0.21, 1.1, 5),
     new THREE.MeshBasicMaterial({color: col})
   );
   body.position.y = 0.75;
   grp.add(body);
-  // Head
   const head = new THREE.Mesh(
     new THREE.SphereGeometry(0.21, 5, 5),
     new THREE.MeshBasicMaterial({color: 0xFFCCAA})
@@ -560,6 +644,152 @@ function createPerson(startX, startZ) {
   });
 }
 
+// ── Window texture ──────────────────────────────────────────────
+let _winTex = null;
+function getWindowTex() {
+  if (_winTex) return _winTex;
+  const c = document.createElement('canvas');
+  c.width = 256; c.height = 512;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#000000';
+  ctx.fillRect(0, 0, 256, 512);
+  for (let y = 12; y < 512; y += 26) {
+    for (let x = 12; x < 256; x += 22) {
+      if (Math.random() > 0.42) {
+        const r = Math.random();
+        if (r > 0.6) ctx.fillStyle = '#EEC866';
+        else if (r > 0.35) ctx.fillStyle = '#6699CC';
+        else ctx.fillStyle = '#CC7733';
+        ctx.fillRect(x, y, 10, 16);
+      }
+    }
+  }
+  _winTex = new THREE.CanvasTexture(c);
+  return _winTex;
+}
+
+// ── Label sprite ────────────────────────────────────────────────
+function makeLabel(text, colorStr) {
+  const cv=document.createElement('canvas');
+  cv.width=256; cv.height=72;
+  const ctx=cv.getContext('2d');
+  ctx.clearRect(0,0,256,72);
+  ctx.font='bold 26px "Plus Jakarta Sans",sans-serif';
+  const m=ctx.measureText(text);
+  const pw=m.width+22, ph=42, px=(256-pw)/2, py=(72-ph)/2;
+  ctx.fillStyle='rgba(9,9,11,0.82)';
+  const r=7;
+  ctx.beginPath();
+  ctx.moveTo(px+r,py); ctx.lineTo(px+pw-r,py);
+  ctx.quadraticCurveTo(px+pw,py,px+pw,py+r);
+  ctx.lineTo(px+pw,py+ph-r);
+  ctx.quadraticCurveTo(px+pw,py+ph,px+pw-r,py+ph);
+  ctx.lineTo(px+r,py+ph);
+  ctx.quadraticCurveTo(px,py+ph,px,py+ph-r);
+  ctx.lineTo(px,py+r);
+  ctx.quadraticCurveTo(px,py,px+r,py);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle=colorStr; ctx.lineWidth=1.5; ctx.stroke();
+  ctx.fillStyle=colorStr; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(text,128,36);
+  const tex=new THREE.CanvasTexture(cv);
+  const mat=new THREE.SpriteMaterial({map:tex,transparent:true,depthTest:false});
+  const sp=new THREE.Sprite(mat);
+  sp.scale.set(10,2.8,1);
+  return sp;
+}
+
+// ── Neon sign texture ────────────────────────────────────────────
+function createNeonSign(text, color, width, height) {
+  const cv = document.createElement('canvas');
+  cv.width = 256; cv.height = 80;
+  const ctx = cv.getContext('2d');
+  const cs = '#' + color.toString(16).padStart(6,'0');
+  ctx.fillStyle = 'rgba(0,0,0,0.85)'; ctx.fillRect(0,0,256,80);
+  ctx.strokeStyle = cs; ctx.lineWidth = 2;
+  ctx.strokeRect(3,3,250,74);
+  ctx.font = 'bold 36px "JetBrains Mono",monospace';
+  ctx.fillStyle = cs; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  // glow
+  ctx.shadowColor = cs; ctx.shadowBlur = 12;
+  ctx.fillText(text, 128, 40);
+  ctx.shadowBlur = 0;
+  const tex = new THREE.CanvasTexture(cv);
+  const mesh = new THREE.Mesh(
+    new THREE.PlaneGeometry(width||6, height||1.8),
+    new THREE.MeshBasicMaterial({map:tex, transparent:true, side:THREE.DoubleSide})
+  );
+  return mesh;
+}
+
+// ── Height calculation ────────────────────────────────────────
+function calcHeight(node) {
+  const mcap = node.mcap || node.vol24h || node.liquidity || 5000;
+  return Math.max(5, Math.min(130, (Math.log10(Math.max(1000, mcap)) - 3) * 20));
+}
+
+// ── Rooftop details ───────────────────────────────────────────
+function addRooftopDetails(group, topY, bw, bd, height) {
+  const detailMat = new THREE.MeshPhongMaterial({color:0x334455, shininess:20});
+  const numDetails = Math.floor(1 + Math.random() * 3);
+  for (let i = 0; i < numDetails; i++) {
+    const ox = (Math.random()-0.5) * bw * 0.5;
+    const oz = (Math.random()-0.5) * bd * 0.5;
+    // Water tower (cylinder + cone cap)
+    if (Math.random() > 0.5) {
+      const tankR = 0.6 + Math.random() * 0.5;
+      const tankH = 1.5 + Math.random();
+      const tank = new THREE.Mesh(new THREE.CylinderGeometry(tankR, tankR*0.9, tankH, 8), detailMat.clone());
+      tank.position.set(ox, topY + tankH/2, oz);
+      group.add(tank);
+      const cap = new THREE.Mesh(new THREE.ConeGeometry(tankR*1.1, tankH*0.5, 8), detailMat.clone());
+      cap.position.set(ox, topY + tankH + tankH*0.25, oz);
+      group.add(cap);
+    } else {
+      // AC unit box
+      const aw = 1.2 + Math.random()*0.8, ah = 0.6 + Math.random()*0.4, adp = 0.8 + Math.random()*0.5;
+      const ac = new THREE.Mesh(new THREE.BoxGeometry(aw, ah, adp), detailMat.clone());
+      ac.position.set(ox, topY + ah/2, oz);
+      group.add(ac);
+    }
+  }
+  // Helipad for very tall buildings
+  if (height > 70) {
+    const hpGeo = new THREE.CylinderGeometry(2.5, 2.5, 0.15, 16);
+    const hpMat = new THREE.MeshBasicMaterial({color:0xFFCC00});
+    const hp = new THREE.Mesh(hpGeo, hpMat);
+    hp.position.y = topY + 0.1;
+    group.add(hp);
+  }
+}
+
+// ── Tree ──────────────────────────────────────────────────────
+function createTree(x, z) {
+  const grp = new THREE.Group();
+  const trunkH = 2 + Math.random() * 2;
+  const trunk = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.25, 0.35, trunkH, 6),
+    new THREE.MeshPhongMaterial({color:0x4A3020, shininess:5})
+  );
+  trunk.position.y = trunkH / 2;
+  grp.add(trunk);
+  const layers = 2 + Math.floor(Math.random() * 2);
+  for (let i = 0; i < layers; i++) {
+    const fr = 1.8 - i * 0.35;
+    const fh = 3.0 - i * 0.4;
+    const foliage = new THREE.Mesh(
+      new THREE.ConeGeometry(fr, fh, 7),
+      new THREE.MeshPhongMaterial({color: i===0?0x1a4a1a:0x1e5a1e, shininess:5})
+    );
+    foliage.position.y = trunkH + i * 1.4 + fh/2 - 0.4;
+    grp.add(foliage);
+  }
+  grp.position.set(x, 0, z);
+  scene.add(grp);
+}
+
+// ── Filler building ───────────────────────────────────────────
 function createFillerBuilding(x, z) {
   const h = 6 + Math.random() * 60;
   const bw = 3.5 + Math.random() * 8;
@@ -584,84 +814,7 @@ function createFillerBuilding(x, z) {
   }
 }
 
-let _winTex = null;
-function getWindowTex() {
-  if (_winTex) return _winTex;
-  const c = document.createElement('canvas');
-  c.width = 256; c.height = 512;
-  const ctx = c.getContext('2d');
-  ctx.fillStyle = '#000000';
-  ctx.fillRect(0, 0, 256, 512);
-  for (let y = 12; y < 512; y += 26) {
-    for (let x = 12; x < 256; x += 22) {
-      if (Math.random() > 0.42) {
-        const r = Math.random();
-        if (r > 0.6) ctx.fillStyle = '#EEC866';
-        else if (r > 0.35) ctx.fillStyle = '#6699CC';
-        else ctx.fillStyle = '#CC7733';
-        ctx.fillRect(x, y, 10, 16);
-      }
-    }
-  }
-  _winTex = new THREE.CanvasTexture(c);
-  return _winTex;
-}
-
-function makeLabel(text, colorStr) {
-  const cv=document.createElement('canvas');
-  cv.width=256; cv.height=72;
-  const ctx=cv.getContext('2d');
-  ctx.clearRect(0,0,256,72);
-  ctx.font='bold 26px "Plus Jakarta Sans",sans-serif';
-  const m=ctx.measureText(text);
-  const pw=m.width+22, ph=42, px=(256-pw)/2, py=(72-ph)/2;
-  ctx.fillStyle='rgba(9,9,11,0.82)';
-  // Rounded rect manually
-  const r=7;
-  ctx.beginPath();
-  ctx.moveTo(px+r,py); ctx.lineTo(px+pw-r,py);
-  ctx.quadraticCurveTo(px+pw,py,px+pw,py+r);
-  ctx.lineTo(px+pw,py+ph-r);
-  ctx.quadraticCurveTo(px+pw,py+ph,px+pw-r,py+ph);
-  ctx.lineTo(px+r,py+ph);
-  ctx.quadraticCurveTo(px,py+ph,px,py+ph-r);
-  ctx.lineTo(px,py+r);
-  ctx.quadraticCurveTo(px,py,px+r,py);
-  ctx.closePath();
-  ctx.fill();
-  ctx.strokeStyle=colorStr; ctx.lineWidth=1.5; ctx.stroke();
-  ctx.fillStyle=colorStr; ctx.textAlign='center'; ctx.textBaseline='middle';
-  ctx.fillText(text,128,36);
-  const tex=new THREE.CanvasTexture(cv);
-  const mat=new THREE.SpriteMaterial({map:tex,transparent:true,depthTest:false});
-  const sp=new THREE.Sprite(mat);
-  sp.scale.set(10,2.8,1);
-  return sp;
-}
-
-function calcHeight(node) {
-  const mcap = node.mcap || node.vol24h || node.liquidity || 5000;
-  return Math.max(5, Math.min(130, (Math.log10(Math.max(1000, mcap)) - 3) * 20));
-}
-
-function createNeonSign(text, color) {
-  const cv = document.createElement('canvas');
-  cv.width = 256; cv.height = 80;
-  const ctx = cv.getContext('2d');
-  const cs = '#' + color.toString(16).padStart(6,'0');
-  ctx.fillStyle = 'rgba(0,0,0,0.92)'; ctx.fillRect(0,0,256,80);
-  ctx.strokeStyle = cs; ctx.lineWidth = 3;
-  ctx.strokeRect(4,4,248,72);
-  ctx.font = 'bold 42px "JetBrains Mono",monospace';
-  ctx.fillStyle = cs; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.fillText(text, 128, 40);
-  const tex = new THREE.CanvasTexture(cv);
-  return new THREE.Mesh(
-    new THREE.PlaneGeometry(1,1),
-    new THREE.MeshBasicMaterial({map:tex, transparent:true, side:THREE.DoubleSide})
-  );
-}
-
+// ── 5 Building archetypes ──────────────────────────────────────
 function createBuilding(node, x, z) {
   const group = new THREE.Group();
   group.position.set(x, 0, z);
@@ -671,43 +824,294 @@ function createBuilding(node, x, z) {
   const height = calcHeight(node);
   node._buildingHeight = height;
 
-  const bw = node.isOrlix ? 12 : node.isStable ? 11 : 5 + Math.random() * 7;
-  const bd = node.isOrlix ? 12 : node.isStable ? 11 : 5 + Math.random() * 7;
+  const bw = node.isOrlix ? 13 : node.isStable ? 12 : 5 + Math.random() * 7;
+  const bd = node.isOrlix ? 13 : node.isStable ? 12 : 5 + Math.random() * 7;
 
-  const geo = new THREE.BoxGeometry(bw, height, bd);
-  const mesh = new THREE.Mesh(geo, new THREE.MeshPhongMaterial({
-    color: threeCol.clone().multiplyScalar(0.55),
+  buildingMeshMap.set(node.id, []);
+
+  const makeMat = (emissInt) => new THREE.MeshPhongMaterial({
+    color: threeCol.clone().multiplyScalar(0.45),
     emissive: new THREE.Color(0xffffff),
     emissiveMap: getWindowTex(),
-    emissiveIntensity: 0.45,
-    shininess: 85,
-    specular: new THREE.Color(0x223344)
-  }));
-  mesh.position.y = height / 2;
-  mesh.userData = node;
-  group.add(mesh);
-  clickMeshes.push(mesh);
+    emissiveIntensity: emissInt !== undefined ? emissInt : 0.55,
+    shininess: 90,
+    specular: new THREE.Color(0x2244AA)
+  });
 
+  let topY = height;
+  const meshes = buildingMeshMap.get(node.id);
+
+  // Determine archetype
+  let archetype;
+  if (node.isOrlix) archetype = 'landmark';
+  else if (node.isStable) archetype = 'monument';
+  else {
+    const r = Math.random();
+    if (r < 0.3) archetype = 'stepped';
+    else if (r < 0.6) archetype = 'podium';
+    else archetype = 'obelisk';
+  }
+
+  if (archetype === 'landmark') {
+    // Multi-tier art deco with setbacks and golden spire
+    const steps = 4;
+    let y = 0, w = bw, d = bd;
+    const stepH = height / steps;
+    for (let i = 0; i < steps; i++) {
+      const mat = makeMat();
+      const m = new THREE.Mesh(new THREE.BoxGeometry(w, stepH, d), mat);
+      m.position.y = y + stepH/2;
+      m.userData = node;
+      group.add(m);
+      clickMeshes.push(m);
+      meshes.push(m);
+      // Crown ring (torus) at each setback
+      const ringR = w * 0.55;
+      const ringMat = new THREE.MeshBasicMaterial({color:0xFFAA00});
+      const ring = new THREE.Mesh(new THREE.TorusGeometry(ringR, 0.18, 8, 24), ringMat);
+      ring.position.y = y + stepH;
+      ring.rotation.x = Math.PI/2;
+      group.add(ring);
+      y += stepH; w *= 0.70; d *= 0.70;
+    }
+    topY = y;
+    // Golden spire
+    const spireH = height * 0.25;
+    const spire = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.05, 0.4, spireH, 8),
+      new THREE.MeshBasicMaterial({color:0xFFCC22})
+    );
+    spire.position.y = topY + spireH/2;
+    group.add(spire);
+    topY += spireH;
+
+  } else if (archetype === 'monument') {
+    // Wide 3-tier classical
+    const tiers = [
+      {hFrac:0.6, wFrac:1.0},
+      {hFrac:0.3, wFrac:0.7},
+      {hFrac:0.1, wFrac:0.5},
+    ];
+    let y = 0;
+    for (const tier of tiers) {
+      const tH = height * tier.hFrac;
+      const tW = bw * tier.wFrac;
+      const tD = bd * tier.wFrac;
+      const mat = makeMat();
+      const m = new THREE.Mesh(new THREE.BoxGeometry(tW, tH, tD), mat);
+      m.position.y = y + tH/2;
+      m.userData = node;
+      group.add(m);
+      clickMeshes.push(m);
+      meshes.push(m);
+      y += tH;
+    }
+    topY = y;
+
+  } else if (archetype === 'stepped') {
+    // Classic NYC setback tower
+    const steps = 4 + Math.floor(Math.random() * 2);
+    let y = 0, w = bw, d = bd;
+    const stepH = height / steps;
+    for (let i = 0; i < steps; i++) {
+      const mat = makeMat();
+      const m = new THREE.Mesh(new THREE.BoxGeometry(w, stepH, d), mat);
+      m.position.y = y + stepH/2;
+      m.userData = node;
+      group.add(m);
+      clickMeshes.push(m);
+      meshes.push(m);
+      y += stepH; w *= 0.73; d *= 0.73;
+    }
+    topY = y;
+
+  } else if (archetype === 'podium') {
+    // Low wide podium + slim tower
+    const podH = height * 0.25;
+    const towerH = height * 0.75;
+    const podW = bw * 1.4, podD = bd * 1.4;
+    const mat1 = makeMat();
+    const pod = new THREE.Mesh(new THREE.BoxGeometry(podW, podH, podD), mat1);
+    pod.position.y = podH/2;
+    pod.userData = node;
+    group.add(pod); clickMeshes.push(pod); meshes.push(pod);
+    const mat2 = makeMat();
+    const tower = new THREE.Mesh(new THREE.BoxGeometry(bw*0.6, towerH, bd*0.6), mat2);
+    tower.position.y = podH + towerH/2;
+    tower.userData = node;
+    group.add(tower); clickMeshes.push(tower); meshes.push(tower);
+    topY = podH + towerH;
+
+  } else {
+    // Obelisk — slim glass tower with pyramid cap
+    const mat = makeMat();
+    const shaft = new THREE.Mesh(new THREE.BoxGeometry(bw*0.5, height*0.88, bd*0.5), mat);
+    shaft.position.y = height*0.88/2;
+    shaft.userData = node;
+    group.add(shaft); clickMeshes.push(shaft); meshes.push(shaft);
+    const capH = height * 0.14;
+    const cap = new THREE.Mesh(
+      new THREE.CylinderGeometry(0, bw*0.26, capH, 4),
+      new THREE.MeshPhongMaterial({color: threeCol.clone().multiplyScalar(0.7), shininess:120, specular:new THREE.Color(0x88AAFF)})
+    );
+    cap.position.y = height*0.88 + capH/2;
+    group.add(cap);
+    topY = height*0.88 + capH;
+  }
+
+  // Neon sign on wall
+  const neonColor = NEON_PALETTE[Math.floor(Math.random() * NEON_PALETTE.length)];
+  const signText = '$' + node.symbol;
+  const sign = createNeonSign(signText, neonColor, 6, 1.8);
+  const signH = Math.min(topY * 0.6, topY - 2);
+  sign.position.set(bw/2 * 0.55 + 0.1, signH, 0);
+  sign.rotation.y = Math.PI/2;
+  group.add(sign);
+  neonSigns.push({mesh: sign, baseIntensity: 1.0, flicker: Math.random() * Math.PI * 2});
+
+  // Antenna + blinking light for tall buildings
   if (height > 35) {
     const antH = height * 0.13;
     const ant = new THREE.Mesh(
       new THREE.CylinderGeometry(0.07, 0.1, antH, 5),
       new THREE.MeshPhongMaterial({color: 0x778899, shininess: 40})
     );
-    ant.position.y = height + antH / 2;
+    ant.position.y = topY + antH/2;
     group.add(ant);
     const tip = new THREE.Mesh(new THREE.SphereGeometry(0.22, 6, 6),
       new THREE.MeshBasicMaterial({color: 0xFF2222, transparent: true, opacity: 1}));
-    tip.position.y = height + antH;
+    tip.position.y = topY + antH;
     antennaTips.push({mesh: tip, offset: Math.random() * Math.PI * 2});
     group.add(tip);
+    topY += antH;
   }
 
+  // Rooftop details
+  addRooftopDetails(group, topY - (height > 35 ? height * 0.13 : 0), bw, bd, height);
+
+  // Label
   const label = makeLabel(node.symbol, node.isOrlix ? '#F07830' : '#AABBCC');
-  label.position.y = height + (height > 28 ? height * 0.18 + 4 : 5);
+  label.position.y = topY + (height > 28 ? 8 : 5);
   group.add(label);
 
   return group;
+}
+
+// ── Particle system init ───────────────────────────────────────
+function initParticles(buildingPositions) {
+  pPositions = new Float32Array(P_COUNT * 3);
+  pVelocities = new Float32Array(P_COUNT * 3);
+  pOrigins = new Float32Array(P_COUNT * 3);
+  pColors = new Float32Array(P_COUNT * 3);
+
+  const colorPalette = [
+    new THREE.Color(0xF07830),
+    new THREE.Color(0x4ADE80),
+    new THREE.Color(0x818CF8),
+    new THREE.Color(0xFF00AA),
+    new THREE.Color(0x00FFCC),
+    new THREE.Color(0xFFEE00),
+  ];
+
+  for (let i = 0; i < P_COUNT; i++) {
+    const bp = buildingPositions[i % buildingPositions.length];
+    const ox = bp.x + (Math.random()-0.5)*6;
+    const oy = bp.y + Math.random() * 10;
+    const oz = bp.z + (Math.random()-0.5)*6;
+    pOrigins[i*3]   = ox;
+    pOrigins[i*3+1] = bp.y; // floor height
+    pOrigins[i*3+2] = oz;
+    pPositions[i*3]   = ox;
+    pPositions[i*3+1] = oy;
+    pPositions[i*3+2] = oz;
+    pVelocities[i*3]   = (Math.random()-0.5)*0.05;
+    pVelocities[i*3+1] = 0.06 + Math.random()*0.1;
+    pVelocities[i*3+2] = (Math.random()-0.5)*0.05;
+    const c = colorPalette[Math.floor(Math.random()*colorPalette.length)];
+    pColors[i*3]   = c.r;
+    pColors[i*3+1] = c.g;
+    pColors[i*3+2] = c.b;
+  }
+
+  const pGeo = new THREE.BufferGeometry();
+  pGeo.setAttribute('position', new THREE.BufferAttribute(pPositions, 3));
+  pGeo.setAttribute('color', new THREE.BufferAttribute(pColors, 3));
+  const pMat = new THREE.PointsMaterial({
+    size: 0.55,
+    vertexColors: true,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+    transparent: true,
+    opacity: 0.8
+  });
+  pSystem = new THREE.Points(pGeo, pMat);
+  scene.add(pSystem);
+}
+
+// ── Animate particles ─────────────────────────────────────────
+function animateParticles() {
+  if (!pSystem) return;
+  const pos = pSystem.geometry.attributes.position.array;
+  for (let i = 0; i < P_COUNT; i++) {
+    pos[i*3]   += pVelocities[i*3];
+    pos[i*3+1] += pVelocities[i*3+1];
+    pos[i*3+2] += pVelocities[i*3+2];
+    // Drift
+    pVelocities[i*3] *= 0.999;
+    pVelocities[i*3+2] *= 0.999;
+    // Reset when too high
+    if (pos[i*3+1] > pOrigins[i*3+1] + 60) {
+      pos[i*3]   = pOrigins[i*3]   + (Math.random()-0.5)*4;
+      pos[i*3+1] = pOrigins[i*3+1];
+      pos[i*3+2] = pOrigins[i*3+2] + (Math.random()-0.5)*4;
+      pVelocities[i*3]   = (Math.random()-0.5)*0.05;
+      pVelocities[i*3+1] = 0.06 + Math.random()*0.1;
+      pVelocities[i*3+2] = (Math.random()-0.5)*0.05;
+    }
+  }
+  pSystem.geometry.attributes.position.needsUpdate = true;
+}
+
+// ── Fly mode input setup ───────────────────────────────────────
+function setupFlyInput(canvas) {
+  document.addEventListener('keydown', e => {
+    flyMode.keys[e.code] = true;
+    if (e.code === 'KeyF') toggleFlyMode();
+    if (e.code === 'Escape' && flyMode.active) toggleFlyMode();
+  });
+  document.addEventListener('keyup', e => {
+    flyMode.keys[e.code] = false;
+  });
+
+  canvas.addEventListener('mousedown', e => {
+    if (!flyMode.active) return;
+    flyMode.isDragging = true;
+    flyMode.lastMX = e.clientX;
+    flyMode.lastMY = e.clientY;
+    e.preventDefault();
+  });
+  document.addEventListener('mousemove', e => {
+    if (!flyMode.active || !flyMode.isDragging) return;
+    const dx = e.clientX - flyMode.lastMX;
+    const dy = e.clientY - flyMode.lastMY;
+    flyMode.yaw   -= dx * 0.003;
+    flyMode.pitch -= dy * 0.003;
+    flyMode.pitch  = Math.max(-Math.PI*0.48, Math.min(Math.PI*0.48, flyMode.pitch));
+    flyMode.lastMX = e.clientX;
+    flyMode.lastMY = e.clientY;
+  });
+  document.addEventListener('mouseup', () => { flyMode.isDragging = false; });
+
+  // Skip intro on any interaction
+  const skipIntro = () => {
+    if (intro.active) {
+      intro.active = false;
+      camera.position.copy(intro.endPos);
+      if (controls) { controls.enabled = true; controls.update(); }
+    }
+  };
+  canvas.addEventListener('mousedown', skipIntro);
+  canvas.addEventListener('wheel', skipIntro);
 }
 
 function initCity(data) {
@@ -719,15 +1123,16 @@ function initCity(data) {
 
   // Scene
   scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x020510); // deep navy — like night city reference
+  scene.background = new THREE.Color(0x020510);
   scene.fog = new THREE.FogExp2(0x020818, 0.0012);
 
-  // Camera — lower angle = more dramatic city feel
+  // Camera — starts at intro start pos
   const W = window.innerWidth, H = window.innerHeight;
-  camera = new THREE.PerspectiveCamera(68, W/H, 0.5, 3000); // wide FOV = feels bigger
-  camera.position.set(30, 45, 210); // low & close — buildings tower overhead
+  camera = new THREE.PerspectiveCamera(68, W/H, 0.5, 3000);
+  camera.position.copy(intro.startPos);
+  camera.lookAt(0, 25, -30);
 
-  // Renderer — no shadows, ACES tone mapping for cinematic look
+  // Renderer
   renderer = new THREE.WebGLRenderer({canvas: document.getElementById('city-canvas'), antialias: true});
   const isMobile = W < 768;
   renderer.setSize(W, H);
@@ -737,15 +1142,15 @@ function initCity(data) {
   renderer.toneMappingExposure = 0.82;
   renderer.outputEncoding = THREE.sRGBEncoding;
 
-  // Bloom post-processing (UnrealBloomPass — makes neon glow like real neon)
+  // Bloom — stronger and more cinematic
   if (typeof THREE.EffectComposer !== 'undefined' && !isMobile) {
     composer = new THREE.EffectComposer(renderer);
     composer.addPass(new THREE.RenderPass(scene, camera));
-    const bloom = new THREE.UnrealBloomPass(new THREE.Vector2(W, H), 0.75, 0.45, 0.78);
-    composer.addPass(bloom);
+    bloomPass = new THREE.UnrealBloomPass(new THREE.Vector2(W, H), 1.4, 0.5, 0.55);
+    composer.addPass(bloomPass);
   }
 
-  // Controls
+  // Controls (disabled during intro)
   controls = new THREE.OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
   controls.dampingFactor = 0.07;
@@ -754,25 +1159,42 @@ function initCity(data) {
   controls.maxPolarAngle = Math.PI / 2.05;
   controls.minDistance = 8;
   controls.maxDistance = 800;
+  controls.enabled = false; // disabled during cinematic intro
   controls.update();
 
-  // Ground — flat dark surface, low shininess
+  // Ground — wet street look
   const gGeo = new THREE.PlaneGeometry(900, 900);
-  const gMat = new THREE.MeshLambertMaterial({color: 0x05050E});
+  const gMat = new THREE.MeshPhongMaterial({
+    color: 0x05050E,
+    shininess: 250,
+    specular: new THREE.Color(0x2244AA)
+  });
   const ground = new THREE.Mesh(gGeo, gMat);
   ground.rotation.x = -Math.PI / 2;
   scene.add(ground);
 
-  // ── Sky objects (stars, moon, sun) ──────────────────────────────
+  // Horizon glow cylinder
+  const hGeo = new THREE.CylinderGeometry(700, 700, 120, 32, 1, true);
+  const hMat = new THREE.MeshBasicMaterial({
+    color: 0xFF6600,
+    side: THREE.BackSide,
+    transparent: true,
+    opacity: 0.04
+  });
+  const horizon = new THREE.Mesh(hGeo, hMat);
+  horizon.position.y = 60;
+  scene.add(horizon);
+
+  // Stars — 1500, larger
   const starGeo = new THREE.BufferGeometry();
-  const starPos = new Float32Array(3000);
-  for (let i = 0; i < 1000; i++) {
+  const starPos = new Float32Array(1500 * 3);
+  for (let i = 0; i < 1500; i++) {
     starPos[i*3]   = (Math.random()-0.5)*1400;
     starPos[i*3+1] = 120 + Math.random()*500;
     starPos[i*3+2] = (Math.random()-0.5)*1400;
   }
   starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
-  const starMat = new THREE.PointsMaterial({color:0xffffff, size:0.55, transparent:true, opacity:0.75});
+  const starMat = new THREE.PointsMaterial({color:0xffffff, size:0.7, transparent:true, opacity:0.85});
   const stars = new THREE.Points(starGeo, starMat);
   scene.add(stars);
 
@@ -782,7 +1204,6 @@ function initCity(data) {
   const moon = new THREE.Mesh(moonGeo, moonMat);
   moon.position.set(-350, 280, -400);
   scene.add(moon);
-  // Moon craters
   const craterMat = new THREE.MeshBasicMaterial({color: 0xC8C8A0});
   [[8,6,14,-2],[5,-8,10,8],[-6,3,-18,4]].forEach(([cx,cy,cz,cr]) => {
     const c = new THREE.Mesh(new THREE.SphereGeometry(Math.abs(cr)*0.9,8,8), craterMat);
@@ -806,10 +1227,20 @@ function initCity(data) {
   dirLight.position.set(-80, 150, 60);
   dirLight.castShadow = false;
   scene.add(dirLight);
+
+  // Atmospheric city glow from below (orange ground)
+  const groundLight = new THREE.PointLight(0xFF6600, 3.5, 1200);
+  groundLight.position.set(0, 0, 0);
+  scene.add(groundLight);
+
+  // Blue rim light from opposite side
+  const rimLight = new THREE.PointLight(0x2244FF, 1.5, 800);
+  rimLight.position.set(-200, 80, -200);
+  scene.add(rimLight);
+
+  // Additional atmospheric fill
   const atm1 = new THREE.PointLight(0xF07830, 1.8, 600, 1.2);
   atm1.position.set(0, 120, 0); scene.add(atm1);
-  const atm2 = new THREE.PointLight(0x4455ff, 1.2, 600, 1.2);
-  atm2.position.set(-200, 80, -200); scene.add(atm2);
   const atm3 = new THREE.PointLight(0x22ffaa, 0.6, 400, 1.5);
   atm3.position.set(200, 60, 200); scene.add(atm3);
 
@@ -841,31 +1272,27 @@ function initCity(data) {
     }
   };
 
-  // ── Manhattan-style city grid ──────────────────────────────────
+  // ── City grid ──────────────────────────────────────────────────
   const sorted = [...data.nodes].sort((a,b)=>(b.mcap||0)-(a.mcap||0));
   const BLOCK  = 18;
   const STREET = 12;
-  const CELL   = BLOCK + STREET; // 30 units per block
-  const GRID_N = 15;             // 15×15 grid — roads cover the entire city
+  const CELL   = BLOCK + STREET;
+  const GRID_N = 15;
   const offX   = (GRID_N - 1) * CELL / 2;
   const offZ   = (GRID_N - 1) * CELL / 2;
-  // Token building layout — centered within the full grid
   const COLS_N = Math.min(GRID_N, Math.ceil(Math.sqrt(sorted.length)));
   const ROWS_N = Math.min(GRID_N, Math.ceil(sorted.length / COLS_N));
   const colStart = Math.floor((GRID_N - COLS_N) / 2);
   const rowStart = Math.floor((GRID_N - ROWS_N) / 2);
 
-  // Shared road materials
   const mMain  = new THREE.MeshBasicMaterial({color: 0x14142a});
   const mSide  = new THREE.MeshBasicMaterial({color: 0x0e0e1c});
   const mInter = new THREE.MeshBasicMaterial({color: 0x111120});
   const mLineO = new THREE.MeshBasicMaterial({color: 0xF07830, transparent:true, opacity:0.7});
-  const mLineB = new THREE.MeshBasicMaterial({color: 0x5566ff, transparent:true, opacity:0.5});
   const mPole  = new THREE.MeshPhongMaterial({color: 0x445566, shininess: 20});
-  const mLamp  = new THREE.MeshBasicMaterial({color: 0xFFAA44}); // warm sodium amber
-  const mSidew = new THREE.MeshBasicMaterial({color: 0x0c0c1a});
+  const mLamp  = new THREE.MeshBasicMaterial({color: 0xFFAA44});
 
-  // ── Horizontal streets ─────────────────────────────────────────
+  // Horizontal streets
   for (let r = 0; r <= GRID_N; r++) {
     const z = r * CELL - offZ - BLOCK/2 - STREET/2;
     const isMain = r % 3 === 0;
@@ -877,7 +1304,6 @@ function initCity(data) {
     road.position.set(0, 0.02, z);
     scene.add(road);
 
-    // Dashed center line — only on main roads
     if (isMain) {
       const dashes = Math.floor(span / 6);
       for (let d = 0; d < dashes; d++) {
@@ -888,7 +1314,6 @@ function initCity(data) {
       }
     }
 
-    // Cars — two lanes going opposite directions
     const L = span / 2 + 2;
     const laneOff = isMain ? 1.6 : 1.1;
     const nCars = isMain ? 4 : 1;
@@ -896,7 +1321,7 @@ function initCity(data) {
     for (let ci = 0; ci < nCars; ci++) createCar( L, z + laneOff, -L, z + laneOff, false);
   }
 
-  // ── Vertical streets ───────────────────────────────────────────
+  // Vertical streets
   for (let c = 0; c <= GRID_N; c++) {
     const x = c * CELL - offX - BLOCK/2 - STREET/2;
     const isMain = c % 3 === 0;
@@ -908,7 +1333,6 @@ function initCity(data) {
     road.position.set(x, 0.02, 0);
     scene.add(road);
 
-    // Dashed center line — only on main roads
     if (isMain) {
       const dashes = Math.floor(span / 6);
       for (let d = 0; d < dashes; d++) {
@@ -919,7 +1343,6 @@ function initCity(data) {
       }
     }
 
-    // Cars — two lanes
     const L = span / 2 + 2;
     const laneOff = isMain ? 1.6 : 1.1;
     const nCars = isMain ? 4 : 1;
@@ -927,7 +1350,7 @@ function initCity(data) {
     for (let ci = 0; ci < nCars; ci++) createCar(x + laneOff,  L, x + laneOff, -L, false);
   }
 
-  // ── Intersection fills ─────────────────────────────────────────
+  // Intersections + traffic lights + street lights
   for (let r = 0; r <= GRID_N; r++) {
     for (let c = 0; c <= GRID_N; c++) {
       const ix = c * CELL - offX - BLOCK/2 - STREET/2;
@@ -938,9 +1361,6 @@ function initCity(data) {
       inter.position.set(ix, 0.025, iz);
       scene.add(inter);
 
-
-
-      // ── Traffic lights at major intersections ──────────────────
       if (r % 3 === 0 && c % 3 === 0) {
         const tlGrp = new THREE.Group();
         const tlPole = new THREE.Mesh(new THREE.CylinderGeometry(0.1,0.1,7,5),
@@ -964,9 +1384,7 @@ function initCity(data) {
         trafficLights.push({bulbs: tlBulbs, phase: Math.floor(Math.random()*3), timer: Math.floor(Math.random()*220)});
       }
 
-      // ── Street lights at every other intersection ───────────────
       if ((r + c) % 2 === 0) {
-        // L-shaped arm pole
         const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.13, 9, 5), mPole);
         pole.position.set(ix + STREET*0.42, 4.5, iz + STREET*0.42);
         scene.add(pole);
@@ -974,11 +1392,9 @@ function initCity(data) {
           new THREE.MeshPhongMaterial({color:0x445566, shininess:20}));
         arm.position.set(ix + STREET*0.42 - 1.1, 9, iz + STREET*0.42);
         scene.add(arm);
-        // Lamp head
         const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.48, 7, 7), mLamp);
         lamp.position.set(ix + STREET*0.42 - 2.2, 9, iz + STREET*0.42);
         scene.add(lamp);
-        // Glow disc under lamp (warm pool of light on ground)
         const glow = new THREE.Mesh(new THREE.CircleGeometry(3.5, 10),
           new THREE.MeshBasicMaterial({color:0xFF9933, transparent:true, opacity:0.07, side:THREE.DoubleSide}));
         glow.rotation.x = -Math.PI/2;
@@ -988,9 +1404,11 @@ function initCity(data) {
     }
   }
 
-  // ── Place token buildings centered in the grid ─────────────────
+  // Place token buildings
   const posMap = new Map();
   const occupiedBlocks = new Set();
+  const buildingTopPositions = [];
+
   sorted.forEach((node, i) => {
     const row = rowStart + Math.floor(i / COLS_N);
     const col = colStart + (i % COLS_N);
@@ -1002,20 +1420,26 @@ function initCity(data) {
     const grp = createBuilding(node, bx, bz);
     scene.add(grp);
     buildingGroups.set(node.id, {group:grp, node, pos:{x:bx,z:bz}});
+    // Collect building top for particles
+    buildingTopPositions.push({x: bx, y: node._buildingHeight || 10, z: bz});
   });
 
-  // ── Fill ALL remaining grid blocks with solid filler buildings ──
+  // Fill remaining blocks with filler or trees (15% trees)
   for (let r = 0; r < GRID_N; r++) {
     for (let c = 0; c < GRID_N; c++) {
       if (occupiedBlocks.has(`${r},${c}`)) continue;
       const bx = c * CELL - offX + (Math.random()-0.5) * BLOCK * 0.45;
       const bz = r * CELL - offZ + (Math.random()-0.5) * BLOCK * 0.45;
-      createFillerBuilding(bx, bz);
+      if (Math.random() < 0.15) {
+        createTree(bx, bz);
+      } else {
+        createFillerBuilding(bx, bz);
+      }
     }
   }
 
+  // Pedestrians
   const citySpan = (GRID_N / 2) * CELL;
-
   const nPeople = isMobile ? 0 : 30;
   for (let i = 0; i < nPeople; i++) {
     const ang = Math.random() * Math.PI * 2;
@@ -1023,11 +1447,20 @@ function initCity(data) {
     createPerson(Math.cos(ang) * r2, Math.sin(ang) * r2);
   }
 
-  // Raycaster for clicks
+  // Particles from building tops
+  if (buildingTopPositions.length > 0) {
+    initParticles(buildingTopPositions);
+  }
+
+  // ── Input setup ────────────────────────────────────────────────
+  setupFlyInput(renderer.domElement);
+
+  // Raycaster for clicks + hover
   const raycaster = new THREE.Raycaster();
   const mouse = new THREE.Vector2();
 
   renderer.domElement.addEventListener('click', e => {
+    if (flyMode.active) return;
     const rect = renderer.domElement.getBoundingClientRect();
     mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
     mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
@@ -1046,16 +1479,20 @@ function initCity(data) {
     }
   });
 
-  // Hover tooltip
+  // Hover — tooltip + building glow
   renderer.domElement.addEventListener('mousemove', e => {
+    if (flyMode.active) return;
     const rect = renderer.domElement.getBoundingClientRect();
     mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
     mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
     raycaster.setFromCamera(mouse, camera);
     const hits = raycaster.intersectObjects(clickMeshes, false);
     const tt = document.getElementById('tt');
+
+    let newHoverId = null;
     if (hits.length > 0 && hits[0].object.userData.name) {
       const n = hits[0].object.userData;
+      newHoverId = n.id;
       renderer.domElement.style.cursor = 'pointer';
       document.getElementById('tt-name').textContent = `${n.name} (${n.symbol})`;
       document.getElementById('tt-price').textContent = n.price||'N/A';
@@ -1067,6 +1504,19 @@ function initCity(data) {
     } else {
       renderer.domElement.style.cursor = 'default';
       tt.style.display='none';
+    }
+
+    // Update hover glow
+    if (newHoverId !== hoveredNodeId) {
+      if (hoveredNodeId !== null) {
+        const prevMeshes = buildingMeshMap.get(hoveredNodeId);
+        if (prevMeshes) prevMeshes.forEach(m => { if (m.material) m.material.emissiveIntensity = 0.55; });
+      }
+      if (newHoverId !== null) {
+        const nextMeshes = buildingMeshMap.get(newHoverId);
+        if (nextMeshes) nextMeshes.forEach(m => { if (m.material) m.material.emissiveIntensity = 1.6; });
+      }
+      hoveredNodeId = newHoverId;
     }
   });
 
@@ -1085,8 +1535,10 @@ function initCity(data) {
       if (n.symbol?.toLowerCase().startsWith(q) || n.name?.toLowerCase().includes(q) || n.address===q) {
         openPanel(n);
         const {x,z} = entry.pos;
-        controls.target.set(x, 0, z);
-        camera.position.set(x+25, 40, z+25);
+        if (!flyMode.active) {
+          controls.target.set(x, 0, z);
+          camera.position.set(x+25, 40, z+25);
+        }
         break;
       }
     }
@@ -1100,13 +1552,49 @@ function initCity(data) {
     if (composer) composer.setSize(window.innerWidth, window.innerHeight);
   });
 
-  // Animate
+  // ── Animate ────────────────────────────────────────────────────
   function animate() {
     requestAnimationFrame(animate);
     cityTime += 0.016;
-    controls.update();
 
-    // Animate traffic lights (red=200f, yellow=35f, green=190f)
+    // Cinematic intro fly-in
+    if (intro.active) {
+      intro.frame++;
+      const t = Math.min(1, intro.frame / intro.totalFrames);
+      // Ease in-out cubic
+      const ease = t < 0.5 ? 4*t*t*t : 1-Math.pow(-2*t+2,3)/2;
+      camera.position.lerpVectors(intro.startPos, intro.endPos, ease);
+      camera.lookAt(0, 25, -30);
+      if (intro.frame >= intro.totalFrames) {
+        intro.active = false;
+        controls.enabled = true;
+        controls.update();
+      }
+    }
+
+    // Fly mode movement
+    if (flyMode.active) {
+      const speed = flyMode.keys['ShiftLeft'] || flyMode.keys['ShiftRight'] ? 4.5 : 1.8;
+      const sinY = Math.sin(flyMode.yaw), cosY = Math.cos(flyMode.yaw);
+      const sinP = Math.sin(flyMode.pitch), cosP = Math.cos(flyMode.pitch);
+      const fwd   = new THREE.Vector3(-sinY*cosP, sinP, -cosY*cosP);
+      const right = new THREE.Vector3(cosY, 0, -sinY);
+      const move  = new THREE.Vector3();
+      if (flyMode.keys['KeyW']) move.addScaledVector(fwd,   speed);
+      if (flyMode.keys['KeyS']) move.addScaledVector(fwd,  -speed);
+      if (flyMode.keys['KeyA']) move.addScaledVector(right, -speed);
+      if (flyMode.keys['KeyD']) move.addScaledVector(right,  speed);
+      if (flyMode.keys['Space']) move.y += speed;
+      if (flyMode.keys['KeyC']) move.y -= speed;
+      flyMode.vel.lerp(move, 0.15);
+      camera.position.add(flyMode.vel);
+      camera.position.y = Math.max(1.5, camera.position.y);
+      camera.quaternion.setFromEuler(new THREE.Euler(flyMode.pitch, flyMode.yaw, 0, 'YXZ'));
+    } else if (!intro.active) {
+      controls.update();
+    }
+
+    // Traffic lights
     const TL_DUR = [200, 35, 190];
     for (const tl of trafficLights) {
       tl.timer++;
@@ -1114,12 +1602,19 @@ function initCity(data) {
       tl.bulbs.forEach((b, i) => { b.material.opacity = i === tl.phase ? 1.0 : 0.08; });
     }
 
-    // Pulse antenna tips
+    // Antenna tip blinking
     for (const {mesh, offset} of antennaTips) {
       mesh.material.opacity = Math.sin(cityTime * 2.5 + offset) > 0 ? 1 : 0;
     }
 
-    // Move cars along their road
+    // Neon sign flicker
+    for (const ns of neonSigns) {
+      ns.flicker += 0.08;
+      const flick = 0.85 + 0.15 * Math.sin(ns.flicker * 7.3) * Math.sin(ns.flicker * 2.1);
+      if (ns.mesh.material) ns.mesh.material.opacity = flick;
+    }
+
+    // Cars
     for (const c of cars) {
       c.t += c.spd * c.dir;
       if (c.t >= 1) { c.t = 1; c.dir = -1; }
@@ -1130,7 +1625,7 @@ function initCity(data) {
       c.grp.rotation.y = Math.atan2((c.bx - c.ax) * c.dir, (c.bz - c.az) * c.dir);
     }
 
-    // Move pedestrians
+    // Pedestrians
     const bound = 95;
     for (const p of people) {
       p.timer++;
@@ -1146,6 +1641,9 @@ function initCity(data) {
       p.grp.position.set(p.x, 0, p.z);
       p.grp.rotation.y = -p.angle;
     }
+
+    // Particles
+    animateParticles();
 
     if (composer && useBloom) composer.render(); else renderer.render(scene, camera);
   }
