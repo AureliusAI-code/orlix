@@ -306,7 +306,7 @@ canvas{display:block}
 
 <script>
 // ── Constants ──────────────────────────────────────────────────
-const ORLIX_ADDR = '0x8aacf0f6a5c01cf4e0c85c57db5a413fde149da3';
+const ORLIX_ADDR = '0x799c28bac95b3e0b26534d1e9a586511895ecba3';
 const STABLE_SET = new Set([
   '0x4200000000000000000000000000000000000006',
   '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913',
@@ -334,7 +334,7 @@ const BASE_TOKEN_ADDRS = [
   '0x9a26f5433671751c3276a065f57e5a02d2817973',
   '0xd07379a755a8f11b57610154861d694b2a0f615a',
   '0x4158734d47fc9692176b17969a5a197cca5943eb',
-  '0x8aacf0f6a5c01cf4e0c85c57db5a413fde149da3',
+  '0x799c28bac95b3e0b26534d1e9a586511895ecba3', // ORLIX (real)
   '0x3c281a39944a2319aa653d81cfd93ca10983d234',
   '0x1c7a460413dd4e964f96d8dfc56e7223ce88cd85',
   '0xe3086852a4b125803c815a158249ae468a3254ca',
@@ -359,6 +359,9 @@ const VALID_SYM = /^[A-Za-z0-9.$_-]{1,12}$/;  // sane ticker only
 // Reject anything that smells fake; keep the real $ORLIX, drop impostors.
 function isLegitPair(p) {
   if (!p || p.chainId !== 'base' || !p.baseToken || !p.quoteToken) return false;
+  // The real ORLIX is always the landmark — never filter it out.
+  if ((p.baseToken.address || '').toLowerCase() === ORLIX_ADDR.toLowerCase()
+      && QUOTE_OK.has((p.quoteToken.address || '').toLowerCase())) return true;
   if ((p.liquidity?.usd || 0) < MIN_LIQ) return false;
   if ((p.volume?.h24   || 0) < MIN_VOL) return false;
   if (!(Number(p.fdv) > 0)) return false;
