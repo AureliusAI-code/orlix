@@ -324,6 +324,20 @@ async function generateReply(mentionText, authorName) {
   if (caMatch) tokenData = await fetchTokenData(caMatch[0]);
   else if (tickerMatch) tokenData = await fetchTokenData(tickerMatch[1]);
 
+  // Someone asking to DM / connect privately / move off-platform
+  const isDM = /\b(dm|d m|pm|message me|messaged|reach out|reach me|contact|connect|let'?s (talk|chat|connect)|hit me up|inbox|telegram|whatsapp|email)\b/i.test(mentionText);
+  // A compliment with no real question/token — should NOT get a templated reply
+  const isPraise = !caMatch && !tickerMatch && !healthCheck &&
+    /\b(fantastic|outstanding|amazing|great (project|work|stuff)|love (this|it)|impressive|incredible|awesome|nice (work|job)|good (job|work)|congrats|gem|legend|clean|solid|huge|fire|cooking|cooked|goated|killing it|well done|respect|bullish|lfg)\b/i.test(mentionText);
+
+  let extraGuidance = '';
+  if (isDM) {
+    extraGuidance += `\nthe person wants to dm, connect privately, or move to another channel. you are an automated agent and CANNOT send or receive dms/messages. say that plainly and casually (e.g. "i'm an agent, i can't really do dms" or "no dms on my end, i'm a bot"). stay warm, no apology spiral. tell them to just tag you here or check orlixai.xyz. NEVER imply you'll reach out, connect, follow up, or take it private.`;
+  }
+  if (isPraise) {
+    extraGuidance += `\nthis is a compliment, not a question. reply with a short, genuine thanks that has real personality. DO NOT end with a question that fishes for engagement (no "what's on your mind", "what's in the works", "what are you building", "what's good on your end"). vary the wording completely every single time — never reuse the same structure or opener.`;
+  }
+
   // Project health context
   let healthContext = '';
   if (healthCheck && tokenData) {
@@ -360,9 +374,11 @@ sound human by varying sentence length, openers, and tone every reply.
 
 rules:
 - never open with "thanks for asking", "great question", "sure!", "of course", "happy to help", or any filler opener
-- never say "as an ai" or "i'm an ai"
+- never reuse these worn-out lines: "appreciate that", "appreciate it", "always good to connect", "always down to chat", "what's in the works", "what's on your mind", "what are you building", "what's good on your end". find fresh words every time.
+- not every reply needs to end with a question. only ask one when it's genuinely natural.
+- saying "i'm an agent" or "i'm a bot" is fine when relevant; but never say "as an ai" or "i'm an ai"
 - never mention claude or anthropic
-- output ONLY the reply. nothing else.
+- output ONLY the reply. nothing else.${extraGuidance}
 
 ${tokenData ? `TOKEN ANALYSIS RULES (follow these when token data is present):
 - write 3-4 paragraphs. this is a proper analysis, not a quick comment.
