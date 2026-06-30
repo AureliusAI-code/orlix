@@ -886,26 +886,33 @@ function buildScenery() {
   shore.position.set(0, -0.25, 172);
   scene.add(shore);
 
-  // ── River — winds from the mountains down to the ocean ──────
-  // Runs along the -X side of the city (x ~ -150), snaking in z toward the sea.
+  // ── River — one smooth continuous channel from the hills to the sea ──
+  // Wide segments with rounded joints at every bend so it never looks broken.
   const riverPts = [
-    [-205, -200], [-185, -120], [-165, -40], [-158, 40], [-160, 110], [-150, 170]
+    [-212, -210], [-190, -130], [-172, -50], [-164, 30], [-167, 100], [-156, 165], [-150, 188]
   ];
+  const RW = 17; // river width
   for (let i = 0; i < riverPts.length - 1; i++) {
     const [ax, az] = riverPts[i];
     const [bx, bz] = riverPts[i + 1];
     const mx = (ax + bx) / 2, mz = (az + bz) / 2;
     const dx = bx - ax, dz = bz - az;
-    const len = Math.sqrt(dx * dx + dz * dz) + 8;
-    const seg = new THREE.Mesh(new THREE.BoxGeometry(14, 0.4, len), waterMat);
-    seg.position.set(mx, -0.2, mz);
+    const len = Math.sqrt(dx * dx + dz * dz) + RW; // generous overlap into joints
+    const seg = new THREE.Mesh(new THREE.BoxGeometry(RW, 0.3, len), waterMat);
+    seg.position.set(mx, -0.18, mz);
     seg.rotation.y = -Math.atan2(dx, dz);
     scene.add(seg);
   }
+  // Rounded joint discs hide the corners where segments meet at bends
+  for (const [px, pz] of riverPts) {
+    const j = new THREE.Mesh(new THREE.CylinderGeometry(RW / 2, RW / 2, 0.3, 18), waterMat);
+    j.position.set(px, -0.18, pz);
+    scene.add(j);
+  }
   // Two small bridges crossing the river
   const bridgeMat = new THREE.MeshPhongMaterial({ color: 0x2a2622, shininess: 15 });
-  [[-168, -30], [-156, 90]].forEach(([bx, bz]) => {
-    const b = new THREE.Mesh(new THREE.BoxGeometry(20, 1.2, 6), bridgeMat);
+  [[-170, -30], [-165, 95]].forEach(([bx, bz]) => {
+    const b = new THREE.Mesh(new THREE.BoxGeometry(24, 1.2, 6), bridgeMat);
     b.position.set(bx, 1.0, bz);
     scene.add(b);
   });
@@ -1698,12 +1705,10 @@ function initCity(data) {
     buildingTopPositions.push({x: s.x, y: node._buildingHeight || 10, z: s.z});
   });
 
-  // Fill remaining slots with filler buildings (trees on street-adjacent edges)
-  const fillRadius = half * 0.94;
+  // Fill EVERY remaining slot with a building — full, dense city (no empty lots)
   for (let i = sorted.length; i < slotList.length; i++) {
     const s = slotList[i];
-    if (Math.sqrt(s.d) > fillRadius) continue;   // circular downtown footprint
-    if (Math.random() < 0.07) createTree(s.x, s.z);
+    if (Math.random() < 0.04) createTree(s.x, s.z);   // occasional pocket of green
     else createFillerBuilding(s.x, s.z);
   }
 
