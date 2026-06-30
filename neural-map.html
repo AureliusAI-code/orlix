@@ -697,7 +697,8 @@ function createPerson(lane, perpOff, bound) {
 
   const perp = lane.coord + lane.side * perpOff;
   const a    = (Math.random() * 2 - 1) * bound;
-  const CURB = 0.12;
+  const CURB = 0.18;
+  grp.scale.setScalar(2.2);  // bigger so pedestrians read at city scale
   grp.position.set(lane.horizontal ? a : perp, CURB, lane.horizontal ? perp : a);
   scene.add(grp);
   people.push({
@@ -909,35 +910,33 @@ function buildScenery() {
     scene.add(b);
   });
 
-  // ── Mountains — ring around the city, EXCEPT the ocean (+Z) side ──
+  // ── Mountains — soft, smooth silhouette ringing the city (not the +Z sea) ──
+  // Smooth (high-segment) cones + muted dark blue-grey so they read as a distant
+  // backdrop, not jagged cardboard triangles.
   const rockMats = [
-    new THREE.MeshPhongMaterial({ color: 0x2a2e33, shininess: 8 }),
-    new THREE.MeshPhongMaterial({ color: 0x33373d, shininess: 8 })
+    new THREE.MeshPhongMaterial({ color: 0x171b24, shininess: 3, flatShading: false }),
+    new THREE.MeshPhongMaterial({ color: 0x1d2230, shininess: 3, flatShading: false }),
+    new THREE.MeshPhongMaterial({ color: 0x141926, shininess: 3, flatShading: false })
   ];
-  const snowMat = new THREE.MeshPhongMaterial({ color: 0xeef2f6, shininess: 20 });
-  const M = 18;
+  const snowMat = new THREE.MeshPhongMaterial({ color: 0xdfe7ef, shininess: 12 });
+  const M = 22;
   for (let i = 0; i < M; i++) {
-    // angle range avoids the ocean side (+Z, around angle PI/2 in our mapping)
-    const ang = (i / M) * Math.PI * 2;
+    const ang = (i / M) * Math.PI * 2 + (Math.random() - 0.5) * 0.18;
     const dirZ = Math.sin(ang);
-    if (dirZ > 0.45) continue; // skip mountains that would sit in the sea
-    const r = 200 + Math.random() * 60;
+    if (dirZ > 0.35) continue; // keep the ocean (+Z) horizon open
+    const r = 250 + Math.random() * 70;          // pushed back → distant backdrop
     const x = Math.cos(ang) * r;
     const z = dirZ * r;
-    const h = 25 + Math.random() * 45;
-    const baseR = h * (0.55 + Math.random() * 0.25);
-    const segs = 5 + Math.floor(Math.random() * 3);
-    const mat = rockMats[Math.floor(Math.random() * rockMats.length)];
-    const mtn = new THREE.Mesh(new THREE.ConeGeometry(baseR, h, segs), mat);
-    mtn.position.set(x, h / 2 - 1, z);
-    mtn.rotation.y = Math.random() * Math.PI;
+    const h = 30 + Math.random() * 55;
+    const baseR = h * (0.7 + Math.random() * 0.35);
+    const mtn = new THREE.Mesh(new THREE.ConeGeometry(baseR, h, 24), rockMats[i % rockMats.length]);
+    mtn.position.set(x, h / 2 - 2, z);
     scene.add(mtn);
-    // snow cap on the taller peaks
-    if (h > 48) {
-      const capH = h * 0.3;
-      const cap = new THREE.Mesh(new THREE.ConeGeometry(baseR * 0.34, capH, segs), snowMat);
-      cap.position.set(x, h - capH / 2 - 1, z);
-      cap.rotation.y = mtn.rotation.y;
+    // subtle snow cap only on the tallest peaks
+    if (h > 60) {
+      const capH = h * 0.22;
+      const cap = new THREE.Mesh(new THREE.ConeGeometry(baseR * 0.3, capH, 24), snowMat);
+      cap.position.set(x, h - capH / 2 - 2, z);
       scene.add(cap);
     }
   }
@@ -1506,15 +1505,15 @@ function initCity(data) {
   scene.add(groundLight);
 
   // Blue rim light from opposite side
-  const rimLight = new THREE.PointLight(0x2244FF, 1.5, 800);
-  rimLight.position.set(-200, 80, -200);
+  const rimLight = new THREE.PointLight(0x2244FF, 1.0, 380);
+  rimLight.position.set(-120, 80, -120);
   scene.add(rimLight);
 
   // Additional atmospheric fill
   const atm1 = new THREE.PointLight(0xF07830, 1.8, 600, 1.2);
   atm1.position.set(0, 120, 0); scene.add(atm1);
-  const atm3 = new THREE.PointLight(0x22ffaa, 0.6, 400, 1.5);
-  atm3.position.set(200, 60, 200); scene.add(atm3);
+  const atm3 = new THREE.PointLight(0xFFAA55, 0.5, 240, 1.5);
+  atm3.position.set(60, 50, 60); scene.add(atm3);
 
   // ── Day / Night toggle ──────────────────────────────────────────
   let isNight = true;
@@ -1594,9 +1593,9 @@ function initCity(data) {
   const mLineO  = new THREE.MeshBasicMaterial({ color: 0xF07830, transparent:true, opacity:0.55 });
   const mPole   = new THREE.MeshPhongMaterial({ color: 0x556677, shininess: 25 });
   const mLamp   = new THREE.MeshBasicMaterial({ color: 0xFFAA44 });
-  const sidewalkMat = new THREE.MeshPhongMaterial({ color: 0x2b2f3a, shininess: 12 });
+  const sidewalkMat = new THREE.MeshPhongMaterial({ color: 0x232733, shininess: 6 });
   const roadLen = totalSpan + STREET * 2;
-  const SIDEWALK_OFF = 4.3;  // street-center → sidewalk lane (cars run at ±2.3, road half = 5.5)
+  const SIDEWALK_OFF = 4.4;  // street-center → sidewalk lane (cars run at ±2.3, road half = 5.5)
 
   function drawStreet(coord, horizontal) {
     const geo  = horizontal ? new THREE.BoxGeometry(roadLen, 0.06, STREET)
@@ -1607,10 +1606,10 @@ function initCity(data) {
     // Raised sidewalks (curbs) on both edges — pedestrians walk here
     for (const s of [-1, 1]) {
       const off = coord + s * SIDEWALK_OFF;
-      const sg = horizontal ? new THREE.BoxGeometry(roadLen, 0.12, 1.9)
-                            : new THREE.BoxGeometry(1.9, 0.12, roadLen);
+      const sg = horizontal ? new THREE.BoxGeometry(roadLen, 0.18, 1.5)
+                            : new THREE.BoxGeometry(1.5, 0.18, roadLen);
       const sw = new THREE.Mesh(sg, sidewalkMat);
-      sw.position.set(horizontal ? 0 : off, 0.06, horizontal ? off : 0);
+      sw.position.set(horizontal ? 0 : off, 0.09, horizontal ? off : 0);
       scene.add(sw);
     }
     // Dashed center line
@@ -1702,7 +1701,7 @@ function initCity(data) {
     }
   }
   const pedBound = half - 3;
-  const nPeople = isMobile ? 0 : 46;
+  const nPeople = isMobile ? 30 : 60;   // always populate sidewalks
   for (let i = 0; i < nPeople; i++) {
     const lane = pedLanes[Math.floor(Math.random() * pedLanes.length)];
     createPerson(lane, SIDEWALK_OFF, pedBound);
@@ -1916,9 +1915,9 @@ function initCity(data) {
       for (let i = 0; i < pos.count; i++) {
         const ix = i * 3;
         const bx = base[ix], by = base[ix + 1];
-        // gentle rolling waves over the flat plane (local x/y before rotation)
-        const wave = Math.sin(bx * 0.025 + envTime * 1.3) * 0.9
-                   + Math.cos(by * 0.03 + envTime * 0.9) * 0.7;
+        // gentle ripples — small amplitude so the sea stays calm, not spiky
+        const wave = Math.sin(bx * 0.04 + envTime * 1.3) * 0.32
+                   + Math.cos(by * 0.05 + envTime * 0.9) * 0.22;
         pos.array[ix + 2] = wave;
       }
       pos.needsUpdate = true;
