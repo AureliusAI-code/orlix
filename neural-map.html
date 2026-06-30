@@ -603,8 +603,8 @@ const intro = {
   active: true,
   frame: 0,
   totalFrames: 260,
-  startPos: new THREE.Vector3(60, 280, 420),
-  endPos: new THREE.Vector3(40, 55, 180),
+  startPos: new THREE.Vector3(30, 170, 250),
+  endPos: new THREE.Vector3(0, 38, 115),
 };
 
 function toggleFlyMode() {
@@ -1184,8 +1184,8 @@ function initCity(data) {
 
   // Scene
   scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x020510);
-  scene.fog = new THREE.FogExp2(0x020818, 0.0012);
+  scene.background = new THREE.Color(0x05060E);
+  scene.fog = new THREE.FogExp2(0x05060E, 0.0032);
 
   // Camera — starts at intro start pos
   const W = window.innerWidth, H = window.innerHeight;
@@ -1219,12 +1219,12 @@ function initCity(data) {
   controls.minPolarAngle = 0.1;
   controls.maxPolarAngle = Math.PI / 2.12;
   controls.minDistance = 10;
-  controls.maxDistance = 600;
+  controls.maxDistance = 260;
   controls.enabled = false; // disabled during cinematic intro
   controls.update();
 
-  // Ground — wet street look
-  const gGeo = new THREE.PlaneGeometry(900, 900);
+  // Ground — wet street look, sized to the city (was a huge empty plane)
+  const gGeo = new THREE.PlaneGeometry(460, 460);
   const gMat = new THREE.MeshPhongMaterial({
     color: 0x05050E,
     shininess: 250,
@@ -1235,7 +1235,7 @@ function initCity(data) {
   scene.add(ground);
 
   // Horizon glow cylinder
-  const hGeo = new THREE.CylinderGeometry(700, 700, 120, 32, 1, true);
+  const hGeo = new THREE.CylinderGeometry(340, 340, 120, 32, 1, true);
   const hMat = new THREE.MeshBasicMaterial({
     color: 0xFF6600,
     side: THREE.BackSide,
@@ -1313,7 +1313,7 @@ function initCity(data) {
     if (isNight) {
       // Deep neon night
       scene.background = new THREE.Color(0x05060E);
-      scene.fog = new THREE.FogExp2(0x05060E, 0.0022);
+      scene.fog = new THREE.FogExp2(0x05060E, 0.0032);
       ambLight.color.set(0x2a3a55); ambLight.intensity = 1.6;
       dirLight.color.set(0x9fb4d8); dirLight.intensity = 1.0;
       stars.visible = true; moon.visible = true; sunSphere.visible = false;
@@ -1327,7 +1327,7 @@ function initCity(data) {
     } else {
       // Warm golden-hour clear day — soft, premium, not washed out
       scene.background = new THREE.Color(0xAFCAE6);
-      scene.fog = new THREE.FogExp2(0xC9D8E8, 0.0011);
+      scene.fog = new THREE.FogExp2(0xC9D8E8, 0.0018);
       ambLight.color.set(0xFFF1DD); ambLight.intensity = 2.3;
       dirLight.color.set(0xFFE6BE); dirLight.intensity = 2.1;
       stars.visible = false; moon.visible = false; sunSphere.visible = true;
