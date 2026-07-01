@@ -461,6 +461,7 @@ async function setupBot() {
     const r = await tg(method, body);
     return r ? await r.json().catch(() => ({ ok: false })) : { ok: false, error: 'no token' };
   };
+  // Single English command set for everyone (matches the English website/brand).
   const en = [
     { command: 'start',   description: 'About Orlix + get started' },
     { command: 'menu',    description: 'Quick actions' },
@@ -472,20 +473,10 @@ async function setupBot() {
     { command: 'connect', description: 'Verify 10M $ORLIX for AI access' },
     { command: 'help',    description: 'Full command list' },
   ];
-  const id = [
-    { command: 'start',   description: 'Tentang Orlix + mulai' },
-    { command: 'menu',    description: 'Aksi cepat' },
-    { command: 'wallet',  description: 'Agent wallet Base kamu' },
-    { command: 'price',   description: 'Harga token cepat (0x…)' },
-    { command: 'watch',   description: 'Pelacak aktivitas dompet (0x…)' },
-    { command: 'analyze', description: 'Analisa token mendalam (0x…)' },
-    { command: 'web',     description: 'Buka dashboard lengkap' },
-    { command: 'connect', description: 'Verifikasi 10M $ORLIX' },
-    { command: 'help',    description: 'Daftar perintah lengkap' },
-  ];
   return {
-    commandsEN: (await post('setMyCommands', { commands: en })).ok,
-    commandsID: (await post('setMyCommands', { commands: id, language_code: 'id' })).ok,
+    commands:   (await post('setMyCommands', { commands: en })).ok,
+    // remove any old Indonesian override so ID-language users also see English
+    clearedID:  (await post('deleteMyCommands', { language_code: 'id' })).ok,
     menuButton: (await post('setChatMenuButton', { menu_button: { type: 'commands' } })).ok,
   };
 }
