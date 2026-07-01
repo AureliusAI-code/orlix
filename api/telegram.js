@@ -101,6 +101,21 @@ async function getOrlixBalance(wallet) {
   } catch { return 0n; }
 }
 
+// ERC-20 balanceOf(holder) → raw bigint
+async function erc20BalanceOf(token, holder) {
+  const data = '0x70a08231' + holder.replace('0x', '').toLowerCase().padStart(64, '0');
+  const hex = await baseRpc('eth_call', [{ to: token, data }, 'latest']);
+  return (!hex || hex === '0x') ? 0n : BigInt(hex);
+}
+
+// pretty-print a decimal-string amount
+function fmtAmt(str) {
+  const n = Number(str);
+  if (!isFinite(n)) return str;
+  if (n === 0) return '0';
+  return n.toLocaleString('en-US', { maximumFractionDigits: n >= 1 ? 4 : 8 });
+}
+
 // ── Gate check ────────────────────────────────────────────────────────────────
 function isVerified(chatId) {
   return sessions.get(chatId)?.verified === true;
@@ -466,6 +481,7 @@ async function setupBot() {
     { command: 'start',   description: 'About Orlix + get started' },
     { command: 'menu',    description: 'Quick actions' },
     { command: 'wallet',  description: 'Your Base agent wallet' },
+    { command: 'balance', description: 'Check your agent wallet balance' },
     { command: 'price',   description: 'Quick token price' },
     { command: 'watch',   description: 'Wallet activity tracker' },
     { command: 'analyze', description: 'Deep token analysis' },
@@ -568,8 +584,8 @@ module.exports = async function handler(req, res) {
       parse_mode: 'Markdown',
       disable_web_page_preview: true,
       text: isID
-        ? `*⚡ Menu Orlix AI*\n\nTap perintah:\n/wallet — Agent wallet Base kamu\n/price \`0x…\` — Harga token\n/watch \`0x…\` — Aktivitas dompet\n/analyze \`0x…\` — Analisa token _(10M $ORLIX)_\n/connect — Verifikasi akses\n/help — Bantuan lengkap\n\n_Atau ketik pertanyaan apa saja ke AI._`
-        : `*⚡ Orlix AI Menu*\n\nTap a command:\n/wallet — Your Base agent wallet\n/price \`0x…\` — Token price\n/watch \`0x…\` — Wallet activity\n/analyze \`0x…\` — Token analysis _(10M $ORLIX)_\n/connect — Verify access\n/help — Full help\n\n_Or just type any question to the AI._`,
+        ? `*⚡ Menu Orlix AI*\n\nTap perintah:\n/wallet — Agent wallet Base kamu\n/balance — Cek saldo agent wallet\n/price \`0x…\` — Harga token\n/watch \`0x…\` — Aktivitas dompet\n/analyze \`0x…\` — Analisa token _(10M $ORLIX)_\n/connect — Verifikasi akses\n/help — Bantuan lengkap\n\n_Atau ketik pertanyaan apa saja ke AI._`
+        : `*⚡ Orlix AI Menu*\n\nTap a command:\n/wallet — Your Base agent wallet\n/balance — Check agent wallet balance\n/price \`0x…\` — Token price\n/watch \`0x…\` — Wallet activity\n/analyze \`0x…\` — Token analysis _(10M $ORLIX)_\n/connect — Verify access\n/help — Full help\n\n_Or just type any question to the AI._`,
       reply_markup: { inline_keyboard: [
         [{ text: '🚀 Open Dashboard', url: 'https://orlixai.xyz/app' }],
         [{ text: '🏙 Base City', url: 'https://orlixai.xyz/neural-map.html' },
@@ -589,8 +605,40 @@ module.exports = async function handler(req, res) {
       return res.status(200).json({ ok: true });
     }
     await send(chatId, isID
-      ? `👛 *Agent Wallet Base kamu:*\n\`${w.address}\`\n\n_Spending dinonaktifkan sampai approval dikonfigurasi._`
-      : `👛 *Your Base agent wallet:*\n\`${w.address}\`\n\n_Spending is disabled until approval is configured._`);
+      ? `👛 *Agent Wallet Base kamu:*\n\`${w.address}\`\n\n_Spending dinonaktifkan sampai approval dikonfigurasi. Gunakan /balance untuk cek saldo._`
+      : `👛 *Your Base agent wallet:*\n\`${w.address}\`\n\n_Spending is disabled until approval is configured. Use /balance to check funds._`);
+    return res.status(200).json({ ok: true });
+  }
+
+  // ── /balance ────────────────────────────────────────────────────────────────
+  if (text === '/balance' || text.startsWith('/balance ')) {
+    const w = agentWallet(userId);
+    if (!w) {
+      await send(chatId, isID ? `⚠️ Agent wallet belum dikonfigurasi.` : `⚠️ Agent wallet is not configured yet.`);
+      return res.status(200).json({ ok: true });
+    }
+    const addr = w.address;
+    const tokenArg = (text.split(/\s+/)[1] || '').toLowerCase();
+    try {
+      const [ethHex, orlixRaw] = await Promise.all([
+        baseRpc('eth_getBalance', [addr, 'latest']),
+        getOrlixBalance(addr),
+      ]);
+      const lines = [
+        `Ξ *ETH:* ${fmtAmt(ethers.formatEther(BigInt(ethHex || '0x0')))}`,
+        `🪙 *ORLIX:* ${fmtAmt(ethers.formatUnits(orlixRaw, 18))}`,
+      ];
+      if (tokenArg && /^0x[0-9a-f]{40}$/i.test(tokenArg)) {
+        const [info, raw] = await Promise.all([getTokenInfo(tokenArg), erc20BalanceOf(tokenArg, addr)]);
+        lines.push(`💠 *${info.symbol}:* ${fmtAmt(ethers.formatUnits(raw, info.decimals))}`);
+      }
+      await send(chatId,
+        `👛 *${isID ? 'Saldo Agent Wallet' : 'Agent Wallet Balance'}*\n\`${addr}\`\n\n` +
+        lines.join('\n') +
+        `\n\n_${isID ? 'Read-only · spending dinonaktifkan. Cek token lain: /balance 0x…' : 'Read-only · spending disabled. Check another token: /balance 0x…'}_`);
+    } catch (e) {
+      await send(chatId, `⚠️ ${isID ? 'Gagal cek saldo' : 'Balance check failed'}: ${e.message}`);
+    }
     return res.status(200).json({ ok: true });
   }
 
@@ -611,6 +659,7 @@ module.exports = async function handler(req, res) {
       `*🌐 ${isID ? 'Lainnya' : 'Other'}*\n` +
       `/menu — ${isID ? 'Menu aksi cepat' : 'Quick actions menu'}\n` +
       `/wallet — ${isID ? 'Agent wallet Base kamu' : 'Your Base agent wallet'}\n` +
+      `/balance — ${isID ? 'Cek saldo agent wallet' : 'Check agent wallet balance'}\n` +
       `/web — ${isID ? 'Dashboard lengkap (19 model AI)' : 'Full dashboard (19 AI models)'}\n\n` +
       `[orlixai.xyz](https://orlixai.xyz)`
     );
