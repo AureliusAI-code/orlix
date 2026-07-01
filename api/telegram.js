@@ -32,6 +32,34 @@ function agentWallet(userId) {
   return new ethers.Wallet(pk);
 }
 
+// ── AI access gate via the agent wallet ──────────────────────────────────────
+// No /connect needed: a user unlocks AI simply by holding ≥10M $ORLIX in THEIR
+// own agent wallet (from /wallet). We read that balance on demand and cache a
+// positive result briefly to avoid an RPC on every message.
+const gateCache = new Map(); // userId → { ok, t }
+async function aiAllowed(chatId, userId) {
+  if (isVerified(chatId)) return { ok: true };            // legacy /connect session still works
+  const w = agentWallet(userId);
+  if (!w) return { ok: false, address: null, bal: 0n };
+  const cached = gateCache.get(userId);
+  if (cached && cached.ok && Date.now() - cached.t < 180000) return { ok: true, address: w.address };
+  const bal = await getOrlixBalance(w.address);
+  const ok  = bal >= GATE_MIN;
+  gateCache.set(userId, { ok, t: Date.now() });
+  return { ok, address: w.address, bal };
+}
+async function denyAiGate(chatId, lang, gate) {
+  const isID = lang === 'id';
+  if (!gate.address) {
+    return send(chatId, isID ? '⚠️ Agent wallet belum dikonfigurasi.' : '⚠️ Agent wallet is not configured yet.');
+  }
+  const held = Number(gate.bal / 10n ** 15n) / 1000;
+  const heldFmt = held.toLocaleString('en-US', { maximumFractionDigits: 0 });
+  return send(chatId, isID
+    ? `🔒 *Akses AI Terkunci*\n\nFitur AI perlu *10,000,000 $ORLIX* di agent wallet kamu.\n\nSetor ke:\n\`${gate.address}\`\n\nSaldo kamu: *${heldFmt} ORLIX*\n\n_Cek: /balance · Beli: [orlixai.xyz/token](https://orlixai.xyz/token)_`
+    : `🔒 *AI Access Locked*\n\nAI features need *10,000,000 $ORLIX* in your agent wallet.\n\nDeposit to:\n\`${gate.address}\`\n\nYour balance: *${heldFmt} ORLIX*\n\n_Check: /balance · Buy: [orlixai.xyz/token](https://orlixai.xyz/token)_`);
+}
+
 function aiEndpoint(key) {
   const isAnthropicKey = key.startsWith('sk-ant-');
   return {
@@ -551,7 +579,7 @@ module.exports = async function handler(req, res) {
     const session = sessions.get(chatId);
     const accessLine = session?.verified
       ? (isID ? `\n✅ _Wallet terverifikasi · ${session.balance} ORLIX_` : `\n✅ _Wallet verified · ${session.balance} ORLIX_`)
-      : (isID ? `\n🔒 _Fitur AI memerlukan 10M $ORLIX — gunakan /connect 0xWALLET_` : `\n🔒 _AI features require 10M $ORLIX — use /connect 0xWALLET_`);
+      : (isID ? `\n🔒 _Fitur AI: hold 10M $ORLIX di agent wallet kamu — /wallet lalu setor, cek /balance_` : `\n🔒 _AI features: hold 10M $ORLIX in your agent wallet — /wallet, deposit, then /balance_`);
 
     await send(chatId,
       `👋 ${isID ? `Selamat datang di *Orlix AI*, ${firstName}!` : `Welcome to *Orlix AI*, ${firstName}!`}\n\n` +
@@ -605,8 +633,8 @@ module.exports = async function handler(req, res) {
       return res.status(200).json({ ok: true });
     }
     await send(chatId, isID
-      ? `👛 *Agent Wallet Base kamu:*\n\`${w.address}\`\n\n_Spending dinonaktifkan sampai approval dikonfigurasi. Gunakan /balance untuk cek saldo._`
-      : `👛 *Your Base agent wallet:*\n\`${w.address}\`\n\n_Spending is disabled until approval is configured. Use /balance to check funds._`);
+      ? `👛 *Agent Wallet Base kamu:*\n\`${w.address}\`\n\n💎 Setor *10,000,000 $ORLIX* ke sini untuk buka fitur AI — tanpa /connect.\n\n_Cek saldo: /balance · Spending dinonaktifkan (receive-only)._`
+      : `👛 *Your Base agent wallet:*\n\`${w.address}\`\n\n💎 Deposit *10,000,000 $ORLIX* here to unlock AI — no /connect needed.\n\n_Check balance: /balance · Spending disabled (receive-only)._`);
     return res.status(200).json({ ok: true });
   }
 
@@ -648,7 +676,7 @@ module.exports = async function handler(req, res) {
     await send(chatId,
       `*Orlix AI — ${isID ? 'Panduan Lengkap' : 'Full Command Reference'}*\n\n` +
       `*🔑 ${isID ? 'Akses' : 'Access'}* ${verified ? '✅' : '🔒'}\n` +
-      `/connect \`0x...\` — ${isID ? 'Verifikasi 10M $ORLIX untuk akses AI penuh' : 'Verify 10M $ORLIX for full AI access'}\n\n` +
+      `${isID ? 'Setor 10M $ORLIX ke agent wallet kamu untuk buka fitur AI' : 'Hold 10M $ORLIX in your agent wallet to unlock AI'} — /wallet\n\n` +
       `*📊 ${isID ? 'Data Onchain (Gratis)' : 'Onchain Data (Free)'}*\n` +
       `/price \`0x...\` — ${isID ? 'Harga token instan' : 'Instant token price'}\n` +
       `/watch \`0x...\` — ${isID ? 'Saldo & transaksi wallet' : 'Wallet balance & transactions'}\n\n` +
@@ -703,7 +731,7 @@ module.exports = async function handler(req, res) {
 
   // ── /analyze (gated) ──────────────────────────────────────────────────────
   if (text.startsWith('/analyze')) {
-    if (!isVerified(chatId)) return requireGate(chatId, lang).then(() => res.status(200).json({ ok: true }));
+    { const g = await aiAllowed(chatId, userId); if (!g.ok) { await denyAiGate(chatId, lang, g); return res.status(200).json({ ok: true }); } }
     const addr = (text.split(/\s+/)[1] || '').toLowerCase();
     if (!addr || !/^0x[0-9a-f]{40}$/i.test(addr)) {
       await send(chatId, isID ? `⚠️ Contoh: /analyze \`0x...\`` : `⚠️ Usage: /analyze \`0x...\``);
@@ -717,7 +745,7 @@ module.exports = async function handler(req, res) {
 
   // ── Photo / vision (gated) ────────────────────────────────────────────────
   if (message.photo) {
-    if (!isVerified(chatId)) return requireGate(chatId, lang).then(() => res.status(200).json({ ok: true }));
+    { const g = await aiAllowed(chatId, userId); if (!g.ok) { await denyAiGate(chatId, lang, g); return res.status(200).json({ ok: true }); } }
     const caption = message.caption || (isID ? 'Jelaskan gambar ini' : 'Describe this image');
     const photo   = message.photo[message.photo.length - 1];
     const fileRes = await tg('getFile', { file_id: photo.file_id }).then(r => r?.json()).catch(() => null);
@@ -756,7 +784,7 @@ module.exports = async function handler(req, res) {
   // ── Free text → AI chat (gated) ───────────────────────────────────────────
   if (!text) return res.status(200).json({ ok: true });
 
-  if (!isVerified(chatId)) return requireGate(chatId, lang).then(() => res.status(200).json({ ok: true }));
+  { const g = await aiAllowed(chatId, userId); if (!g.ok) { await denyAiGate(chatId, lang, g); return res.status(200).json({ ok: true }); } }
 
   try { await cmdChat(chatId, text, lang); }
   catch (e) { await send(chatId, `⚠️ Error: ${e.message}`); }
