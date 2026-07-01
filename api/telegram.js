@@ -453,17 +453,63 @@ Guidelines:
 
 // ── Main handler ──────────────────────────────────────────────────────────────
 
+// ── One-time setup: register the command list + the blue "Menu" button ──────────
+// The native Telegram Menu button appears automatically once commands are set.
+// Trigger once after deploy:  GET /api/telegram?setup=<TELEGRAM_WEBHOOK_SECRET>
+async function setupBot() {
+  const post = async (method, body) => {
+    const r = await tg(method, body);
+    return r ? await r.json().catch(() => ({ ok: false })) : { ok: false, error: 'no token' };
+  };
+  const en = [
+    { command: 'start',   description: 'About Orlix + get started' },
+    { command: 'menu',    description: 'Quick actions' },
+    { command: 'wallet',  description: 'Your Base agent wallet' },
+    { command: 'price',   description: 'Quick token price (0x…)' },
+    { command: 'watch',   description: 'Wallet activity tracker (0x…)' },
+    { command: 'analyze', description: 'Deep token analysis (0x…)' },
+    { command: 'web',     description: 'Open the full dashboard' },
+    { command: 'connect', description: 'Verify 10M $ORLIX for AI access' },
+    { command: 'help',    description: 'Full command list' },
+  ];
+  const id = [
+    { command: 'start',   description: 'Tentang Orlix + mulai' },
+    { command: 'menu',    description: 'Aksi cepat' },
+    { command: 'wallet',  description: 'Agent wallet Base kamu' },
+    { command: 'price',   description: 'Harga token cepat (0x…)' },
+    { command: 'watch',   description: 'Pelacak aktivitas dompet (0x…)' },
+    { command: 'analyze', description: 'Analisa token mendalam (0x…)' },
+    { command: 'web',     description: 'Buka dashboard lengkap' },
+    { command: 'connect', description: 'Verifikasi 10M $ORLIX' },
+    { command: 'help',    description: 'Daftar perintah lengkap' },
+  ];
+  return {
+    commandsEN: (await post('setMyCommands', { commands: en })).ok,
+    commandsID: (await post('setMyCommands', { commands: id, language_code: 'id' })).ok,
+    menuButton: (await post('setChatMenuButton', { menu_button: { type: 'commands' } })).ok,
+  };
+}
+
 module.exports = async function handler(req, res) {
   if (req.method === 'GET') {
     const token = TG_TOKEN();
     const llmKey = ANTHROPIC_KEY();
+    const secret = process.env.TELEGRAM_WEBHOOK_SECRET || '';
+    // one-time: register commands + Menu button
+    if (req.query && req.query.setup !== undefined) {
+      if (secret && req.query.setup !== secret) {
+        return res.status(403).json({ ok: false, error: 'bad setup key' });
+      }
+      const setup = await setupBot();
+      return res.status(200).json({ ok: true, setup });
+    }
     return res.status(200).json({
       ok: true,
       configured: !!token,
       status: {
         TELEGRAM_BOT_TOKEN: token ? `set (${token.slice(0,8)}...)` : 'MISSING',
         BANKR_LLM_KEY: llmKey ? `set (${llmKey.slice(0,8)}...)` : 'MISSING',
-        TELEGRAM_WEBHOOK_SECRET: process.env.TELEGRAM_WEBHOOK_SECRET ? 'set' : 'not set',
+        TELEGRAM_WEBHOOK_SECRET: secret ? 'set' : 'not set',
       }
     });
   }
@@ -524,6 +570,24 @@ module.exports = async function handler(req, res) {
     return res.status(200).json({ ok: true });
   }
 
+  // ── /menu ─────────────────────────────────────────────────────────────────
+  if (text === '/menu') {
+    await tg('sendMessage', {
+      chat_id: chatId,
+      parse_mode: 'Markdown',
+      disable_web_page_preview: true,
+      text: isID
+        ? `*⚡ Menu Orlix AI*\n\nTap perintah:\n/wallet — Agent wallet Base kamu\n/price \`0x…\` — Harga token\n/watch \`0x…\` — Aktivitas dompet\n/analyze \`0x…\` — Analisa token _(10M $ORLIX)_\n/connect — Verifikasi akses\n/help — Bantuan lengkap\n\n_Atau ketik pertanyaan apa saja ke AI._`
+        : `*⚡ Orlix AI Menu*\n\nTap a command:\n/wallet — Your Base agent wallet\n/price \`0x…\` — Token price\n/watch \`0x…\` — Wallet activity\n/analyze \`0x…\` — Token analysis _(10M $ORLIX)_\n/connect — Verify access\n/help — Full help\n\n_Or just type any question to the AI._`,
+      reply_markup: { inline_keyboard: [
+        [{ text: '🚀 Open Dashboard', url: 'https://orlixai.xyz/app' }],
+        [{ text: '🏙 Base City', url: 'https://orlixai.xyz/neural-map.html' },
+         { text: '🪙 Buy $ORLIX', url: 'https://orlixai.xyz/token' }],
+      ] },
+    });
+    return res.status(200).json({ ok: true });
+  }
+
   // ── /wallet ─────────────────────────────────────────────────────────────────
   if (text === '/wallet' || text.startsWith('/wallet ')) {
     const w = agentWallet(userId);
@@ -554,6 +618,7 @@ module.exports = async function handler(req, res) {
       `${isID ? 'Chat bebas' : 'Free chat'} — ${isID ? 'Tanya apa saja' : 'Ask anything'}\n` +
       `${isID ? 'Kirim gambar' : 'Send image'} — ${isID ? 'Analisa visual AI' : 'AI visual analysis'}\n\n` +
       `*🌐 ${isID ? 'Lainnya' : 'Other'}*\n` +
+      `/menu — ${isID ? 'Menu aksi cepat' : 'Quick actions menu'}\n` +
       `/wallet — ${isID ? 'Agent wallet Base kamu' : 'Your Base agent wallet'}\n` +
       `/web — ${isID ? 'Dashboard lengkap (19 model AI)' : 'Full dashboard (19 AI models)'}\n\n` +
       `[orlixai.xyz](https://orlixai.xyz)`
