@@ -19,7 +19,7 @@
 <meta name="twitter:image" content="https://www.orlixai.xyz/og-image.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/tone@14.9.6/build/Tone.js" defer></script>
 <style>
 :root{
@@ -794,7 +794,8 @@ select.inp{cursor:pointer}
 .gate-card{max-width:400px;width:calc(100% - 40px);background:var(--bg-2);border:1px solid var(--border);border-radius:24px;padding:40px 32px;text-align:center}
 .gate-logo{width:80px;height:80px;border-radius:22px;overflow:hidden;margin:0 auto 18px;display:block}
 .gate-logo img{width:100%;height:100%;display:block;border-radius:22px}
-.gate-brand{font-family:'Syne',var(--font);font-size:2rem;font-weight:800;color:var(--text-1);letter-spacing:-.04em;margin-bottom:4px;background:linear-gradient(135deg,#fff 60%,var(--orange));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.gate-brand{font-family:var(--font);font-size:2rem;font-weight:800;color:#fff;letter-spacing:-.02em;margin-bottom:4px;text-transform:uppercase}
+.gate-brand span{color:var(--orange)}
 .gate-tagline{font-size:.8rem;color:var(--text-3);margin-bottom:28px;letter-spacing:.04em;text-transform:uppercase}
 .gate-req{background:var(--bg-3);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin-bottom:24px;display:flex;align-items:center;gap:12px;text-align:left}
 .gate-req-ico{font-size:1.4rem;flex-shrink:0}
@@ -829,7 +830,7 @@ select.inp{cursor:pointer}
 <div id="accessGate">
   <div class="gate-card">
     <div class="gate-logo"><img src="/apple-touch-icon.png" alt="Orlix" onerror="this.parentElement.innerHTML='<svg viewBox=\'0 0 80 80\' fill=\'none\' xmlns=\'http://www.w3.org/2000/svg\'><rect width=\'80\' height=\'80\' rx=\'20\' fill=\'#111\'/><circle cx=\'40\' cy=\'40\' r=\'28\' stroke=\'white\' stroke-width=\'5\'/><polyline points=\'24,33 35,40 24,47\' stroke=\'#F07830\' stroke-width=\'5\' stroke-linecap=\'round\' stroke-linejoin=\'round\'/><line x1=\'38\' y1=\'47\' x2=\'52\' y2=\'47\' stroke=\'#F07830\' stroke-width=\'5\' stroke-linecap=\'round\'/></svg>'"></div>
-    <div class="gate-brand">Orlix AI</div>
+    <div class="gate-brand">Orlix <span>AI</span></div>
     <div class="gate-tagline">Personal AI Operating System</div>
     <div class="gate-req">
       <div class="gate-req-ico">🔐</div>
@@ -3970,7 +3971,30 @@ document.getElementById('previewCloseBtn').addEventListener('click', closePrevie
     await gateCheckBalance(addr);
   });
 
+  // De-dupe stray Privy dialogs: if a wallet modal opens twice (double-tap /
+  // ghost-click on mobile in-app browsers), keep only the newest and hide the
+  // rest so the user never sees two stacked "Connect your wallet" sheets.
+  (function dedupePrivyModals() {
+    const prune = () => {
+      for (const id of ['privy-dialog', 'privy-dialog-backdrop']) {
+        const nodes = document.querySelectorAll('#' + id);
+        if (nodes.length < 2) continue;
+        // hide (don't remove — lets React unmount them cleanly later)
+        nodes.forEach((n, i) => {
+          if (i < nodes.length - 1) { n.style.display = 'none'; n.style.pointerEvents = 'none'; }
+        });
+      }
+    };
+    const obs = new MutationObserver(prune);
+    obs.observe(document.body, { childList: true, subtree: true });
+  })();
+
+  let _gateConnecting = false;
   window.gateConnect = function() {
+    // Ignore rapid repeat taps or a modal already on screen → prevents 2x popup
+    if (_gateConnecting || document.getElementById('privy-dialog')) return;
+    _gateConnecting = true;
+    setTimeout(() => { _gateConnecting = false; }, 1500);
     document.getElementById('gateMsg').textContent = '';
     // Prefer Privy: click the hidden button injected by wallet.js
     const privyBtn = document.querySelector('#orlix-wallet .ow-btn, #orlix-wallet button');
