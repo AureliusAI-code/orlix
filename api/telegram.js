@@ -480,7 +480,7 @@ Your capabilities:
 Guidelines:
 - Be accurate, thoughtful, and comprehensive
 - Use Telegram markdown: *bold*, _italic_, \`code\`, \`\`\`code blocks\`\`\`
-- When relevant, mention /analyze 0x... for token analysis and /watch 0x... for wallets
+- When relevant, mention /analyze for token analysis and /watch for wallets
 - Keep replies under 3000 characters when possible`,
       messages: [{ role: 'user', content: text }],
     }),
@@ -514,7 +514,6 @@ async function setupBot() {
     { command: 'watch',   description: 'Wallet activity tracker' },
     { command: 'analyze', description: 'Deep token analysis' },
     { command: 'web',     description: 'Open the full dashboard' },
-    { command: 'connect', description: 'Verify 10M $ORLIX for AI access' },
     { command: 'help',    description: 'Full command list' },
   ];
   return {
@@ -586,13 +585,14 @@ module.exports = async function handler(req, res) {
       (isID
         ? `Asisten AI yang bisa menjawab *apa saja* — plus analisa token & dompet Base.\n\n*Perintah:*\n`
         : `Your AI assistant for *anything* — plus Base token & wallet analysis.\n\n*Commands:*\n`) +
-      `/connect \`0x...\` — ${isID ? 'Verifikasi wallet (butuh 10M $ORLIX)' : 'Verify wallet (need 10M $ORLIX)'}\n` +
-      `/analyze \`0x...\` — ${isID ? 'Analisa keamanan token' : 'Token security analysis'}\n` +
-      `/watch \`0x...\` — ${isID ? 'Cek aktivitas dompet' : 'Wallet activity tracker'}\n` +
-      `/price \`0x...\` — ${isID ? 'Harga token cepat' : 'Quick token price'}\n` +
+      `/wallet — ${isID ? 'Agent wallet Base kamu' : 'Your Base agent wallet'}\n` +
+      `/balance — ${isID ? 'Cek saldo agent wallet' : 'Check agent wallet balance'}\n` +
+      `/analyze — ${isID ? 'Analisa keamanan token' : 'Token security analysis'}\n` +
+      `/watch — ${isID ? 'Cek aktivitas dompet' : 'Wallet activity tracker'}\n` +
+      `/price — ${isID ? 'Harga token cepat' : 'Quick token price'}\n` +
       `/help — ${isID ? 'Panduan lengkap' : 'Full command list'}\n` +
       `/web — ${isID ? 'Buka dashboard Orlix' : 'Open Orlix dashboard'}\n` +
-      accessLine + `\n\n_Powered by Claude · orlixai.xyz_`
+      accessLine + `\n\n_Powered by Orlix AI · orlixai.xyz_`
     );
     return res.status(200).json({ ok: true });
   }
@@ -612,8 +612,8 @@ module.exports = async function handler(req, res) {
       parse_mode: 'Markdown',
       disable_web_page_preview: true,
       text: isID
-        ? `*⚡ Menu Orlix AI*\n\nTap perintah:\n/wallet — Agent wallet Base kamu\n/balance — Cek saldo agent wallet\n/price \`0x…\` — Harga token\n/watch \`0x…\` — Aktivitas dompet\n/analyze \`0x…\` — Analisa token _(10M $ORLIX)_\n/connect — Verifikasi akses\n/help — Bantuan lengkap\n\n_Atau ketik pertanyaan apa saja ke AI._`
-        : `*⚡ Orlix AI Menu*\n\nTap a command:\n/wallet — Your Base agent wallet\n/balance — Check agent wallet balance\n/price \`0x…\` — Token price\n/watch \`0x…\` — Wallet activity\n/analyze \`0x…\` — Token analysis _(10M $ORLIX)_\n/connect — Verify access\n/help — Full help\n\n_Or just type any question to the AI._`,
+        ? `*⚡ Menu Orlix AI*\n\nTap perintah:\n/wallet — Agent wallet Base kamu\n/balance — Cek saldo agent wallet\n/price — Harga token\n/watch — Aktivitas dompet\n/analyze — Analisa token _(butuh 10M $ORLIX)_\n/help — Bantuan lengkap\n\n_Atau ketik pertanyaan apa saja ke AI._`
+        : `*⚡ Orlix AI Menu*\n\nTap a command:\n/wallet — Your Base agent wallet\n/balance — Check agent wallet balance\n/price — Token price\n/watch — Wallet activity\n/analyze — Token analysis _(needs 10M $ORLIX)_\n/help — Full help\n\n_Or just type any question to the AI._`,
       reply_markup: { inline_keyboard: [
         [{ text: '🚀 Open Dashboard', url: 'https://orlixai.xyz/app' }],
         [{ text: '🏙 Base City', url: 'https://orlixai.xyz/neural-map.html' },
@@ -663,7 +663,7 @@ module.exports = async function handler(req, res) {
       await send(chatId,
         `👛 *${isID ? 'Saldo Agent Wallet' : 'Agent Wallet Balance'}*\n\`${addr}\`\n\n` +
         lines.join('\n') +
-        `\n\n_${isID ? 'Read-only · spending dinonaktifkan. Cek token lain: /balance 0x…' : 'Read-only · spending disabled. Check another token: /balance 0x…'}_`);
+        `\n\n_${isID ? 'Read-only · spending dinonaktifkan. Cek token lain: /balance <alamat token>' : 'Read-only · spending disabled. Check another token: /balance <token address>'}_`);
     } catch (e) {
       await send(chatId, `⚠️ ${isID ? 'Gagal cek saldo' : 'Balance check failed'}: ${e.message}`);
     }
@@ -678,10 +678,10 @@ module.exports = async function handler(req, res) {
       `*🔑 ${isID ? 'Akses' : 'Access'}* ${verified ? '✅' : '🔒'}\n` +
       `${isID ? 'Setor 10M $ORLIX ke agent wallet kamu untuk buka fitur AI' : 'Hold 10M $ORLIX in your agent wallet to unlock AI'} — /wallet\n\n` +
       `*📊 ${isID ? 'Data Onchain (Gratis)' : 'Onchain Data (Free)'}*\n` +
-      `/price \`0x...\` — ${isID ? 'Harga token instan' : 'Instant token price'}\n` +
-      `/watch \`0x...\` — ${isID ? 'Saldo & transaksi wallet' : 'Wallet balance & transactions'}\n\n` +
+      `/price — ${isID ? 'Harga token instan' : 'Instant token price'}\n` +
+      `/watch — ${isID ? 'Saldo & transaksi wallet' : 'Wallet balance & transactions'}\n\n` +
       `*🤖 ${isID ? 'Fitur AI (Perlu 10M $ORLIX)' : 'AI Features (Need 10M $ORLIX)'}*\n` +
-      `/analyze \`0x...\` — ${isID ? 'Analisa risiko token mendalam' : 'Deep token risk analysis'}\n` +
+      `/analyze — ${isID ? 'Analisa risiko token mendalam' : 'Deep token risk analysis'}\n` +
       `${isID ? 'Chat bebas' : 'Free chat'} — ${isID ? 'Tanya apa saja' : 'Ask anything'}\n` +
       `${isID ? 'Kirim gambar' : 'Send image'} — ${isID ? 'Analisa visual AI' : 'AI visual analysis'}\n\n` +
       `*🌐 ${isID ? 'Lainnya' : 'Other'}*\n` +
@@ -708,7 +708,7 @@ module.exports = async function handler(req, res) {
   if (text.startsWith('/price')) {
     const addr = (text.split(/\s+/)[1] || '').toLowerCase();
     if (!addr || !/^0x[0-9a-f]{40}$/i.test(addr)) {
-      await send(chatId, isID ? `⚠️ Contoh: /price \`0x...\`` : `⚠️ Usage: /price \`0x...\``);
+      await send(chatId, isID ? `⚠️ Contoh: /price <alamat token>` : `⚠️ Usage: /price <token address>`);
       return res.status(200).json({ ok: true });
     }
     try { await cmdPrice(chatId, addr); }
@@ -720,7 +720,7 @@ module.exports = async function handler(req, res) {
   if (text.startsWith('/watch')) {
     const addr = (text.split(/\s+/)[1] || '').toLowerCase();
     if (!addr || !/^0x[0-9a-f]{40}$/i.test(addr)) {
-      await send(chatId, isID ? `⚠️ Contoh: /watch \`0x...\`` : `⚠️ Usage: /watch \`0x...\``);
+      await send(chatId, isID ? `⚠️ Contoh: /watch <alamat dompet>` : `⚠️ Usage: /watch <wallet address>`);
       return res.status(200).json({ ok: true });
     }
     await send(chatId, isID ? `👁 Memeriksa dompet...` : `👁 Looking up wallet...`);
@@ -734,7 +734,7 @@ module.exports = async function handler(req, res) {
     { const g = await aiAllowed(chatId, userId); if (!g.ok) { await denyAiGate(chatId, lang, g); return res.status(200).json({ ok: true }); } }
     const addr = (text.split(/\s+/)[1] || '').toLowerCase();
     if (!addr || !/^0x[0-9a-f]{40}$/i.test(addr)) {
-      await send(chatId, isID ? `⚠️ Contoh: /analyze \`0x...\`` : `⚠️ Usage: /analyze \`0x...\``);
+      await send(chatId, isID ? `⚠️ Contoh: /analyze <alamat token>` : `⚠️ Usage: /analyze <token address>`);
       return res.status(200).json({ ok: true });
     }
     await send(chatId, isID ? `🔍 Menganalisa token...` : `🔍 Analyzing token...`);
