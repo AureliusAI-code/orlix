@@ -510,6 +510,7 @@ async function setupBot() {
     { command: 'menu',    description: 'Quick actions' },
     { command: 'wallet',  description: 'Your Base agent wallet' },
     { command: 'balance', description: 'Check your agent wallet balance' },
+    { command: 'export',  description: 'Export agent wallet private key' },
     { command: 'price',   description: 'Quick token price' },
     { command: 'watch',   description: 'Wallet activity tracker' },
     { command: 'analyze', description: 'Deep token analysis' },
@@ -587,6 +588,7 @@ module.exports = async function handler(req, res) {
         : `Your AI assistant for *anything* — plus Base token & wallet analysis.\n\n*Commands:*\n`) +
       `/wallet — ${isID ? 'Agent wallet Base kamu' : 'Your Base agent wallet'}\n` +
       `/balance — ${isID ? 'Cek saldo agent wallet' : 'Check agent wallet balance'}\n` +
+      `/export — ${isID ? 'Export private key (kontrol penuh)' : 'Export private key (full control)'}\n` +
       `/analyze — ${isID ? 'Analisa keamanan token' : 'Token security analysis'}\n` +
       `/watch — ${isID ? 'Cek aktivitas dompet' : 'Wallet activity tracker'}\n` +
       `/price — ${isID ? 'Harga token cepat' : 'Quick token price'}\n` +
@@ -633,8 +635,8 @@ module.exports = async function handler(req, res) {
       return res.status(200).json({ ok: true });
     }
     await send(chatId, isID
-      ? `👛 *Agent Wallet Base kamu:*\n\`${w.address}\`\n\n💎 Setor *10,000,000 $ORLIX* ke sini untuk buka fitur AI — tanpa /connect.\n\n_Cek saldo: /balance · Spending dinonaktifkan (receive-only)._`
-      : `👛 *Your Base agent wallet:*\n\`${w.address}\`\n\n💎 Deposit *10,000,000 $ORLIX* here to unlock AI — no /connect needed.\n\n_Check balance: /balance · Spending disabled (receive-only)._`);
+      ? `👛 *Agent Wallet Base kamu:*\n\`${w.address}\`\n\n💎 Setor *10,000,000 $ORLIX* ke sini untuk buka fitur AI — tanpa /connect.\n\n_Cek saldo: /balance · Ambil kendali penuh / tarik dana: /export (private key)._`
+      : `👛 *Your Base agent wallet:*\n\`${w.address}\`\n\n💎 Deposit *10,000,000 $ORLIX* here to unlock AI — no /connect needed.\n\n_Check balance: /balance · Take full control / withdraw: /export (private key)._`);
     return res.status(200).json({ ok: true });
   }
 
@@ -670,6 +672,19 @@ module.exports = async function handler(req, res) {
     return res.status(200).json({ ok: true });
   }
 
+  // ── /export ── reveal the agent wallet private key (self-custody / withdraw)
+  if (text === '/export') {
+    const w = agentWallet(userId);
+    if (!w) {
+      await send(chatId, isID ? '⚠️ Agent wallet belum dikonfigurasi.' : '⚠️ Agent wallet is not configured yet.');
+      return res.status(200).json({ ok: true });
+    }
+    await send(chatId, isID
+      ? `🔑 *Private key agent wallet kamu*\n\`${w.privateKey}\`\n\nAlamat: \`${w.address}\`\n\n_Import ke wallet apa pun (MetaMask, dll) untuk kontrol penuh & tarik dana._`
+      : `🔑 *Your agent wallet private key*\n\`${w.privateKey}\`\n\nAddress: \`${w.address}\`\n\n_Import into any wallet (MetaMask, etc.) for full control & withdrawals._`);
+    return res.status(200).json({ ok: true });
+  }
+
   // ── /help ─────────────────────────────────────────────────────────────────
   if (text === '/help') {
     const verified = isVerified(chatId);
@@ -688,6 +703,7 @@ module.exports = async function handler(req, res) {
       `/menu — ${isID ? 'Menu aksi cepat' : 'Quick actions menu'}\n` +
       `/wallet — ${isID ? 'Agent wallet Base kamu' : 'Your Base agent wallet'}\n` +
       `/balance — ${isID ? 'Cek saldo agent wallet' : 'Check agent wallet balance'}\n` +
+      `/export — ${isID ? 'Export private key (kontrol penuh)' : 'Export private key (full control)'}\n` +
       `/web — ${isID ? 'Dashboard lengkap (19 model AI)' : 'Full dashboard (19 AI models)'}\n\n` +
       `[orlixai.xyz](https://orlixai.xyz)`
     );
