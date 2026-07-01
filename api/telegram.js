@@ -2,6 +2,8 @@
 // Setup: set TELEGRAM_BOT_TOKEN env var, then:
 // GET https://api.telegram.org/bot{TOKEN}/setWebhook?url=https://orlixai.xyz/api/telegram
 
+const { ethers } = require('ethers');
+
 const ANTHROPIC_KEY = () => process.env.BANKR_LLM_KEY || process.env.ANTHROPIC_API_KEY || '';
 const TG_TOKEN      = () => process.env.TELEGRAM_BOT_TOKEN || '';
 
@@ -11,6 +13,24 @@ const GATE_MIN   = BigInt('10000000') * (10n ** 18n);
 
 // In-memory session cache (survives warm invocations, resets on cold start)
 const sessions = new Map(); // chatId → { wallet, verified, balance }
+
+// ── Agent wallet ───────────────────────────────────────────────────────────────
+// Each Telegram user gets a UNIQUE Base wallet, derived deterministically from a
+// server-side master secret + their user id — so we never store private keys and
+// can always regenerate the same address on demand.
+//
+// Requires env AGENT_WALLET_SEED (a long random secret — keep it out of git!).
+// This is CUSTODIAL: whoever holds AGENT_WALLET_SEED controls every user's agent
+// wallet. Spending is intentionally NOT implemented — outgoing transfers stay
+// disabled until an explicit approval flow is built. Treat these as receive-only
+// deposit addresses for now; don't tell users to park large funds.
+function agentWallet(userId) {
+  const seed = process.env.AGENT_WALLET_SEED || '';
+  if (!seed || userId == null) return null;
+  // private key = keccak256("orlix-agent:v1:<seed>:<userId>") — 32 bytes, stable
+  const pk = ethers.keccak256(ethers.toUtf8Bytes(`orlix-agent:v1:${seed}:${userId}`));
+  return new ethers.Wallet(pk);
+}
 
 function aiEndpoint(key) {
   const isAnthropicKey = key.startsWith('sk-ant-');
@@ -464,6 +484,7 @@ module.exports = async function handler(req, res) {
   if (!message) return res.status(200).json({ ok: true });
 
   const chatId    = message.chat?.id;
+  const userId    = message.from?.id ?? chatId;
   const firstName = message.from?.first_name || 'friend';
   const text      = (message.text || '').trim();
   if (!chatId) return res.status(200).json({ ok: true });
@@ -503,6 +524,21 @@ module.exports = async function handler(req, res) {
     return res.status(200).json({ ok: true });
   }
 
+  // ── /wallet ─────────────────────────────────────────────────────────────────
+  if (text === '/wallet' || text.startsWith('/wallet ')) {
+    const w = agentWallet(userId);
+    if (!w) {
+      await send(chatId, isID
+        ? `⚠️ Fitur agent wallet belum dikonfigurasi.`
+        : `⚠️ Agent wallet is not configured yet.`);
+      return res.status(200).json({ ok: true });
+    }
+    await send(chatId, isID
+      ? `👛 *Agent Wallet Base kamu:*\n\`${w.address}\`\n\n_Spending dinonaktifkan sampai approval dikonfigurasi._`
+      : `👛 *Your Base agent wallet:*\n\`${w.address}\`\n\n_Spending is disabled until approval is configured._`);
+    return res.status(200).json({ ok: true });
+  }
+
   // ── /help ─────────────────────────────────────────────────────────────────
   if (text === '/help') {
     const verified = isVerified(chatId);
@@ -518,6 +554,7 @@ module.exports = async function handler(req, res) {
       `${isID ? 'Chat bebas' : 'Free chat'} — ${isID ? 'Tanya apa saja' : 'Ask anything'}\n` +
       `${isID ? 'Kirim gambar' : 'Send image'} — ${isID ? 'Analisa visual AI' : 'AI visual analysis'}\n\n` +
       `*🌐 ${isID ? 'Lainnya' : 'Other'}*\n` +
+      `/wallet — ${isID ? 'Agent wallet Base kamu' : 'Your Base agent wallet'}\n` +
       `/web — ${isID ? 'Dashboard lengkap (19 model AI)' : 'Full dashboard (19 AI models)'}\n\n` +
       `[orlixai.xyz](https://orlixai.xyz)`
     );
