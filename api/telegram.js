@@ -149,51 +149,6 @@ function isVerified(chatId) {
   return sessions.get(chatId)?.verified === true;
 }
 
-async function requireGate(chatId, lang) {
-  const isID = lang === 'id';
-  await send(chatId,
-    isID
-      ? `🔒 *Akses Terkunci*\n\nFitur AI memerlukan minimal *10,000,000 $ORLIX* di wallet Base.\n\nKirim wallet kamu:\n\`/connect 0xALAMAT_WALLET\`\n\n_Beli $ORLIX: [orlixai.xyz/token](https://orlixai.xyz/token)_`
-      : `🔒 *Access Locked*\n\nAI features require holding at least *10,000,000 $ORLIX* on Base.\n\nSend your wallet:\n\`/connect 0xYOUR_WALLET\`\n\n_Get $ORLIX: [orlixai.xyz/token](https://orlixai.xyz/token)_`
-  );
-}
-
-// ── /connect ──────────────────────────────────────────────────────────────────
-async function cmdConnect(chatId, wallet, lang) {
-  const isID = lang === 'id';
-  if (!wallet || !/^0x[0-9a-fA-F]{40}$/.test(wallet)) {
-    return send(chatId, isID
-      ? `⚠️ Alamat tidak valid.\n\nContoh:\n\`/connect 0xALAMAT_WALLET_KAMU\``
-      : `⚠️ Invalid address.\n\nExample:\n\`/connect 0xYOUR_WALLET_ADDRESS\``
-    );
-  }
-
-  typing(chatId);
-  await send(chatId, isID ? '⏳ Memeriksa saldo $ORLIX...' : '⏳ Checking $ORLIX balance...');
-
-  const balance = await getOrlixBalance(wallet);
-  const balNum  = Number(balance / 10n ** 15n) / 1000;
-  const balFmt  = balNum.toLocaleString('en-US', { maximumFractionDigits: 0 });
-  const short   = `${wallet.slice(0, 6)}...${wallet.slice(-4)}`;
-
-  if (balance >= GATE_MIN) {
-    sessions.set(chatId, { wallet, verified: true, balance: balFmt });
-    await send(chatId,
-      isID
-        ? `✅ *Akses Diberikan!*\n\nWallet: \`${short}\`\nSaldo: *${balFmt} ORLIX*\n\nKamu sekarang punya akses penuh ke Orlix AI Bot 🎉\n\n_Ketik apa saja atau gunakan /help_`
-        : `✅ *Access Granted!*\n\nWallet: \`${short}\`\nBalance: *${balFmt} ORLIX*\n\nYou now have full access to Orlix AI Bot 🎉\n\n_Type anything or use /help_`
-    );
-  } else {
-    sessions.set(chatId, { wallet, verified: false, balance: balFmt });
-    const needed = Number((GATE_MIN - balance) / 10n ** 15n) / 1000;
-    await send(chatId,
-      isID
-        ? `❌ *Saldo Tidak Cukup*\n\nWallet: \`${short}\`\nSaldo: *${balFmt} ORLIX*\nDibutuhkan: *10,000,000 ORLIX*\nKurang: *${needed.toLocaleString('en-US', { maximumFractionDigits: 0 })} ORLIX*\n\n_Beli $ORLIX: [orlixai.xyz/token](https://orlixai.xyz/token)_`
-        : `❌ *Insufficient Balance*\n\nWallet: \`${short}\`\nBalance: *${balFmt} ORLIX*\nRequired: *10,000,000 ORLIX*\nShortfall: *${needed.toLocaleString('en-US', { maximumFractionDigits: 0 })} ORLIX*\n\n_Get $ORLIX: [orlixai.xyz/token](https://orlixai.xyz/token)_`
-    );
-  }
-}
-
 // ── On-chain helpers ──────────────────────────────────────────────────────────
 
 async function baseRpc(method, params = []) {
@@ -599,14 +554,6 @@ module.exports = async function handler(req, res) {
     return res.status(200).json({ ok: true });
   }
 
-  // ── /connect ──────────────────────────────────────────────────────────────
-  if (text.startsWith('/connect')) {
-    const wallet = (text.split(/\s+/)[1] || '').trim();
-    try { await cmdConnect(chatId, wallet, lang); }
-    catch (e) { await send(chatId, `⚠️ Error: ${e.message}`); }
-    return res.status(200).json({ ok: true });
-  }
-
   // ── /menu ─────────────────────────────────────────────────────────────────
   if (text === '/menu') {
     await tg('sendMessage', {
@@ -635,8 +582,8 @@ module.exports = async function handler(req, res) {
       return res.status(200).json({ ok: true });
     }
     await send(chatId, isID
-      ? `👛 *Agent Wallet Base kamu:*\n\`${w.address}\`\n\n💎 Setor *10,000,000 $ORLIX* ke sini untuk buka fitur AI — tanpa /connect.\n\n_Cek saldo: /balance · Ambil kendali penuh / tarik dana: /export (private key)._`
-      : `👛 *Your Base agent wallet:*\n\`${w.address}\`\n\n💎 Deposit *10,000,000 $ORLIX* here to unlock AI — no /connect needed.\n\n_Check balance: /balance · Take full control / withdraw: /export (private key)._`);
+      ? `👛 *Agent Wallet Base kamu:*\n\`${w.address}\`\n\n💎 Setor *10,000,000 $ORLIX* ke sini untuk buka fitur AI.\n\n_Cek saldo: /balance · Ambil kendali penuh / tarik dana: /export (private key)._`
+      : `👛 *Your Base agent wallet:*\n\`${w.address}\`\n\n💎 Deposit *10,000,000 $ORLIX* here to unlock AI.\n\n_Check balance: /balance · Take full control / withdraw: /export (private key)._`);
     return res.status(200).json({ ok: true });
   }
 
