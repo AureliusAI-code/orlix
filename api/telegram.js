@@ -305,7 +305,7 @@ async function cmdAnalyze(chatId, address, lang = 'en') {
         body: JSON.stringify({
           model: 'claude-sonnet-4-6',
           max_tokens: 700,
-          system: `You are an expert crypto security analyst for Base and Robinhood Chain tokens. ${langInstruction} ONLY use Telegram markdown: *bold* and _italic_. NEVER use ## headers, ---, > blockquotes, or any unsupported markdown. Use *bold text* on its own line for section titles. Be concise but specific — cite actual numbers from the data.`,
+          system: `You are an expert crypto security analyst for Base and Robinhood Chain tokens. ${langInstruction} ONLY use Telegram markdown: *bold* and _italic_. NEVER use # or ## headers or --- rules. Use *bold text* for section titles. You CAN use > for important warnings. Be concise but specific — cite actual numbers from the data.`,
           messages: [{
             role: 'user',
             content: `Analyze this Base token. Format:\n\n*🚩 Red Flags*\n• [specific flags or: None detected]\n\n*✅ Green Flags*\n• [specific positives or: None detected]\n\n*📉 Risk Assessment*\n[liquidity risk, price manipulation, rug pull probability — cite Liq/MCap ratio and buy/sell data]\n\n*⚖️ Verdict: SAFE / CAUTION / HIGH RISK / SCAM LIKELY*\n[One sentence with key reason]\n\nData:\n${ctx}`,
@@ -435,11 +435,11 @@ Your capabilities:
 
 FORMATTING RULES (STRICT):
 - ONLY use Telegram-compatible markdown: *bold*, _italic_, \`code\`, \`\`\`code blocks\`\`\`
-- NEVER use ## headers, ### headers, ---, >, or any other markdown syntax — Telegram does NOT render them
-- For section titles, use *bold text* on its own line instead of ## headers
+- NEVER use # headers, ## headers, ### headers, or --- horizontal rules — Telegram does NOT render them
+- For section titles, use *bold text* on its own line instead of # or ## headers
 - For separators, use a blank line instead of ---
-- For quotes or warnings, write them as plain bold text instead of > blockquotes
-- Write clean, professional responses without raw markdown symbols showing
+- You CAN use > for important notes or warnings — it looks good as an agent-style callout
+- Write clean, professional responses without raw # symbols showing
 - When relevant, mention /analyze, /swap, /top, /watch, $TICKER
 - Keep replies under 3000 characters when possible`,
       messages: [{ role: 'user', content: text }],
@@ -1061,7 +1061,7 @@ module.exports = async function handler(req, res) {
         method: 'POST', headers: aiHdr,
         body: JSON.stringify({
           model: 'claude-sonnet-4-6', max_tokens: 1500,
-          system: `You are Orlix AI. ${isID ? 'Balas dalam Bahasa Indonesia.' : 'Reply in English.'} ONLY use Telegram markdown: *bold*, _italic_, \`code\`. NEVER use ## headers, ---, > blockquotes. Use *bold text* for section titles. Be detailed and thorough.`,
+          system: `You are Orlix AI. ${isID ? 'Balas dalam Bahasa Indonesia.' : 'Reply in English.'} ONLY use Telegram markdown: *bold*, _italic_, \`code\`. NEVER use # or ## headers or --- rules. Use *bold text* for section titles. You CAN use > for callouts. Be detailed and thorough.`,
           messages: [{ role: 'user', content: [
             { type: 'image', source: { type: 'base64', media_type: mime, data: b64 } },
             { type: 'text', text: caption },
