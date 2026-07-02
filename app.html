@@ -44,13 +44,15 @@
   --font:'JetBrains Mono',monospace;
 }
 :root.light{
-  --bg:#0d0d0d;--bg-2:#141414;--bg-3:#1c1c1c;--bg-4:#242424;
-  --border:rgba(255,255,255,.08);--border-hover:rgba(255,255,255,.16);--border-accent:rgba(240,120,48,.3);
-  --text-1:#F0F0F0;--text-2:#999;--text-3:#555;
-  --orange-dim:rgba(240,120,48,.1);--orange-glow:rgba(240,120,48,.18);
-  --purple-dim:rgba(167,139,250,.08);--green-dim:rgba(74,222,128,.08);
-  --red-dim:rgba(248,113,113,.08);--blue-dim:rgba(96,165,250,.08);
-  --dim-2:rgba(255,255,255,.15);--line:rgba(255,255,255,.07);--line-bright:rgba(255,255,255,.12);
+  --bg:#F4F4F5;--bg-2:#EAEAEC;--bg-3:#DDDDE0;--bg-4:#D0D0D4;
+  --border:rgba(0,0,0,.1);--border-hover:rgba(0,0,0,.18);--border-accent:rgba(240,120,48,.3);
+  --text-1:#1a1a1a;--text-2:#555555;--text-3:#999999;
+  --orange:#E06820;--orange-dim:rgba(224,104,32,.08);--orange-glow:rgba(224,104,32,.15);
+  --purple:#8B5CF6;--purple-dim:rgba(139,92,246,.1);
+  --green:#22C55E;--green-dim:rgba(34,197,94,.1);
+  --red:#EF4444;--red-dim:rgba(239,68,68,.1);
+  --blue:#3B82F6;--blue-dim:rgba(59,130,246,.1);
+  --dim-2:rgba(0,0,0,.1);--line:rgba(0,0,0,.07);--line-bright:rgba(0,0,0,.12);
 }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{background:var(--bg);color:var(--text-2);height:100%}
@@ -80,9 +82,9 @@ input,select,textarea{font-family:var(--mono)}
 .status-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green)}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.35}}
 .status-dot{animation:blink 2.5s ease-in-out infinite}
-:root.light .titlebar{background:rgba(13,13,13,.95)!important;border-bottom-color:rgba(255,255,255,.06)}
-:root.light .menu-btn{background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.1);color:var(--text-2)}
-:root.light .tb-brand img{filter:none}.wm{display:block}.wm-light{display:none}:root.light .wm-dark{display:block}:root.light .wm-light{display:none}:root.light .wm{filter:none!important}
+:root.light .titlebar{background:rgba(244,244,245,.92)!important;border-bottom-color:rgba(0,0,0,.08)}
+:root.light .menu-btn{background:rgba(0,0,0,.04);border-color:rgba(0,0,0,.1);color:var(--text-2)}
+:root.light .tb-brand img{filter:invert(1)}.wm{display:block}.wm-light{display:none}:root.light .wm-dark{display:none}:root.light .wm-light{display:block}:root.light .wm{filter:none!important}
 
 /* ── layout ── */
 .app-layout{display:flex;height:100vh;height:100dvh;padding-top:72px}
@@ -525,7 +527,7 @@ select.inp{cursor:pointer}
 .sidebar-overlay.open{display:block}
 @media(max-width:640px){
   .menu-btn{display:flex}
-  .sidebar{position:fixed;left:-224px;top:52px;bottom:0;width:204px;z-index:90;transition:left .22s ease}
+  .sidebar{position:fixed;left:-224px;top:72px;bottom:0;width:204px;z-index:90;transition:left .22s ease}
   .sidebar.open{left:0;box-shadow:8px 0 32px rgba(0,0,0,.5)}
   .main{padding:18px 14px}
   .stat-grid{grid-template-columns:1fr 1fr}
@@ -819,40 +821,55 @@ select.inp{cursor:pointer}
 .gate-passed-title{font-size:1rem;font-weight:800;color:var(--green);margin-bottom:4px}
 .gate-passed-bal{font-size:.78rem;color:var(--text-3);font-family:var(--mono)}
 
-/* ── TERMINAL / CRT MODE ── */
+/* ── TERMINAL EFFECTS ── */
 .crt-scan{
   pointer-events:none;position:fixed;inset:0;z-index:9998;
-  background:repeating-linear-gradient(0deg,rgba(0,0,0,.03) 0px,rgba(0,0,0,.03) 1px,transparent 1px,transparent 3px);
+  background:repeating-linear-gradient(0deg,rgba(0,0,0,.02) 0px,rgba(0,0,0,.02) 1px,transparent 1px,transparent 3px);
 }
-body::before{
-  content:'';pointer-events:none;position:fixed;inset:0;z-index:9997;
-  background:radial-gradient(ellipse at center,transparent 55%,rgba(0,0,0,.35) 100%);
-}
+:root.light .crt-scan{background:repeating-linear-gradient(0deg,rgba(0,0,0,.015) 0px,rgba(0,0,0,.015) 1px,transparent 1px,transparent 3px)}
 .page-hd .file{color:var(--orange);opacity:.7}
 .page-hd .file::after{
   content:'_';animation:term-blink 1s step-end infinite;color:var(--orange);margin-left:2px;
 }
 @keyframes term-blink{0%,100%{opacity:1}50%{opacity:0}}
-.page-hd h1{color:var(--text-1);text-shadow:0 0 12px rgba(240,120,48,.15)}
-.stat-card .s-val{text-shadow:0 0 8px currentColor,.15s}
-.gate-brand{text-shadow:0 0 16px rgba(240,120,48,.3)}
-.titlebar{background:rgba(10,10,10,.96)!important}
-.sidebar{background:#080808!important}
-.sb-item.active{text-shadow:0 0 6px rgba(240,120,48,.2)}
-.panel:hover,.stat-card:hover,.agent-card:hover,.provider-card:hover,.skill-card:hover,.g-build-card:hover{
-  transform:none!important;box-shadow:0 0 12px rgba(240,120,48,.04)!important;
-}
-.chat-messages{background:#060606;border-color:rgba(255,255,255,.06)}
-.code-block pre code{color:#d4d4d4}
-::selection{background:rgba(240,120,48,.3);color:#fff}
-::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:1px}
-::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.2)}
-#accessGate{background:rgba(0,0,0,.97)!important}
-.gate-card{background:#0a0a0a!important;border-color:rgba(255,255,255,.08)!important}
 .tb-title::before{content:'> ';color:var(--text-3)}
-.sb-label::before{content:'// ';color:rgba(255,255,255,.15)}
+.sb-label::before{content:'// ';color:var(--text-3);opacity:.5}
 .panel-hd .ttl::before{content:'> ';color:var(--text-3)}
-.engine-banner{border-color:rgba(240,120,48,.12)!important;background:rgba(240,120,48,.03)!important}
+.panel:hover,.stat-card:hover,.agent-card:hover,.provider-card:hover,.skill-card:hover,.g-build-card:hover{
+  transform:none!important;
+}
+::selection{background:rgba(240,120,48,.3);color:#fff}
+
+/* ── DARK terminal overrides ── */
+:root:not(.light) .titlebar{background:rgba(10,10,10,.96)!important}
+:root:not(.light) .sidebar{background:#080808!important}
+:root:not(.light) .chat-messages{background:#060606}
+:root:not(.light) #accessGate{background:rgba(0,0,0,.97)!important}
+:root:not(.light) .gate-card{background:#0a0a0a!important}
+:root:not(.light) .gate-brand{text-shadow:0 0 16px rgba(240,120,48,.3)}
+:root:not(.light) .sb-item.active{text-shadow:0 0 6px rgba(240,120,48,.2)}
+
+/* ── LIGHT terminal overrides ── */
+:root.light .sidebar{background:#EAEAEC!important;border-right-color:rgba(0,0,0,.08)!important}
+:root.light .chat-messages{background:#F0F0F2}
+:root.light #accessGate{background:rgba(244,244,245,.98)!important}
+:root.light .gate-card{background:#fff!important;border-color:rgba(0,0,0,.1)!important}
+:root.light .gate-brand{color:#1a1a1a}
+:root.light .gate-brand span{color:var(--orange)}
+:root.light .sb-theme-btn .ico-sun{display:block}
+:root.light .sb-theme-btn .ico-moon{display:none}
+:root.light .sidebar-overlay{background:rgba(0,0,0,.3)}
+:root.light .code-block{background:#EAEAEC;border-color:rgba(0,0,0,.1)}
+:root.light .code-header{background:#E0E0E3;border-color:rgba(0,0,0,.08)}
+:root.light .code-block pre code{color:#333}
+:root.light .msg.user .msg-bubble{background:rgba(224,104,32,.08);border-color:rgba(224,104,32,.18)}
+:root.light .msg.assistant .msg-bubble{background:#EAEAEC;border-color:rgba(0,0,0,.08);color:var(--text-2)}
+:root.light .engine-banner{background:rgba(224,104,32,.04)!important;border-color:rgba(224,104,32,.12)!important}
+:root.light .tx-card{background:rgba(59,130,246,.04);border-color:rgba(59,130,246,.15)}
+:root.light .tx-card-header{background:rgba(59,130,246,.06);border-color:rgba(59,130,246,.1)}
+:root.light ::-webkit-scrollbar-thumb{background:rgba(0,0,0,.12)}
+:root.light ::-webkit-scrollbar-thumb:hover{background:rgba(0,0,0,.22)}
+:root.light .stat-card:hover,.provider-card:hover{box-shadow:0 4px 16px rgba(0,0,0,.08)!important}
 </style>
 </head>
 <body>
@@ -1028,8 +1045,8 @@ body::before{
       </div>
       <div class="engine-banner">
         <span class="sb-status"></span>
-        <span style="color:var(--orange);font-size:.8rem;font-weight:600;text-shadow:0 0 8px rgba(240,120,48,.3)">SYSTEM ONLINE</span>
-        <span style="color:var(--dim-2);font-size:.73rem;margin-left:auto;font-family:var(--mono)">mimo_engine · base_mcp · 16 skills</span>
+        <span style="color:var(--orange);font-size:.8rem;font-weight:600">SYSTEM ONLINE</span>
+        <span style="color:var(--text-3);font-size:.73rem;margin-left:auto;font-family:var(--mono)">mimo_engine · base_mcp · 16 skills</span>
         <a href="#gallery" onclick="showView('gallery');return false" style="color:var(--violet);font-size:.73rem;text-decoration:none;padding:3px 9px;border:1px solid rgba(185,164,255,.25);border-radius:4px;background:rgba(185,164,255,.07)">gallery →</a>
       </div>
       <div class="panel">
