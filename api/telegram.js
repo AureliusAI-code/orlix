@@ -255,7 +255,7 @@ async function cmdAnalyze(chatId, address, lang = 'en') {
 
   let card = `🔍 *TOKEN ANALYSIS*\n`;
   card    += `\`${shortAddr}\` · Base Network\n`;
-  card    += `━━━━━━━━━━━━━━━━━━━━\n`;
+  card    += `\n`;
 
   if (token?.name && token.name !== 'Unknown') {
     card += `*${token.name}* (${token.symbol})\n`;
@@ -345,7 +345,7 @@ async function cmdWatch(chatId, address, lang = 'en') {
 
   let msg = `👁 *${isID ? 'PELACAK DOMPET' : 'WALLET WATCHER'}*\n`;
   msg    += `\`${shortAddr}\` · Base Network\n`;
-  msg    += `━━━━━━━━━━━━━━━━━━━━\n`;
+  msg    += `\n`;
   msg    += `*${isID ? 'Saldo ETH' : 'ETH Balance'}:* ${ethBal} ETH\n`;
 
   if (txns.length) {
@@ -454,9 +454,29 @@ FORMATTING RULES (STRICT):
   await sendLong(chatId, data.content?.[0]?.text || (isID ? 'Tidak dapat menghasilkan respons.' : 'Could not generate a response.'));
 }
 
-// ── Ticker Search ────────────────────────────────────────────────────────────
+// ── Ticker Search (prefer paid/verified DexScreener profiles) ────────────────
+
+const VERIFIED_TOKENS = {
+  'ORLIX': ORLIX_CA,
+};
 
 async function searchTicker(ticker) {
+  const upper = ticker.toUpperCase();
+
+  // Known verified tokens → direct contract lookup (bypass search)
+  if (VERIFIED_TOKENS[upper]) {
+    try {
+      const r = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${VERIFIED_TOKENS[upper]}`, {
+        signal: AbortSignal.timeout(8000),
+      });
+      if (r.ok) {
+        const data = await r.json();
+        const pairs = (data.pairs || []).filter(p => p.chainId === 'base' || p.chainId === 'robinhood');
+        if (pairs.length) return pairs.sort((a, b) => (b.liquidity?.usd || 0) - (a.liquidity?.usd || 0))[0];
+      }
+    } catch {}
+  }
+
   try {
     const r = await fetch(`https://api.dexscreener.com/latest/dex/search?q=${encodeURIComponent(ticker)}`, {
       signal: AbortSignal.timeout(8000),
@@ -465,9 +485,18 @@ async function searchTicker(ticker) {
     const data = await r.json();
     const supported = (data.pairs || []).filter(p => p.chainId === 'base' || p.chainId === 'robinhood');
     if (!supported.length) return null;
-    const exact = supported.filter(p => (p.baseToken?.symbol || '').toUpperCase() === ticker.toUpperCase());
+    const exact = supported.filter(p => (p.baseToken?.symbol || '').toUpperCase() === upper);
     const pool = exact.length ? exact : supported;
-    return pool.sort((a, b) => (b.liquidity?.usd || 0) - (a.liquidity?.usd || 0))[0];
+
+    // Prefer tokens with paid DexScreener profile (info with image/website/socials)
+    const paid = pool.filter(p => p.info?.imageUrl || p.info?.websites?.length || p.info?.socials?.length);
+    const candidates = paid.length ? paid : pool;
+
+    // Minimum $10K liquidity to filter scam copies
+    const liquid = candidates.filter(p => (p.liquidity?.usd || 0) >= 10000);
+    const final = liquid.length ? liquid : candidates;
+
+    return final.sort((a, b) => (b.liquidity?.usd || 0) - (a.liquidity?.usd || 0))[0] || null;
   } catch { return null; }
 }
 
@@ -492,11 +521,12 @@ async function cmdTickerPrice(chatId, ticker, lang) {
   const arrow = (v) => v == null ? '—' : v >= 0 ? `🟢 +${v}%` : `🔴 ${v}%`;
 
   let msg = `💰 *$${sym}*`;
-  if (name) msg += ` — ${name}`;
-  msg += `\n${chain}\n━━━━━━━━━━━━━━━━━━━━\n`;
+  if (name) msg += ` - ${name}`;
+  msg += `\n${chain}\n\n`;
   msg += `*${isID ? 'Harga' : 'Price'}:* ${price}\n`;
-  msg += `*1h:* ${arrow(ch1h)} | *24h:* ${arrow(ch24h)}\n`;
-  msg += `*Liq:* $${liq.toLocaleString()} | *Vol 24h:* $${vol.toLocaleString()}\n`;
+  msg += `*1h:* ${arrow(ch1h)}  *24h:* ${arrow(ch24h)}\n`;
+  msg += `*Liq:* $${liq.toLocaleString()}\n`;
+  msg += `*Vol 24h:* $${vol.toLocaleString()}\n`;
   if (mcap > 0) msg += `*MCap:* $${mcap.toLocaleString()}\n`;
 
   const buttons = [];
@@ -517,12 +547,103 @@ async function cmdTickerPrice(chatId, ticker, lang) {
   });
 }
 
-// ── Swap ─────────────────────────────────────────────────────────────────────
+// ── On-chain Swap Engine ─────────────────────────────────────────────────────
+const WETH_BASE      = '0x4200000000000000000000000000000000000006';
+const UNISWAP_ROUTER = '0x2626664c2603336E57B271c5C0b26F421741e481';
+const SWAP_SLIPPAGE  = 5;
+const pendingSwaps   = new Map();
 
-async function cmdSwap(chatId, args, lang) {
+const ROUTER_IFACE = new ethers.Interface([
+  'function exactInputSingle(tuple(address tokenIn, address tokenOut, uint24 fee, address recipient, uint256 amountIn, uint256 amountOutMinimum, uint160 sqrtPriceLimitX96) params) payable returns (uint256 amountOut)',
+]);
+const ERC20_IFACE = new ethers.Interface([
+  'function approve(address spender, uint256 amount) returns (bool)',
+  'function allowance(address owner, address spender) view returns (uint256)',
+]);
+
+function genNonce() { return Math.random().toString(36).slice(2, 10); }
+
+async function getEthPrice() {
+  try {
+    const p = await searchTicker('WETH');
+    if (p?.priceUsd) return Number(p.priceUsd);
+  } catch {}
+  return 3500;
+}
+
+async function resolveToken(sym) {
+  const upper = sym.toUpperCase().replace('$', '');
+  if (upper === 'ETH' || upper === 'WETH') return { address: WETH_BASE, symbol: 'ETH', decimals: 18 };
+  if (VERIFIED_TOKENS[upper]) {
+    const info = await getTokenInfo(VERIFIED_TOKENS[upper]);
+    return { address: VERIFIED_TOKENS[upper], symbol: upper, decimals: info?.decimals || 18 };
+  }
+  const pair = await searchTicker(upper);
+  if (!pair?.baseToken?.address) return null;
+  const info = await getTokenInfo(pair.baseToken.address);
+  return { address: pair.baseToken.address, symbol: pair.baseToken.symbol || upper, decimals: info?.decimals || 18 };
+}
+
+async function execSwap(userId, tokenAddr, amount, isEthToToken, decimals = 18) {
+  const w = agentWallet(userId);
+  if (!w) throw new Error('Agent wallet not configured');
+  const provider = new ethers.JsonRpcProvider(BASE_RPC);
+  const signer = w.connect(provider);
+  const dex = await getDex(tokenAddr);
+  if (!dex?.priceUsd) throw new Error('No price data for this token');
+  const ethP = await getEthPrice();
+  const slip = (100 - SWAP_SLIPPAGE) / 100;
+  const fees = [10000, 3000, 500];
+  let lastErr;
+
+  if (isEthToToken) {
+    const inWei = ethers.parseEther(amount.toString());
+    const expOut = (amount * ethP) / dex.priceUsd;
+    const minOut = ethers.parseUnits((expOut * slip).toFixed(Math.min(decimals, 8)), decimals);
+    for (const fee of fees) {
+      try {
+        const data = ROUTER_IFACE.encodeFunctionData('exactInputSingle', [{
+          tokenIn: WETH_BASE, tokenOut: tokenAddr, fee,
+          recipient: w.address, amountIn: inWei,
+          amountOutMinimum: minOut, sqrtPriceLimitX96: 0n,
+        }]);
+        const tx = await signer.sendTransaction({ to: UNISWAP_ROUTER, data, value: inWei, gasLimit: 350000n });
+        return { hash: tx.hash, expected: expOut };
+      } catch (e) { lastErr = e; }
+    }
+  } else {
+    const inUnits = ethers.parseUnits(Math.floor(amount).toString(), decimals);
+    const expOut = (amount * dex.priceUsd) / ethP;
+    const minOut = ethers.parseEther((expOut * slip).toFixed(18));
+    const aData = ERC20_IFACE.encodeFunctionData('allowance', [w.address, UNISWAP_ROUTER]);
+    const aRes = await baseRpc('eth_call', [{ from: w.address, to: tokenAddr, data: aData }, 'latest']);
+    if (BigInt(aRes || '0') < inUnits) {
+      const apData = ERC20_IFACE.encodeFunctionData('approve', [UNISWAP_ROUTER, ethers.MaxUint256]);
+      const apTx = await signer.sendTransaction({ to: tokenAddr, data: apData, gasLimit: 100000n });
+      await apTx.wait();
+    }
+    for (const fee of fees) {
+      try {
+        const data = ROUTER_IFACE.encodeFunctionData('exactInputSingle', [{
+          tokenIn: tokenAddr, tokenOut: WETH_BASE, fee,
+          recipient: w.address, amountIn: inUnits,
+          amountOutMinimum: minOut, sqrtPriceLimitX96: 0n,
+        }]);
+        const tx = await signer.sendTransaction({ to: UNISWAP_ROUTER, data, gasLimit: 350000n });
+        return { hash: tx.hash, expected: expOut };
+      } catch (e) { lastErr = e; }
+    }
+  }
+  throw lastErr || new Error('Swap failed - no pool found');
+}
+
+// ── Swap Command ─────────────────────────────────────────────────────────────
+
+async function cmdSwap(chatId, userId, args, lang) {
   typing(chatId);
   const isID = lang === 'id';
-  const parts = args.trim().split(/\s+/).filter(Boolean);
+  const cleaned = args.replace(/\bto\b/gi, '').replace(/\$/g, '').trim();
+  const parts = cleaned.split(/\s+/).filter(Boolean);
 
   let amount = null, fromSym, toSym;
   if (parts.length >= 3 && !isNaN(parts[0])) {
@@ -536,71 +657,109 @@ async function cmdSwap(chatId, args, lang) {
     return tg('sendMessage', {
       chat_id: chatId, parse_mode: 'Markdown', disable_web_page_preview: true,
       text: isID
-        ? `🔄 *Swap $ORLIX*\n\n*Format:*\n\`/swap ORLIX ETH\` — Swap ORLIX ke ETH\n\`/swap ETH ORLIX\` — Swap ETH ke ORLIX\n\`/swap 1000000 ORLIX ETH\` — Estimasi harga\n\n_Swap via DEX di Base network_`
-        : `🔄 *Swap $ORLIX*\n\n*Usage:*\n\`/swap ORLIX ETH\` — Swap ORLIX to ETH\n\`/swap ETH ORLIX\` — Swap ETH to ORLIX\n\`/swap 1000000 ORLIX ETH\` — Price estimate\n\n_Swap via DEX on Base network_`,
+        ? `🔄 *Swap Token*\n\n*Format:*\n\`/swap 0.001 ETH ORLIX\` — Swap langsung\n\`/swap 1000000 ORLIX ETH\`\n\`/swap ETH BRETT\` — Lihat harga\n\n_Swap apapun di Base via Uniswap V3_`
+        : `🔄 *Swap Token*\n\n*Usage:*\n\`/swap 0.001 ETH ORLIX\` — Execute swap\n\`/swap 1000000 ORLIX ETH\`\n\`/swap ETH BRETT\` — View price\n\n_Swap any token on Base via Uniswap V3_`,
       reply_markup: { inline_keyboard: [
-        [{ text: '🔄 Swap ORLIX → ETH', url: `https://app.uniswap.org/swap?chain=base&inputCurrency=${ORLIX_CA}&outputCurrency=ETH` }],
         [{ text: '🔄 Swap ETH → ORLIX', url: `https://app.uniswap.org/swap?chain=base&inputCurrency=ETH&outputCurrency=${ORLIX_CA}` }],
         [{ text: '📊 ORLIX Chart', url: `https://dexscreener.com/base/${ORLIX_CA}` }],
       ] },
     });
   }
 
-  const isOrlixToEth = fromSym === 'ORLIX' && (toSym === 'ETH' || toSym === 'WETH');
-  const isEthToOrlix = (fromSym === 'ETH' || fromSym === 'WETH') && toSym === 'ORLIX';
-
-  if (!isOrlixToEth && !isEthToOrlix) {
+  const fromIsEth = fromSym === 'ETH' || fromSym === 'WETH';
+  const toIsEth = toSym === 'ETH' || toSym === 'WETH';
+  if (!fromIsEth && !toIsEth) {
     return send(chatId, isID
-      ? `🔄 Saat ini swap mendukung *ORLIX ↔ ETH*.\n\nContoh: \`/swap ORLIX ETH\` atau \`/swap ETH ORLIX\``
-      : `🔄 Currently swap supports *ORLIX ↔ ETH*.\n\nExample: \`/swap ORLIX ETH\` or \`/swap ETH ORLIX\``);
+      ? `🔄 Swap harus melibatkan ETH.\n\nContoh: \`/swap 0.001 ETH ${fromSym}\` atau \`/swap 1000 ${fromSym} ETH\``
+      : `🔄 One side must be ETH.\n\nExample: \`/swap 0.001 ETH ${fromSym}\` or \`/swap 1000 ${fromSym} ETH\``);
+  }
+  if (fromIsEth && toIsEth) {
+    return send(chatId, `⚠️ ${isID ? 'Tidak bisa swap ETH ke ETH.' : 'Cannot swap ETH to ETH.'}`);
   }
 
-  const orlixPair = await searchTicker('ORLIX');
-  if (!orlixPair || !orlixPair.priceUsd) {
-    return send(chatId, `⚠️ ${isID ? 'Gagal mendapatkan harga ORLIX.' : 'Could not fetch ORLIX price.'}`);
+  const tokenSym = fromIsEth ? toSym : fromSym;
+  const isEthToToken = fromIsEth;
+  const token = await resolveToken(tokenSym);
+  if (!token) {
+    return send(chatId, `⚠️ *$${tokenSym}* ${isID ? 'tidak ditemukan di Base.' : 'not found on Base.'}`);
   }
 
-  const orlixPrice = Number(orlixPair.priceUsd);
-  let ethPrice = 0;
-  try {
-    if (orlixPair.priceNative && Number(orlixPair.priceNative) > 0) {
-      ethPrice = orlixPrice / Number(orlixPair.priceNative);
-    }
-    if (!ethPrice || ethPrice < 100) {
-      const wethPair = await searchTicker('WETH');
-      if (wethPair?.priceUsd) ethPrice = Number(wethPair.priceUsd);
-    }
-  } catch { /* use fallback */ }
-  if (!ethPrice) ethPrice = 3500;
-
-  const fmtPrice = (p) => p < 0.0001 ? p.toFixed(10) : p < 0.01 ? p.toFixed(8) : p.toFixed(6);
-  let estimate = '';
-  if (amount && amount > 0) {
-    if (isOrlixToEth) {
-      const ethOut = (amount * orlixPrice) / ethPrice;
-      estimate = `\n*${isID ? 'Estimasi' : 'Estimate'}:*\n📥 ${amount.toLocaleString()} ORLIX → *${ethOut.toFixed(6)} ETH* (~$${(amount * orlixPrice).toFixed(2)})\n`;
-    } else {
-      const orlixOut = (amount * ethPrice) / orlixPrice;
-      estimate = `\n*${isID ? 'Estimasi' : 'Estimate'}:*\n📥 ${amount} ETH → *${orlixOut.toLocaleString(undefined, { maximumFractionDigits: 0 })} ORLIX* (~$${(amount * ethPrice).toFixed(2)})\n`;
-    }
+  const dex = await getDex(token.address);
+  if (!dex?.priceUsd) {
+    return send(chatId, `⚠️ ${isID ? 'Tidak ada data harga untuk' : 'No price data for'} $${token.symbol}`);
   }
 
-  const direction = isOrlixToEth ? 'ORLIX → ETH' : 'ETH → ORLIX';
-  const inputCurrency = isOrlixToEth ? ORLIX_CA : 'ETH';
-  const outputCurrency = isOrlixToEth ? 'ETH' : ORLIX_CA;
+  const ethPrice = await getEthPrice();
+  const tokenPrice = dex.priceUsd;
+  const fmtP = (p) => p < 0.0001 ? p.toFixed(10) : p < 0.01 ? p.toFixed(8) : p.toFixed(4);
 
-  let msg = `🔄 *Swap ${direction}*\n━━━━━━━━━━━━━━━━━━━━\n`;
-  msg += `*ORLIX:* $${fmtPrice(orlixPrice)}\n`;
-  msg += `*ETH:* $${ethPrice.toFixed(2)}\n`;
-  if (estimate) msg += estimate;
-  msg += `\n_⚠️ ${isID ? 'Harga estimasi — slippage bisa terjadi saat swap.' : 'Estimated price — slippage may apply during swap.'}_`;
+  if (!amount) {
+    const inputC = isEthToToken ? 'ETH' : token.address;
+    const outputC = isEthToToken ? token.address : 'ETH';
+    let msg = `🔄 *${isEthToToken ? 'ETH → ' + token.symbol : token.symbol + ' → ETH'}*\n\n`;
+    msg += `*${token.symbol}:* $${fmtP(tokenPrice)}\n`;
+    msg += `*ETH:* $${ethPrice.toFixed(2)}\n\n`;
+    msg += isID ? `_Tambahkan jumlah untuk swap:_\n` : `_Add amount to swap:_\n`;
+    msg += `\`/swap ${isEthToToken ? '0.001 ETH ' + token.symbol : '1000 ' + token.symbol + ' ETH'}\``;
+    return tg('sendMessage', {
+      chat_id: chatId, text: msg, parse_mode: 'Markdown', disable_web_page_preview: true,
+      reply_markup: { inline_keyboard: [
+        [{ text: `🦄 Swap on Uniswap`, url: `https://app.uniswap.org/swap?chain=base&inputCurrency=${inputC}&outputCurrency=${outputC}` }],
+        [{ text: `📊 Chart`, url: dex.url || `https://dexscreener.com/base/${token.address}` }],
+      ] },
+    });
+  }
+
+  let expOut;
+  if (isEthToToken) {
+    expOut = (amount * ethPrice) / tokenPrice;
+  } else {
+    expOut = (amount * tokenPrice) / ethPrice;
+  }
+  const usdValue = isEthToToken ? amount * ethPrice : amount * tokenPrice;
+  const direction = isEthToToken ? `ETH → ${token.symbol}` : `${token.symbol} → ETH`;
+  const outFmt = isEthToToken
+    ? expOut.toLocaleString(undefined, { maximumFractionDigits: 0 })
+    : expOut.toFixed(6);
+  const outSym = isEthToToken ? token.symbol : 'ETH';
+
+  const nonce = genNonce();
+  pendingSwaps.set(nonce, {
+    userId, chatId, tokenAddr: token.address, amount, isEthToToken,
+    decimals: token.decimals, symbol: token.symbol,
+    expiry: Date.now() + 120000,
+  });
+
+  let msg = `🔄 *Swap Preview*\n\n`;
+  msg += `📤 *Send:* ${isEthToToken ? amount + ' ETH' : amount.toLocaleString() + ' ' + token.symbol} (~$${usdValue.toFixed(2)})\n`;
+  msg += `📥 *Receive:* ~${outFmt} ${outSym}\n`;
+  msg += `💱 *Rate:* 1 ${token.symbol} = $${fmtP(tokenPrice)}\n`;
+  msg += `⚡ *Slippage:* ${SWAP_SLIPPAGE}% max\n\n`;
+  msg += `> ${isID ? 'Swap dari agent wallet kamu via Uniswap V3' : 'Swap from your agent wallet via Uniswap V3'}`;
 
   await tg('sendMessage', {
     chat_id: chatId, text: msg, parse_mode: 'Markdown', disable_web_page_preview: true,
     reply_markup: { inline_keyboard: [
-      [{ text: `🦄 Swap on Uniswap`, url: `https://app.uniswap.org/swap?chain=base&inputCurrency=${inputCurrency}&outputCurrency=${outputCurrency}` }],
-      [{ text: `🔵 Swap on Aerodrome`, url: `https://aerodrome.finance/swap?from=${inputCurrency === 'ETH' ? 'eth' : ORLIX_CA}&to=${outputCurrency === 'ETH' ? 'eth' : ORLIX_CA}` }],
-      [{ text: `📊 ORLIX Chart`, url: orlixPair.url || `https://dexscreener.com/base/${ORLIX_CA}` }],
+      [{ text: `✅ ${isID ? 'Konfirmasi Swap' : 'Confirm Swap'}`, callback_data: `csw:${nonce}` },
+       { text: `❌ ${isID ? 'Batal' : 'Cancel'}`, callback_data: `cswno:${nonce}` }],
+    ] },
+  });
+}
+
+// ── Bridge ───────────────────────────────────────────────────────────────────
+
+async function cmdBridge(chatId, lang) {
+  const isID = lang === 'id';
+  await tg('sendMessage', {
+    chat_id: chatId, parse_mode: 'Markdown', disable_web_page_preview: true,
+    text: isID
+      ? `🌉 *Bridge Base ↔ Robinhood Chain*\n\nPilih bridge untuk transfer aset antar chain:\n\n*Base → Robinhood Chain:*\nBridge ETH dari Base ke Robinhood Chain\n\n*Robinhood Chain → Base:*\nBridge ETH dari Robinhood ke Base\n\n> Kedua chain adalah Arbitrum L2 dengan ETH sebagai native currency`
+      : `🌉 *Bridge Base ↔ Robinhood Chain*\n\nSelect a bridge to transfer assets:\n\n*Base → Robinhood Chain:*\nBridge ETH from Base to Robinhood Chain\n\n*Robinhood Chain → Base:*\nBridge ETH from Robinhood to Base\n\n> Both chains are Arbitrum L2s with ETH as native currency`,
+    reply_markup: { inline_keyboard: [
+      [{ text: '🌉 Across Protocol', url: 'https://app.across.to/bridge' }],
+      [{ text: '🌀 Stargate', url: 'https://stargate.finance/bridge' }],
+      [{ text: '🔵 Base Bridge', url: 'https://bridge.base.org' }],
+      [{ text: '🟣 Robinhood Explorer', url: 'https://robinhoodchain.blockscout.com' }],
     ] },
   });
 }
@@ -633,7 +792,7 @@ async function cmdTop(chatId, lang) {
     const top = Object.values(seen).sort((a, b) => (b.volume?.h24 || 0) - (a.volume?.h24 || 0)).slice(0, 10);
     if (!top.length) return send(chatId, `⚠️ ${isID ? 'Gagal memuat data market.' : 'Failed to load market data.'}`);
 
-    let msg = `🏆 *${isID ? 'Top Token — Base & Robinhood' : 'Top Tokens — Base & Robinhood'}*\n━━━━━━━━━━━━━━━━━━━━\n`;
+    let msg = `🏆 *${isID ? 'Top Token — Base & Robinhood' : 'Top Tokens — Base & Robinhood'}*\n\n`;
     for (let i = 0; i < top.length; i++) {
       const p = top[i];
       const sym = p.baseToken?.symbol || '?';
@@ -677,7 +836,7 @@ async function smartDetect(chatId, userId, text, lang) {
           const dx  = dex.status === 'fulfilled' ? dex.value : null;
           const chain = dx?.chainId === 'robinhood' ? '🟣 Robinhood' : '🔵 Base';
           let msg = `🔍 *${tok?.name || 'Unknown'} (${tok?.symbol || '?'})*\n`;
-          msg += `\`${addr.slice(0,6)}...${addr.slice(-4)}\` · ${chain}\n━━━━━━━━━━━━━━━━━━━━\n`;
+          msg += `\`${addr.slice(0,6)}...${addr.slice(-4)}\` · ${chain}\n\n`;
           if (dx) {
             const price = dx.priceUsd ? `$${dx.priceUsd < 0.01 ? dx.priceUsd.toFixed(8) : dx.priceUsd.toFixed(6)}` : '—';
             const ch24 = dx.priceChange24h;
@@ -733,6 +892,7 @@ async function setupBot() {
     { command: 'start',   description: 'About Orlix + get started' },
     { command: 'menu',    description: 'Quick actions' },
     { command: 'swap',    description: 'Swap ORLIX ↔ ETH' },
+    { command: 'bridge',  description: 'Bridge Base ↔ Robinhood' },
     { command: 'top',     description: 'Top trending tokens' },
     { command: 'analyze', description: 'Deep token analysis' },
     { command: 'price',   description: 'Quick token price' },
@@ -807,8 +967,43 @@ module.exports = async function handler(req, res) {
           await cmdPrice(cbChat, cbData.slice(6).toLowerCase());
         } else if (cbData.startsWith('ticker:')) {
           await cmdTickerPrice(cbChat, cbData.slice(7), cbLang);
+        } else if (cbData.startsWith('csw:')) {
+          const nonce = cbData.slice(4);
+          const pending = pendingSwaps.get(nonce);
+          if (!pending) {
+            await send(cbChat, cbLang === 'id' ? '⚠️ Swap sudah kedaluwarsa. Coba lagi dengan /swap' : '⚠️ Swap expired. Try again with /swap');
+          } else if (Date.now() > pending.expiry) {
+            pendingSwaps.delete(nonce);
+            await send(cbChat, cbLang === 'id' ? '⏰ Swap kedaluwarsa. Buat ulang dengan /swap' : '⏰ Swap expired. Create a new one with /swap');
+          } else {
+            pendingSwaps.delete(nonce);
+            await send(cbChat, cbLang === 'id' ? '⏳ Menjalankan swap...' : '⏳ Executing swap...');
+            try {
+              const result = await execSwap(pending.userId, pending.tokenAddr, pending.amount, pending.isEthToToken, pending.decimals);
+              const outFmt = pending.isEthToToken
+                ? result.expected.toLocaleString(undefined, { maximumFractionDigits: 0 })
+                : result.expected.toFixed(6);
+              const outSym = pending.isEthToToken ? pending.symbol : 'ETH';
+              let msg = cbLang === 'id' ? `✅ *Swap Berhasil!*\n\n` : `✅ *Swap Successful!*\n\n`;
+              msg += `📤 ${pending.isEthToToken ? pending.amount + ' ETH' : pending.amount.toLocaleString() + ' ' + pending.symbol}\n`;
+              msg += `📥 ~${outFmt} ${outSym}\n\n`;
+              msg += `🔗 [Tx on BaseScan](https://basescan.org/tx/${result.hash})`;
+              await tg('sendMessage', {
+                chat_id: cbChat, text: msg, parse_mode: 'Markdown', disable_web_page_preview: true,
+                reply_markup: { inline_keyboard: [
+                  [{ text: '🔍 View Transaction', url: `https://basescan.org/tx/${result.hash}` }],
+                ] },
+              });
+            } catch (e) {
+              await send(cbChat, `❌ Swap failed: ${e.message}`);
+            }
+          }
+        } else if (cbData.startsWith('cswno:')) {
+          const nonce = cbData.slice(6);
+          pendingSwaps.delete(nonce);
+          await send(cbChat, cbLang === 'id' ? '❌ Swap dibatalkan.' : '❌ Swap cancelled.');
         } else if (cbData === 'swap_menu') {
-          await cmdSwap(cbChat, '', cbLang);
+          await cmdSwap(cbChat, cbUser, '', cbLang);
         } else if (cbData === 'top') {
           await cmdTop(cbChat, cbLang);
         }
@@ -844,6 +1039,7 @@ module.exports = async function handler(req, res) {
         ? `Asisten AI multi-chain untuk *Base & Robinhood Chain* — analisa token, swap, market data, dan tanya apa saja.\n\n*⚡ Perintah:*\n`
         : `Multi-chain AI assistant for *Base & Robinhood Chain* — token analysis, swap, market data, and ask anything.\n\n*⚡ Commands:*\n`) +
       `/swap — ${isID ? 'Swap ORLIX ↔ ETH' : 'Swap ORLIX ↔ ETH'}\n` +
+      `/bridge — ${isID ? 'Bridge Base ↔ Robinhood' : 'Bridge Base ↔ Robinhood'}\n` +
       `/top — ${isID ? 'Top token trending' : 'Top trending tokens'}\n` +
       `/analyze — ${isID ? 'Analisa keamanan token' : 'Token security analysis'}\n` +
       `/price — ${isID ? 'Harga token cepat' : 'Quick token price'}\n` +
@@ -951,6 +1147,7 @@ module.exports = async function handler(req, res) {
       `${isID ? 'Setor 10M $ORLIX ke agent wallet untuk buka fitur AI' : 'Hold 10M $ORLIX in your agent wallet to unlock AI'} — /wallet\n\n` +
       `*🔄 ${isID ? 'Trading' : 'Trading'}*\n` +
       `/swap — ${isID ? 'Swap ORLIX ↔ ETH (estimasi + link DEX)' : 'Swap ORLIX ↔ ETH (quote + DEX links)'}\n` +
+      `/bridge — ${isID ? 'Bridge Base ↔ Robinhood Chain' : 'Bridge Base ↔ Robinhood Chain'}\n` +
       `/top — ${isID ? 'Top token Base & Robinhood Chain' : 'Top tokens Base & Robinhood Chain'}\n\n` +
       `*📊 ${isID ? 'Data Onchain (Gratis)' : 'Onchain Data (Free)'}*\n` +
       `/price — ${isID ? 'Harga token instan' : 'Instant token price'}\n` +
@@ -1024,7 +1221,14 @@ module.exports = async function handler(req, res) {
   // ── /swap (free) ───────────────────────────────────────────────────────────
   if (text.startsWith('/swap')) {
     const args = text.slice(5).trim();
-    try { await cmdSwap(chatId, args, lang); }
+    try { await cmdSwap(chatId, userId, args, lang); }
+    catch (e) { await send(chatId, `⚠️ ${e.message}`); }
+    return res.status(200).json({ ok: true });
+  }
+
+  // ── /bridge (free) ────────────────────────────────────────────────────────
+  if (text === '/bridge' || text.startsWith('/bridge ')) {
+    try { await cmdBridge(chatId, lang); }
     catch (e) { await send(chatId, `⚠️ ${e.message}`); }
     return res.status(200).json({ ok: true });
   }
