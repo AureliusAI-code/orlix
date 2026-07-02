@@ -200,8 +200,8 @@ async function getDex(address) {
   });
   if (!r.ok) return null;
   const data = await r.json();
-  const basePairs = (data.pairs || []).filter(p => p.chainId === 'base');
-  const pool = basePairs.length ? basePairs : (data.pairs || []);
+  const supported = (data.pairs || []).filter(p => p.chainId === 'base' || p.chainId === 'robinhood');
+  const pool = supported.length ? supported : (data.pairs || []);
   if (!pool.length) return null;
   const best = pool.sort((a, b) => (b.liquidity?.usd || 0) - (a.liquidity?.usd || 0))[0];
   const liq  = best.liquidity?.usd || 0;
@@ -229,6 +229,7 @@ async function getDex(address) {
     pairsCount:     pool.length,
     url:            best.url              || '',
     pairCreatedAt:  best.pairCreatedAt    || null,
+    chainId:        best.chainId          || 'base',
   };
 }
 
@@ -389,7 +390,7 @@ async function cmdPrice(chatId, address) {
   }).catch(() => null);
   if (!r?.ok) return send(chatId, '⚠️ Could not fetch price. Check the address and try again.');
   const data = await r.json();
-  const pairs = (data.pairs || []).filter(p => p.chainId === 'base');
+  const pairs = (data.pairs || []).filter(p => p.chainId === 'base' || p.chainId === 'robinhood');
   const best  = (pairs.length ? pairs : (data.pairs || [])).sort((a, b) => (b.liquidity?.usd || 0) - (a.liquidity?.usd || 0))[0];
   if (!best) return send(chatId, '⚠️ Token not listed on any DEX.');
 
@@ -449,6 +450,270 @@ Guidelines:
   await sendLong(chatId, data.content?.[0]?.text || (isID ? 'Tidak dapat menghasilkan respons.' : 'Could not generate a response.'));
 }
 
+// ── Ticker Search ────────────────────────────────────────────────────────────
+
+async function searchTicker(ticker) {
+  try {
+    const r = await fetch(`https://api.dexscreener.com/latest/dex/search?q=${encodeURIComponent(ticker)}`, {
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!r.ok) return null;
+    const data = await r.json();
+    const supported = (data.pairs || []).filter(p => p.chainId === 'base' || p.chainId === 'robinhood');
+    if (!supported.length) return null;
+    const exact = supported.filter(p => (p.baseToken?.symbol || '').toUpperCase() === ticker.toUpperCase());
+    const pool = exact.length ? exact : supported;
+    return pool.sort((a, b) => (b.liquidity?.usd || 0) - (a.liquidity?.usd || 0))[0];
+  } catch { return null; }
+}
+
+async function cmdTickerPrice(chatId, ticker, lang) {
+  typing(chatId);
+  const isID = lang === 'id';
+  const pair = await searchTicker(ticker);
+  if (!pair) {
+    return send(chatId, `⚠️ *$${ticker.toUpperCase()}* ${isID ? 'tidak ditemukan di Base / Robinhood Chain.' : 'not found on Base / Robinhood Chain.'}`);
+  }
+
+  const sym   = pair.baseToken?.symbol || ticker.toUpperCase();
+  const name  = pair.baseToken?.name || '';
+  const addr  = pair.baseToken?.address || '';
+  const price = pair.priceUsd ? `$${Number(pair.priceUsd) < 0.0001 ? Number(pair.priceUsd).toFixed(10) : Number(pair.priceUsd) < 0.01 ? Number(pair.priceUsd).toFixed(8) : Number(pair.priceUsd).toFixed(6)}` : '—';
+  const ch1h  = pair.priceChange?.h1;
+  const ch24h = pair.priceChange?.h24;
+  const liq   = pair.liquidity?.usd || 0;
+  const vol   = pair.volume?.h24 || 0;
+  const mcap  = pair.marketCap || pair.fdv || 0;
+  const chain = pair.chainId === 'robinhood' ? '🟣 Robinhood' : '🔵 Base';
+  const arrow = (v) => v == null ? '—' : v >= 0 ? `🟢 +${v}%` : `🔴 ${v}%`;
+
+  let msg = `💰 *$${sym}*`;
+  if (name) msg += ` — ${name}`;
+  msg += `\n${chain}\n━━━━━━━━━━━━━━━━━━━━\n`;
+  msg += `*${isID ? 'Harga' : 'Price'}:* ${price}\n`;
+  msg += `*1h:* ${arrow(ch1h)} | *24h:* ${arrow(ch24h)}\n`;
+  msg += `*Liq:* $${liq.toLocaleString()} | *Vol 24h:* $${vol.toLocaleString()}\n`;
+  if (mcap > 0) msg += `*MCap:* $${mcap.toLocaleString()}\n`;
+
+  const buttons = [];
+  if (addr) {
+    buttons.push([{ text: `🔍 ${isID ? 'Analisa Lengkap' : 'Full Analysis'}`, callback_data: `analyze:${addr}` }]);
+  }
+  if (pair.url) buttons.push([{ text: '📈 Chart', url: pair.url }]);
+  if (sym.toUpperCase() === 'ORLIX') {
+    buttons.push([
+      { text: '🔄 Swap ORLIX ↔ ETH', callback_data: 'swap_menu' },
+    ]);
+  }
+
+  await tg('sendMessage', {
+    chat_id: chatId, text: msg, parse_mode: 'Markdown',
+    disable_web_page_preview: true,
+    reply_markup: buttons.length ? { inline_keyboard: buttons } : undefined,
+  });
+}
+
+// ── Swap ─────────────────────────────────────────────────────────────────────
+
+async function cmdSwap(chatId, args, lang) {
+  typing(chatId);
+  const isID = lang === 'id';
+  const parts = args.trim().split(/\s+/).filter(Boolean);
+
+  let amount = null, fromSym, toSym;
+  if (parts.length >= 3 && !isNaN(parts[0])) {
+    amount = parseFloat(parts[0]);
+    fromSym = parts[1].toUpperCase();
+    toSym = parts[2].toUpperCase();
+  } else if (parts.length >= 2) {
+    fromSym = parts[0].toUpperCase();
+    toSym = parts[1].toUpperCase();
+  } else {
+    return tg('sendMessage', {
+      chat_id: chatId, parse_mode: 'Markdown', disable_web_page_preview: true,
+      text: isID
+        ? `🔄 *Swap $ORLIX*\n\n*Format:*\n\`/swap ORLIX ETH\` — Swap ORLIX ke ETH\n\`/swap ETH ORLIX\` — Swap ETH ke ORLIX\n\`/swap 1000000 ORLIX ETH\` — Estimasi harga\n\n_Swap via DEX di Base network_`
+        : `🔄 *Swap $ORLIX*\n\n*Usage:*\n\`/swap ORLIX ETH\` — Swap ORLIX to ETH\n\`/swap ETH ORLIX\` — Swap ETH to ORLIX\n\`/swap 1000000 ORLIX ETH\` — Price estimate\n\n_Swap via DEX on Base network_`,
+      reply_markup: { inline_keyboard: [
+        [{ text: '🔄 Swap ORLIX → ETH', url: `https://app.uniswap.org/swap?chain=base&inputCurrency=${ORLIX_CA}&outputCurrency=ETH` }],
+        [{ text: '🔄 Swap ETH → ORLIX', url: `https://app.uniswap.org/swap?chain=base&inputCurrency=ETH&outputCurrency=${ORLIX_CA}` }],
+        [{ text: '📊 ORLIX Chart', url: `https://dexscreener.com/base/${ORLIX_CA}` }],
+      ] },
+    });
+  }
+
+  const isOrlixToEth = fromSym === 'ORLIX' && (toSym === 'ETH' || toSym === 'WETH');
+  const isEthToOrlix = (fromSym === 'ETH' || fromSym === 'WETH') && toSym === 'ORLIX';
+
+  if (!isOrlixToEth && !isEthToOrlix) {
+    return send(chatId, isID
+      ? `🔄 Saat ini swap mendukung *ORLIX ↔ ETH*.\n\nContoh: \`/swap ORLIX ETH\` atau \`/swap ETH ORLIX\``
+      : `🔄 Currently swap supports *ORLIX ↔ ETH*.\n\nExample: \`/swap ORLIX ETH\` or \`/swap ETH ORLIX\``);
+  }
+
+  const orlixPair = await searchTicker('ORLIX');
+  if (!orlixPair || !orlixPair.priceUsd) {
+    return send(chatId, `⚠️ ${isID ? 'Gagal mendapatkan harga ORLIX.' : 'Could not fetch ORLIX price.'}`);
+  }
+
+  const orlixPrice = Number(orlixPair.priceUsd);
+  let ethPrice = 0;
+  try {
+    if (orlixPair.priceNative && Number(orlixPair.priceNative) > 0) {
+      ethPrice = orlixPrice / Number(orlixPair.priceNative);
+    }
+    if (!ethPrice || ethPrice < 100) {
+      const wethPair = await searchTicker('WETH');
+      if (wethPair?.priceUsd) ethPrice = Number(wethPair.priceUsd);
+    }
+  } catch { /* use fallback */ }
+  if (!ethPrice) ethPrice = 3500;
+
+  const fmtPrice = (p) => p < 0.0001 ? p.toFixed(10) : p < 0.01 ? p.toFixed(8) : p.toFixed(6);
+  let estimate = '';
+  if (amount && amount > 0) {
+    if (isOrlixToEth) {
+      const ethOut = (amount * orlixPrice) / ethPrice;
+      estimate = `\n*${isID ? 'Estimasi' : 'Estimate'}:*\n📥 ${amount.toLocaleString()} ORLIX → *${ethOut.toFixed(6)} ETH* (~$${(amount * orlixPrice).toFixed(2)})\n`;
+    } else {
+      const orlixOut = (amount * ethPrice) / orlixPrice;
+      estimate = `\n*${isID ? 'Estimasi' : 'Estimate'}:*\n📥 ${amount} ETH → *${orlixOut.toLocaleString(undefined, { maximumFractionDigits: 0 })} ORLIX* (~$${(amount * ethPrice).toFixed(2)})\n`;
+    }
+  }
+
+  const direction = isOrlixToEth ? 'ORLIX → ETH' : 'ETH → ORLIX';
+  const inputCurrency = isOrlixToEth ? ORLIX_CA : 'ETH';
+  const outputCurrency = isOrlixToEth ? 'ETH' : ORLIX_CA;
+
+  let msg = `🔄 *Swap ${direction}*\n━━━━━━━━━━━━━━━━━━━━\n`;
+  msg += `*ORLIX:* $${fmtPrice(orlixPrice)}\n`;
+  msg += `*ETH:* $${ethPrice.toFixed(2)}\n`;
+  if (estimate) msg += estimate;
+  msg += `\n_⚠️ ${isID ? 'Harga estimasi — slippage bisa terjadi saat swap.' : 'Estimated price — slippage may apply during swap.'}_`;
+
+  await tg('sendMessage', {
+    chat_id: chatId, text: msg, parse_mode: 'Markdown', disable_web_page_preview: true,
+    reply_markup: { inline_keyboard: [
+      [{ text: `🦄 Swap on Uniswap`, url: `https://app.uniswap.org/swap?chain=base&inputCurrency=${inputCurrency}&outputCurrency=${outputCurrency}` }],
+      [{ text: `🔵 Swap on Aerodrome`, url: `https://aerodrome.finance/swap?from=${inputCurrency === 'ETH' ? 'eth' : ORLIX_CA}&to=${outputCurrency === 'ETH' ? 'eth' : ORLIX_CA}` }],
+      [{ text: `📊 ORLIX Chart`, url: orlixPair.url || `https://dexscreener.com/base/${ORLIX_CA}` }],
+    ] },
+  });
+}
+
+// ── Top Tokens ───────────────────────────────────────────────────────────────
+
+async function cmdTop(chatId, lang) {
+  typing(chatId);
+  const isID = lang === 'id';
+  const searches = ['BRETT','VIRTUAL','AERO','DEGEN','TOSHI','HIGHER','MOG','WELL','ORLIX','AIXBT','PEPE','BONK','WIF','POPCAT','CLANKER'];
+  const STABLES = new Set(['USDT','USDC','DAI','WETH','WBTC','CBETH','USDBC','USDB','EURC','RETH','STETH','WSTETH','ETH','FRAX']);
+
+  try {
+    const results = await Promise.all(
+      searches.map(q =>
+        fetch(`https://api.dexscreener.com/latest/dex/search?q=${encodeURIComponent(q)}`, { signal: AbortSignal.timeout(8000) })
+          .then(r => r.ok ? r.json() : null).catch(() => null)
+      )
+    );
+    const seen = {};
+    for (const r of results) {
+      for (const p of (r?.pairs || [])) {
+        if (p.chainId !== 'base' && p.chainId !== 'robinhood') continue;
+        if (!p.baseToken?.address || STABLES.has((p.baseToken.symbol || '').toUpperCase())) continue;
+        if ((p.liquidity?.usd || 0) < 5000) continue;
+        const key = p.baseToken.address.toLowerCase();
+        if (!seen[key] || (p.liquidity?.usd || 0) > (seen[key].liquidity?.usd || 0)) seen[key] = p;
+      }
+    }
+    const top = Object.values(seen).sort((a, b) => (b.volume?.h24 || 0) - (a.volume?.h24 || 0)).slice(0, 10);
+    if (!top.length) return send(chatId, `⚠️ ${isID ? 'Gagal memuat data market.' : 'Failed to load market data.'}`);
+
+    let msg = `🏆 *${isID ? 'Top Token — Base & Robinhood' : 'Top Tokens — Base & Robinhood'}*\n━━━━━━━━━━━━━━━━━━━━\n`;
+    for (let i = 0; i < top.length; i++) {
+      const p = top[i];
+      const sym = p.baseToken?.symbol || '?';
+      const pr  = p.priceUsd ? `$${Number(p.priceUsd) < 0.01 ? Number(p.priceUsd).toFixed(6) : Number(p.priceUsd).toFixed(4)}` : '—';
+      const ch  = p.priceChange?.h24;
+      const arr = ch == null ? '' : ch >= 0 ? ` 🟢+${ch}%` : ` 🔴${ch}%`;
+      const vol = p.volume?.h24 || 0;
+      const icon = p.chainId === 'robinhood' ? '🟣' : '🔵';
+      msg += `${icon} *${i + 1}. $${sym}* ${pr}${arr}\n`;
+      msg += `   Vol $${(vol / 1000).toFixed(0)}K · Liq $${((p.liquidity?.usd || 0) / 1000).toFixed(0)}K\n`;
+    }
+    msg += `\n🔵 Base  🟣 Robinhood\n_${isID ? 'Ketik $TICKER untuk detail · /swap untuk trade' : 'Type $TICKER for details · /swap to trade'}_`;
+    await send(chatId, msg);
+  } catch (e) {
+    await send(chatId, `⚠️ ${isID ? 'Gagal memuat data' : 'Failed to load data'}: ${e.message}`);
+  }
+}
+
+// ── Smart Detect (auto-detect address / $TICKER) ─────────────────────────────
+
+async function smartDetect(chatId, userId, text, lang) {
+  const isID = lang === 'id';
+
+  // 1. Bare 0x address → detect contract vs wallet
+  const addrMatch = text.match(/^(0x[0-9a-fA-F]{40})$/i);
+  if (addrMatch) {
+    const addr = addrMatch[1].toLowerCase();
+    typing(chatId);
+    try {
+      const code = await baseRpc('eth_getCode', [addr, 'latest']);
+      const isContract = code && code !== '0x' && code.length > 4;
+
+      if (isContract) {
+        await send(chatId, isID ? `🔍 *Kontrak terdeteksi* — menganalisa token...` : `🔍 *Contract detected* — analyzing token...`);
+        const gate = await aiAllowed(chatId, userId);
+        if (gate.ok) {
+          await cmdAnalyze(chatId, addr, lang);
+        } else {
+          const [token, dex] = await Promise.allSettled([getTokenInfo(addr), getDex(addr)]);
+          const tok = token.status === 'fulfilled' ? token.value : null;
+          const dx  = dex.status === 'fulfilled' ? dex.value : null;
+          const chain = dx?.chainId === 'robinhood' ? '🟣 Robinhood' : '🔵 Base';
+          let msg = `🔍 *${tok?.name || 'Unknown'} (${tok?.symbol || '?'})*\n`;
+          msg += `\`${addr.slice(0,6)}...${addr.slice(-4)}\` · ${chain}\n━━━━━━━━━━━━━━━━━━━━\n`;
+          if (dx) {
+            const price = dx.priceUsd ? `$${dx.priceUsd < 0.01 ? dx.priceUsd.toFixed(8) : dx.priceUsd.toFixed(6)}` : '—';
+            const ch24 = dx.priceChange24h;
+            msg += `*${isID ? 'Harga' : 'Price'}:* ${price}\n`;
+            msg += `*24h:* ${ch24 >= 0 ? '🟢' : '🔴'} ${ch24}%\n`;
+            msg += `*Liq:* $${dx.liquidityUsd.toLocaleString()} | *Vol 24h:* $${dx.volume24h.toLocaleString()}\n`;
+            msg += `*B/S 24h:* ${dx.buys24h}/${dx.sells24h} (${dx.buySellRatio})\n`;
+            if (dx.fdv > 0) msg += `*FDV:* $${dx.fdv.toLocaleString()}\n`;
+          } else {
+            msg += `_${isID ? 'Belum listing di DEX manapun' : 'Not listed on any DEX'}_\n`;
+          }
+          msg += `\n🔒 _${isID ? 'Hold 10M $ORLIX untuk analisa AI lengkap' : 'Hold 10M $ORLIX for full AI analysis'}_`;
+          await tg('sendMessage', {
+            chat_id: chatId, text: msg, parse_mode: 'Markdown', disable_web_page_preview: true,
+            reply_markup: { inline_keyboard: [
+              [{ text: `📈 Chart`, url: dx?.url || `https://dexscreener.com/base/${addr}` }],
+              [{ text: `🔍 ${isID ? 'Analisa Lengkap' : 'Full Analysis'}`, callback_data: `analyze:${addr}` }],
+            ] },
+          });
+        }
+      } else {
+        await send(chatId, isID ? `👛 *Dompet terdeteksi* — memuat info...` : `👛 *Wallet detected* — loading info...`);
+        await cmdWatch(chatId, addr, lang);
+      }
+    } catch (e) {
+      await send(chatId, `⚠️ ${e.message}`);
+    }
+    return true;
+  }
+
+  // 2. $TICKER (exact match, e.g. "$BRETT" or "$orlix")
+  const tickerMatch = text.match(/^\$([A-Za-z]{2,12})$/);
+  if (tickerMatch) {
+    await cmdTickerPrice(chatId, tickerMatch[1], lang);
+    return true;
+  }
+
+  return false;
+}
+
 // ── Main handler ──────────────────────────────────────────────────────────────
 
 // ── One-time setup: register the command list + the blue "Menu" button ──────────
@@ -463,13 +728,13 @@ async function setupBot() {
   const en = [
     { command: 'start',   description: 'About Orlix + get started' },
     { command: 'menu',    description: 'Quick actions' },
-    { command: 'wallet',  description: 'Your Base agent wallet' },
-    { command: 'balance', description: 'Check your agent wallet balance' },
-    { command: 'export',  description: 'Export agent wallet private key' },
+    { command: 'swap',    description: 'Swap ORLIX ↔ ETH' },
+    { command: 'top',     description: 'Top trending tokens' },
+    { command: 'analyze', description: 'Deep token analysis' },
     { command: 'price',   description: 'Quick token price' },
     { command: 'watch',   description: 'Wallet activity tracker' },
-    { command: 'analyze', description: 'Deep token analysis' },
-    { command: 'web',     description: 'Open the full dashboard' },
+    { command: 'wallet',  description: 'Your Base agent wallet' },
+    { command: 'balance', description: 'Check agent wallet balance' },
     { command: 'help',    description: 'Full command list' },
   ];
   return {
@@ -515,7 +780,39 @@ module.exports = async function handler(req, res) {
   const incoming = req.headers['x-telegram-bot-api-secret-token'] || '';
   if (!webhookSecret || incoming !== webhookSecret) return res.status(200).json({ ok: true });
 
-  const update  = req.body || {};
+  const update = req.body || {};
+
+  // ── Callback queries (inline button presses) ──────────────────────────────
+  const callback = update.callback_query;
+  if (callback) {
+    const cbChat = callback.message?.chat?.id;
+    const cbUser = callback.from?.id ?? cbChat;
+    const cbData = callback.data || '';
+    const cbLang = detectLang(callback.message?.text || '');
+    if (cbChat) {
+      tg('answerCallbackQuery', { callback_query_id: callback.id }).catch(() => {});
+      try {
+        if (cbData.startsWith('analyze:')) {
+          const addr = cbData.slice(8).toLowerCase();
+          const gate = await aiAllowed(cbChat, cbUser);
+          if (!gate.ok) { await denyAiGate(cbChat, cbLang, gate); }
+          else { await send(cbChat, '🔍 Analyzing...'); await cmdAnalyze(cbChat, addr, cbLang); }
+        } else if (cbData.startsWith('watch:')) {
+          await cmdWatch(cbChat, cbData.slice(6).toLowerCase(), cbLang);
+        } else if (cbData.startsWith('price:')) {
+          await cmdPrice(cbChat, cbData.slice(6).toLowerCase());
+        } else if (cbData.startsWith('ticker:')) {
+          await cmdTickerPrice(cbChat, cbData.slice(7), cbLang);
+        } else if (cbData === 'swap_menu') {
+          await cmdSwap(cbChat, '', cbLang);
+        } else if (cbData === 'top') {
+          await cmdTop(cbChat, cbLang);
+        }
+      } catch (e) { await send(cbChat, `⚠️ ${e.message}`); }
+    }
+    return res.status(200).json({ ok: true });
+  }
+
   const message = update.message || update.edited_message;
   if (!message) return res.status(200).json({ ok: true });
 
@@ -536,21 +833,29 @@ module.exports = async function handler(req, res) {
       ? (isID ? `\n✅ _Wallet terverifikasi · ${session.balance} ORLIX_` : `\n✅ _Wallet verified · ${session.balance} ORLIX_`)
       : (isID ? `\n🔒 _Fitur AI: hold 10M $ORLIX di agent wallet kamu — /wallet lalu setor, cek /balance_` : `\n🔒 _AI features: hold 10M $ORLIX in your agent wallet — /wallet, deposit, then /balance_`);
 
-    await send(chatId,
-      `👋 ${isID ? `Selamat datang di *Orlix AI*, ${firstName}!` : `Welcome to *Orlix AI*, ${firstName}!`}\n\n` +
+    await tg('sendMessage', {
+      chat_id: chatId, parse_mode: 'Markdown', disable_web_page_preview: true,
+      text: `👋 ${isID ? `Selamat datang di *Orlix AI*, ${firstName}!` : `Welcome to *Orlix AI*, ${firstName}!`}\n\n` +
       (isID
-        ? `Asisten AI yang bisa menjawab *apa saja* — plus analisa token & dompet Base.\n\n*Perintah:*\n`
-        : `Your AI assistant for *anything* — plus Base token & wallet analysis.\n\n*Commands:*\n`) +
-      `/wallet — ${isID ? 'Agent wallet Base kamu' : 'Your Base agent wallet'}\n` +
-      `/balance — ${isID ? 'Cek saldo agent wallet' : 'Check agent wallet balance'}\n` +
-      `/export — ${isID ? 'Export private key (kontrol penuh)' : 'Export private key (full control)'}\n` +
+        ? `Asisten AI multi-chain untuk *Base & Robinhood Chain* — analisa token, swap, market data, dan tanya apa saja.\n\n*⚡ Perintah:*\n`
+        : `Multi-chain AI assistant for *Base & Robinhood Chain* — token analysis, swap, market data, and ask anything.\n\n*⚡ Commands:*\n`) +
+      `/swap — ${isID ? 'Swap ORLIX ↔ ETH' : 'Swap ORLIX ↔ ETH'}\n` +
+      `/top — ${isID ? 'Top token trending' : 'Top trending tokens'}\n` +
       `/analyze — ${isID ? 'Analisa keamanan token' : 'Token security analysis'}\n` +
-      `/watch — ${isID ? 'Cek aktivitas dompet' : 'Wallet activity tracker'}\n` +
       `/price — ${isID ? 'Harga token cepat' : 'Quick token price'}\n` +
-      `/help — ${isID ? 'Panduan lengkap' : 'Full command list'}\n` +
-      `/web — ${isID ? 'Buka dashboard Orlix' : 'Open Orlix dashboard'}\n` +
-      accessLine + `\n\n_Powered by Orlix AI · orlixai.xyz_`
-    );
+      `/watch — ${isID ? 'Cek aktivitas dompet' : 'Wallet activity tracker'}\n` +
+      `/wallet — ${isID ? 'Agent wallet kamu' : 'Your agent wallet'}\n` +
+      `/help — ${isID ? 'Panduan lengkap' : 'Full command list'}\n\n` +
+      `*🧠 ${isID ? 'Smart Detection' : 'Smart Detection'}:*\n` +
+      (isID
+        ? `• Tempel alamat 0x → otomatis deteksi kontrak/dompet\n• Ketik $TICKER → langsung lihat harga\n• Tanya apa saja → AI chat\n`
+        : `• Paste 0x address → auto-detect contract/wallet\n• Type $TICKER → instant price lookup\n• Ask anything → AI chat\n`) +
+      accessLine + `\n\n_Powered by Orlix AI · orlixai.xyz_`,
+      reply_markup: { inline_keyboard: [
+        [{ text: '🔄 Swap ORLIX', callback_data: 'swap_menu' }, { text: '🏆 Top Tokens', callback_data: 'top' }],
+        [{ text: '🚀 Open Dashboard', url: 'https://orlixai.xyz/app' }],
+      ] },
+    });
     return res.status(200).json({ ok: true });
   }
 
@@ -561,12 +866,13 @@ module.exports = async function handler(req, res) {
       parse_mode: 'Markdown',
       disable_web_page_preview: true,
       text: isID
-        ? `*⚡ Menu Orlix AI*\n\nTap perintah:\n/wallet — Agent wallet Base kamu\n/balance — Cek saldo agent wallet\n/price — Harga token\n/watch — Aktivitas dompet\n/analyze — Analisa token _(butuh 10M $ORLIX)_\n/help — Bantuan lengkap\n\n_Atau ketik pertanyaan apa saja ke AI._`
-        : `*⚡ Orlix AI Menu*\n\nTap a command:\n/wallet — Your Base agent wallet\n/balance — Check agent wallet balance\n/price — Token price\n/watch — Wallet activity\n/analyze — Token analysis _(needs 10M $ORLIX)_\n/help — Full help\n\n_Or just type any question to the AI._`,
+        ? `*⚡ Menu Orlix AI*\n\n*Trading:*\n/swap — Swap ORLIX ↔ ETH\n/top — Top token trending\n/price — Harga token\n\n*Analisa:*\n/analyze — Analisa token _(10M $ORLIX)_\n/watch — Aktivitas dompet\n\n*Wallet:*\n/wallet · /balance · /export\n\n_Atau tempel alamat 0x / ketik $TICKER_`
+        : `*⚡ Orlix AI Menu*\n\n*Trading:*\n/swap — Swap ORLIX ↔ ETH\n/top — Top trending tokens\n/price — Token price\n\n*Analysis:*\n/analyze — Token analysis _(10M $ORLIX)_\n/watch — Wallet activity\n\n*Wallet:*\n/wallet · /balance · /export\n\n_Or paste a 0x address / type $TICKER_`,
       reply_markup: { inline_keyboard: [
-        [{ text: '🚀 Open Dashboard', url: 'https://orlixai.xyz/app' }],
-        [{ text: '🏙 Base City', url: 'https://orlixai.xyz/neural-map.html' },
+        [{ text: '🔄 Swap', callback_data: 'swap_menu' }, { text: '🏆 Top', callback_data: 'top' }],
+        [{ text: '🚀 Dashboard', url: 'https://orlixai.xyz/app' },
          { text: '🪙 Buy $ORLIX', url: 'https://orlixai.xyz/token' }],
+        [{ text: '🏙 Base City', url: 'https://orlixai.xyz/neural-map.html' }],
       ] },
     });
     return res.status(200).json({ ok: true });
@@ -638,7 +944,10 @@ module.exports = async function handler(req, res) {
     await send(chatId,
       `*Orlix AI — ${isID ? 'Panduan Lengkap' : 'Full Command Reference'}*\n\n` +
       `*🔑 ${isID ? 'Akses' : 'Access'}* ${verified ? '✅' : '🔒'}\n` +
-      `${isID ? 'Setor 10M $ORLIX ke agent wallet kamu untuk buka fitur AI' : 'Hold 10M $ORLIX in your agent wallet to unlock AI'} — /wallet\n\n` +
+      `${isID ? 'Setor 10M $ORLIX ke agent wallet untuk buka fitur AI' : 'Hold 10M $ORLIX in your agent wallet to unlock AI'} — /wallet\n\n` +
+      `*🔄 ${isID ? 'Trading' : 'Trading'}*\n` +
+      `/swap — ${isID ? 'Swap ORLIX ↔ ETH (estimasi + link DEX)' : 'Swap ORLIX ↔ ETH (quote + DEX links)'}\n` +
+      `/top — ${isID ? 'Top token Base & Robinhood Chain' : 'Top tokens Base & Robinhood Chain'}\n\n` +
       `*📊 ${isID ? 'Data Onchain (Gratis)' : 'Onchain Data (Free)'}*\n` +
       `/price — ${isID ? 'Harga token instan' : 'Instant token price'}\n` +
       `/watch — ${isID ? 'Saldo & transaksi wallet' : 'Wallet balance & transactions'}\n\n` +
@@ -646,12 +955,14 @@ module.exports = async function handler(req, res) {
       `/analyze — ${isID ? 'Analisa risiko token mendalam' : 'Deep token risk analysis'}\n` +
       `${isID ? 'Chat bebas' : 'Free chat'} — ${isID ? 'Tanya apa saja' : 'Ask anything'}\n` +
       `${isID ? 'Kirim gambar' : 'Send image'} — ${isID ? 'Analisa visual AI' : 'AI visual analysis'}\n\n` +
+      `*🧠 Smart Detection*\n` +
+      (isID
+        ? `• Tempel alamat \`0x...\` → otomatis deteksi kontrak atau dompet\n• Ketik \`$BRETT\` → langsung lihat harga\n\n`
+        : `• Paste \`0x...\` address → auto-detect contract or wallet\n• Type \`$BRETT\` → instant price lookup\n\n`) +
       `*🌐 ${isID ? 'Lainnya' : 'Other'}*\n` +
       `/menu — ${isID ? 'Menu aksi cepat' : 'Quick actions menu'}\n` +
-      `/wallet — ${isID ? 'Agent wallet Base kamu' : 'Your Base agent wallet'}\n` +
-      `/balance — ${isID ? 'Cek saldo agent wallet' : 'Check agent wallet balance'}\n` +
-      `/export — ${isID ? 'Export private key (kontrol penuh)' : 'Export private key (full control)'}\n` +
-      `/web — ${isID ? 'Dashboard lengkap (19 model AI)' : 'Full dashboard (19 AI models)'}\n\n` +
+      `/wallet — ${isID ? 'Agent wallet kamu' : 'Your agent wallet'}\n` +
+      `/balance · /export · /web\n\n` +
       `[orlixai.xyz](https://orlixai.xyz)`
     );
     return res.status(200).json({ ok: true });
@@ -706,6 +1017,21 @@ module.exports = async function handler(req, res) {
     return res.status(200).json({ ok: true });
   }
 
+  // ── /swap (free) ───────────────────────────────────────────────────────────
+  if (text.startsWith('/swap')) {
+    const args = text.slice(5).trim();
+    try { await cmdSwap(chatId, args, lang); }
+    catch (e) { await send(chatId, `⚠️ ${e.message}`); }
+    return res.status(200).json({ ok: true });
+  }
+
+  // ── /top (free) ───────────────────────────────────────────────────────────
+  if (text === '/top') {
+    try { await cmdTop(chatId, lang); }
+    catch (e) { await send(chatId, `⚠️ ${e.message}`); }
+    return res.status(200).json({ ok: true });
+  }
+
   // ── Photo / vision (gated) ────────────────────────────────────────────────
   if (message.photo) {
     { const g = await aiAllowed(chatId, userId); if (!g.ok) { await denyAiGate(chatId, lang, g); return res.status(200).json({ ok: true }); } }
@@ -744,9 +1070,15 @@ module.exports = async function handler(req, res) {
     return res.status(200).json({ ok: true });
   }
 
-  // ── Free text → AI chat (gated) ───────────────────────────────────────────
+  // ── Smart detection: bare address or $TICKER ──────────────────────────────
   if (!text) return res.status(200).json({ ok: true });
 
+  try {
+    const handled = await smartDetect(chatId, userId, text, lang);
+    if (handled) return res.status(200).json({ ok: true });
+  } catch { /* fall through to AI chat */ }
+
+  // ── Free text → AI chat (gated) ───────────────────────────────────────────
   { const g = await aiAllowed(chatId, userId); if (!g.ok) { await denyAiGate(chatId, lang, g); return res.status(200).json({ ok: true }); } }
 
   try { await cmdChat(chatId, text, lang); }
