@@ -136,3 +136,7 @@ git add -A && git commit -m "..." && git push origin main
 # Check deployment
 # Vercel auto-deploys on push to main
 ```
+
+## Session History
+- `session_01EQsBP8bax8HwLDVovqZxYx` — Added Robinhood Chain (mainnet July 1 2026) to analytics/search/chat. Files: analyze.js, chat.js, token-search.js, x-agent.js, x402.js, x402-market.js, app.html, index.html. Created video animation (later removed). B20 files NOT touched.
+- `session_01Dhpc62Y19RJMuV1gFB1hmh` — Continuation of Robinhood Chain integration. Updated CLAUDE.md with persistent memory.
