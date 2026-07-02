@@ -62,12 +62,12 @@ code,pre{font-family:'JetBrains Mono',monospace}
 .nav-cta:hover{background:#E06820;color:#fff;transform:translateY(-1px)}
 .ham{display:none;flex-direction:column;gap:5px;cursor:pointer;background:none;border:none;padding:4px}
 .ham span{display:block;width:22px;height:2px;background:var(--text-1);border-radius:2px;transition:all .18s}
-.mob-nav{display:none;position:fixed;top:88px;left:0;right:0;z-index:99;background:var(--bg-2,#111113);border-bottom:1px solid var(--border);flex-direction:column;padding:12px 0 20px}
+.mob-nav{display:none;position:fixed;top:88px;left:0;right:0;bottom:0;z-index:99;background:var(--bg,#09090B);flex-direction:column;padding:16px 0 32px;overflow-y:auto}
 .mob-nav.open{display:flex}
-.mob-nav a{font-size:.95rem;font-weight:500;color:var(--text-2);padding:12px 24px;transition:color .15s;text-decoration:none}
-.mob-nav a:hover{color:var(--text-1)}
-.mob-nav .mob-cta{margin:12px 24px 0;display:block;text-align:center;background:var(--orange);color:#fff;padding:12px;border-radius:8px;font-weight:600}
-@media(max-width:768px){.nav-links,.hide-sm{display:none}.ham{display:flex}}
+.mob-nav a{font-size:.95rem;font-weight:500;color:var(--text-2);padding:14px 28px;transition:color .15s;text-decoration:none;border-bottom:1px solid var(--border)}
+.mob-nav a:hover{color:var(--text-1);background:rgba(255,255,255,.03)}
+.mob-nav .mob-cta{margin:20px 24px 0;display:block;text-align:center;background:var(--orange);color:#fff;padding:14px;border-radius:10px;font-weight:600;border-bottom:none}
+@media(max-width:768px){.nav-links,.hide-sm{display:none}.ham{display:flex}.nav{height:60px}.nav-in{height:60px;padding:0 16px;gap:10px}.mob-nav{top:60px}.nav-logo img{height:28px!important}.nav-right{gap:8px}.theme-toggle{width:28px;height:28px;border-radius:6px}.theme-toggle svg{width:13px;height:13px}.nav-cta{padding:6px 12px;font-size:.72rem;border-radius:6px}.ham span{width:18px;height:1.5px}}
 :root.light .nav{background:rgba(248,248,250,.92)!important;border-bottom-color:rgba(0,0,0,.08)}
 
 /* Layout */
