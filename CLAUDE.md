@@ -1,7 +1,7 @@
 # Orlix — CLAUDE.md
 
 ## Project Overview
-Orlix is an AI-powered analytics and token deployment platform built on Base. Live at orlix.xyz.
+Orlix is an AI-powered multi-chain analytics and token deployment platform built on Base and Robinhood Chain. Live at orlix.xyz.
 
 ## Repository Structure
 ```
@@ -75,6 +75,18 @@ Orlix is an AI-powered analytics and token deployment platform built on Base. Li
 - 15×15 grid, BLOCK=18, STREET=12, CELL=30
 - MeshPhongMaterial + emissiveMap for window glow
 - UnrealBloomPass disabled on mobile
+
+### Robinhood Chain Integration (added July 2026)
+- Chain ID: 4663 (hex `0x1237`)
+- RPC: `https://rpc.mainnet.chain.robinhood.com/`
+- Explorer: `https://robinhoodchain.blockscout.com`
+- Network type: Arbitrum L2, ETH native currency
+- DexScreener chain ID: `'robinhood'` (used in API filters)
+- Supported in: `analyze.js`, `chat.js`, `token-search.js`, `x-agent.js`, `x402.js`, `x402-market.js`, `app.html`, `index.html`
+- NOT supported in B20 files (B20 is Base-only)
+- Multi-chain filter pattern: `p.chainId === 'base' || p.chainId === 'robinhood'`
+- `analyze.js` uses a CHAINS config object with `chain` query param (defaults to `'base'`)
+- `app.html` has a chain selector dropdown that passes chain param to the analyze API
 
 ### B20 Studio (`/b20-studio.html`)
 - Chain ID comparison must be case-insensitive (MetaMask returns lowercase hex)
