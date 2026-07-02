@@ -33,9 +33,6 @@ module.exports = async (req, res) => {
         { name: 'Base Sepolia', chainId: 84532, rpc: 'https://sepolia.base.org', explorer: 'https://sepolia.basescan.org', faucet: 'https://portal.cdp.coinbase.com/products/faucet' },
         { name: 'Vibenet',      chainId: 84538453, rpc: 'https://rpc.vibes.base.org', explorer: 'https://explorer.vibes.base.org', faucet: 'https://faucet.vibes.base.org' },
       ],
-      otherNetworks: [
-        { name: 'Robinhood Chain', chainId: 4663, rpc: 'https://rpc.mainnet.chain.robinhood.com/', explorer: 'https://robinhoodchain.blockscout.com' },
-      ],
       variants: [
         {
           name: 'Asset',

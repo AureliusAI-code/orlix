@@ -218,7 +218,6 @@ select.inp option{background:var(--s2);color:var(--t1)}
 .net-pill:hover:not(.active){color:var(--t2);background:var(--s3)}
 .net-pill.active.sepolia{background:var(--orange);color:#fff;box-shadow:0 1px 6px rgba(240,120,48,.4)}
 .net-pill.active.vibenet{background:#7c3aed;color:#fff;box-shadow:0 1px 6px rgba(124,58,237,.4)}
-.net-pill.active.robinhood{background:#00c805;color:#fff;box-shadow:0 1px 6px rgba(0,200,5,.4)}
 .net-pill.active.mainnet{background:var(--s4);color:var(--t1);box-shadow:0 1px 3px rgba(0,0,0,.25)}
 /* mainnet warning banner */
 .mainnet-bar{
@@ -483,7 +482,6 @@ select.inp option{background:var(--s2);color:var(--t1)}
     <div class="net-pills">
       <button class="net-pill active sepolia" id="navNetSepolia" onclick="setNetwork('sepolia')">Sepolia</button>
       <button class="net-pill vibenet" id="navNetVibenet" onclick="setNetwork('vibenet')">Vibenet</button>
-      <button class="net-pill robinhood" id="navNetRobinhood" onclick="setNetwork('robinhood')">Robinhood</button>
       <button class="net-pill mainnet" id="navNetMainnet" onclick="setNetwork('mainnet')">Mainnet</button>
     </div>
   </div>
@@ -502,10 +500,6 @@ select.inp option{background:var(--s2);color:var(--t1)}
         </div>
         <div class="wnd-item" onclick="walletFallback('vibenet')">
           <span>Base Vibenet</span>
-          <span class="wnd-badge live">LIVE</span>
-        </div>
-        <div class="wnd-item" onclick="walletFallback('robinhood')">
-          <span>Robinhood Chain</span>
           <span class="wnd-badge live">LIVE</span>
         </div>
         <div class="wnd-item wnd-item-soon" onclick="setNetwork('mainnet')">
@@ -556,7 +550,7 @@ select.inp option{background:var(--s2);color:var(--t1)}
     <div id="mainnetBar" class="mainnet-bar" style="display:none">
       <svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="10" cy="10" r="7.5"/><path d="M10 6.5v4"/><circle cx="10" cy="13.5" r=".8" fill="currentColor" stroke="none"/></svg>
       B20 mainnet activation delayed by Base due to stability incident. Deploy disabled.
-      Switch to <button onclick="setNetwork('sepolia')">Sepolia</button>, <button onclick="setNetwork('vibenet')">Vibenet</button>, or <button onclick="setNetwork('robinhood')">Robinhood</button>.
+      Switch to <button onclick="setNetwork('sepolia')">Sepolia</button> or <button onclick="setNetwork('vibenet')">Vibenet</button>.
     </div>
     <div id="sepoliaBar" class="sepolia-bar">
       <span class="sepolia-live"><span class="sepolia-dot"></span>B20 Live on Base Sepolia</span>
@@ -565,10 +559,6 @@ select.inp option{background:var(--s2);color:var(--t1)}
     <div id="vibenetBar" class="sepolia-bar" style="display:none">
       <span class="sepolia-live"><span class="sepolia-dot"></span>B20 Live on Vibenet</span>
       <a class="faucet-link" href="https://faucet.vibes.base.org" target="_blank" rel="noopener">Faucet ↗</a>
-    </div>
-    <div id="robinhoodBar" class="sepolia-bar" style="display:none">
-      <span class="sepolia-live"><span class="sepolia-dot"></span>B20 Live on Robinhood Chain</span>
-      <a class="faucet-link" href="https://robinhoodchain.blockscout.com" target="_blank" rel="noopener">Explorer ↗</a>
     </div>
 
     <!-- AI AUTO-FILL -->
@@ -928,8 +918,7 @@ let deployedTxHash = null;
 const NET = {
   mainnet: { chainId: '0x2105',    name: 'Base',         rpc: 'https://mainnet.base.org',       explorer: 'https://basescan.org',               faucet: null },
   sepolia: { chainId: '0x14a34',   name: 'Base Sepolia', rpc: 'https://sepolia.base.org',       explorer: 'https://sepolia.basescan.org',        faucet: 'https://portal.cdp.coinbase.com/products/faucet' },
-  vibenet:   { chainId: '0x509F455', name: 'Base Vibenet',    rpc: 'https://rpc.vibes.base.org',               explorer: 'https://explorer.vibes.base.org',       faucet: 'https://faucet.vibes.base.org' },
-  robinhood: { chainId: '0x1237',    name: 'Robinhood Chain', rpc: 'https://rpc.mainnet.chain.robinhood.com/', explorer: 'https://robinhoodchain.blockscout.com', faucet: null },
+  vibenet: { chainId: '0x509F455', name: 'Base Vibenet', rpc: 'https://rpc.vibes.base.org',     explorer: 'https://explorer.vibes.base.org',     faucet: 'https://faucet.vibes.base.org' },
 };
 
 function setNetwork(n) {
@@ -938,20 +927,16 @@ function setNetwork(n) {
   const sepBtn  = document.getElementById('navNetSepolia');
   const mainBtn = document.getElementById('navNetMainnet');
   const vibBtn  = document.getElementById('navNetVibenet');
-  const rhBtn   = document.getElementById('navNetRobinhood');
-  if (sepBtn)  sepBtn.className  = 'net-pill' + (n === 'sepolia'   ? ' active sepolia'   : ' sepolia');
-  if (mainBtn) mainBtn.className = 'net-pill' + (n === 'mainnet'   ? ' active mainnet'   : ' mainnet');
-  if (vibBtn)  vibBtn.className  = 'net-pill' + (n === 'vibenet'   ? ' active vibenet'   : ' vibenet');
-  if (rhBtn)   rhBtn.className   = 'net-pill' + (n === 'robinhood' ? ' active robinhood' : ' robinhood');
+  if (sepBtn)  sepBtn.className  = 'net-pill' + (n === 'sepolia'  ? ' active sepolia'  : ' sepolia');
+  if (mainBtn) mainBtn.className = 'net-pill' + (n === 'mainnet'  ? ' active mainnet'  : ' mainnet');
+  if (vibBtn)  vibBtn.className  = 'net-pill' + (n === 'vibenet'  ? ' active vibenet'  : ' vibenet');
   // Show/hide network banners
   const mainBar = document.getElementById('mainnetBar');
   const sepBar  = document.getElementById('sepoliaBar');
   const vibBar  = document.getElementById('vibenetBar');
-  const rhBar   = document.getElementById('robinhoodBar');
-  if (mainBar) mainBar.style.display = n === 'mainnet'   ? '' : 'none';
-  if (sepBar)  sepBar.style.display  = n === 'sepolia'   ? '' : 'none';
-  if (vibBar)  vibBar.style.display  = n === 'vibenet'   ? '' : 'none';
-  if (rhBar)   rhBar.style.display   = n === 'robinhood' ? '' : 'none';
+  if (mainBar) mainBar.style.display = n === 'mainnet' ? '' : 'none';
+  if (sepBar)  sepBar.style.display  = n === 'sepolia'  ? '' : 'none';
+  if (vibBar)  vibBar.style.display  = n === 'vibenet'  ? '' : 'none';
   // Disable deploy button on mainnet only
   const btn = document.querySelector('.deploy-btn');
   if (btn) {
@@ -960,7 +945,7 @@ function setNetwork(n) {
       btn.classList.add('dep-loading');
       btn.onclick = null;
       const sub = document.getElementById('deploySubtitle');
-      if (sub) sub.textContent = 'Switch to Sepolia, Vibenet, or Robinhood to deploy';
+      if (sub) sub.textContent = 'Switch to Sepolia or Vibenet to deploy';
     } else {
       btn.classList.remove('dep-loading');
       btn.onclick = onDeploy;
