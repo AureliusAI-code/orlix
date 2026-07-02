@@ -94,7 +94,7 @@ const ALL_TOOLS = [
   },
   {
     name: 'dexscreener_search',
-    description: 'Search for tokens on DexScreener by name or symbol. Returns price, liquidity, volume, and market data for Base tokens.',
+    description: 'Search for tokens on DexScreener by name or symbol. Returns price, liquidity, volume, and market data for Base and Robinhood Chain tokens.',
     input_schema: {
       type: 'object',
       properties: {
@@ -105,11 +105,11 @@ const ALL_TOOLS = [
   },
   {
     name: 'dexscreener_token',
-    description: 'Get full market data for a specific token on Base: price, liquidity, volume, price changes 1h/6h/24h, buy/sell txns, market cap, FDV',
+    description: 'Get full market data for a specific token on Base or Robinhood Chain: price, liquidity, volume, price changes 1h/6h/24h, buy/sell txns, market cap, FDV',
     input_schema: {
       type: 'object',
       properties: {
-        address: { type: 'string', description: 'Token contract address on Base (0x...)' }
+        address: { type: 'string', description: 'Token contract address (0x...)' }
       },
       required: ['address']
     }
@@ -375,7 +375,7 @@ async function executeTool(name, input) {
         if (!r.ok) return { error: `DexScreener error: ${r.status}` };
         const data = await r.json();
         const pairs = (data.pairs || [])
-          .filter(p => p.chainId === 'base')
+          .filter(p => p.chainId === 'base' || p.chainId === 'robinhood')
           .slice(0, 8)
           .map(p => ({
             name:             p.baseToken?.name,
@@ -386,9 +386,10 @@ async function executeTool(name, input) {
             volume_24h:       p.volume?.h24,
             price_change_24h: p.priceChange?.h24,
             market_cap:       p.marketCap,
-            pair_url:         p.url
+            pair_url:         p.url,
+            chain:            p.chainId === 'robinhood' ? 'Robinhood' : 'Base',
           }));
-        return { query: input.query, results: pairs, chain: 'Base', source: 'DexScreener' };
+        return { query: input.query, results: pairs, chains: ['Base', 'Robinhood'], source: 'DexScreener' };
       }
       case 'dexscreener_token': {
         const r = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${input.address}`, {
@@ -396,9 +397,9 @@ async function executeTool(name, input) {
         });
         if (!r.ok) return { error: `DexScreener error: ${r.status}` };
         const data = await r.json();
-        const basePairs = (data.pairs || []).filter(p => p.chainId === 'base');
-        if (!basePairs.length) return { error: 'Token not found on Base', address: input.address };
-        const best = basePairs.sort((a, b) => (b.liquidity?.usd || 0) - (a.liquidity?.usd || 0))[0];
+        const supported = (data.pairs || []).filter(p => p.chainId === 'base' || p.chainId === 'robinhood');
+        if (!supported.length) return { error: 'Token not found on Base or Robinhood Chain', address: input.address };
+        const best = supported.sort((a, b) => (b.liquidity?.usd || 0) - (a.liquidity?.usd || 0))[0];
         const age  = best.pairCreatedAt ? Math.floor((Date.now() - best.pairCreatedAt) / 86400000) + ' days' : null;
         const buys = best.txns?.h24?.buys || 0;
         const sells = best.txns?.h24?.sells || 0;
@@ -422,7 +423,7 @@ async function executeTool(name, input) {
           dex:              best.dexId,
           pair_age:         age,
           pair_url:         best.url,
-          chain:            'Base'
+          chain:            best.chainId === 'robinhood' ? 'Robinhood' : 'Base'
         };
       }
       case 'flaunch_new_tokens': {

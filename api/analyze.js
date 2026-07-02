@@ -1,9 +1,14 @@
-// Token Analyzer — Base RPC + DexScreener + AI verdict (upgraded)
+// Token Analyzer — Multi-chain RPC + DexScreener + AI verdict (upgraded)
 const { checkLimits, allowedOrigin } = require('./_guard');
-const BASE_RPC = 'https://mainnet.base.org';
 
-async function rpc(method, params = []) {
-  const r = await fetch(BASE_RPC, {
+const CHAINS = {
+  base:      { rpc: 'https://mainnet.base.org',               name: 'Base',            explorer: 'https://basescan.org' },
+  robinhood: { rpc: 'https://rpc.mainnet.chain.robinhood.com/', name: 'Robinhood Chain', explorer: 'https://robinhoodchain.blockscout.com' },
+};
+
+async function rpc(method, params = [], chain = 'base') {
+  const rpcUrl = CHAINS[chain]?.rpc || CHAINS.base.rpc;
+  const r = await fetch(rpcUrl, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
@@ -29,12 +34,12 @@ function decodeU8(hex) {
   try { return hex && hex !== '0x' ? parseInt(hex, 16) : 18; } catch { return 18; }
 }
 
-async function getTokenInfo(address) {
+async function getTokenInfo(address, chain = 'base') {
   const [name, symbol, supply, dec] = await Promise.allSettled([
-    rpc('eth_call', [{ to: address, data: '0x06fdde03' }, 'latest']),
-    rpc('eth_call', [{ to: address, data: '0x95d89b41' }, 'latest']),
-    rpc('eth_call', [{ to: address, data: '0x18160ddd' }, 'latest']),
-    rpc('eth_call', [{ to: address, data: '0x313ce567' }, 'latest']),
+    rpc('eth_call', [{ to: address, data: '0x06fdde03' }, 'latest'], chain),
+    rpc('eth_call', [{ to: address, data: '0x95d89b41' }, 'latest'], chain),
+    rpc('eth_call', [{ to: address, data: '0x18160ddd' }, 'latest'], chain),
+    rpc('eth_call', [{ to: address, data: '0x313ce567' }, 'latest'], chain),
   ]);
   const decimals = dec.status === 'fulfilled' ? decodeU8(dec.value) : 18;
   const raw = supply.status === 'fulfilled' ? decodeUint(supply.value) : '0';
@@ -49,15 +54,15 @@ async function getTokenInfo(address) {
   };
 }
 
-async function getDex(address) {
+async function getDex(address, chain = 'base') {
   const r = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${address}`, {
     headers: { Accept: 'application/json' },
   });
   if (!r.ok) return null;
   const data = await r.json();
-  const basePairs = (data.pairs || []).filter(p => p.chainId === 'base');
-  const allPairs  = data.pairs || [];
-  const pool      = basePairs.length ? basePairs : allPairs;
+  const chainPairs = (data.pairs || []).filter(p => p.chainId === chain);
+  const allPairs   = data.pairs || [];
+  const pool       = chainPairs.length ? chainPairs : allPairs;
   if (!pool.length) return null;
   const best = pool.sort((a, b) => (b.liquidity?.usd || 0) - (a.liquidity?.usd || 0))[0];
   const priceRaw = best.priceUsd ? Number(best.priceUsd) : 0;
@@ -96,7 +101,8 @@ async function getDex(address) {
   };
 }
 
-async function aiVerdict(address, token, dex) {
+async function aiVerdict(address, token, dex, chain = 'base') {
+  const chainName = CHAINS[chain]?.name || 'Base';
   const key = process.env.BANKR_LLM_KEY || process.env.ANTHROPIC_API_KEY || '';
   if (!key) return '**AI analysis temporarily unavailable.**';
 
@@ -109,7 +115,7 @@ async function aiVerdict(address, token, dex) {
     : 'Unknown';
 
   const ctx = [
-    `Contract: ${address} (Base network)`,
+    `Contract: ${address} (${chainName})`,
     `Token: ${token?.name} (${token?.symbol}) | Decimals: ${token?.decimals} | Supply: ${token?.totalSupply}`,
     dex ? [
       `Price: ${priceStr}`,
@@ -133,13 +139,13 @@ async function aiVerdict(address, token, dex) {
     body: JSON.stringify({
       model: 'claude-sonnet-4-6',
       max_tokens: 1200,
-      system: `You are an expert crypto security analyst specializing in Base network tokens and DeFi.
+      system: `You are an expert crypto security analyst specializing in ${chainName} tokens and DeFi.
 You have deep knowledge of: rug pulls, honeypots, pump & dumps, wash trading, liquidity traps, whale manipulation, and token contract exploits.
 Use **bold** for section headers. Do NOT use ## or ### markdown. Be direct, specific, and data-driven.
 When data suggests risk, be explicit. When data looks healthy, say so with reasoning.`,
       messages: [{
         role: 'user',
-        content: `Analyze this Base network token thoroughly. Use exactly this format:\n\n**📊 Overview**\n[What this token is, key facts, age context — 2-3 sentences]\n\n**💧 Liquidity Analysis**\n[Depth adequacy, Liq/MCap ratio interpretation, concentration risk]\n\n**📈 Price & Volume Analysis**\n[Trend across 1h/6h/24h, volume consistency, wash trading signals]\n\n**🔄 Buy/Sell Pressure**\n[What the buy/sell ratio means, momentum interpretation]\n\n**🚩 Red Flags**\n• [Each flag on its own line — be specific with data. If none: "None detected"]\n\n**✅ Green Flags**\n• [Each positive signal with data. If none: "None detected"]\n\n**⚖️ Verdict: SAFE / CAUTION / HIGH RISK / SCAM LIKELY**\n[One clear sentence with the main reason]\n\nData:\n${ctx}`,
+        content: `Analyze this ${chainName} token thoroughly. Use exactly this format:\n\n**📊 Overview**\n[What this token is, key facts, age context — 2-3 sentences]\n\n**💧 Liquidity Analysis**\n[Depth adequacy, Liq/MCap ratio interpretation, concentration risk]\n\n**📈 Price & Volume Analysis**\n[Trend across 1h/6h/24h, volume consistency, wash trading signals]\n\n**🔄 Buy/Sell Pressure**\n[What the buy/sell ratio means, momentum interpretation]\n\n**🚩 Red Flags**\n• [Each flag on its own line — be specific with data. If none: "None detected"]\n\n**✅ Green Flags**\n• [Each positive signal with data. If none: "None detected"]\n\n**⚖️ Verdict: SAFE / CAUTION / HIGH RISK / SCAM LIKELY**\n[One clear sentence with the main reason]\n\nData:\n${ctx}`,
       }],
     }),
   });
@@ -161,13 +167,14 @@ module.exports = async function handler(req, res) {
   if (!address || !/^0x[0-9a-f]{40}$/i.test(address)) {
     return res.status(400).json({ error: 'Invalid address — must be 0x + 40 hex chars.' });
   }
+  const chain = CHAINS[req.query.chain] ? req.query.chain : 'base';
 
   try {
-    const [tokR, dexR] = await Promise.allSettled([getTokenInfo(address), getDex(address)]);
+    const [tokR, dexR] = await Promise.allSettled([getTokenInfo(address, chain), getDex(address, chain)]);
     const token    = tokR.status === 'fulfilled' ? tokR.value : null;
     const dex      = dexR.status === 'fulfilled' ? dexR.value : null;
-    const analysis = await aiVerdict(address, token, dex);
-    return res.json({ address, tokenInfo: token, dexInfo: dex, analysis, timestamp: new Date().toISOString() });
+    const analysis = await aiVerdict(address, token, dex, chain);
+    return res.json({ address, chain, tokenInfo: token, dexInfo: dex, analysis, timestamp: new Date().toISOString() });
   } catch (e) {
     return res.status(502).json({ error: e.message });
   }

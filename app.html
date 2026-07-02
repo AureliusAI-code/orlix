@@ -1381,7 +1381,11 @@ select.inp{cursor:pointer}
         <div class="sub">Paste any contract address for instant AI analysis</div>
       </div>
       <div class="analyzer-input-row">
-        <input type="text" id="analyzerInput" placeholder="0x... contract address (Base network)" spellcheck="false">
+        <select id="analyzerChain" style="padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg-3);color:var(--text-1);font-family:inherit;font-size:.85rem;cursor:pointer">
+          <option value="base">Base</option>
+          <option value="robinhood">Robinhood</option>
+        </select>
+        <input type="text" id="analyzerInput" placeholder="0x... contract address" spellcheck="false">
         <button class="analyze-btn" id="analyzeBtn" onclick="runAnalysis()">Analyze →</button>
       </div>
       <div id="analyzerResult"></div>
@@ -1827,8 +1831,8 @@ const AEON_SKILLS = {
     { icon:'', name:'Code Review', desc:'Review code for bugs, security, improvements', tag:'code', prompt:'Review this code for bugs, security issues, and improvements:\n\n```\n[PASTE CODE HERE]\n```' },
   ],
   crypto: [
-    { icon:'', name:'Token Search', desc:'Search any Base token by name or symbol', tag:'dexscreener_search', prompt:'Search for this token on Base and show me price, liquidity, volume, and market cap:\n\n[TOKEN NAME OR SYMBOL]' },
-    { icon:'', name:'Market Data', desc:'Full market data for any Base token address', tag:'dexscreener_token', prompt:'Get full market data for this Base token — price, liquidity, 24h volume, buy/sell ratio:\n\n[TOKEN ADDRESS 0x...]' },
+    { icon:'', name:'Token Search', desc:'Search tokens on Base & Robinhood Chain', tag:'dexscreener_search', prompt:'Search for this token on Base and Robinhood Chain and show me price, liquidity, volume, and market cap:\n\n[TOKEN NAME OR SYMBOL]' },
+    { icon:'', name:'Market Data', desc:'Full market data for any token address', tag:'dexscreener_token', prompt:'Get full market data for this token — price, liquidity, 24h volume, buy/sell ratio:\n\n[TOKEN ADDRESS 0x...]' },
     { icon:'', name:'Swap Tokens', desc:'Swap any token pair on Uniswap Base', tag:'uniswap_quote + uniswap_prepare_swap', prompt:'I want to swap [AMOUNT] ETH to USDC on Uniswap Base. Get me a quote and prepare the swap transaction.' },
     { icon:'', name:'New Launches', desc:'Latest meme token launches on Flaunch', tag:'flaunch_new_tokens', prompt:'Show me the 10 newest token launches on Flaunch Base with price and market cap.' },
     { icon:'', name:'Top Tokens', desc:'Top tokens by market cap on Flaunch', tag:'flaunch_top_tokens', prompt:'Show me the top 10 tokens by market cap on Flaunch Base.' },
@@ -3141,8 +3145,8 @@ Use these tools proactively — never wait to be asked:
 - fetch_webpage: read any public URL
 - github_repo_info: GitHub metadata and stats
 - base_get_eth_balance / base_get_gas_price / base_get_transaction / base_get_latest_block / base_get_token_balance / base_get_network_info / base_erc20_info: Base blockchain tools
-- dexscreener_search: search any token on Base by name/symbol
-- dexscreener_token: full market data (price, liq, vol, txns) for a token address
+- dexscreener_search: search any token on Base or Robinhood Chain by name/symbol
+- dexscreener_token: full market data (price, liq, vol, txns) for a token address on Base or Robinhood Chain
 - flaunch_new_tokens: newest meme token launches on Flaunch/Base
 - flaunch_top_tokens: top tokens by market cap on Flaunch
 - uniswap_quote: get best swap price on Base via Odos (works for any token pair)
@@ -3217,7 +3221,8 @@ async function runAnalysis() {
   result.innerHTML = '<div class="analyzing-spinner"><span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span><span style="margin-left:6px">Fetching on-chain data + AI analysis…</span></div>';
 
   try {
-    const r = await fetch('/api/analyze?address=' + address);
+    const chain = document.getElementById('analyzerChain')?.value || 'base';
+    const r = await fetch('/api/analyze?address=' + address + '&chain=' + chain);
     const data = await r.json();
     if (data.error) throw new Error(data.error);
     result.innerHTML = renderAnalysisResult(data);

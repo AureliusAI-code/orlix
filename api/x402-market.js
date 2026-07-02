@@ -17,7 +17,7 @@ const BASE_SEARCHES = [
 ];
 
 function isValid(p) {
-  return p.chainId === 'base' && !!p.baseToken?.address
+  return (p.chainId === 'base' || p.chainId === 'robinhood') && !!p.baseToken?.address
     && !EXCLUDE.has((p.baseToken.symbol || '').toUpperCase())
     && (p.liquidity?.usd || 0) >= 5000;
 }

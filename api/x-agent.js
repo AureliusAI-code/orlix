@@ -192,7 +192,7 @@ async function fetchTokenData(query) {
     const d = await r.json();
 
     const pairs = (d.pairs || [])
-      .filter(p => p.chainId === 'base')
+      .filter(p => p.chainId === 'base' || p.chainId === 'robinhood')
       .sort((a, b) => (b.volume?.h24 || 0) - (a.volume?.h24 || 0));
 
     if (!pairs.length) return null;
