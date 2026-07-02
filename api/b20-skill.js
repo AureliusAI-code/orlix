@@ -28,9 +28,9 @@ const ACTIVATION_REGISTRY = '0x8453000000000000000000000000000000000001';
 const POLICY_REGISTRY     = '0x8453000000000000000000000000000000000002';
 
 // ── Network ───────────────────────────────────────────────────────────────────
-const RPC_URL  = { mainnet: 'https://mainnet.base.org', sepolia: 'https://sepolia.base.org', vibenet: 'https://rpc.vibes.base.org' };
-const CHAIN_ID = { mainnet: 8453, sepolia: 84532, vibenet: 84538453 };
-const EXPLORER = { mainnet: 'https://basescan.org', sepolia: 'https://sepolia.basescan.org', vibenet: 'https://explorer.vibes.base.org' };
+const RPC_URL  = { mainnet: 'https://mainnet.base.org', sepolia: 'https://sepolia.base.org', vibenet: 'https://rpc.vibes.base.org', robinhood: 'https://rpc.mainnet.chain.robinhood.com/' };
+const CHAIN_ID = { mainnet: 8453, sepolia: 84532, vibenet: 84538453, robinhood: 4663 };
+const EXPLORER = { mainnet: 'https://basescan.org', sepolia: 'https://sepolia.basescan.org', vibenet: 'https://explorer.vibes.base.org', robinhood: 'https://robinhoodchain.blockscout.com' };
 
 // ── Role constants — keccak256 of role name strings ───────────────────────────
 const ROLES = {
@@ -391,7 +391,7 @@ async function handleInfo(net, res) {
     return res.end(JSON.stringify({
       ok:       true,
       standard: 'B20',
-      network:  net === 'mainnet' ? 'Base' : net === 'vibenet' ? 'Base Vibenet' : 'Base Sepolia',
+      network:  net === 'mainnet' ? 'Base' : net === 'vibenet' ? 'Base Vibenet' : net === 'robinhood' ? 'Robinhood Chain' : 'Base Sepolia',
       chainId:  CHAIN_ID[net],
       upgrade:  'Base Beryl',
       activation: {
@@ -473,7 +473,7 @@ async function handleGas(net, res) {
 
 async function handleBalance(body, res) {
   const { address, token, network = 'mainnet' } = body;
-  const net = ['mainnet', 'sepolia', 'vibenet'].includes(network) ? network : 'mainnet';
+  const net = ['mainnet', 'sepolia', 'vibenet', 'robinhood'].includes(network) ? network : 'mainnet';
 
   if (!address || !/^0x[0-9a-fA-F]{40}$/.test(address))
     return res.end(JSON.stringify({ ok: false, error: 'address must be a valid 0x Ethereum address' }));
@@ -509,7 +509,7 @@ async function handleBalance(body, res) {
 
 async function handleTokenInfo(body, res) {
   const { address, holder, network = 'mainnet' } = body;
-  const net = ['mainnet', 'sepolia', 'vibenet'].includes(network) ? network : 'mainnet';
+  const net = ['mainnet', 'sepolia', 'vibenet', 'robinhood'].includes(network) ? network : 'mainnet';
 
   if (!address || !/^0x[0-9a-fA-F]{40}$/.test(address))
     return res.end(JSON.stringify({ ok: false, error: 'address must be a valid token contract address' }));
@@ -560,7 +560,7 @@ async function handleTokenInfo(body, res) {
 
 async function handleValidate(body, res) {
   const { errors, warnings, config } = parseConfig(body);
-  const net = ['mainnet', 'sepolia', 'vibenet'].includes(body.network) ? body.network : 'mainnet';
+  const net = ['mainnet', 'sepolia', 'vibenet', 'robinhood'].includes(body.network) ? body.network : 'mainnet';
 
   if (errors.length)
     return res.end(JSON.stringify({ ok: false, valid: false, errors, warnings }));
@@ -602,7 +602,7 @@ async function handleValidate(body, res) {
 
 async function handlePrepare(body, res) {
   const { errors, warnings, config } = parseConfig(body);
-  const net = ['mainnet', 'sepolia', 'vibenet'].includes(body.network) ? body.network : 'mainnet';
+  const net = ['mainnet', 'sepolia', 'vibenet', 'robinhood'].includes(body.network) ? body.network : 'mainnet';
 
   if (errors.length)
     return res.end(JSON.stringify({ ok: false, valid: false, errors, warnings }));
@@ -761,7 +761,7 @@ async function handlePrepare(body, res) {
 
 async function handleReceipt(body, res) {
   const { tx_hash, network = 'mainnet' } = body;
-  const net = ['mainnet', 'sepolia', 'vibenet'].includes(network) ? network : 'mainnet';
+  const net = ['mainnet', 'sepolia', 'vibenet', 'robinhood'].includes(network) ? network : 'mainnet';
 
   if (!tx_hash || !/^0x[0-9a-fA-F]{64}$/.test(tx_hash))
     return res.end(JSON.stringify({ ok: false, error: 'tx_hash must be a 0x transaction hash (66 hex chars)' }));
@@ -819,7 +819,7 @@ function handleManifest(res) {
     endpoint:    'https://orlixai.xyz/api/b20-skill',
     factory:     B20_FACTORY,
     activation:  ACTIVATION_REGISTRY,
-    networks:    { mainnet: { chainId: 8453, rpc: 'https://mainnet.base.org' }, sepolia: { chainId: 84532, rpc: 'https://sepolia.base.org' }, vibenet: { chainId: 84538453, rpc: 'https://rpc.vibes.base.org', explorer: 'https://explorer.vibes.base.org' } },
+    networks:    { mainnet: { chainId: 8453, rpc: 'https://mainnet.base.org' }, sepolia: { chainId: 84532, rpc: 'https://sepolia.base.org' }, vibenet: { chainId: 84538453, rpc: 'https://rpc.vibes.base.org', explorer: 'https://explorer.vibes.base.org' }, robinhood: { chainId: 4663, rpc: 'https://rpc.mainnet.chain.robinhood.com/', explorer: 'https://robinhoodchain.blockscout.com' } },
     actions:     { GET: ['manifest','info','gas'], POST: ['validate','prepare','balance','token_info','receipt'] },
     links: {
       studio:   'https://orlixai.xyz/b20-studio.html',
@@ -837,7 +837,7 @@ module.exports = async (req, res) => {
   try {
     const body   = req.method === 'POST' ? (req.body ?? {}) : (req.query ?? {});
     const action = body.action ?? (req.method === 'GET' ? 'manifest' : 'prepare');
-    const net    = ['mainnet', 'sepolia', 'vibenet'].includes(body.network ?? req.query?.network)
+    const net    = ['mainnet', 'sepolia', 'vibenet', 'robinhood'].includes(body.network ?? req.query?.network)
       ? (body.network ?? req.query?.network)
       : 'mainnet';
 
