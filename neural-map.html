@@ -592,6 +592,9 @@ const NEON_PALETTE = [0xFF00AA,0x00FFCC,0xFF6600,0xFFEE00,0x00AAFF,0xFF3366,0xBB
 // City life
 let cars = [], people = [], trafficLights = [];
 
+// Atmosphere & life (beautification pass)
+let clouds = [], fillerWinks = [], searchlights = null, moonHalo = null, redEye = null;
+
 // Scenic environment (diorama)
 let ships = [], oceanMesh = null, oceanBaseY = null, envTime = 0;
 
@@ -1109,14 +1112,19 @@ function createFillerBuilding(x, z) {
   scene.add(cs);
   const darkTints = [0x0c1018, 0x0f0f18, 0x0e1214, 0x10100e, 0x0d1010, 0x0c0e18];
   const dc = darkTints[Math.floor(Math.random() * darkTints.length)];
-  const mat = () => new THREE.MeshStandardMaterial({
-    color: dc,
-    emissive: new THREE.Color(0xffffff),
-    emissiveMap: getWindowTex(),
-    emissiveIntensity: 0.28,
-    roughness: 0.5,
-    metalness: 0.4
-  });
+  const mat = () => {
+    const m = new THREE.MeshStandardMaterial({
+      color: dc,
+      emissive: new THREE.Color(0xffffff),
+      emissiveMap: getWindowTex(),
+      emissiveIntensity: 0.28,
+      roughness: 0.5,
+      metalness: 0.4
+    });
+    // register for the slow "lights turning on/off" window shimmer
+    fillerWinks.push({ m, phase: Math.random() * Math.PI * 2, spd: 0.25 + Math.random() * 0.6 });
+    return m;
+  };
   // 50% chance of simple stepped top for variety without chaos
   if (Math.random() > 0.5) {
     const m1 = new THREE.Mesh(new THREE.BoxGeometry(bw, h * 0.7, bd), mat());
@@ -1467,6 +1475,52 @@ function initCity(data) {
   renderer.toneMappingExposure = 0.82;
   renderer.outputEncoding = THREE.sRGBEncoding;
 
+  // ── Sky gradient + environment reflections ──────────────────────
+  // A vertical-gradient sky texture drives both the sky dome and a PMREM
+  // environment map, so glass towers and the water pick up a real sheen.
+  function makeSkyTexture(night) {
+    const c = document.createElement('canvas');
+    c.width = 32; c.height = 512;
+    const ctx = c.getContext('2d');
+    const g = ctx.createLinearGradient(0, 0, 0, 512);
+    if (night) {
+      g.addColorStop(0.00, '#01020a');
+      g.addColorStop(0.45, '#05070f');
+      g.addColorStop(0.72, '#0b1020');
+      g.addColorStop(0.88, '#1c1830');
+      g.addColorStop(1.00, '#33202a');   // warm city-glow horizon
+    } else {
+      g.addColorStop(0.00, '#6fa8dc');
+      g.addColorStop(0.50, '#a8c8e8');
+      g.addColorStop(0.85, '#e0d4c0');
+      g.addColorStop(1.00, '#f4e2c4');   // golden-hour horizon
+    }
+    ctx.fillStyle = g; ctx.fillRect(0, 0, 32, 512);
+    return new THREE.CanvasTexture(c);
+  }
+  let pmrem = null, envRT = null;
+  function applyEnvironment(night) {
+    if (isMobile) return; // keep mobile GPU budget for geometry
+    if (!pmrem) pmrem = new THREE.PMREMGenerator(renderer);
+    const es = new THREE.Scene();
+    // color multiplier dims the IBL so it adds sheen, not exposure —
+    // undimmed it washes out the terrain/mountains badly
+    es.add(new THREE.Mesh(
+      new THREE.SphereGeometry(100, 24, 16),
+      new THREE.MeshBasicMaterial({ map: makeSkyTexture(night), side: THREE.BackSide,
+        color: night ? 0x34343e : 0x606066 })
+    ));
+    // a hot spot so reflections get a moon/sun glint
+    const hot = new THREE.Mesh(new THREE.SphereGeometry(10, 8, 8),
+      new THREE.MeshBasicMaterial({ color: night ? 0x9fb8ff : 0xfff0c8 }));
+    hot.position.set(-45, 55, -55);
+    es.add(hot);
+    const old = envRT;
+    envRT = pmrem.fromScene(es, 0.04, 0.1, 300);
+    scene.environment = envRT.texture;
+    if (old) old.dispose();
+  }
+
   // Bloom — stronger and more cinematic
   if (typeof THREE.EffectComposer !== 'undefined' && !isMobile) {
     composer = new THREE.EffectComposer(renderer);
@@ -1486,6 +1540,13 @@ function initCity(data) {
   controls.maxDistance = 340;
   controls.enabled = false; // disabled during cinematic intro
   controls.update();
+
+  // Cinematic idle — after 12s without input the camera orbits slowly
+  controls.autoRotateSpeed = 0.4;
+  let lastInput = Date.now();
+  const wakeCam = () => { lastInput = Date.now(); controls.autoRotate = false; };
+  ['pointerdown', 'wheel', 'touchstart', 'keydown'].forEach(ev =>
+    window.addEventListener(ev, wakeCam, { passive: true }));
 
   // Ground — wet street look, sized to the city (was a huge empty plane)
   const gGeo = new THREE.PlaneGeometry(320, 320);
@@ -1535,6 +1596,38 @@ function initCity(data) {
   const stars = new THREE.Points(starGeo, starMat);
   scene.add(stars);
 
+  // ── Sky dome — smooth gradient horizon instead of a flat color ──
+  const skyNightTex = makeSkyTexture(true);
+  const skyDayTex   = makeSkyTexture(false);
+  const skyMat = new THREE.MeshBasicMaterial({ map: skyNightTex, side: THREE.BackSide, fog: false });
+  const skyDome = new THREE.Mesh(new THREE.SphereGeometry(1450, 24, 16), skyMat);
+  scene.add(skyDome);
+  applyEnvironment(true);
+
+  // ── Drifting clouds — soft sprites, tinted per day/night ──
+  function makeCloudTexture() {
+    const c = document.createElement('canvas');
+    c.width = 256; c.height = 128;
+    const ctx = c.getContext('2d');
+    for (const [cx, cy, r, a] of [[70,70,55,0.55],[120,55,65,0.6],[180,70,50,0.5],[128,80,80,0.35]]) {
+      const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+      g.addColorStop(0, `rgba(255,255,255,${a})`);
+      g.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, 256, 128);
+    }
+    return new THREE.CanvasTexture(c);
+  }
+  const cloudTex = makeCloudTexture();
+  for (let i = 0; i < 8; i++) {
+    const cm = new THREE.SpriteMaterial({ map: cloudTex, transparent: true, opacity: 0.10, color: 0x8fa0c8, depthWrite: false, fog: false });
+    const sp = new THREE.Sprite(cm);
+    sp.position.set((Math.random() - 0.5) * 900, 130 + Math.random() * 90, (Math.random() - 0.5) * 900);
+    sp.scale.set(180 + Math.random() * 140, 60 + Math.random() * 40, 1);
+    scene.add(sp);
+    clouds.push({ sp, vx: 0.03 + Math.random() * 0.05 });
+  }
+
   // Moon — pulled close so it hangs over the mountains
   const moonGeo = new THREE.SphereGeometry(22, 16, 16);
   const moonMat = new THREE.MeshBasicMaterial({color: 0xEEEECC});
@@ -1547,6 +1640,25 @@ function initCity(data) {
     c.position.set(moon.position.x+cx*2, moon.position.y+cy*2, moon.position.z+cz*0.5+18);
     scene.add(c);
   });
+
+  // Soft halo around the moon — makes the night sky feel atmospheric
+  {
+    const c = document.createElement('canvas');
+    c.width = 256; c.height = 256;
+    const ctx = c.getContext('2d');
+    const g = ctx.createRadialGradient(128, 128, 20, 128, 128, 128);
+    g.addColorStop(0, 'rgba(210,220,255,0.55)');
+    g.addColorStop(0.4, 'rgba(180,195,255,0.18)');
+    g.addColorStop(1, 'rgba(160,180,255,0)');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, 256, 256);
+    moonHalo = new THREE.Sprite(new THREE.SpriteMaterial({
+      map: new THREE.CanvasTexture(c), transparent: true, opacity: 0.5,
+      blending: THREE.AdditiveBlending, depthWrite: false, fog: false
+    }));
+    moonHalo.position.copy(moon.position);
+    moonHalo.scale.set(120, 120, 1);
+    scene.add(moonHalo);
+  }
 
   // Sun (hidden at start — night mode default)
   const sunSphere = new THREE.Mesh(
@@ -1613,13 +1725,18 @@ function initCity(data) {
       atm1.color.set(0xF07830); atm1.intensity = 1.8;
       useBloom = true;
       renderer.toneMappingExposure = 0.9;
+      skyMat.map = skyNightTex; skyMat.needsUpdate = true;
+      clouds.forEach(c => { c.sp.material.color.set(0x8fa0c8); c.sp.material.opacity = 0.10; });
+      if (moonHalo) moonHalo.visible = true;
+      if (searchlights) searchlights.visible = true;
+      applyEnvironment(true);
       btn.innerHTML = '<span class="hbtn-ico">🌙</span><span class="hbtn-txt"> Night</span>';
     } else {
       // Warm golden-hour clear day — soft, premium, not washed out
       scene.background = new THREE.Color(0xAFCAE6);
-      scene.fog = new THREE.FogExp2(0xC9D8E8, 0.0018);
-      ambLight.color.set(0xFFF1DD); ambLight.intensity = 1.5;
-      dirLight.color.set(0xFFE6BE); dirLight.intensity = 2.6;
+      scene.fog = new THREE.FogExp2(0xBACFE4, 0.0011);
+      ambLight.color.set(0xFFF1DD); ambLight.intensity = 0.85;
+      dirLight.color.set(0xFFE2B0); dirLight.intensity = 2.9;
       stars.visible = false; moon.visible = false; sunSphere.visible = true;
       horizon.visible = false;
       if (pSystem) pSystem.visible = false;
@@ -1627,6 +1744,11 @@ function initCity(data) {
       atm1.color.set(0xFFC766); atm1.intensity = 1.3;
       useBloom = false;
       renderer.toneMappingExposure = 1.02;
+      skyMat.map = skyDayTex; skyMat.needsUpdate = true;
+      clouds.forEach(c => { c.sp.material.color.set(0xffffff); c.sp.material.opacity = 0.55; });
+      if (moonHalo) moonHalo.visible = false;
+      if (searchlights) searchlights.visible = false;
+      applyEnvironment(false);
       btn.innerHTML = '<span class="hbtn-ico">☀️</span><span class="hbtn-txt"> Day</span>';
     }
   };
@@ -1805,6 +1927,46 @@ function initCity(data) {
     initParticles(buildingTopPositions);
   }
 
+  // ── Searchlight beams sweeping from the tallest tower (night) ──
+  if (buildingTopPositions.length > 0) {
+    const top = buildingTopPositions[0];
+    searchlights = new THREE.Group();
+    searchlights.position.set(top.x, top.y + 2, top.z);
+    for (const dir of [1, -1]) {
+      const beam = new THREE.Mesh(
+        new THREE.CylinderGeometry(7, 0.6, 130, 12, 1, true),
+        new THREE.MeshBasicMaterial({
+          color: 0xFFD9A0, transparent: true, opacity: 0.05,
+          blending: THREE.AdditiveBlending, side: THREE.DoubleSide, depthWrite: false
+        })
+      );
+      beam.geometry.translate(0, 65, 0);      // apex sits on the rooftop
+      beam.rotation.z = 0.55 * dir;           // tilt outward
+      const pivot = new THREE.Group();
+      pivot.add(beam);
+      pivot.rotation.y = dir > 0 ? 0 : Math.PI * 0.7;
+      searchlights.add(pivot);
+    }
+    scene.add(searchlights);
+  }
+
+  // ── A red-eye flight crossing the sky with blinking nav lights ──
+  {
+    const g = new THREE.Group();
+    const body = new THREE.Mesh(new THREE.BoxGeometry(4, 0.5, 0.6),
+      new THREE.MeshBasicMaterial({ color: 0x222831 }));
+    g.add(body);
+    const nav = new THREE.Mesh(new THREE.SphereGeometry(0.45, 6, 6),
+      new THREE.MeshBasicMaterial({ color: 0xFF3B30, transparent: true }));
+    nav.position.set(-1.6, 0.2, 0); g.add(nav);
+    const strobe = new THREE.Mesh(new THREE.SphereGeometry(0.5, 6, 6),
+      new THREE.MeshBasicMaterial({ color: 0xFFFFFF, transparent: true, opacity: 0 }));
+    strobe.position.set(1.6, 0.2, 0); g.add(strobe);
+    g.position.set(-700, 205, -140);
+    scene.add(g);
+    redEye = { g, nav, strobe, t: Math.random() };
+  }
+
   // ── Input setup ────────────────────────────────────────────────
   setupFlyInput(renderer.domElement);
 
@@ -1962,6 +2124,7 @@ function initCity(data) {
       camera.position.y = Math.max(1.5, camera.position.y);
       camera.quaternion.setFromEuler(new THREE.Euler(flyMode.pitch, flyMode.yaw, 0, 'YXZ'));
     } else if (!intro.active) {
+      if (Date.now() - lastInput > 12000) controls.autoRotate = true;
       controls.update();
     }
 
@@ -2047,6 +2210,32 @@ function initCity(data) {
         s.grp.rotation.x = Math.cos(envTime * 1.3 + s.phase) * 0.03;
       }
     }
+
+    // ── Atmosphere & life ─────────────────────────────────────
+    // Clouds drift and wrap
+    for (const c of clouds) {
+      c.sp.position.x += c.vx;
+      if (c.sp.position.x > 520) c.sp.position.x = -520;
+    }
+    // Windows shimmer — city lights turning on and off
+    for (const w of fillerWinks) {
+      w.m.emissiveIntensity = 0.26 + 0.08 * Math.sin(cityTime * w.spd + w.phase);
+    }
+    // Searchlights sweep in opposite directions
+    if (searchlights && searchlights.visible) {
+      searchlights.children[0].rotation.y += 0.008;
+      searchlights.children[1].rotation.y -= 0.006;
+    }
+    // Red-eye flight across the sky
+    if (redEye) {
+      redEye.t += 0.00045;
+      if (redEye.t > 1) { redEye.t = 0; redEye.g.position.z = -350 + Math.random() * 500; }
+      redEye.g.position.x = -700 + redEye.t * 1400;
+      redEye.nav.material.opacity = Math.sin(cityTime * 4) > 0 ? 1 : 0.15;
+      redEye.strobe.material.opacity = (cityTime % 1.4) < 0.08 ? 1 : 0;
+    }
+    // Subtle star twinkle
+    starMat.opacity = 0.78 + 0.08 * Math.sin(cityTime * 0.8);
 
     if (composer && useBloom) composer.render(); else renderer.render(scene, camera);
   }
