@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Orlix AI × Robinhood Chain</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
+
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden;background:#0a0a0a;font-family:'Plus Jakarta Sans',sans-serif}
+#video{width:100vw;height:100vh;position:relative;overflow:hidden}
+
+.grid-bg{
+  position:fixed;inset:0;z-index:0;
+  background:
+    linear-gradient(rgba(198,241,53,.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(198,241,53,.03) 1px, transparent 1px);
+  background-size:60px 60px;
+  animation:gridMove 20s linear infinite;
+}
+@keyframes gridMove{0%{transform:translate(0,0)}100%{transform:translate(60px,60px)}}
+
+.glow-orb{
+  position:fixed;width:600px;height:600px;border-radius:50%;
+  background:radial-gradient(circle,rgba(198,241,53,.18) 0%,transparent 70%);
+  pointer-events:none;z-index:0;
+  animation:orbFloat 8s ease-in-out infinite;
+}
+.glow-orb.o1{top:-200px;right:-200px}
+.glow-orb.o2{bottom:-200px;left:-200px;animation-delay:4s}
+@keyframes orbFloat{0%,100%{transform:translate(0,0)}50%{transform:translate(-30px,30px)}}
+
+/* ─── Scenes ─── */
+.scene{
+  position:absolute;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  opacity:0;z-index:1;pointer-events:none;
+  transition:opacity .8s ease;
+}
+.scene.active{opacity:1;pointer-events:auto}
+
+/* ─── Fade-in utility ─── */
+.fi{opacity:0;transform:translateY(30px);transition:all .6s ease}
+.scene.active .fi{opacity:1;transform:translateY(0)}
+.fi.d1{transition-delay:.2s}.fi.d2{transition-delay:.4s}.fi.d3{transition-delay:.6s}
+.fi.d4{transition-delay:.8s}.fi.d5{transition-delay:1s}.fi.d6{transition-delay:1.2s}
+.fi.d7{transition-delay:1.4s}.fi.d8{transition-delay:1.6s}.fi.d9{transition-delay:1.8s}
+.fi.d10{transition-delay:2s}.fi.d11{transition-delay:2.2s}.fi.d12{transition-delay:2.4s}
+.fi.d13{transition-delay:2.6s}.fi.d14{transition-delay:2.8s}.fi.d15{transition-delay:3s}
+.fi.d16{transition-delay:3.2s}.fi.d17{transition-delay:3.4s}.fi.d18{transition-delay:3.6s}
+
+/* ─── Scene 1: Intro ─── */
+.intro-title{
+  font-size:clamp(2.5rem,6vw,5rem);font-weight:800;color:#fff;
+  letter-spacing:-.03em;text-align:center;
+}
+.intro-title span{color:#C6F135}
+.intro-sub{
+  font-size:clamp(.85rem,2vw,1.2rem);color:rgba(255,255,255,.45);
+  margin-top:16px;font-weight:400;letter-spacing:.15em;text-transform:uppercase;
+}
+
+/* ─── Scene 2: Terminal ─── */
+.terminal{
+  width:min(92vw,780px);background:rgba(17,17,17,.95);border:1px solid rgba(198,241,53,.2);
+  border-radius:16px;overflow:hidden;
+}
+.term-bar{
+  display:flex;align-items:center;gap:8px;padding:12px 16px;
+  background:rgba(198,241,53,.06);border-bottom:1px solid rgba(198,241,53,.1);
+}
+.term-dot{width:10px;height:10px;border-radius:50%}
+.term-dot.r{background:#ff5f57}.term-dot.y{background:#febc2e}.term-dot.g{background:#28c840}
+.term-title{font-size:.7rem;color:rgba(255,255,255,.4);font-family:'JetBrains Mono',monospace;margin-left:auto}
+.term-body{
+  padding:20px 24px;font-family:'JetBrains Mono',monospace;font-size:.82rem;line-height:1.9;
+}
+.tl{opacity:0;transform:translateX(-8px);transition:all .35s ease}
+.scene.active .tl{opacity:1;transform:translateX(0)}
+.t-g{color:#C6F135}.t-d{color:rgba(255,255,255,.3)}.t-c{color:#67e8f9}
+.t-w{color:#fff}.t-b{font-weight:700}
+.cursor{display:inline-block;width:8px;height:15px;background:#C6F135;animation:blink 1s step-end infinite;vertical-align:text-bottom;margin-left:2px}
+@keyframes blink{50%{opacity:0}}
+
+/* ─── Scene 3: Stats ─── */
+.stats-grid{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:20px;
+  width:min(90vw,820px);
+}
+.stat-card{
+  background:rgba(198,241,53,.04);border:1px solid rgba(198,241,53,.15);
+  border-radius:16px;padding:28px 24px;text-align:center;
+}
+.stat-card .label{font-size:.68rem;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.12em;margin-bottom:8px}
+.stat-card .value{font-size:clamp(1.3rem,3vw,2.1rem);font-weight:800;color:#C6F135;font-family:'JetBrains Mono',monospace}
+.stat-card .sub{font-size:.68rem;color:rgba(255,255,255,.25);margin-top:6px}
+.stats-title{
+  font-size:clamp(1.1rem,3vw,1.9rem);font-weight:700;color:#fff;margin-bottom:32px;text-align:center;
+}
+.stats-title span{color:#C6F135}
+
+/* ─── Scene 4: Success ─── */
+.success-ring{
+  width:130px;height:130px;border-radius:50%;
+  background:rgba(198,241,53,.08);border:3px solid #C6F135;
+  display:flex;align-items:center;justify-content:center;
+  transform:scale(0);transition:transform .5s cubic-bezier(.34,1.56,.64,1);
+}
+.scene.active .success-ring{transform:scale(1);transition-delay:.3s}
+.success-ring svg{width:60px;height:60px;stroke:#C6F135;stroke-width:3;fill:none;
+  stroke-dasharray:100;stroke-dashoffset:100;transition:stroke-dashoffset .5s ease}
+.scene.active .success-ring svg{stroke-dashoffset:0;transition-delay:.8s}
+.success-text{
+  font-size:clamp(1.3rem,3.5vw,2.3rem);font-weight:800;color:#C6F135;margin-top:28px;
+}
+.success-sub{
+  font-size:clamp(.75rem,1.5vw,1rem);color:rgba(255,255,255,.45);margin-top:10px;
+}
+
+/* ─── Scene 5: Banner ─── */
+.banner-wrap{width:min(92vw,1000px)}
+.banner-wrap img{width:100%;border-radius:20px;box-shadow:0 0 80px rgba(198,241,53,.3)}
+.banner-caption{
+  text-align:center;margin-top:24px;font-size:clamp(.75rem,1.5vw,1rem);
+  color:rgba(255,255,255,.45);
+}
+
+/* ─── Progress bar ─── */
+.progress{position:fixed;bottom:0;left:0;height:3px;background:#C6F135;z-index:100;width:0;transition:width .3s linear}
+
+/* ─── Particles ─── */
+.particle{
+  position:fixed;width:3px;height:3px;border-radius:50%;background:#C6F135;
+  pointer-events:none;z-index:0;
+  animation:pFloat 6s ease-in-out infinite;
+}
+@keyframes pFloat{0%,100%{opacity:0;transform:translateY(0)}30%{opacity:.5}50%{opacity:.35;transform:translateY(-25px)}100%{opacity:0;transform:translateY(-50px)}}
+
+@media(max-width:640px){
+  .stats-grid{grid-template-columns:1fr 1fr;gap:12px}
+  .term-body{padding:14px 16px;font-size:.72rem}
+}
+</style>
+</head>
+<body>
+<div id="video">
+  <div class="grid-bg"></div>
+  <div class="glow-orb o1"></div>
+  <div class="glow-orb o2"></div>
+  <div id="particles"></div>
+
+  <!-- SCENE 1: INTRO -->
+  <div class="scene active" id="s1">
+    <div class="intro-title fi d1"><span>Orlix AI</span> × Robinhood Chain</div>
+    <div class="intro-sub fi d2">First connection to mainnet</div>
+  </div>
+
+  <!-- SCENE 2: TERMINAL -->
+  <div class="scene" id="s2">
+    <div class="terminal fi d1">
+      <div class="term-bar">
+        <div class="term-dot r"></div><div class="term-dot y"></div><div class="term-dot g"></div>
+        <div class="term-title">orlix-terminal</div>
+      </div>
+      <div class="term-body">
+        <div class="tl d2"><span class="t-g t-b">$ orlix connect --chain robinhood</span></div>
+        <div class="tl d3">&nbsp;</div>
+        <div class="tl d4"><span class="t-d">  Resolving RPC endpoint...</span></div>
+        <div class="tl d5"><span class="t-c">  → https://rpc.mainnet.chain.robinhood.com</span></div>
+        <div class="tl d6">&nbsp;</div>
+        <div class="tl d7"><span class="t-d">  Querying chain ID...</span></div>
+        <div class="tl d8"><span class="t-g">  → Chain ID: 4663 ✓</span></div>
+        <div class="tl d9">&nbsp;</div>
+        <div class="tl d10"><span class="t-d">  Fetching latest block...</span></div>
+        <div class="tl d11"><span class="t-g">  → Block #1,247,832 (0.042s) ✓</span></div>
+        <div class="tl d12">&nbsp;</div>
+        <div class="tl d13"><span class="t-d">  Checking DexScreener integration...</span></div>
+        <div class="tl d14"><span class="t-g">  → DexScreener: robinhood chain listed ✓</span></div>
+        <div class="tl d15">&nbsp;</div>
+        <div class="tl d16"><span class="t-d">  Initializing token analyzer...</span></div>
+        <div class="tl d17"><span class="t-g">  → Analyzer: multi-chain mode enabled ✓</span></div>
+        <div class="tl d18"><span class="t-g t-b">  ✅ Robinhood Chain connected successfully</span><span class="cursor"></span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCENE 3: STATS -->
+  <div class="scene" id="s3">
+    <div class="stats-title fi d1">Connected to <span>Robinhood Chain</span></div>
+    <div class="stats-grid">
+      <div class="stat-card fi d2"><div class="label">Chain ID</div><div class="value">4663</div><div class="sub">Mainnet</div></div>
+      <div class="stat-card fi d3"><div class="label">Block Height</div><div class="value" id="blockNum">1,247,832</div><div class="sub">Live</div></div>
+      <div class="stat-card fi d4"><div class="label">Gas Price</div><div class="value">0.001</div><div class="sub">gwei</div></div>
+      <div class="stat-card fi d5"><div class="label">Latency</div><div class="value">42ms</div><div class="sub">RPC Response</div></div>
+      <div class="stat-card fi d6"><div class="label">Network</div><div class="value" style="font-size:clamp(.9rem,2vw,1.3rem)">Arbitrum L2</div><div class="sub">Ethereum Security</div></div>
+      <div class="stat-card fi d7"><div class="label">Status</div><div class="value" style="color:#4ade80">LIVE</div><div class="sub">All Systems Go</div></div>
+    </div>
+  </div>
+
+  <!-- SCENE 4: SUCCESS -->
+  <div class="scene" id="s4">
+    <div class="success-ring">
+      <svg viewBox="0 0 40 40"><polyline points="10,22 18,30 32,12" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+    <div class="success-text fi d3">Integration Complete</div>
+    <div class="success-sub fi d4">Orlix AI is now live on Robinhood Chain</div>
+  </div>
+
+  <!-- SCENE 5: BANNER -->
+  <div class="scene" id="s5">
+    <div class="banner-wrap fi d1">
+      <img src="robinhood-orlix-banner.png" alt="Robinhood Chain × Orlix AI">
+      <div class="banner-caption fi d3">orlixai.xyz — Now supporting Robinhood Chain</div>
+    </div>
+  </div>
+
+  <div class="progress" id="progress"></div>
+</div>
+
+<script>
+const SCENES = ['s1','s2','s3','s4','s5'];
+const DURATIONS = [3000, 5500, 4500, 3500, 5000];
+const TOTAL = DURATIONS.reduce((a,b)=>a+b,0);
+let current = 0, startTime = 0;
+
+function showScene(idx) {
+  SCENES.forEach((id,i) => {
+    document.getElementById(id).classList.toggle('active', i === idx);
+  });
+  current = idx;
+}
+
+function spawnParticles() {
+  const c = document.getElementById('particles');
+  for (let i = 0; i < 25; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    p.style.left = Math.random()*100+'vw';
+    p.style.top = (30+Math.random()*60)+'vh';
+    p.style.animationDelay = Math.random()*6+'s';
+    p.style.animationDuration = (4+Math.random()*4)+'s';
+    c.appendChild(p);
+  }
+}
+
+function animateBlock() {
+  const el = document.getElementById('blockNum');
+  if (!el) return;
+  let n = 1247832;
+  setInterval(() => { n += Math.floor(Math.random()*3)+1; el.textContent = n.toLocaleString(); }, 1500);
+}
+
+function updateProgress() {
+  const pct = Math.min(((Date.now()-startTime)/TOTAL)*100, 100);
+  document.getElementById('progress').style.width = pct+'%';
+  if (pct < 100) requestAnimationFrame(updateProgress);
+}
+
+async function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+async function play() {
+  startTime = Date.now();
+  spawnParticles();
+  animateBlock();
+  updateProgress();
+  for (let i = 0; i < SCENES.length; i++) {
+    showScene(i);
+    await sleep(DURATIONS[i]);
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => setTimeout(play, 300));
+</script>
+</body>
+</html>
