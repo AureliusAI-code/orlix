@@ -4061,14 +4061,14 @@ document.getElementById('previewCloseBtn').addEventListener('click', closePrevie
 // Theme toggle
 (function(){
   var r=document.documentElement;
-  if(localStorage.getItem('orlix_theme')==='light')r.classList.add('light');
+  if(localStorage.getItem('orlix-theme')==='light')r.classList.add('light');
   var btn=document.getElementById('themeToggle');
   if(btn)btn.addEventListener('click',function(){
     var l=r.classList.toggle('light');
-    localStorage.setItem('orlix_theme',l?'light':'dark');
+    localStorage.setItem('orlix-theme',l?'light':'dark');
   });
   window.addEventListener('storage',function(e){
-    if(e.key==='orlix_theme'){e.newValue==='light'?r.classList.add('light'):r.classList.remove('light');}
+    if(e.key==='orlix-theme'){e.newValue==='light'?r.classList.add('light'):r.classList.remove('light');}
   });
 })();
 </script>
